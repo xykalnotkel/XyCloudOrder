@@ -25,49 +25,65 @@ class XyRadius {
 }
 
 class XyTheme {
-  // ---------- palet ----------
-  static const Color primary = Color(0xFF2F5BFF);
-  static const Color primaryDeep = Color(0xFF1B3CD6);
-  static const Color primarySoft = Color(0xFFEAF0FF);
-  static const Color violet = Color(0xFF7B5CFF);
-  static const Color cyan = Color(0xFF17C3E0);
-  static const Color gold = Color(0xFFE0A33B);
+  // ---------- palet ungu XyCloudStore ----------
+  // Diambil langsung dari logo resmi: ungu pekat glosi, tanpa warna neon.
+  static const Color primary = Color(0xFF6C2BE2);      // ungu utama
+  static const Color primaryDeep = Color(0xFF4A12B8);  // ungu pekat
+  static const Color primaryDark = Color(0xFF33087F);  // ungu paling gelap
+  static const Color primarySoft = Color(0xFFF2ECFF);  // latar lembut
+  static const Color violet = Color(0xFF8B5CF6);       // ungu terang
+  static const Color lavender = Color(0xFFC4B5FD);     // aksen lembut
+  static const Color plum = Color(0xFF9333EA);         // aksen tua
 
-  static const Color ink = Color(0xFF0B1220);
-  static const Color inkSoft = Color(0xFF334155);
-  static const Color muted = Color(0xFF7A879C);
-  static const Color line = Color(0xFFE9EDF5);
-  static const Color lineSoft = Color(0xFFF1F4FA);
-  static const Color bg = Color(0xFFF7F9FD);
+  static const Color ink = Color(0xFF1A1033);          // teks utama (ungu kehitaman)
+  static const Color inkSoft = Color(0xFF453B5E);
+  static const Color muted = Color(0xFF7C7391);
+  static const Color line = Color(0xFFEAE3F7);
+  static const Color lineSoft = Color(0xFFF4F0FD);
+  static const Color bg = Color(0xFFFAF8FF);
   static const Color surface = Color(0xFFFFFFFF);
 
-  static const Color success = Color(0xFF12A66C);
-  static const Color warning = Color(0xFFE0A33B);
-  static const Color danger = Color(0xFFE0453B);
+  static const Color success = Color(0xFF16A34A);
+  static const Color warning = Color(0xFFD9880F);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color gold = Color(0xFFD9A441);
 
   // ---------- gradien ----------
   static const LinearGradient gradPrimary = LinearGradient(
-    colors: [Color(0xFF2F5BFF), Color(0xFF6A4BFF)],
+    colors: [Color(0xFF7C3AED), Color(0xFF5B16CC)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const LinearGradient gradDeep = LinearGradient(
+    colors: [Color(0xFF33087F), Color(0xFF5B16CC), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradMidnight = LinearGradient(
-    colors: [Color(0xFF0B1220), Color(0xFF16213E), Color(0xFF1B2B5A)],
+    colors: [Color(0xFF1A1033), Color(0xFF2E1065), Color(0xFF4A12B8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradAurora = LinearGradient(
-    colors: [Color(0xFF17C3E0), Color(0xFF2F5BFF), Color(0xFF7B5CFF)],
+    colors: [Color(0xFFC4B5FD), Color(0xFF8B5CF6), Color(0xFF6C2BE2)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
+  static const LinearGradient gradSoft = LinearGradient(
+    colors: [Color(0xFFF6F1FF), Color(0xFFEDE4FF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
   static const LinearGradient gradGold = LinearGradient(
-    colors: [Color(0xFFF0C273), Color(0xFFC98A2B)],
+    colors: [Color(0xFFE8C07A), Color(0xFFC08A2E)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   // ---------- elevasi ----------
+  /// Alias lama supaya kode lain tetap jalan (tidak ada warna neon lagi).
+  static const Color cyan = violet;
+
   static List<BoxShadow> get shadowXs => [
         BoxShadow(color: ink.withOpacity(.035), blurRadius: 8, offset: const Offset(0, 2)),
       ];
@@ -133,7 +149,7 @@ class XyTheme {
         style: FilledButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFCBD5E1),
+          disabledBackgroundColor: const Color(0xFFD9CFF0),
           minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.md)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -.1),

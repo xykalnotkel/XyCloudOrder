@@ -33,6 +33,29 @@ const err = (message, status = 400, env) =>
     },
   });
 
+// ---------- password ----------
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+async function hashPw(password, salt) {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  return hex(await crypto.subtle.digest('SHA-256', data));
+}
+
+/** Format tersimpan: `salt$hash`. Password lama (plaintext seed) tetap diterima. */
+async function buatPw(password) {
+  const salt = hex(crypto.getRandomValues(new Uint8Array(8)));
+  return `${salt}$${await hashPw(password, salt)}`;
+}
+
+async function cocokPw(password, tersimpan) {
+  if (!tersimpan) return false;
+  if (!tersimpan.includes('$')) return tersimpan === password; // data lama
+  const [salt, h] = tersimpan.split('$');
+  return (await hashPw(password, salt)) === h;
+}
+
+const emailValid = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(String(v || '').trim());
+
 // ---------- token sederhana (HMAC-SHA256) ----------
 const b64u = (buf) =>
   btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -116,22 +139,60 @@ export default {
     try {
       // ---------------- AUTH ----------------
       if (p === 'auth/login' && req.method === 'POST') {
-        const { email, password } = await req.json();
-        const u = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
-        if (!u || u.password !== password) return err('Email atau password salah', 401, env);
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const password = String(body.password || '');
+        if (!email || !password) return err('Email dan password wajib diisi', 400, env);
+
+        const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
+        if (!u) return err('Email belum terdaftar. Silakan daftar dulu.', 404, env);
+        if (!(await cocokPw(password, u.password))) return err('Password salah. Coba lagi.', 401, env);
+
+        // upgrade otomatis password lama ke bentuk hash
+        if (!String(u.password).includes('$')) {
+          const baru = await buatPw(password);
+          ctx.waitUntil(env.DB.prepare('UPDATE users SET password=? WHERE id=?').bind(baru, u.id).run());
+        }
+
         const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
         delete u.password;
         return json({ token, user: u }, 200, env);
       }
 
       if (p === 'auth/register' && req.method === 'POST') {
-        const { nama, email, password, phone } = await req.json();
+        const body = await req.json().catch(() => ({}));
+        const nama = String(body.nama || '').trim();
+        const email = String(body.email || '').trim().toLowerCase();
+        const password = String(body.password || '');
+        const phone = String(body.phone || '').trim() || null;
+
+        if (nama.length < 3) return err('Nama minimal 3 karakter', 400, env);
+        if (!emailValid(email)) return err('Format email tidak valid', 400, env);
+        if (password.length < 6) return err('Password minimal 6 karakter', 400, env);
+
+        const ada = await env.DB.prepare('SELECT id FROM users WHERE lower(email) = ?').bind(email).first();
+        if (ada) return err('Email sudah terdaftar. Silakan masuk.', 409, env);
+
         const id = uid('u_');
         await env.DB.prepare(
-          'INSERT INTO users (id,nama,email,password,phone,saldo,tier) VALUES (?,?,?,?,?,0,\'basic\')'
-        ).bind(id, nama, email, password, phone || null).run();
-        const token = await sign({ sub: id, email }, env.JWT_SECRET);
-        return json({ token, user: { id, nama, email, phone, saldo: 0, tier: 'basic' } }, 201, env);
+          "INSERT INTO users (id,nama,email,password,phone,saldo,tier) VALUES (?,?,?,?,?,0,'basic')"
+        ).bind(id, nama, email, await buatPw(password), phone).run();
+
+        // sapaan otomatis dari customer service
+        const room = `user:${id}`;
+        const sapa = {
+          id: uid('m_'), room, dari: 'cs',
+          teks: `Halo ${nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
+          waktu: new Date().toISOString(),
+        };
+        ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
+          .bind(sapa.id, room, id, 'cs', sapa.teks, sapa.waktu).run());
+
+        const token = await sign({ sub: id, email, iat: Date.now() }, env.JWT_SECRET);
+        return json({
+          token,
+          user: { id, nama, email, phone, saldo: 0, tier: 'basic', created_at: new Date().toISOString() },
+        }, 201, env);
       }
 
       // ---------------- KATALOG (publik) ----------------

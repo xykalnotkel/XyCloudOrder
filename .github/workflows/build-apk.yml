@@ -15,7 +15,7 @@ on:
       base_url:
         description: "Base URL API XyCloud"
         required: false
-        default: "https://xycloud-api.akuntiktok76y.workers.dev"
+        default: "https://api.xycloud.my.id"
 
 concurrency:
   group: build-${{ github.ref }}
@@ -60,7 +60,7 @@ jobs:
             --platforms=android \
             --org id.xycloud \
             --project-name xycloud_order \
-            --description "XyCloudOrder - Sewa PC Cloud, Beli Akun, CS Realtime"
+            --description "XyCloudStore - Sewa PC Cloud, Beli Akun, CS Realtime"
 
       - name: Bersihkan berkas bawaan flutter create
         working-directory: ${{ env.APP_DIR }}
@@ -82,7 +82,7 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's/android:label="[^"]*"/android:label="XyCloudOrder"/' $MANIFEST
+          sed -i 's/android:label="[^"]*"/android:label="XyCloudStore"/' $MANIFEST
           grep -q 'android.permission.INTERNET' $MANIFEST || \
             sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' $MANIFEST
           echo "----- manifest -----"
@@ -126,22 +126,22 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.akuntiktok76y.workers.dev' }}
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }}
 
       - name: Build APK per-ABI
         working-directory: ${{ env.APP_DIR }}
         run: |
           flutter build apk --release --split-per-abi \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.akuntiktok76y.workers.dev' }}
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }}
 
       - name: Rapikan hasil build
         run: |
           mkdir -p dist
-          cp ${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-release.apk dist/XyCloudOrder-universal.apk
+          cp ${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-release.apk dist/XyCloudStore-universal.apk
           for abi in arm64-v8a armeabi-v7a x86_64; do
             f=${{ env.APP_DIR }}/build/app/outputs/flutter-apk/app-$abi-release.apk
-            [ -f "$f" ] && cp "$f" "dist/XyCloudOrder-$abi.apk" || true
+            [ -f "$f" ] && cp "$f" "dist/XyCloudStore-$abi.apk" || true
           done
           ls -lh dist
 
@@ -156,7 +156,7 @@ jobs:
       - name: Upload artifact APK
         uses: actions/upload-artifact@v4
         with:
-          name: XyCloudOrder-APK
+          name: XyCloudStore-APK
           path: dist/*.apk
           retention-days: 30
           if-no-files-found: error
@@ -164,7 +164,7 @@ jobs:
       - name: Ringkasan build
         run: |
           {
-            echo "## XyCloudOrder - Build selesai"
+            echo "## XyCloudStore - Build selesai"
             echo ""
             echo "| Berkas | Ukuran |"
             echo "|---|---|"
@@ -185,7 +185,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: XyCloudOrder-APK
+          name: XyCloudStore-APK
           path: dist
       - uses: softprops/action-gh-release@v2
         with:

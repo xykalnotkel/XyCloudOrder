@@ -67,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: XyTheme.ink,
       body: Stack(children: [
         const Positioned.fill(child: AuroraBackground(dark: true)),
         const Positioned.fill(child: DotGrid(color: Color(0x0DFFFFFF), gap: 26)),
@@ -86,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               scale: _logoScale,
               child: FadeTransition(
                 opacity: _logoScale,
-                child: const XyLogo(size: 96, radius: 30),
+                child: const XyLogo(size: 104, radius: 32, putih: true),
               ),
             ),
             const SizedBox(height: 26),
@@ -95,21 +95,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               child: SlideTransition(
                 position: Tween(begin: const Offset(0, .35), end: Offset.zero).animate(_teks),
                 child: Column(children: [
-                  ShaderMask(
-                    shaderCallback: (r) => XyTheme.gradAurora.createShader(r),
-                    child: const Text(
-                      'XyCloudOrder',
-                      style: TextStyle(
-                        fontSize: 29,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                  const XyWordmark(tinggi: 34, putih: true),
                   const SizedBox(height: 8),
                   Text(
-                    'Cloud PC  ·  Digital Account  ·  Realtime',
+                    'Sewa PC Cloud  ·  Akun Digital  ·  Realtime',
                     style: TextStyle(
                       color: Colors.white.withOpacity(.52),
                       fontSize: 12,

@@ -23,7 +23,7 @@ class WalletScreen extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               gradient: const LinearGradient(
-                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                  colors: [Color(0xFF33087F), Color(0xFF6C2BE2)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight),
             ),
@@ -59,7 +59,7 @@ class WalletScreen extends StatelessWidget {
           ),
           const SectionHeader('Riwayat Transaksi'),
           if (s.transaksi.isEmpty)
-            const Kosong(icon: Icons.history_rounded, judul: 'Belum ada transaksi')
+            const Kosong(icon: Icons.history_rounded, judul: 'Belum ada transaksi', sub: 'Top up saldo dulu untuk mulai transaksi.', ilustrasi: 'dompet')
           else
             ...s.transaksi.map((t) {
               final masuk = t.nominal > 0;

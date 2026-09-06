@@ -134,7 +134,7 @@ class GradientButton extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           gradient: mati ? null : gradient,
-          color: mati ? const Color(0xFFDCE2EC) : null,
+          color: mati ? const Color(0xFFE3DAF5) : null,
           borderRadius: BorderRadius.circular(XyRadius.md),
           boxShadow: mati ? null : XyTheme.glow(glowColor, .30),
         ),
@@ -441,7 +441,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
           gradient: LinearGradient(
             begin: Alignment(-1 + c.value * 3, 0),
             end: Alignment(c.value * 3, 0),
-            colors: const [Color(0xFFEEF2F8), Color(0xFFF8FAFD), Color(0xFFEEF2F8)],
+            colors: const [Color(0xFFF1EAFF), Color(0xFFFBF8FF), Color(0xFFF1EAFF)],
           ),
         ),
       ),
@@ -454,7 +454,10 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 // ============================================================
 
 class Kosong extends StatelessWidget {
-  const Kosong({super.key, required this.icon, required this.judul, this.sub, this.aksi});
+  const Kosong({super.key, required this.icon, required this.judul, this.sub, this.aksi, this.ilustrasi = 'kosong'});
+
+  /// Nama berkas ilustrasi di assets/ilustrasi (tanpa .png). Kosongkan untuk memakai ikon saja.
+  final String ilustrasi;
   final IconData icon;
   final String judul;
   final String? sub;
@@ -466,20 +469,37 @@ class Kosong extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(36),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            width: 84,
-            height: 84,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [XyTheme.primary.withOpacity(.10), XyTheme.violet.withOpacity(.10)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          if (ilustrasi.isEmpty)
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [XyTheme.primary.withOpacity(.10), XyTheme.violet.withOpacity(.10)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
-            ),
-            child: Icon(icon, size: 34, color: XyTheme.primary),
-          ),
-          const SizedBox(height: 18),
+              child: Icon(icon, size: 34, color: XyTheme.primary),
+            )
+          else
+            Stack(alignment: Alignment.center, children: [
+              Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [
+                    XyTheme.violet.withOpacity(.14),
+                    XyTheme.violet.withOpacity(.03),
+                    Colors.transparent,
+                  ]),
+                ),
+              ),
+              XyIlustrasi(ilustrasi, tinggi: 168),
+            ]),
+          const SizedBox(height: 14),
           Text(judul, textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, letterSpacing: -.2)),
           if (sub != null) ...[
@@ -498,59 +518,72 @@ class Kosong extends StatelessWidget {
 //  Logo
 // ============================================================
 
+/// Logo resmi XyCloudStore (ikon awan-X ungu).
 class XyLogo extends StatelessWidget {
-  const XyLogo({super.key, this.size = 64, this.radius = 22, this.gradient = XyTheme.gradPrimary, this.glow = true});
+  const XyLogo({super.key, this.size = 64, this.radius = 22, this.putih = false, this.kotak = true, this.glow = true});
   final double size;
   final double radius;
-  final Gradient gradient;
+
+  /// Pakai versi putih untuk latar ungu gelap.
+  final bool putih;
+
+  /// Tampilkan kartu berlatar; kalau false hanya gambar logonya.
+  final bool kotak;
   final bool glow;
 
   @override
   Widget build(BuildContext context) {
+    final gambar = Image.asset(
+      putih ? 'assets/brand/logo_icon_putih.png' : 'assets/brand/logo_icon.png',
+      width: size * (kotak ? .74 : 1),
+      height: size * (kotak ? .74 : 1),
+      filterQuality: FilterQuality.high,
+    );
+    if (!kotak) return SizedBox(width: size, height: size, child: Center(child: gambar));
+
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: putih ? Colors.white.withOpacity(.12) : Colors.white,
         borderRadius: BorderRadius.circular(radius),
-        boxShadow: glow ? XyTheme.glow(XyTheme.primary, .38) : null,
+        border: putih ? Border.all(color: Colors.white.withOpacity(.18)) : Border.all(color: XyTheme.line),
+        boxShadow: glow && !putih ? XyTheme.glow(XyTheme.primary, .16) : null,
       ),
-      child: CustomPaint(painter: _LogoPainter(), size: Size.square(size)),
+      child: Center(child: gambar),
     );
   }
 }
 
-/// Monogram "XY" dalam bentuk chevron + node cloud.
-class _LogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size s) {
-    final w = s.width, h = s.height;
-    final stroke = w * .085;
-    final p = Paint()
-      ..color = Colors.white
-      ..strokeWidth = stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    // X kiri
-    canvas.drawLine(Offset(w * .24, h * .32), Offset(w * .44, h * .68), p);
-    canvas.drawLine(Offset(w * .44, h * .32), Offset(w * .24, h * .68), p);
-
-    // Y kanan
-    canvas.drawLine(Offset(w * .56, h * .32), Offset(w * .66, h * .50), p);
-    canvas.drawLine(Offset(w * .76, h * .32), Offset(w * .66, h * .50), p);
-    canvas.drawLine(Offset(w * .66, h * .50), Offset(w * .66, h * .68), p);
-
-    // titik orbit
-    final dot = Paint()..color = Colors.white.withOpacity(.55);
-    canvas.drawCircle(Offset(w * .5, h * .17), w * .035, dot);
-    canvas.drawCircle(Offset(w * .5, h * .83), w * .035, dot);
-  }
+/// Wordmark resmi XyCloudStore.
+class XyWordmark extends StatelessWidget {
+  const XyWordmark({super.key, this.tinggi = 30, this.putih = false});
+  final double tinggi;
+  final bool putih;
 
   @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
+  Widget build(BuildContext context) => Image.asset(
+        putih ? 'assets/brand/wordmark_putih.png' : 'assets/brand/wordmark.png',
+        height: tinggi,
+        filterQuality: FilterQuality.high,
+      );
 }
+
+/// Ilustrasi 3D bawaan aplikasi (hasil generate, latar sudah transparan).
+class XyIlustrasi extends StatelessWidget {
+  const XyIlustrasi(this.nama, {super.key, this.tinggi = 200});
+  final String nama; // sewa | akun | cs | dompet | kosong | sukses
+  final double tinggi;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+        'assets/ilustrasi/$nama.png',
+        height: tinggi,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+      );
+}
+
 
 // ============================================================
 //  Latar dekoratif
@@ -569,7 +602,7 @@ class AuroraBackground extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: dark ? XyTheme.gradMidnight : const LinearGradient(
-              colors: [Color(0xFFFBFCFF), Color(0xFFF2F6FF)],
+              colors: [Color(0xFFFDFBFF), Color(0xFFF4EEFF)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),

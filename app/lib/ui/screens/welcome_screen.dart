@@ -29,7 +29,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: XyTheme.ink,
       body: Stack(children: [
         const Positioned.fill(child: AuroraBackground(dark: true)),
         const Positioned.fill(child: DotGrid(color: Color(0x0AFFFFFF), gap: 28)),
@@ -49,18 +49,20 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               FadeInUp(
                 delay: const Duration(milliseconds: 80),
                 child: Row(children: [
-                  const XyLogo(size: 54, radius: 18),
-                  const SizedBox(width: 14),
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('XyCloudOrder',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -.4)),
-                    Text('by XyCloud',
-                        style: TextStyle(color: Colors.white.withOpacity(.42), fontSize: 11.5, fontWeight: FontWeight.w600)),
-                  ]),
+                  const XyLogo(size: 52, radius: 17, putih: true),
+                  const SizedBox(width: 13),
+                  const XyWordmark(tinggi: 26, putih: true),
                 ]),
               ),
 
-              const SizedBox(height: 34),
+              const SizedBox(height: 10),
+
+              FadeInUp(
+                delay: const Duration(milliseconds: 140),
+                child: Center(child: XyIlustrasi('sewa', tinggi: 210)),
+              ),
+
+              const SizedBox(height: 10),
 
               FadeInUp(
                 delay: const Duration(milliseconds: 180),
@@ -68,7 +70,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                   'Kekuatan PC\nkelas dewa,\ndi genggamanmu.',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 36,
+                    fontSize: 32,
                     height: 1.16,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -1.7,
@@ -104,7 +106,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 ]),
               ),
 
-              const Spacer(flex: 3),
+              const Spacer(flex: 2),
 
               FadeInUp(
                 delay: const Duration(milliseconds: 460),

@@ -1,7 +1,7 @@
 name: xycloud_order
-description: "XyCloudOrder - Sewa PC Cloud, Beli Akun Digital, dan Customer Service realtime."
+description: "XyCloudStore - Sewa PC Cloud, Beli Akun Digital, dan Customer Service realtime."
 publish_to: "none"
-version: 1.0.0+1
+version: 1.2.0+3
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -28,6 +28,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/brand/
+    - assets/ilustrasi/
 
 # ---------------------------------------------------------------
 #  Ikon launcher (adaptive icon Android)
@@ -37,7 +38,7 @@ flutter_launcher_icons:
   android: "ic_launcher"
   ios: false
   image_path: "assets/brand/icon.png"
-  adaptive_icon_background: "#0B1220"
+  adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/brand/icon_foreground.png"
   min_sdk_android: 21
   remove_alpha_ios: true
@@ -47,7 +48,7 @@ flutter_launcher_icons:
 #  jalankan: dart run flutter_native_splash:create
 # ---------------------------------------------------------------
 flutter_native_splash:
-  color: "#0B1220"
+  color: "#1A1033"
   image: "assets/brand/splash_logo.png"
   android: true
   ios: false
@@ -55,6 +56,6 @@ flutter_native_splash:
   android_gravity: center
   fullscreen: false
   android_12:
-    color: "#0B1220"
+    color: "#1A1033"
     image: "assets/brand/splash_logo.png"
-    icon_background_color: "#0B1220"
+    icon_background_color: "#1A1033"

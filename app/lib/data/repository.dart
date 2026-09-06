@@ -9,6 +9,7 @@ import 'mock_data.dart';
 /// punya kontrak yang sama, jadi UI tidak perlu tahu bedanya.
 abstract class XyRepository {
   Future<UserProfile> login(String email, String password);
+  Future<UserProfile> register({required String nama, required String email, required String password, String? phone});
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -35,6 +36,23 @@ class RemoteRepository implements XyRepository {
   @override
   Future<UserProfile> login(String email, String password) async {
     final d = await api.post('/auth/login', {'email': email, 'password': password});
+    api.setToken(d['token']);
+    return UserProfile.fromJson(d['user']);
+  }
+
+  @override
+  Future<UserProfile> register({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    final d = await api.post('/auth/register', {
+      'nama': nama,
+      'email': email,
+      'password': password,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+    });
     api.setToken(d['token']);
     return UserProfile.fromJson(d['user']);
   }
@@ -96,6 +114,17 @@ class MockRepository implements XyRepository {
 
   @override
   Future<UserProfile> login(String email, String password) => _delay(MockData.user, 800);
+
+  @override
+  Future<UserProfile> register({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    MockData.user = UserProfile(id: 'u_demo', nama: nama, email: email, phone: phone, saldo: 0, tier: 'basic');
+    return _delay(MockData.user, 900);
+  }
 
   @override
   Future<List<PcPlan>> plans() => _delay(_plans);

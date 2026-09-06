@@ -28,7 +28,7 @@ class XyCloudOrderApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
       child: MaterialApp(
-        title: 'XyCloudOrder',
+        title: 'XyCloudStore',
         debugShowCheckedModeBanner: false,
         theme: XyTheme.light(),
         builder: (context, child) => MediaQuery.withNoTextScaling(child: child!),

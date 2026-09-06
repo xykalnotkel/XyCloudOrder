@@ -82,7 +82,7 @@ class _CsScreenState extends State<CsScreen> {
           ]),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('CS XyCloud', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+            const Text('CS XyCloudStore', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
             Text(s.csMengetik ? 'sedang mengetik...' : 'Online · balas < 1 menit',
                 style: TextStyle(
                     fontSize: 11.5,

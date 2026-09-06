@@ -192,7 +192,7 @@ class _KartuSaldo extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: XyTheme.gradMidnight,
         borderRadius: BorderRadius.circular(XyRadius.xl),
-        boxShadow: XyTheme.glow(const Color(0xFF16213E), .35),
+        boxShadow: XyTheme.glow(XyTheme.primaryDark, .35),
       ),
       child: Stack(children: [
         Positioned.fill(
@@ -223,7 +223,7 @@ class _KartuSaldo extends StatelessWidget {
             Row(children: [
               Icon(Icons.account_balance_wallet_rounded, size: 15, color: Colors.white.withOpacity(.55)),
               const SizedBox(width: 7),
-              Text('Saldo XyCloud',
+              Text('Saldo XyCloudStore',
                   style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 12.5, fontWeight: FontWeight.w600)),
               const Spacer(),
               Container(

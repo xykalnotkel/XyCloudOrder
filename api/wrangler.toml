@@ -2,6 +2,12 @@ name = "xycloud-api"
 # account_id diambil dari variabel lingkungan CLOUDFLARE_ACCOUNT_ID saat deploy
 main = "src/index.js"
 workers_dev = true
+
+# --- Domain khusus (custom domain) ---
+routes = [
+  { pattern = "api.xycloud.my.id", custom_domain = true },
+  { pattern = "admin.xycloud.my.id", custom_domain = true },
+]
 compatibility_date = "2025-01-01"
 
 # --- Database D1 ---

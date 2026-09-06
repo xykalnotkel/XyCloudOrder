@@ -64,12 +64,46 @@ class AppState extends ChangeNotifier {
       _mulaiRealtime();
       return true;
     } catch (e) {
-      error = 'Login gagal: $e';
+      error = _pesan(e);
       return false;
     } finally {
       loading = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> register({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      user = await _repo.register(nama: nama, email: email, password: password, phone: phone);
+      await muatSemua();
+      _mulaiRealtime();
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Ubah pesan kesalahan teknis jadi kalimat yang mudah dimengerti.
+  String _pesan(Object e) {
+    final t = e.toString();
+    final i = t.indexOf('): ');
+    if (i > 0) return t.substring(i + 3);
+    if (t.contains('SocketException') || t.contains('Failed host lookup') || t.contains('TimeoutException')) {
+      return 'Tidak bisa terhubung ke server. Cek koneksi internet kamu.';
+    }
+    return t.replaceFirst('Exception: ', '');
   }
 
   void logout() {
