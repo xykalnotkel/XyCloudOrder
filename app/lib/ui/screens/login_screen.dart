@@ -109,9 +109,10 @@ class _LoginScreenState extends State<LoginScreen> {
       _sosialProses = provider;
     });
     try {
-      final token = await LoginSosial.masuk(provider);
-      if (!mounted) return;
-      final ok = await context.read<AppState>().masukDenganToken(token);
+      final s = context.read<AppState>();
+      final ok = provider == 'google'
+          ? await s.masukGoogle()
+          : await s.masukDenganToken(await LoginSosial.tokenLewatHalaman(provider));
       if (!mounted) return;
       if (ok) {
         Navigator.of(context).popUntil((r) => r.isFirst);

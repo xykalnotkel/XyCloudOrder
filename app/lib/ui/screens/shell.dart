@@ -30,7 +30,7 @@ class _XyShellState extends State<XyShell> {
     (Icons.desktop_windows_outlined, Icons.desktop_windows_rounded, 'Sewa PC'),
     (Icons.storefront_outlined, Icons.storefront_rounded, 'Akun'),
     (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Order'),
-    (Icons.support_agent_outlined, Icons.support_agent_rounded, 'Bantuan'),
+    (Icons.forum_outlined, Icons.forum_rounded, 'Chat Admin'),
   ];
 
   @override

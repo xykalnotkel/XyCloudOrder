@@ -7,6 +7,7 @@ import 'core/theme.dart';
 import 'data/push_service.dart';
 import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
+import 'ui/screens/splash_screen.dart';
 import 'ui/screens/shell.dart';
 
 Future<void> main() async {
@@ -47,7 +48,14 @@ class _Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final masuk = context.select<AppState, bool>((s) => s.masuk);
+    final s = context.watch<AppState>();
+
+    // selama token tersimpan sedang diperiksa, tetap tampilkan splash
+    if (s.memeriksaSesi) {
+      return const SplashScreen(pesan: 'Memulihkan sesi kamu');
+    }
+
+    final masuk = s.masuk;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 480),
       switchInCurve: Curves.easeOutCubic,

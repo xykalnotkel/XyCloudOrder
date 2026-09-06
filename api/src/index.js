@@ -16,7 +16,8 @@ import LOGO_PNG from './brand-logo.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar } from './upload.js';
-import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali } from './oauth.js';
+import { halamanLegal, isiLegal } from './legal.js';
+import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
 
 const json = (data, status = 200, env) =>
   new Response(JSON.stringify({ data }), {
@@ -26,6 +27,9 @@ const json = (data, status = 200, env) =>
       'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Cache-Control': 'no-store',
     },
   });
 
@@ -89,6 +93,69 @@ async function cekOtp(env, { email, kode, tipe }) {
   return { ok: true };
 }
 
+/**
+ * Pembatas laju sederhana berbasis D1.
+ * Mengembalikan true kalau permintaan masih boleh diproses.
+ */
+async function bolehLanjut(env, kunci, maks, detik) {
+  try {
+    const sekarang = Date.now();
+    const row = await env.DB.prepare('SELECT jumlah, sampai FROM batas WHERE kunci = ?').bind(kunci).first();
+
+    if (!row || new Date(row.sampai).getTime() < sekarang) {
+      const sampai = new Date(sekarang + detik * 1000).toISOString();
+      await env.DB.prepare(
+        'INSERT INTO batas (kunci,jumlah,sampai) VALUES (?,1,?) ON CONFLICT(kunci) DO UPDATE SET jumlah=1, sampai=?'
+      ).bind(kunci, sampai, sampai).run();
+      return true;
+    }
+
+    if (row.jumlah >= maks) return false;
+    await env.DB.prepare('UPDATE batas SET jumlah = jumlah + 1 WHERE kunci = ?').bind(kunci).run();
+    return true;
+  } catch (_) {
+    // kalau tabel bermasalah, jangan sampai layanan ikut mati
+    return true;
+  }
+}
+
+/// Masa berlaku token: 30 hari.
+const MASA_TOKEN = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Ambil akun berdasarkan email dari penyedia sosial, atau buat baru.
+ * Akun sosial otomatis dianggap terverifikasi.
+ */
+async function akunSosial(env, ctx, prof, provider) {
+  let u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(prof.email).first();
+
+  if (!u) {
+    const idBaru = uid('u_');
+    await env.DB.prepare(
+      "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified,foto) VALUES (?,?,?,?,?,0,'basic',1,?)"
+    ).bind(idBaru, prof.nama, prof.email, `sosial:${provider}`, null, prof.foto || null).run();
+
+    const sapa = {
+      id: uid('m_'),
+      room: `user:${idBaru}`,
+      teks: `Halo ${prof.nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
+      waktu: new Date().toISOString(),
+    };
+    ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
+      .bind(sapa.id, sapa.room, idBaru, 'cs', sapa.teks, sapa.waktu).run());
+    ctx.waitUntil(kirimEmail(env, { to: prof.email, template: 'selamatDatang', data: { nama: prof.nama } }));
+
+    u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idBaru).first();
+  } else if (!u.email_verified || (prof.foto && !u.foto)) {
+    await env.DB.prepare('UPDATE users SET email_verified = 1, foto = COALESCE(foto, ?) WHERE id = ?')
+      .bind(prof.foto || null, u.id).run();
+    u.email_verified = 1;
+    u.foto = u.foto || prof.foto;
+  }
+
+  return u;
+}
+
 const emailValid = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(String(v || '').trim());
 
 // ---------- token sederhana (HMAC-SHA256) ----------
@@ -107,9 +174,20 @@ async function verify(token, secret) {
   if (!token) return null;
   const [body, sig] = token.split('.');
   if (!body || !sig) return null;
-  const expected = await sign(JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/'))), secret);
+
+  let isi;
+  try {
+    isi = JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/')));
+  } catch (_) {
+    return null;
+  }
+
+  const expected = await sign(isi, secret);
   if (expected !== token) return null;
-  return JSON.parse(atob(body.replace(/-/g, '+').replace(/_/g, '/')));
+
+  // token lama tanpa exp tetap diterima, yang baru wajib belum kedaluwarsa
+  if (isi.exp && Number(isi.exp) < Date.now()) return null;
+  return isi;
 }
 
 async function auth(req, env) {
@@ -162,7 +240,21 @@ export default {
     // ---------- dashboard admin ----------
     if (path === '/' || path === '/admin' || path === '/admin/') {
       return new Response(ADMIN_HTML, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+        },
+      });
+    }
+
+    if (path === '/legal/syarat' || path === '/legal/privasi') {
+      const privasi = path.endsWith('privasi');
+      return new Response(halamanLegal(privasi ? 'privasi' : 'syarat'), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
       });
     }
 
@@ -176,8 +268,13 @@ export default {
 
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
     const p = path.slice(5);
+    const ip = req.headers.get('CF-Connecting-IP') || 'tanpa-ip';
 
     try {
+      // ---------------- LEGAL ----------------
+      if (p === 'legal/syarat' && req.method === 'GET') return json(isiLegal('syarat'), 200, env);
+      if (p === 'legal/privasi' && req.method === 'GET') return json(isiLegal('privasi'), 200, env);
+
       // ---------------- KONFIGURASI APLIKASI ----------------
       if (p === 'config' && req.method === 'GET') {
         return json({
@@ -193,7 +290,19 @@ export default {
         }, 200, env);
       }
 
-      // ---------------- LOGIN SOSIAL ----------------
+      // ---------------- LOGIN GOOGLE NATIVE (tanpa browser) ----------------
+      if (p === 'auth/google/native' && req.method === 'POST') {
+        const { id_token: idToken } = await req.json().catch(() => ({}));
+        const prof = await verifikasiIdTokenGoogle(env, idToken);
+        if (!prof.ok) return err(prof.alasan, 401, env);
+
+        const u = await akunSosial(env, ctx, prof, 'google');
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        delete u.password;
+        return json({ token, user: u }, 200, env);
+      }
+
+      // ---------------- LOGIN SOSIAL LEWAT HALAMAN WEB ----------------
       if (p.startsWith('auth/') && (p.endsWith('/start') || p.endsWith('/callback'))) {
         const bagian = p.split('/');            // auth / provider / aksi
         const provider = bagian[1];
@@ -227,31 +336,9 @@ export default {
           );
         }
 
-        let u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(prof.email).first();
-        if (!u) {
-          const idBaru = uid('u_');
-          await env.DB.prepare(
-            "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified,foto) VALUES (?,?,?,?,?,0,'basic',1,?)"
-          ).bind(idBaru, prof.nama, prof.email, `sosial:${provider}`, null, prof.foto || null).run();
+        const u = await akunSosial(env, ctx, prof, provider);
 
-          const sapa = {
-            id: uid('m_'), room: `user:${idBaru}`, dari: 'cs',
-            teks: `Halo ${prof.nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
-            waktu: new Date().toISOString(),
-          };
-          ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
-            .bind(sapa.id, sapa.room, idBaru, 'cs', sapa.teks, sapa.waktu).run());
-          ctx.waitUntil(kirimEmail(env, { to: prof.email, template: 'selamatDatang', data: { nama: prof.nama } }));
-
-          u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idBaru).first();
-        } else if (!u.email_verified || (prof.foto && !u.foto)) {
-          await env.DB.prepare('UPDATE users SET email_verified = 1, foto = COALESCE(foto, ?) WHERE id = ?')
-            .bind(prof.foto || null, u.id).run();
-          u.email_verified = 1;
-          u.foto = u.foto || prof.foto;
-        }
-
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
         return new Response(
           halamanKembali(`${SKEMA_APLIKASI}://auth?token=${encodeURIComponent(token)}`, `Halo ${u.nama.split(' ')[0]}`),
           { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
@@ -261,6 +348,9 @@ export default {
       // ---------------- AUTH ----------------
       if (p === 'auth/login' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
+        if (!(await bolehLanjut(env, `login:${ip}`, 12, 300))) {
+          return err('Terlalu banyak percobaan masuk. Coba lagi 5 menit lagi.', 429, env);
+        }
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
         if (!email || !password) return err('Email dan password wajib diisi', 400, env);
@@ -281,13 +371,16 @@ export default {
           ctx.waitUntil(env.DB.prepare('UPDATE users SET password=? WHERE id=?').bind(baru, u.id).run());
         }
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
         delete u.password;
         return json({ token, user: u }, 200, env);
       }
 
       if (p === 'auth/register' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
+        if (!(await bolehLanjut(env, `daftar:${ip}`, 6, 3600))) {
+          return err('Terlalu banyak pendaftaran dari perangkat ini. Coba lagi nanti.', 429, env);
+        }
         const nama = String(body.nama || '').trim();
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
@@ -329,13 +422,16 @@ export default {
       // ---- verifikasi email dengan kode OTP ----
       if (p === 'auth/verify' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
+        if (!(await bolehLanjut(env, `verif:${ip}`, 20, 900))) {
+          return err('Terlalu banyak percobaan kode. Coba lagi nanti.', 429, env);
+        }
         const email = String(body.email || '').trim().toLowerCase();
         const kode = String(body.kode || '').trim();
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
         if (!u) return err('Akun tidak ditemukan', 404, env);
         if (u.email_verified) {
-          const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+          const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
           delete u.password;
           return json({ token, user: u }, 200, env);
         }
@@ -355,7 +451,7 @@ export default {
           .bind(sapa.id, sapa.room, u.id, 'cs', sapa.teks, sapa.waktu).run());
         ctx.waitUntil(kirimEmail(env, { to: email, template: 'selamatDatang', data: { nama: u.nama } }));
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
         delete u.password;
         u.email_verified = 1;
         return json({ token, user: u }, 200, env);
@@ -364,6 +460,9 @@ export default {
       // ---- kirim ulang kode ----
       if (p === 'auth/resend' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
+        if (!(await bolehLanjut(env, `kode:${ip}`, 6, 900))) {
+          return err('Kode sudah dikirim beberapa kali. Tunggu sebentar ya.', 429, env);
+        }
         const email = String(body.email || '').trim().toLowerCase();
         const tipe = body.tipe === 'reset' ? 'reset' : 'verifikasi';
         const u = await env.DB.prepare('SELECT nama, email_verified FROM users WHERE lower(email) = ?')
@@ -378,6 +477,9 @@ export default {
       // ---- lupa password ----
       if (p === 'auth/forgot' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
+        if (!(await bolehLanjut(env, `lupa:${ip}`, 6, 900))) {
+          return err('Permintaan reset terlalu sering. Coba lagi 15 menit lagi.', 429, env);
+        }
         const email = String(body.email || '').trim().toLowerCase();
         const u = await env.DB.prepare('SELECT nama FROM users WHERE lower(email) = ?').bind(email).first();
         // jawaban selalu sama supaya email orang lain tidak bisa ditebak
@@ -402,7 +504,7 @@ export default {
         await env.DB.prepare('UPDATE users SET password = ?, email_verified = 1 WHERE id = ?')
           .bind(await buatPw(password), u.id).run();
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
         delete u.password;
         u.email_verified = 1;
         return json({ token, user: u }, 200, env);
@@ -421,6 +523,9 @@ export default {
 
       // ================= ADMIN =================
       if (p.startsWith('admin/')) {
+        if (!(await bolehLanjut(env, `admin:${ip}`, 240, 60))) {
+          return err('Terlalu banyak permintaan admin.', 429, env);
+        }
         if (!isAdmin(req, env)) return err('Admin key salah', 401, env);
         const a = p.slice(6);
 

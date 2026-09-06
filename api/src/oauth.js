@@ -116,3 +116,42 @@ export function halamanKembali(tujuan, pesan) {
   <script>setTimeout(function(){location.href=${JSON.stringify(tujuan)}},250)</script>
 </body></html>`;
 }
+
+/**
+ * Verifikasi ID token dari Google Sign-In native (aplikasi Android).
+ * Token diperiksa langsung ke Google, lalu dipastikan audiensnya
+ * memang milik proyek kita.
+ */
+export async function verifikasiIdTokenGoogle(env, idToken) {
+  if (!idToken) return { ok: false, alasan: 'Token kosong' };
+  try {
+    const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    const p = await r.json();
+    if (!r.ok || p.error_description) {
+      return { ok: false, alasan: p.error_description || 'Token Google tidak valid' };
+    }
+
+    // audiens harus salah satu client milik proyek ini
+    const diizinkan = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_ID_ANDROID]
+      .filter(Boolean)
+      .map((x) => x.trim());
+    if (diizinkan.length && !diizinkan.includes(p.aud)) {
+      return { ok: false, alasan: 'Aplikasi tidak dikenali oleh server' };
+    }
+
+    const penerbitSah = p.iss === 'accounts.google.com' || p.iss === 'https://accounts.google.com';
+    if (!penerbitSah) return { ok: false, alasan: 'Penerbit token tidak sah' };
+    if (Number(p.exp) * 1000 < Date.now()) return { ok: false, alasan: 'Token sudah kedaluwarsa' };
+    if (!p.email) return { ok: false, alasan: 'Akun Google tidak membagikan email' };
+    if (p.email_verified === 'false') return { ok: false, alasan: 'Email Google belum terverifikasi' };
+
+    return {
+      ok: true,
+      email: String(p.email).toLowerCase(),
+      nama: p.name || String(p.email).split('@')[0],
+      foto: p.picture,
+    };
+  } catch (e) {
+    return { ok: false, alasan: String(e) };
+  }
+}

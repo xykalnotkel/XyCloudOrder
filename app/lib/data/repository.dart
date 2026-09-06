@@ -31,8 +31,14 @@ abstract class XyRepository {
   /// Konfigurasi server: penyedia login aktif, nomor WhatsApp, rekening top up.
   Future<KonfigurasiApp> konfigurasi();
 
+  /// Dokumen legal: 'syarat' atau 'privasi'.
+  Future<Map<String, dynamic>> legal(String jenis);
+
   /// Ambil profil memakai token yang sudah dipasang (dipakai setelah login sosial).
   Future<UserProfile> profilSaya();
+
+  /// Tukar ID token Google (login native) dengan token XyCloudStore.
+  Future<UserProfile> masukGoogleNative(String idToken);
   void pasangToken(String token);
 
   Future<List<Ulasan>> ulasan(String produkId);
@@ -118,7 +124,18 @@ class RemoteRepository implements XyRepository {
       KonfigurasiApp.fromJson(Map<String, dynamic>.from(await api.get('/config')));
 
   @override
+  Future<Map<String, dynamic>> legal(String jenis) async =>
+      Map<String, dynamic>.from(await api.get('/legal/$jenis'));
+
+  @override
   Future<UserProfile> profilSaya() async => UserProfile.fromJson(await api.get('/me'));
+
+  @override
+  Future<UserProfile> masukGoogleNative(String idToken) async {
+    final d = await api.post('/auth/google/native', {'id_token': idToken});
+    api.setToken(d['token']);
+    return UserProfile.fromJson(d['user']);
+  }
 
   @override
   void pasangToken(String token) => api.setToken(token);
@@ -242,7 +259,16 @@ class MockRepository implements XyRepository {
       _delay(const KonfigurasiApp(googleAktif: false, facebookAktif: false, whatsapp: '', minTopup: 10000), 200);
 
   @override
+  Future<Map<String, dynamic>> legal(String jenis) => _delay(
+        {'judul': jenis, 'pembaruan': '-', 'bagian': const [], 'lisensi': const []},
+        200,
+      );
+
+  @override
   Future<UserProfile> profilSaya() => _delay(MockData.user, 200);
+
+  @override
+  Future<UserProfile> masukGoogleNative(String idToken) => _delay(MockData.user, 500);
 
   @override
   void pasangToken(String token) {}

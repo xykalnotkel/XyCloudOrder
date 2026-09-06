@@ -1,7 +1,7 @@
 name: xycloud_order
 description: "XyCloudStore - Sewa PC Cloud, Beli Akun Digital, dan Customer Service realtime."
 publish_to: "none"
-version: 1.4.0+6
+version: 1.5.0+7
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -18,8 +18,10 @@ dependencies:
   google_fonts: ^6.2.1
   onesignal_flutter: ^5.2.9
   image_picker: ^1.1.2
-  url_launcher: ^6.3.1
   flutter_web_auth_2: ^3.1.2
+  flutter_secure_storage: ^9.2.2
+  google_sign_in: ^6.2.2
+  package_info_plus: ^8.1.1
 
 dev_dependencies:
   flutter_test:
@@ -61,5 +63,5 @@ flutter_native_splash:
   fullscreen: false
   android_12:
     color: "#1A1033"
-    image: "assets/brand/splash_logo.png"
-    icon_background_color: "#1A1033"
+    image: "assets/brand/icon_foreground.png"
+    icon_background_color: "#FFFFFF"

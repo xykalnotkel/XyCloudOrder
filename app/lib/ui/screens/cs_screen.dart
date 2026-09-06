@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
@@ -52,26 +51,6 @@ class _CsScreenState extends State<CsScreen> {
     if (mounted) _keBawah();
   }
 
-  /// Buka percakapan WhatsApp dengan admin.
-  Future<void> _bukaWhatsapp() async {
-    final nomor = context.read<AppState>().konfigurasi.whatsapp;
-    if (nomor.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nomor WhatsApp admin belum diatur.')),
-      );
-      return;
-    }
-    final pesan = Uri.encodeComponent('Halo admin XyCloudStore, saya butuh bantuan.');
-    final tujuan = Uri.parse('https://wa.me/$nomor?text=$pesan');
-    if (!await launchUrl(tujuan, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('WhatsApp tidak bisa dibuka di perangkat ini.')),
-        );
-      }
-    }
-  }
-
   Future<void> _kirim([String? teks]) async {
     final t = (teks ?? ctrl.text).trim();
     if (t.isEmpty) return;
@@ -118,8 +97,8 @@ class _CsScreenState extends State<CsScreen> {
           ]),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('CS XyCloudStore', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
-            Text(s.csMengetik ? 'sedang mengetik...' : 'Online · balas < 1 menit',
+            const Text('Admin XyCloudStore', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+            Text(s.csMengetik ? 'sedang mengetik...' : 'Admin online · balas cepat',
                 style: TextStyle(
                     fontSize: 11.5,
                     color: s.csMengetik ? XyTheme.primary : XyTheme.success,
@@ -128,9 +107,9 @@ class _CsScreenState extends State<CsScreen> {
         ]),
         actions: [
           IconButton(
-            onPressed: _bukaWhatsapp,
-            icon: const Icon(Icons.chat_rounded, color: Color(0xFF16A34A)),
-            tooltip: 'Chat lewat WhatsApp',
+            onPressed: () => context.read<AppState>().muatChat(),
+            icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Muat ulang percakapan',
           ),
         ],
       ),

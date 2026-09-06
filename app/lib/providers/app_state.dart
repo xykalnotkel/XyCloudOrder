@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../core/config.dart';
+import '../core/prefs.dart';
 import '../data/api_client.dart';
 import '../data/mock_data.dart';
+import '../data/login_sosial.dart';
 import '../data/push_service.dart';
 import '../data/realtime_service.dart';
 import '../data/repository.dart';
@@ -15,6 +17,31 @@ class AppState extends ChangeNotifier {
     _api = ApiClient();
     _repo = XyRepository.create(_api);
     unawaited(muatKonfigurasi());
+    unawaited(pulihkanSesi());
+  }
+
+  /// True selama aplikasi masih memeriksa token tersimpan.
+  bool memeriksaSesi = true;
+
+  /// Coba masuk otomatis memakai token yang tersimpan di perangkat.
+  Future<void> pulihkanSesi() async {
+    try {
+      final t = await Prefs.token();
+      if (t == null || t.isEmpty) return;
+      _repo.pasangToken(t);
+      user = await _repo.profilSaya();
+      await muatSemua();
+      _mulaiRealtime();
+      _daftarkanPush();
+    } catch (_) {
+      // token kedaluwarsa atau tidak valid
+      await Prefs.hapusToken();
+      _repo.pasangToken('');
+      user = null;
+    } finally {
+      memeriksaSesi = false;
+      notifyListeners();
+    }
   }
 
   late final ApiClient _api;
@@ -62,6 +89,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       user = await _repo.login(email, password);
+      await _simpanSesi();
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
@@ -111,6 +139,7 @@ class AppState extends ChangeNotifier {
     try {
       user = await _repo.verifikasiEmail(email, kode);
       emailMenungguVerifikasi = null;
+      await _simpanSesi();
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
@@ -153,6 +182,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       user = await _repo.resetPassword(email: email, kode: kode, password: password);
+      await _simpanSesi();
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
@@ -178,6 +208,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Ambil dokumen legal dari server (dengan singgahan sederhana).
+  final Map<String, Map<String, dynamic>> _legal = {};
+
+  Future<Map<String, dynamic>> dokumenLegal(String jenis) async {
+    if (_legal.containsKey(jenis)) return _legal[jenis]!;
+    final d = await _repo.legal(jenis);
+    _legal[jenis] = d;
+    return d;
+  }
+
   // ================= login lewat Google atau Facebook =================
   /// Dipanggil setelah aplikasi menerima token dari halaman OAuth.
   Future<bool> masukDenganToken(String token) async {
@@ -186,11 +226,48 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       _repo.pasangToken(token);
+      await Prefs.simpanToken(token);
       user = await _repo.profilSaya();
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
       return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Login Google: coba dialog native dulu, kalau tidak bisa baru lewat halaman.
+  Future<bool> masukGoogle() async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final idToken = await LoginSosial.idTokenGoogleNative();
+      if (idToken != null) {
+        user = await _repo.masukGoogleNative(idToken);
+        await _simpanSesi();
+        await muatSemua();
+        _mulaiRealtime();
+        _daftarkanPush();
+        return true;
+      }
+      // perangkat belum mendukung dialog native
+      final token = await LoginSosial.tokenLewatHalaman('google');
+      _repo.pasangToken(token);
+      await Prefs.simpanToken(token);
+      user = await _repo.profilSaya();
+      await muatSemua();
+      _mulaiRealtime();
+      _daftarkanPush();
+      return true;
+    } on GagalLoginSosial catch (e) {
+      error = e.pesan;
+      return false;
     } catch (e) {
       error = _pesan(e);
       return false;
@@ -269,6 +346,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Simpan token aktif supaya sesi bertahan setelah aplikasi ditutup.
+  Future<void> _simpanSesi() async {
+    final t = _api.token;
+    if (t != null && t.isNotEmpty) await Prefs.simpanToken(t);
+  }
+
   /// Hubungkan akun ini ke OneSignal supaya notifikasi tetap masuk saat aplikasi tertutup.
   void _daftarkanPush() {
     final id = user?.id;
@@ -287,6 +370,8 @@ class AppState extends ChangeNotifier {
   }
 
   void logout() {
+    unawaited(Prefs.hapusToken());
+    _api.setToken(null);
     PushService.keluar();
     user = null;
     orders = [];

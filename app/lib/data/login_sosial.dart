@@ -1,21 +1,64 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../core/config.dart';
 
 /// ============================================================
 ///  Login lewat Google atau Facebook
 /// ============================================================
-///  Aplikasi membuka halaman izin milik penyedia di browser aman
-///  (Custom Tabs). Setelah pengguna menyetujui, server XyCloudStore
-///  mengembalikan token lewat tautan `xycloudstore://auth?token=...`
-///  yang ditangkap kembali oleh aplikasi.
+///  Google memakai dialog pemilih akun bawaan Android (native),
+///  jadi pengguna tidak dilempar ke browser. Kalau dialog native
+///  tidak tersedia di perangkat tersebut, aplikasi otomatis
+///  memakai cara lama lewat halaman aman Google.
 class LoginSosial {
   LoginSosial._();
 
   static const String skema = 'xycloudstore';
 
-  /// Mengembalikan token XyCloudStore, atau melempar [GagalLoginSosial].
-  static Future<String> masuk(String provider) async {
+  /// Client ID tipe Web, dipakai sebagai audiens ID token.
+  static const String serverClientId = String.fromEnvironment(
+    'XY_GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '495336144977-1fu3nv7r35pi2i0t8qu6ng0u695t0veg.apps.googleusercontent.com',
+  );
+
+  /// Hasil login native: ID token Google yang harus ditukar ke server.
+  /// Mengembalikan null bila native tidak bisa dipakai di perangkat ini.
+  static Future<String?> idTokenGoogleNative() async {
+    try {
+      final google = GoogleSignIn(
+        scopes: const ['email', 'profile'],
+        serverClientId: serverClientId,
+      );
+
+      // pastikan pemilih akun selalu muncul
+      await google.signOut();
+
+      final akun = await google.signIn();
+      if (akun == null) throw GagalLoginSosial('Login dibatalkan.');
+
+      final auth = await akun.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        debugPrint('Google native tidak mengembalikan idToken');
+        return null; // jatuh ke cara browser
+      }
+      return idToken;
+    } on GagalLoginSosial {
+      rethrow;
+    } catch (e) {
+      final t = e.toString().toLowerCase();
+      debugPrint('Google native gagal: $e');
+      if (t.contains('canceled') || t.contains('cancelled')) {
+        throw GagalLoginSosial('Login dibatalkan.');
+      }
+      // ApiException 10 = konfigurasi Android client belum cocok
+      return null;
+    }
+  }
+
+  /// Cara cadangan: halaman izin resmi di browser aman, hasilnya
+  /// dikembalikan lewat tautan xycloudstore://auth?token=...
+  static Future<String> tokenLewatHalaman(String provider) async {
     final mulai = Uri.parse('${XyConfig.aktif}/api/auth/$provider/start')
         .replace(queryParameters: {'state': DateTime.now().millisecondsSinceEpoch.toString()});
 
@@ -23,26 +66,20 @@ class LoginSosial {
       final hasil = await FlutterWebAuth2.authenticate(
         url: mulai.toString(),
         callbackUrlScheme: skema,
-        options: const FlutterWebAuth2Options(
-          preferEphemeral: false,
-          timeout: 300,
-        ),
+        options: const FlutterWebAuth2Options(preferEphemeral: false, timeout: 300),
       );
 
       final u = Uri.parse(hasil);
       final token = u.queryParameters['token'];
       final galat = u.queryParameters['error'];
-
       if (token != null && token.isNotEmpty) return token;
       throw GagalLoginSosial(_pesanRamah(galat ?? 'Login dibatalkan'));
     } on GagalLoginSosial {
       rethrow;
     } catch (e) {
-      debugPrint('Login sosial gagal: $e');
+      debugPrint('Login lewat halaman gagal: $e');
       final t = e.toString().toLowerCase();
-      if (t.contains('cancel') || t.contains('user_cancel')) {
-        throw GagalLoginSosial('Login dibatalkan.');
-      }
+      if (t.contains('cancel')) throw GagalLoginSosial('Login dibatalkan.');
       throw GagalLoginSosial('Tidak bisa membuka halaman login. Coba lagi atau pakai email.');
     }
   }

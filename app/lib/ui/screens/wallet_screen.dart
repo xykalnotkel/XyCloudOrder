@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/topup_sheet.dart';
+import 'tentang_screen.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -105,9 +107,48 @@ class WalletScreen extends StatelessWidget {
                 ),
               );
             }),
-          const SizedBox(height: 12),
+          const SectionHeader('Lainnya'),
+          XyCard(
+            padding: const EdgeInsets.all(15),
+            onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                child: const Icon(Icons.info_outline_rounded, size: 20, color: XyTheme.primary),
+              ),
+              const SizedBox(width: 13),
+              const Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Tentang Aplikasi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  SizedBox(height: 3),
+                  Text('Versi, syarat, privasi, dan lisensi',
+                      style: TextStyle(color: XyTheme.muted, fontSize: 11.8)),
+                ]),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+            ]),
+          ),
+          const SizedBox(height: 14),
           OutlinedButton.icon(
-            onPressed: () => context.read<AppState>().logout(),
+            onPressed: () async {
+              final yakin = await showDialog<bool>(
+                context: context,
+                builder: (d) => AlertDialog(
+                  title: const Text('Keluar dari akun?'),
+                  content: const Text('Kamu perlu masuk lagi untuk memakai aplikasi.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Batal')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(d, true),
+                      child: const Text('Keluar', style: TextStyle(color: XyTheme.danger)),
+                    ),
+                  ],
+                ),
+              );
+              if (yakin == true && context.mounted) context.read<AppState>().logout();
+            },
             icon: const Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
             label: const Text('Keluar', style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),
           ),

@@ -294,7 +294,7 @@ async function vPlans(){
       <th>ID</th><th>Nama</th><th>Spesifikasi</th><th>Region</th><th>Harga/jam</th><th>Unit</th><th></th></tr></thead>
       <tbody>${d.map(p=>`<tr>
         <td class="mono" style="color:var(--muted)">${p.id}</td>
-        <td><b>${p.nama}</b>${p.tag?` <span class="tag" style="background:rgba(123,92,255,.16);color:#C4B5FD">${p.tag}</span>`:''}</td>
+        <td><b>${esc(p.nama)}</b>${p.tag?` <span class="tag" style="background:rgba(123,92,255,.16);color:#C4B5FD">${p.tag}</span>`:''}</td>
         <td style="font-size:12px;color:var(--muted)">${p.gpu}<br>${p.cpu} · ${p.ram_gb}GB · ${p.storage_gb}GB</td>
         <td>${p.region}</td><td><b>${rp(p.harga_per_jam)}</b></td>
         <td><span class="tag" style="background:${p.unit_tersedia?'rgba(34,197,94,.16)':'rgba(239,68,68,.16)'};
@@ -327,8 +327,8 @@ async function vProduk(){
       <tbody>${d.map(p=>`<tr>
         <td>${p.gambar?`<img src="${p.gambar}" style="width:46px;height:46px;object-fit:cover;border-radius:10px">`
           :`<div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#4A12B8)"></div>`}</td>
-        <td><b>${p.nama}</b><div class="mono" style="color:var(--muted);font-size:11px">${p.id}</div></td>
-        <td><span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${p.kategori}</span></td>
+        <td><b>${esc(p.nama)}</b><div class="mono" style="color:var(--muted);font-size:11px">${p.id}</div></td>
+        <td><span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(p.kategori)}</span></td>
         <td><b>${rp(p.harga)}</b>${p.harga_coret?`<div style="color:var(--muted);font-size:11px;text-decoration:line-through">${rp(p.harga_coret)}</div>`:''}</td>
         <td><span class="tag" style="background:${p.stok?'rgba(34,197,94,.16)':'rgba(239,68,68,.16)'};
           color:${p.stok?'#6EE7A8':'#FCA5A5'}">${p.stok}</span></td>
@@ -476,9 +476,9 @@ async function muatRooms(){
   el.innerHTML=r.length?r.map(x=>`<div class="room ${ROOM===x.room?'on':''}" onclick="bukaRoom('${x.room}')">
     <div style="display:flex;align-items:center;gap:9px">
       <div class="ico" style="width:32px;height:32px;background:linear-gradient(135deg,#7C3AED,#5B16CC);font-size:12px;font-weight:800">
-        ${(x.nama||'U').charAt(0).toUpperCase()}</div>
-      <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${x.nama||x.room}</div>
-        <div style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.preview||''}</div></div>
+        ${esc((x.nama||'U').charAt(0).toUpperCase())}</div>
+      <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">${esc(x.nama||x.room)}</div>
+        <div style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.preview||'')}</div></div>
       <div style="color:var(--muted);font-size:10px">${jm(x.terakhir)}</div></div></div>`).join('')
     :'<div class="empty">Belum ada percakapan.</div>';
 }
@@ -490,17 +490,17 @@ function renderChat(){
   const u=(DATA.rooms||[]).find(x=>x.room===ROOM)||{};
   const el=document.getElementById('chat');if(!el)return;
   el.innerHTML=`<div class="head">
-      <div class="ico" style="background:linear-gradient(135deg,#7C3AED,#5B16CC);font-weight:800">${(u.nama||'U').charAt(0).toUpperCase()}</div>
-      <div><div style="font-weight:800;font-size:14.5px">${u.nama||ROOM}</div>
-        <div style="color:var(--muted);font-size:11.5px">${u.email||ROOM}</div></div>
+      <div class="ico" style="background:linear-gradient(135deg,#7C3AED,#5B16CC);font-weight:800">${esc((u.nama||'U').charAt(0).toUpperCase())}</div>
+      <div><div style="font-weight:800;font-size:14.5px">${esc(u.nama||ROOM)}</div>
+        <div style="color:var(--muted);font-size:11.5px">${esc(u.email||ROOM)}</div></div>
       <div style="flex:1"></div>
       ${u.phone?`<a class="btn sm ghost" target="_blank" style="text-decoration:none"
         href="https://wa.me/${String(u.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}">WhatsApp</a>`:''}
       <button class="btn sm ghost" onclick="bukaRoom('${ROOM}')">${ic('refresh',14)}</button></div>
     <div class="body" id="cbody">${(DATA.msgs||[]).map(m=>m.dari==='system'
-      ?`<div class="msg s">${m.teks}</div>`
+      ?`<div class="msg s">${esc(m.teks)}</div>`
       :`<div class="msg ${m.dari==='user'?'u':'c'}">${m.gambar?`<a href="${m.gambar}" target="_blank">
-          <img src="${m.gambar}" style="max-width:210px;border-radius:12px;display:block;margin-bottom:${m.teks?'7px':'2px'}"></a>`:''}${m.teks||''}<time>${jm(m.waktu)}</time></div>`).join('')}</div>
+          <img src="${m.gambar}" style="max-width:210px;border-radius:12px;display:block;margin-bottom:${m.teks?'7px':'2px'}"></a>`:''}${esc(m.teks||'')}<time>${jm(m.waktu)}</time></div>`).join('')}</div>
     <div class="foot">
       <input type="file" id="cfile" accept="image/*" style="display:none" onchange="kirimGambarCs(event)">
       <button class="btn ghost sm" title="Kirim gambar" onclick="document.getElementById('cfile').click()">${ic('image',16)}</button>
@@ -569,7 +569,7 @@ async function vTopup(){
       <th>Waktu</th><th>Pengguna</th><th>Nominal</th><th>Transfer</th><th>Bukti</th><th>Status</th><th></th></tr></thead>
       <tbody>${d.length?d.map(t=>`<tr>
         <td style="font-size:12px;color:var(--muted)">${(t.dibuat||'').replace('T',' ').slice(0,16)}</td>
-        <td><b>${t.nama}</b><div style="font-size:11px;color:var(--muted)">${t.email}</div>
+        <td><b>${esc(t.nama)}</b><div style="font-size:11px;color:var(--muted)">${esc(t.email)}</div>
           ${t.phone?`<a href="https://wa.me/${String(t.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}" target="_blank"
             style="font-size:11px;color:#6EE7A8;text-decoration:none">WhatsApp ${t.phone}</a>`:''}</td>
         <td><b>${rp(t.nominal)}</b></td>
@@ -600,17 +600,17 @@ async function vUlasan(){
       <div class="card">
         <div class="row" style="align-items:flex-start">
           <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4A12B8);
-            display:flex;align-items:center;justify-content:center;font-weight:800">${(u.nama||'X')[0].toUpperCase()}</div>
+            display:flex;align-items:center;justify-content:center;font-weight:800">${esc((u.nama||'X')[0].toUpperCase())}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-weight:800;font-size:14px">${u.nama}</div>
-            <div style="font-size:11.5px;color:var(--muted)">${u.produk||u.produk_id} &middot; ${(u.waktu||'').slice(0,10)}</div>
+            <div style="font-weight:800;font-size:14px">${esc(u.nama)}</div>
+            <div style="font-size:11.5px;color:var(--muted)">${esc(u.produk||u.produk_id)} &middot; ${(u.waktu||'').slice(0,10)}</div>
           </div>
           <div style="color:#EBC988;font-weight:800">${'★'.repeat(u.rating)}<span style="color:var(--line)">${'★'.repeat(5-u.rating)}</span></div>
         </div>
-        ${u.komentar?`<p style="margin:12px 0 0;font-size:13px;line-height:1.6">${u.komentar}</p>`:''}
+        ${u.komentar?`<p style="margin:12px 0 0;font-size:13px;line-height:1.6">${esc(u.komentar)}</p>`:''}
         ${u.gambar?`<img src="${u.gambar}" style="width:100%;max-height:170px;object-fit:cover;border-radius:12px;margin-top:12px">`:''}
         ${u.balasan?`<div style="margin-top:12px;padding:11px 13px;background:rgba(124,58,237,.14);border-radius:12px;font-size:12.5px">
-          <b style="color:#C4B5FD">Balasan kami:</b> ${u.balasan}</div>`:''}
+          <b style="color:#C4B5FD">Balasan kami:</b> ${esc(u.balasan)}</div>`:''}
         <div class="row" style="margin-top:14px;gap:8px">
           <button class="btn sm ghost" onclick="balasUlasan('${u.id}',${JSON.stringify(u.balasan||'').replace(/"/g,'&quot;')})">Balas</button>
           <button class="btn sm danger" onclick="hapusUlasan('${u.id}')">Hapus</button>
@@ -666,6 +666,12 @@ async function ujiPush(){
 }
 
 /* ---------- util ---------- */
+/* Semua teks dari pengguna harus lewat esc() sebelum masuk innerHTML. */
+function esc(v){
+  if(v===null||v===undefined) return '';
+  return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 async function hapus(jenis,id){
   if(!confirm('Hapus '+id+'?'))return;
   await api('/'+jenis+'/'+id,{method:'DELETE'});toast('Dihapus');

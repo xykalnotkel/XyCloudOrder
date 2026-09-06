@@ -142,7 +142,8 @@ jobs:
           flutter build apk --release \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
             --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }} \
-            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }}
+            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }} \
+            --dart-define=XY_GOOGLE_SERVER_CLIENT_ID=495336144977-1fu3nv7r35pi2i0t8qu6ng0u695t0veg.apps.googleusercontent.com
 
       - name: Build APK per-ABI
         working-directory: ${{ env.APP_DIR }}
@@ -150,7 +151,8 @@ jobs:
           flutter build apk --release --split-per-abi \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
             --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }} \
-            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }}
+            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }} \
+            --dart-define=XY_GOOGLE_SERVER_CLIENT_ID=495336144977-1fu3nv7r35pi2i0t8qu6ng0u695t0veg.apps.googleusercontent.com
 
       - name: Rapikan hasil build
         run: |
