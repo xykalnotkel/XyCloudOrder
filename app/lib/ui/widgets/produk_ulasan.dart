@@ -38,9 +38,8 @@ class GambarProduk extends StatelessWidget {
         height: tinggi,
         width: double.infinity,
         fit: BoxFit.cover,
-        loadingBuilder: (_, anak, progres) => progres == null
-            ? anak
-            : Shimmer(child: Container(height: tinggi, color: XyTheme.lineSoft)),
+        loadingBuilder: (_, anak, progres) =>
+            progres == null ? anak : Shimmer(height: tinggi, radius: radius),
         errorBuilder: (_, __, ___) => GradientThumb(
           seed: produk.id,
           icon: Icons.vpn_key_rounded,
