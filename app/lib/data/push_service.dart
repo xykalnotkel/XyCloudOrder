@@ -15,7 +15,7 @@ class PushService {
 
   static const String appId = String.fromEnvironment(
     'XY_ONESIGNAL_APP_ID',
-    defaultValue: 'e3d5adea-1c0f-4986-9ce5-e088d65f0998',
+    defaultValue: 'f4843c35-cc1d-4772-9f70-1c4349397ffb',
   );
 
   static bool _siap = false;

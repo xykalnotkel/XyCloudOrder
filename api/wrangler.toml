@@ -38,5 +38,5 @@ globs = ["**/*.png"]
 ALLOW_ORIGIN = "*"
 PUBLIC_URL = "https://api.xycloud.my.id"
 MAIL_FROM = "XyCloudStore <noreply@xyc.my.id>"
-ONESIGNAL_APP_ID = "e3d5adea-1c0f-4986-9ce5-e088d65f0998"
+ONESIGNAL_APP_ID = "f4843c35-cc1d-4772-9f70-1c4349397ffb"
 # JWT_SECRET, ADMIN_KEY, RESEND_API_KEY, ONESIGNAL_API_KEY di-set lewat `wrangler secret put`

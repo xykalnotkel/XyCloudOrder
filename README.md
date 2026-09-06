@@ -266,9 +266,13 @@ dan saat banner promo baru dibuat dengan opsi "Kirim notifikasi push". Aplikasi 
 `onesignal_flutter` dan mengaitkan perangkat ke `external_id` = id pengguna, jadi kiriman selalu
 tepat sasaran.
 
-Push Android baru benar-benar terkirim setelah kredensial **Firebase FCM v1 (Service Account JSON)**
-diunggah ke dashboard OneSignal. Sebelum langkah itu, semua kode tetap berjalan tanpa error dan
-OneSignal hanya menjawab bahwa belum ada perangkat yang berlangganan.
+App OneSignal yang dipakai: **XyCloudStore** (`f4843c35-cc1d-4772-9f70-1c4349397ffb`), kredensial
+**Firebase FCM v1 (Service Account JSON)** sudah terpasang di dashboard OneSignal, jadi push Android
+siap terkirim begitu ada perangkat yang memasang aplikasi.
+
+App ID dipakai di dua tempat: variabel `ONESIGNAL_APP_ID` pada `api/wrangler.toml` (sisi server) dan
+`--dart-define=XY_ONESIGNAL_APP_ID` pada workflow build (sisi aplikasi). REST API key disimpan sebagai
+secret Worker `ONESIGNAL_API_KEY`.
 
 Menu **Email & Push** di dashboard admin bisa dipakai untuk menguji keduanya.
 

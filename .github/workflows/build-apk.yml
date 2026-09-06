@@ -12,6 +12,10 @@ on:
         description: "Pakai data demo (tanpa server)?"
         required: false
         default: "false"
+      onesignal_app_id:
+        description: "OneSignal App ID"
+        required: false
+        default: "f4843c35-cc1d-4772-9f70-1c4349397ffb"
       base_url:
         description: "Base URL API XyCloud"
         required: false
@@ -139,14 +143,16 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }}
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }} \
+            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }}
 
       - name: Build APK per-ABI
         working-directory: ${{ env.APP_DIR }}
         run: |
           flutter build apk --release --split-per-abi \
             --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }}
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://api.xycloud.my.id' }} \
+            --dart-define=XY_ONESIGNAL_APP_ID=${{ github.event.inputs.onesignal_app_id || 'f4843c35-cc1d-4772-9f70-1c4349397ffb' }}
 
       - name: Rapikan hasil build
         run: |
