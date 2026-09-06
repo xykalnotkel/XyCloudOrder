@@ -197,6 +197,27 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## Keamanan
+
+| Lapisan | Penerapan |
+|---|---|
+| Password | SHA-256 dengan garam acak per pengguna, format `salt$hash` |
+| Token | HMAC-SHA256, berlaku 30 hari, diperiksa tanda tangan dan masa berlakunya |
+| Penyimpanan di perangkat | `flutter_secure_storage` (EncryptedSharedPreferences Android) |
+| Pembatas laju | Tabel `batas` di D1, per IP untuk login, daftar, kirim kode, reset, dan admin |
+| Dashboard | Semua teks pengguna di-escape, header anti-framing dan anti-sniff |
+| Login Google native | ID token diverifikasi ke Google: penerbit, audiens, masa berlaku, status email |
+| Rahasia | Semua kunci hanya sebagai secret Worker atau GitHub Secrets, tidak pernah masuk repo |
+
+## Legal
+
+Syarat dan Ketentuan serta Kebijakan Privasi ditulis di `api/src/legal.js` dan disajikan dua cara:
+halaman web (`/legal/syarat`, `/legal/privasi`) dan JSON untuk aplikasi (`/api/legal/...`).
+Daftar lisensi pihak ketiga ikut di dalamnya, dan aplikasi juga menyediakan teks lisensi resmi
+bawaan Flutter lewat `showLicensePage`.
+
+---
+
 ## Identitas Merek
 
 - Nama: **XyCloudStore**
