@@ -108,14 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _gantiMode() {
-    setState(() {
-      daftar = !daftar;
-      _galat = null;
-      _form.currentState?.reset();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final loading = context.watch<AppState>().loading;
