@@ -100,15 +100,18 @@ jobs:
             echo "KEYSTORE_BASE64 kosong, build memakai kunci debug."
             exit 0
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > android/xycloud-release.jks
-          cat > android/key.properties <<EOF
-          storeFile=xycloud-release.jks
-          storePassword=$STORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          EOF
+          KS="$(pwd)/android/release-key.jks"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KS"
+          {
+            echo "storeFile=$KS"
+            echo "storePassword=$STORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > android/key.properties
           python3 ../tools/patch_signing.py android/app
-          echo "Keystore siap: $(sha256sum android/xycloud-release.jks | cut -c1-16)"
+          keytool -list -keystore "$KS" -storepass "$STORE_PASSWORD" | head -n 5
+          echo "----- build.gradle -----"
+          cat android/app/build.gradle 2>/dev/null || cat android/app/build.gradle.kts
 
       - name: Analyze
         working-directory: ${{ env.APP_DIR }}
