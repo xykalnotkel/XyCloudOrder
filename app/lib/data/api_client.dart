@@ -31,24 +31,28 @@ class ApiClient {
         queryParameters: q?.map((k, v) => MapEntry(k, '$v')),
       );
 
-  Future<dynamic> get(String path, [Map<String, dynamic>? q]) async {
-    final r = await _http.get(_uri(path, q), headers: _headers).timeout(const Duration(seconds: 20));
-    return _parse(r);
+  /// Jalankan permintaan; kalau jaringan gagal, coba sekali lagi lewat alamat cadangan.
+  Future<dynamic> _coba(Future<http.Response> Function() aksi) async {
+    try {
+      return _parse(await aksi());
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      if (XyConfig.pindahKeCadangan()) return _parse(await aksi());
+      rethrow;
+    }
   }
 
-  Future<dynamic> post(String path, [Map<String, dynamic>? body]) async {
-    final r = await _http
-        .post(_uri(path), headers: _headers, body: jsonEncode(body ?? {}))
-        .timeout(const Duration(seconds: 20));
-    return _parse(r);
-  }
+  Future<dynamic> get(String path, [Map<String, dynamic>? q]) =>
+      _coba(() => _http.get(_uri(path, q), headers: _headers).timeout(const Duration(seconds: 20)));
 
-  Future<dynamic> patch(String path, [Map<String, dynamic>? body]) async {
-    final r = await _http
-        .patch(_uri(path), headers: _headers, body: jsonEncode(body ?? {}))
-        .timeout(const Duration(seconds: 20));
-    return _parse(r);
-  }
+  Future<dynamic> post(String path, [Map<String, dynamic>? body]) => _coba(() => _http
+      .post(_uri(path), headers: _headers, body: jsonEncode(body ?? {}))
+      .timeout(const Duration(seconds: 20)));
+
+  Future<dynamic> patch(String path, [Map<String, dynamic>? body]) => _coba(() => _http
+      .patch(_uri(path), headers: _headers, body: jsonEncode(body ?? {}))
+      .timeout(const Duration(seconds: 20)));
 
   dynamic _parse(http.Response r) {
     final body = r.body.isEmpty ? {} : jsonDecode(r.body);

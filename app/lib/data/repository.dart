@@ -5,10 +5,28 @@ import '../models/models.dart';
 import 'api_client.dart';
 import 'mock_data.dart';
 
+/// Dilempar ketika akun ada tetapi emailnya belum diverifikasi.
+class PerluVerifikasi implements Exception {
+  PerluVerifikasi(this.email, this.nama, this.pesan);
+  final String email;
+  final String nama;
+  final String pesan;
+  @override
+  String toString() => pesan;
+}
+
 /// Satu pintu untuk semua data. Mode mock & mode server (Cloudflare Worker)
 /// punya kontrak yang sama, jadi UI tidak perlu tahu bedanya.
 abstract class XyRepository {
   Future<UserProfile> login(String email, String password);
+  /// Mendaftar. Hasilnya berupa peta berisi `perluVerifikasi`, `email`, dan `pesan`.
+  Future<Map<String, dynamic>> daftar({required String nama, required String email, required String password, String? phone});
+
+  /// Memverifikasi kode OTP lalu mengembalikan profil pengguna.
+  Future<UserProfile> verifikasiEmail(String email, String kode);
+  Future<String> kirimUlangKode(String email, {String tipe = 'verifikasi'});
+  Future<String> lupaPassword(String email);
+  Future<UserProfile> resetPassword({required String email, required String kode, required String password});
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -35,6 +53,49 @@ class RemoteRepository implements XyRepository {
   @override
   Future<UserProfile> login(String email, String password) async {
     final d = await api.post('/auth/login', {'email': email, 'password': password});
+    if (d['perluVerifikasi'] == true) {
+      throw PerluVerifikasi('${d['email']}', '${d['nama'] ?? ''}', '${d['pesan'] ?? ''}');
+    }
+    api.setToken(d['token']);
+    return UserProfile.fromJson(d['user']);
+  }
+
+  @override
+  Future<Map<String, dynamic>> daftar({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async =>
+      Map<String, dynamic>.from(await api.post('/auth/register', {
+        'nama': nama,
+        'email': email,
+        'password': password,
+        if (phone != null && phone.isNotEmpty) 'phone': phone,
+      }));
+
+  @override
+  Future<UserProfile> verifikasiEmail(String email, String kode) async {
+    final d = await api.post('/auth/verify', {'email': email, 'kode': kode});
+    api.setToken(d['token']);
+    return UserProfile.fromJson(d['user']);
+  }
+
+  @override
+  Future<String> kirimUlangKode(String email, {String tipe = 'verifikasi'}) async =>
+      '${(await api.post('/auth/resend', {'email': email, 'tipe': tipe}))['pesan']}';
+
+  @override
+  Future<String> lupaPassword(String email) async =>
+      '${(await api.post('/auth/forgot', {'email': email}))['pesan']}';
+
+  @override
+  Future<UserProfile> resetPassword({
+    required String email,
+    required String kode,
+    required String password,
+  }) async {
+    final d = await api.post('/auth/reset', {'email': email, 'kode': kode, 'password': password});
     api.setToken(d['token']);
     return UserProfile.fromJson(d['user']);
   }
@@ -96,6 +157,31 @@ class MockRepository implements XyRepository {
 
   @override
   Future<UserProfile> login(String email, String password) => _delay(MockData.user, 800);
+
+  @override
+  Future<Map<String, dynamic>> daftar({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    MockData.user = UserProfile(id: 'u_demo', nama: nama, email: email, phone: phone, saldo: 0, tier: 'basic');
+    return _delay({'perluVerifikasi': true, 'email': email, 'nama': nama, 'pesan': 'Kode demo: 123456'}, 700);
+  }
+
+  @override
+  Future<UserProfile> verifikasiEmail(String email, String kode) => _delay(MockData.user, 600);
+
+  @override
+  Future<String> kirimUlangKode(String email, {String tipe = 'verifikasi'}) =>
+      _delay('Kode demo dikirim ulang: 123456', 400);
+
+  @override
+  Future<String> lupaPassword(String email) => _delay('Kode demo reset: 123456', 400);
+
+  @override
+  Future<UserProfile> resetPassword({required String email, required String kode, required String password}) =>
+      _delay(MockData.user, 600);
 
   @override
   Future<List<PcPlan>> plans() => _delay(_plans);

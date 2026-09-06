@@ -111,7 +111,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
             id: 'saldo',
             aktif: metode == 'saldo',
             icon: Icons.account_balance_wallet_rounded,
-            judul: 'Saldo XyCloud',
+            judul: 'Saldo XyCloudStore',
             sub: rupiah(saldo),
             onTap: () => setState(() => metode = 'saldo'),
           ),

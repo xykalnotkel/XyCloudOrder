@@ -2,6 +2,12 @@ name = "xycloud-api"
 # account_id diambil dari variabel lingkungan CLOUDFLARE_ACCOUNT_ID saat deploy
 main = "src/index.js"
 workers_dev = true
+
+# --- Domain khusus (custom domain) ---
+routes = [
+  { pattern = "api.xycloud.my.id", custom_domain = true },
+  { pattern = "admin.xycloud.my.id", custom_domain = true },
+]
 compatibility_date = "2025-01-01"
 
 # --- Database D1 ---
@@ -24,6 +30,13 @@ new_sqlite_classes = ["RealtimeHub"]
 type = "Text"
 globs = ["**/*.html"]
 
+[[rules]]
+type = "Data"
+globs = ["**/*.png"]
+
 [vars]
 ALLOW_ORIGIN = "*"
-# JWT_SECRET dan ADMIN_KEY di-set lewat `wrangler secret put`
+PUBLIC_URL = "https://api.xycloud.my.id"
+MAIL_FROM = "XyCloudStore <noreply@xyc.my.id>"
+ONESIGNAL_APP_ID = "e3d5adea-1c0f-4986-9ce5-e088d65f0998"
+# JWT_SECRET, ADMIN_KEY, RESEND_API_KEY, ONESIGNAL_API_KEY di-set lewat `wrangler secret put`

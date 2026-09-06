@@ -12,6 +12,9 @@
  */
 
 import ADMIN_HTML from './admin.html';
+import LOGO_PNG from './brand-logo.png';
+import { kirimEmail } from './mail.js';
+import { kirimPush, siarkanPush } from './push.js';
 
 const json = (data, status = 200, env) =>
   new Response(JSON.stringify({ data }), {
@@ -32,6 +35,59 @@ const err = (message, status = 400, env) =>
       'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
     },
   });
+
+// ---------- password ----------
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+async function hashPw(password, salt) {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  return hex(await crypto.subtle.digest('SHA-256', data));
+}
+
+/** Format tersimpan: `salt$hash`. Password lama (plaintext seed) tetap diterima. */
+async function buatPw(password) {
+  const salt = hex(crypto.getRandomValues(new Uint8Array(8)));
+  return `${salt}$${await hashPw(password, salt)}`;
+}
+
+async function cocokPw(password, tersimpan) {
+  if (!tersimpan) return false;
+  if (!tersimpan.includes('$')) return tersimpan === password; // data lama
+  const [salt, h] = tersimpan.split('$');
+  return (await hashPw(password, salt)) === h;
+}
+
+/** Kode OTP 6 digit. */
+function buatKode() {
+  return String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+}
+
+/** Simpan OTP (berlaku 15 menit) lalu kirim emailnya. */
+async function kirimOtp(env, { email, nama, tipe }) {
+  const kode = buatKode();
+  const kadaluarsa = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  await env.DB.prepare('DELETE FROM otp WHERE email = ? AND tipe = ?').bind(email, tipe).run();
+  await env.DB.prepare('INSERT INTO otp (id,email,kode,tipe,kadaluarsa) VALUES (?,?,?,?,?)')
+    .bind(uid('otp_'), email, kode, tipe, kadaluarsa).run();
+  return kirimEmail(env, {
+    to: email,
+    template: tipe === 'reset' ? 'resetPassword' : 'verifikasi',
+    data: { nama: nama || 'Sobat Xy', kode },
+  });
+}
+
+/** Periksa OTP; kalau cocok, tandai terpakai. */
+async function cekOtp(env, { email, kode, tipe }) {
+  const row = await env.DB
+    .prepare('SELECT * FROM otp WHERE email = ? AND tipe = ? AND kode = ? AND dipakai = 0')
+    .bind(email, tipe, String(kode).trim()).first();
+  if (!row) return { ok: false, pesan: 'Kode verifikasi salah' };
+  if (new Date(row.kadaluarsa) < new Date()) return { ok: false, pesan: 'Kode sudah kedaluwarsa, minta kode baru' };
+  await env.DB.prepare('UPDATE otp SET dipakai = 1 WHERE id = ?').bind(row.id).run();
+  return { ok: true };
+}
+
+const emailValid = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(String(v || '').trim());
 
 // ---------- token sederhana (HMAC-SHA256) ----------
 const b64u = (buf) =>
@@ -108,6 +164,12 @@ export default {
       });
     }
 
+    if (path === '/brand/logo.png') {
+      return new Response(LOGO_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+
     if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
 
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
@@ -116,25 +178,154 @@ export default {
     try {
       // ---------------- AUTH ----------------
       if (p === 'auth/login' && req.method === 'POST') {
-        const { email, password } = await req.json();
-        const u = await env.DB.prepare('SELECT * FROM users WHERE email = ?').bind(email).first();
-        if (!u || u.password !== password) return err('Email atau password salah', 401, env);
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const password = String(body.password || '');
+        if (!email || !password) return err('Email dan password wajib diisi', 400, env);
+
+        const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
+        if (!u) return err('Email belum terdaftar. Silakan daftar dulu.', 404, env);
+        if (!(await cocokPw(password, u.password))) return err('Password salah. Coba lagi.', 401, env);
+
+        if (!u.email_verified) {
+          ctx.waitUntil(kirimOtp(env, { email: u.email, nama: u.nama, tipe: 'verifikasi' }));
+          return json({ perluVerifikasi: true, email: u.email, nama: u.nama,
+            pesan: 'Email belum diverifikasi. Kode baru sudah kami kirim.' }, 200, env);
+        }
+
+        // upgrade otomatis password lama ke bentuk hash
+        if (!String(u.password).includes('$')) {
+          const baru = await buatPw(password);
+          ctx.waitUntil(env.DB.prepare('UPDATE users SET password=? WHERE id=?').bind(baru, u.id).run());
+        }
+
         const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
         delete u.password;
         return json({ token, user: u }, 200, env);
       }
 
       if (p === 'auth/register' && req.method === 'POST') {
-        const { nama, email, password, phone } = await req.json();
-        const id = uid('u_');
-        await env.DB.prepare(
-          'INSERT INTO users (id,nama,email,password,phone,saldo,tier) VALUES (?,?,?,?,?,0,\'basic\')'
-        ).bind(id, nama, email, password, phone || null).run();
-        const token = await sign({ sub: id, email }, env.JWT_SECRET);
-        return json({ token, user: { id, nama, email, phone, saldo: 0, tier: 'basic' } }, 201, env);
+        const body = await req.json().catch(() => ({}));
+        const nama = String(body.nama || '').trim();
+        const email = String(body.email || '').trim().toLowerCase();
+        const password = String(body.password || '');
+        const phone = String(body.phone || '').trim() || null;
+
+        if (nama.length < 3) return err('Nama minimal 3 karakter', 400, env);
+        if (!emailValid(email)) return err('Format email tidak valid', 400, env);
+        if (password.length < 6) return err('Password minimal 6 karakter', 400, env);
+
+        const ada = await env.DB.prepare('SELECT id, email_verified FROM users WHERE lower(email) = ?')
+          .bind(email).first();
+        if (ada && ada.email_verified) return err('Email sudah terdaftar. Silakan masuk.', 409, env);
+
+        let id = ada?.id;
+        if (ada) {
+          // pendaftaran diulang sebelum diverifikasi: perbarui datanya
+          await env.DB.prepare('UPDATE users SET nama=?, password=?, phone=? WHERE id=?')
+            .bind(nama, await buatPw(password), phone, id).run();
+        } else {
+          id = uid('u_');
+          await env.DB.prepare(
+            "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified) VALUES (?,?,?,?,?,0,'basic',0)"
+          ).bind(id, nama, email, await buatPw(password), phone).run();
+        }
+
+        const hasil = await kirimOtp(env, { email, nama, tipe: 'verifikasi' });
+
+        return json({
+          perluVerifikasi: true,
+          email,
+          nama,
+          emailTerkirim: hasil.ok,
+          pesan: hasil.ok
+            ? `Kode verifikasi dikirim ke ${email}. Cek kotak masuk atau folder spam.`
+            : 'Akun dibuat, tetapi email verifikasi gagal dikirim. Coba minta kode ulang.',
+        }, 201, env);
       }
 
-      // ---------------- KATALOG (publik) ----------------
+      // ---- verifikasi email dengan kode OTP ----
+      if (p === 'auth/verify' && req.method === 'POST') {
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const kode = String(body.kode || '').trim();
+
+        const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
+        if (!u) return err('Akun tidak ditemukan', 404, env);
+        if (u.email_verified) {
+          const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+          delete u.password;
+          return json({ token, user: u }, 200, env);
+        }
+
+        const cek = await cekOtp(env, { email, kode, tipe: 'verifikasi' });
+        if (!cek.ok) return err(cek.pesan, 400, env);
+
+        await env.DB.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').bind(u.id).run();
+
+        // sapaan CS + email selamat datang
+        const sapa = {
+          id: uid('m_'), room: `user:${u.id}`, dari: 'cs',
+          teks: `Halo ${u.nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
+          waktu: new Date().toISOString(),
+        };
+        ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
+          .bind(sapa.id, sapa.room, u.id, 'cs', sapa.teks, sapa.waktu).run());
+        ctx.waitUntil(kirimEmail(env, { to: email, template: 'selamatDatang', data: { nama: u.nama } }));
+
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        delete u.password;
+        u.email_verified = 1;
+        return json({ token, user: u }, 200, env);
+      }
+
+      // ---- kirim ulang kode ----
+      if (p === 'auth/resend' && req.method === 'POST') {
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const tipe = body.tipe === 'reset' ? 'reset' : 'verifikasi';
+        const u = await env.DB.prepare('SELECT nama, email_verified FROM users WHERE lower(email) = ?')
+          .bind(email).first();
+        if (!u) return err('Email belum terdaftar', 404, env);
+        if (tipe === 'verifikasi' && u.email_verified) return err('Email ini sudah terverifikasi', 400, env);
+        const hasil = await kirimOtp(env, { email, nama: u.nama, tipe });
+        if (!hasil.ok) return err('Gagal mengirim email: ' + hasil.alasan, 502, env);
+        return json({ ok: true, pesan: `Kode baru dikirim ke ${email}` }, 200, env);
+      }
+
+      // ---- lupa password ----
+      if (p === 'auth/forgot' && req.method === 'POST') {
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const u = await env.DB.prepare('SELECT nama FROM users WHERE lower(email) = ?').bind(email).first();
+        // jawaban selalu sama supaya email orang lain tidak bisa ditebak
+        if (u) ctx.waitUntil(kirimOtp(env, { email, nama: u.nama, tipe: 'reset' }));
+        return json({ ok: true, pesan: 'Kalau email terdaftar, kode reset sudah kami kirim.' }, 200, env);
+      }
+
+      // ---- pasang password baru ----
+      if (p === 'auth/reset' && req.method === 'POST') {
+        const body = await req.json().catch(() => ({}));
+        const email = String(body.email || '').trim().toLowerCase();
+        const kode = String(body.kode || '').trim();
+        const password = String(body.password || '');
+        if (password.length < 6) return err('Password minimal 6 karakter', 400, env);
+
+        const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
+        if (!u) return err('Akun tidak ditemukan', 404, env);
+
+        const cek = await cekOtp(env, { email, kode, tipe: 'reset' });
+        if (!cek.ok) return err(cek.pesan, 400, env);
+
+        await env.DB.prepare('UPDATE users SET password = ?, email_verified = 1 WHERE id = ?')
+          .bind(await buatPw(password), u.id).run();
+
+        const token = await sign({ sub: u.id, email: u.email, iat: Date.now() }, env.JWT_SECRET);
+        delete u.password;
+        u.email_verified = 1;
+        return json({ token, user: u }, 200, env);
+      }
+
       if (p === 'pc/plans' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT * FROM pc_plans').all();
         return json(results, 200, env);
@@ -188,6 +379,35 @@ export default {
           ).bind(...isi.map((k) => b[k]), id).run();
           const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(id).first();
           ctx.waitUntil(push(env, `user:${o.user_id}`, 'order.update', o));
+
+          // beri tahu pemilik order lewat push dan email
+          const pemilik = await env.DB.prepare('SELECT nama, email FROM users WHERE id = ?')
+            .bind(o.user_id).first();
+          const pesanStatus = {
+            dibayar: 'Pembayaran diterima, unit sedang disiapkan.',
+            provisioning: 'Unit sedang dinyalakan, tunggu sebentar ya.',
+            aktif: 'PC kamu sudah aktif dan siap dipakai.',
+            selesai: 'Sesi sewa sudah selesai. Terima kasih.',
+            batal: 'Order dibatalkan. Saldo dikembalikan bila sudah terbayar.',
+          }[o.status];
+          if (pesanStatus) {
+            ctx.waitUntil(kirimPush(env, {
+              userId: o.user_id,
+              judul: `Order ${o.kode}`,
+              pesan: pesanStatus,
+              data: { tipe: 'order', id: o.id },
+            }));
+          }
+          if (o.status === 'aktif' && pemilik?.email) {
+            ctx.waitUntil(kirimEmail(env, {
+              to: pemilik.email,
+              template: 'orderAktif',
+              data: {
+                nama: pemilik.nama, kode: o.kode, plan: o.plan_nama, host: o.host,
+                username: o.username, password: o.password, durasi: o.durasi_jam,
+              },
+            }));
+          }
           return json(o, 200, env);
         }
 
@@ -248,6 +468,13 @@ export default {
                  b.aksi || 'sewa', b.target || '', b.warna1 || '#2F5BFF', b.warna2 || '#6A4BFF',
                  b.ikon || 'bolt', b.urutan || 0, b.aktif === 0 ? 0 : 1).run();
           ctx.waitUntil(kirimBanner(env));
+          if (b.kirimPush) {
+            ctx.waitUntil(siarkanPush(env, {
+              judul: b.judul || 'Promo baru XyCloudStore',
+              pesan: b.subjudul || 'Buka aplikasi untuk melihat penawarannya.',
+              data: { tipe: 'banner', id: b.id },
+            }));
+          }
           return json({ ok: true }, 201, env);
         }
         if (a.startsWith('banners/') && req.method === 'DELETE') {
@@ -279,6 +506,12 @@ export default {
           await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
             .bind(msg.id, room, room.split(':')[1] || '', 'cs', teks, msg.waktu).run();
           ctx.waitUntil(push(env, room, 'chat.message', msg));
+          ctx.waitUntil(kirimPush(env, {
+            userId: room.split(':')[1],
+            judul: 'Balasan customer service',
+            pesan: teks.length > 90 ? teks.slice(0, 90) + '...' : teks,
+            data: { tipe: 'cs' },
+          }));
           return json(msg, 201, env);
         }
         if (a === 'cs/typing' && req.method === 'POST') {
@@ -303,6 +536,22 @@ export default {
           const u = await env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(user_id).first();
           ctx.waitUntil(push(env, `user:${user_id}`, 'wallet.update', { saldo: u.saldo }));
           return json({ saldo: u.saldo }, 200, env);
+        }
+
+        // ---- uji email dan push ----
+        if (a === 'uji/email' && req.method === 'POST') {
+          const { to } = await req.json();
+          const hasil = await kirimEmail(env, {
+            to, template: 'verifikasi', data: { nama: 'Admin', kode: '123456' },
+          });
+          return json(hasil, hasil.ok ? 200 : 502, env);
+        }
+        if (a === 'uji/push' && req.method === 'POST') {
+          const { user_id, pesan } = await req.json();
+          const hasil = await kirimPush(env, {
+            userId: user_id, judul: 'Uji notifikasi', pesan: pesan || 'Halo dari XyCloudStore',
+          });
+          return json(hasil, hasil.ok ? 200 : 502, env);
         }
 
         return err('Endpoint admin tidak dikenal', 404, env);
@@ -401,8 +650,33 @@ export default {
 
         ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: produk_id, stok: prod.stok - 1 }));
 
+        const kodeAkun = 'AK-' + Math.floor(1000 + Math.random() * 8999);
+        const pembeli = await env.DB.prepare('SELECT nama, email FROM users WHERE id = ?').bind(me.sub).first();
+        if (pembeli?.email) {
+          ctx.waitUntil(kirimEmail(env, {
+            to: pembeli.email,
+            template: 'kredensialAkun',
+            data: {
+              nama: pembeli.nama, produk: prod.nama, kode: kodeAkun,
+              email: stok?.email || 'akan dikirim admin', password: stok?.password || '-',
+              catatan: `Segera ganti password setelah login. Garansi ${prod.garansi}.`,
+            },
+          }));
+          ctx.waitUntil(kirimEmail(env, {
+            to: pembeli.email,
+            template: 'struk',
+            data: { nama: pembeli.nama, kode: kodeAkun, judul: prod.nama, total: prod.harga, metode },
+          }));
+        }
+        ctx.waitUntil(kirimPush(env, {
+          userId: me.sub,
+          judul: 'Pembelian berhasil',
+          pesan: `${prod.nama} sudah aktif. Kredensial juga dikirim ke emailmu.`,
+          data: { tipe: 'akun', kode: kodeAkun },
+        }));
+
         return json({
-          kode: 'AK-' + Math.floor(1000 + Math.random() * 8999),
+          kode: kodeAkun,
           email: stok?.email || 'akan dikirim admin',
           password: stok?.password || '-',
           catatan: `Segera ganti password. Garansi ${prod.garansi}.`,

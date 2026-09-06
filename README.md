@@ -1,4 +1,4 @@
-# XyCloudOrder — Premium Edition
+# XyCloudStore — Premium Edition
 
 Aplikasi **Flutter (Android)** untuk layanan XyCloud: **Sewa PC Cloud**, **Beli Akun Digital**, **Customer Service realtime**, **Riwayat Order**, dan **Dompet** — terhubung ke backend **Cloudflare Workers + D1 + Durable Objects**.
 
@@ -88,17 +88,17 @@ Yang dilakukan CI:
 3. `flutter pub get`
 4. Generate adaptive launcher icon (`flutter_launcher_icons`)
 5. Generate native splash (`flutter_native_splash:create`)
-6. Set label aplikasi jadi **XyCloudOrder** dan pastikan izin `INTERNET`
+6. Set label aplikasi jadi **XyCloudStore** dan pastikan izin `INTERNET`
 7. `flutter analyze` + `flutter test`
 8. Build APK **universal** dan **split-per-ABI**
-9. Upload semua APK sebagai artifact `XyCloudOrder-APK`
+9. Upload semua APK sebagai artifact `XyCloudStore-APK`
 
 Input opsional saat run manual:
 
 | Input | Default | Fungsi |
 |---|---|---|
 | `mock` | `false` | `true` = jalan dengan data demo tanpa server |
-| `base_url` | `https://xycloud-api.akuntiktok76y.workers.dev` | Base URL API XyCloud |
+| `base_url` | `https://api.xycloud.my.id` | Base URL API XyCloud |
 
 Push tag `v1.0.0` untuk sekaligus membuat GitHub Release berisi APK.
 
@@ -119,7 +119,7 @@ Sambungkan ke server sungguhan:
 ```bash
 flutter build apk --release \
   --dart-define=XY_MOCK=false \
-  --dart-define=XY_BASE_URL=https://xycloud-api.akuntiktok76y.workers.dev
+  --dart-define=XY_BASE_URL=https://api.xycloud.my.id
 ```
 
 ---
@@ -158,11 +158,33 @@ npm run deploy
 
 ---
 
+## Identitas Merek
+
+- Nama: **XyCloudStore**
+- Warna utama: ungu `#6C2BE2`, ungu pekat `#4A12B8`, ungu terang `#8B5CF6`, lavender `#C4B5FD`
+- Tanpa warna neon. Aksen emas `#D9A441` hanya untuk rating dan tier.
+- Logo resmi ada di `app/assets/brand/` (ikon, wordmark, versi putih) dan dipakai di splash, onboarding,
+  welcome, login, dashboard admin, serta ikon launcher.
+- Ilustrasi di `app/assets/ilustrasi/` dibuat dengan AI bergaya 3D glosi ungu di atas latar putih,
+  lalu latarnya dihapus memakai `rembg` (model `isnet-general-use`) sehingga transparan.
+
+## Domain
+
+| Alamat | Fungsi |
+|---|---|
+| `https://api.xycloud.my.id` | API dan WebSocket aplikasi |
+| `https://admin.xycloud.my.id` | dashboard admin dan CS |
+| `https://xycloud-api.akuntiktok76y.workers.dev` | alamat cadangan otomatis |
+
+Aplikasi memakai domain utama; kalau tidak bisa dihubungi, `ApiClient` otomatis pindah ke alamat cadangan.
+
+---
+
 ## Dashboard Admin dan CS
 
 Dashboard web ikut dibundel di dalam Worker, jadi tidak perlu hosting terpisah.
 
-- URL: `https://xycloud-api.akuntiktok76y.workers.dev/admin`
+- URL: `https://admin.xycloud.my.id` atau `https://api.xycloud.my.id/admin`
 - Masuk dengan **admin key** (`wrangler secret put ADMIN_KEY`), tersimpan di browser.
 
 Yang bisa dikerjakan dari dashboard:
@@ -206,6 +228,52 @@ Berkas keystore tidak pernah masuk ke repository.
 
 ---
 
+## Email (Resend) dan Push (OneSignal)
+
+### Email transaksional
+
+Worker mengirim email lewat Resend memakai template ungu XyCloudStore (`api/src/mail.js`):
+
+| Kejadian | Email |
+|---|---|
+| Daftar akun | kode verifikasi 6 digit, berlaku 15 menit |
+| Verifikasi berhasil | email selamat datang |
+| Lupa password | kode reset 6 digit |
+| Beli akun digital | kredensial akun + struk pembayaran |
+| Order sewa berubah jadi aktif | alamat RDP, username, password, durasi |
+
+Pengaturan: `MAIL_FROM` dan `PUBLIC_URL` ada di `wrangler.toml`, kunci `RESEND_API_KEY` disimpan sebagai secret.
+Logo untuk email dilayani Worker di `/brand/logo.png`.
+
+Verifikasi email **wajib**: akun baru berstatus `email_verified = 0` dan harus memasukkan kode
+sebelum bisa dipakai. Login dengan akun yang belum terverifikasi otomatis mengirim kode baru
+dan aplikasi langsung membuka layar OTP.
+
+Endpoint auth:
+
+| Method | Path | Fungsi |
+|---|---|---|
+| POST | `/api/auth/register` | daftar, kirim kode verifikasi |
+| POST | `/api/auth/verify` | tukar kode jadi token |
+| POST | `/api/auth/resend` | kirim ulang kode (`tipe`: verifikasi / reset) |
+| POST | `/api/auth/forgot` | minta kode reset password |
+| POST | `/api/auth/reset` | pasang password baru |
+
+### Push notification
+
+`api/src/push.js` mengirim push lewat OneSignal saat status order berubah, saat CS membalas chat,
+dan saat banner promo baru dibuat dengan opsi "Kirim notifikasi push". Aplikasi memakai
+`onesignal_flutter` dan mengaitkan perangkat ke `external_id` = id pengguna, jadi kiriman selalu
+tepat sasaran.
+
+Push Android baru benar-benar terkirim setelah kredensial **Firebase FCM v1 (Service Account JSON)**
+diunggah ke dashboard OneSignal. Sebelum langkah itu, semua kode tetap berjalan tanpa error dan
+OneSignal hanya menjawab bahwa belum ada perangkat yang berlangganan.
+
+Menu **Email & Push** di dashboard admin bisa dipakai untuk menguji keduanya.
+
+---
+
 ## Integrasi ke web XyCloud yang sudah ada
 
 1. **Worker sebagai gateway** — ubah handler di `api/src/index.js` agar `fetch()` ke API web kamu, Durable Object tetap dipakai untuk push realtime. Paling cepat.
@@ -214,7 +282,7 @@ Berkas keystore tidak pernah masuk ke repository.
 Push pesan realtime dari sisi admin:
 
 ```bash
-curl -X POST https://xycloud-api.akuntiktok76y.workers.dev/api/cs/reply \
+curl -X POST https://api.xycloud.my.id/api/cs/reply \
   -H "Authorization: Bearer <token-admin>" \
   -H "Content-Type: application/json" \
   -d '{"room":"user:u_001","teks":"Order kakak sudah kami proses ya"}'

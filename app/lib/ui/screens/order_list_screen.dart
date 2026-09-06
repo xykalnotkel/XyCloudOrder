@@ -56,7 +56,7 @@ class _List extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (orders.isEmpty) {
-      return Kosong(icon: Icons.inbox_rounded, judul: kosong, sub: 'Order sewa PC kamu akan muncul di sini.');
+      return Kosong(icon: Icons.inbox_rounded, judul: kosong, sub: 'Order sewa PC kamu akan muncul di sini.', ilustrasi: 'kosong');
     }
     return RefreshIndicator(
       onRefresh: context.read<AppState>().refresh,

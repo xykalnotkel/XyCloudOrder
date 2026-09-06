@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
+import 'data/push_service.dart';
 import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
 import 'ui/screens/shell.dart';
@@ -17,18 +18,19 @@ Future<void> main() async {
     systemNavigationBarColor: Colors.white,
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
-  runApp(const XyCloudOrderApp());
+  await PushService.mulai();
+  runApp(const XyCloudStoreApp());
 }
 
-class XyCloudOrderApp extends StatelessWidget {
-  const XyCloudOrderApp({super.key});
+class XyCloudStoreApp extends StatelessWidget {
+  const XyCloudStoreApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
       child: MaterialApp(
-        title: 'XyCloudOrder',
+        title: 'XyCloudStore',
         debugShowCheckedModeBanner: false,
         theme: XyTheme.light(),
         builder: (context, child) => MediaQuery.withNoTextScaling(child: child!),

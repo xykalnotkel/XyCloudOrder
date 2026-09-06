@@ -17,3 +17,4 @@ api/.wrangler/
 .idea/
 .vscode/
 *.iml
+.raw-ilustrasi/

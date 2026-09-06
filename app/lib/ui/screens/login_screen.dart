@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 import '../../core/prefs.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
+import '../../core/motion.dart';
 import '../widgets/brand_logos.dart';
 import '../widgets/common.dart';
+import 'lupa_password_screen.dart';
+import 'otp_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.modeDaftar = false});
@@ -16,13 +19,15 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _nama = TextEditingController();
-  final _email = TextEditingController(text: 'rangga@xycloud.id');
-  final _pass = TextEditingController(text: 'xycloud123');
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _pass = TextEditingController();
   final _form = GlobalKey<FormState>();
 
   late bool daftar = widget.modeDaftar;
   bool lihat = false;
   bool ingat = true;
+  String? _galat;
 
   @override
   void initState() {
@@ -36,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _nama.dispose();
     _email.dispose();
+    _phone.dispose();
     _pass.dispose();
     super.dispose();
   }
@@ -44,17 +50,62 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_form.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     final s = context.read<AppState>();
-    if (ingat) await Prefs.simpanEmail(_email.text.trim());
-    final ok = await s.login(_email.text.trim(), _pass.text);
+    final email = _email.text.trim();
+    if (ingat) await Prefs.simpanEmail(email);
+
+    if (daftar) {
+      final hasil = await s.daftar(
+        nama: _nama.text.trim(),
+        email: email,
+        password: _pass.text,
+        phone: _phone.text.trim(),
+      );
+      if (!mounted) return;
+      if (hasil == null) {
+        setState(() => _galat = s.error ?? 'Pendaftaran gagal, coba lagi.');
+        return;
+      }
+      Navigator.push(
+        context,
+        xyRoute(OtpScreen(
+          email: '${hasil['email'] ?? email}',
+          nama: _nama.text.trim(),
+          pesanAwal: '${hasil['pesan'] ?? ''}',
+        )),
+      );
+      return;
+    }
+
+    final ok = await s.login(email, _pass.text);
     if (!mounted) return;
     if (ok) {
-      // kembalikan stack ke root supaya shell aplikasi tampil
       Navigator.of(context).popUntil((r) => r.isFirst);
-    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.error ?? 'Gagal masuk, coba lagi.')),
+        const SnackBar(content: Text('Berhasil masuk. Selamat datang kembali.')),
       );
+      return;
     }
+
+    // akun ada tetapi email belum diverifikasi
+    if (s.emailMenungguVerifikasi != null) {
+      final tujuan = s.emailMenungguVerifikasi!;
+      s.emailMenungguVerifikasi = null;
+      Navigator.push(
+        context,
+        xyRoute(OtpScreen(email: tujuan, pesanAwal: s.error)),
+      );
+      return;
+    }
+
+    setState(() => _galat = s.error ?? 'Terjadi kesalahan, coba lagi.');
+  }
+
+  void _gantiMode() {
+    setState(() {
+      daftar = !daftar;
+      _galat = null;
+      _form.currentState?.reset();
+    });
   }
 
   @override
@@ -87,14 +138,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-                    const SizedBox(height: 28),
-                    FadeInUp(child: const XyLogo(size: 58, radius: 20)),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 26),
+                    FadeInUp(
+                      child: Row(children: [
+                        const XyLogo(size: 52, radius: 17),
+                        const SizedBox(width: 13),
+                        const XyWordmark(tinggi: 24),
+                      ]),
+                    ),
+                    const SizedBox(height: 22),
 
                     FadeInUp(
                       delay: const Duration(milliseconds: 80),
                       child: Text(
-                        daftar ? 'Buat akun XyCloud' : 'Selamat datang kembali',
+                        daftar ? 'Buat akun baru' : 'Selamat datang kembali',
                         style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -1.1, height: 1.2),
                       ),
                     ),
@@ -103,13 +160,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       delay: const Duration(milliseconds: 140),
                       child: Text(
                         daftar
-                            ? 'Daftar gratis, langsung dapat saldo percobaan untuk mencoba sewa PC.'
+                            ? 'Daftar gratis. Kami kirim kode verifikasi ke emailmu, jadi pastikan emailnya aktif.'
                             : 'Masuk untuk melanjutkan sewa PC, membeli akun, dan memantau order kamu.',
                         style: const TextStyle(color: XyTheme.muted, fontSize: 14, height: 1.6),
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 26),
+
+                    if (_galat != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+                        decoration: BoxDecoration(
+                          color: XyTheme.danger.withOpacity(.07),
+                          borderRadius: BorderRadius.circular(XyRadius.sm),
+                          border: Border.all(color: XyTheme.danger.withOpacity(.22)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.error_outline_rounded, color: XyTheme.danger, size: 19),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _galat!,
+                              style: const TextStyle(color: XyTheme.danger, fontSize: 12.8, fontWeight: FontWeight.w600, height: 1.4),
+                            ),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
 
                     if (daftar) ...[
                       const _Label('Nama Lengkap'),
@@ -122,6 +202,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: const InputDecoration(
                             hintText: 'Nama kamu',
                             prefixIcon: Icon(Icons.person_outline_rounded),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      const _Label('Nomor WhatsApp'),
+                      FadeInUp(
+                        delay: const Duration(milliseconds: 200),
+                        child: TextFormField(
+                          controller: _phone,
+                          keyboardType: TextInputType.phone,
+                          validator: (v) {
+                            final t = (v ?? '').trim();
+                            if (t.isEmpty) return 'Nomor WhatsApp wajib diisi';
+                            if (t.length < 9) return 'Nomor belum lengkap';
+                            return null;
+                          },
+                          decoration: const InputDecoration(
+                            hintText: '08xxxxxxxxxx',
+                            prefixIcon: Icon(Icons.phone_iphone_rounded),
                           ),
                         ),
                       ),
@@ -179,8 +278,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       const Spacer(),
                       if (!daftar)
                         TextButton(
-                          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Tautan reset dikirim ke email kamu.')),
+                          onPressed: () => Navigator.push(
+                            context,
+                            xyRoute(LupaPasswordScreen(emailAwal: _email.text.trim())),
                           ),
                           child: const Text('Lupa password?'),
                         ),
@@ -230,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 28),
                     Center(
                       child: Pressable(
-                        onTap: () => setState(() => daftar = !daftar),
+                        onTap: _gantiMode,
                         scale: .98,
                         child: Padding(
                           padding: const EdgeInsets.all(6),

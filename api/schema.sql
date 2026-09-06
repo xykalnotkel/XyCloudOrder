@@ -152,3 +152,21 @@ INSERT INTO akun_stok (produk_id,email,password,terpakai) VALUES
  ('ak-netflix','nf.xy001@mail.xycloud.id','NfXy#7745d',0),
  ('ak-spotify','sp.xy001@mail.xycloud.id','SpXy#3312e',0),
  ('ak-adobe','ad.xy001@mail.xycloud.id','AdXy#9908f',0);
+
+-- ============================================================
+--  Verifikasi email dan reset password (OTP)
+-- ============================================================
+ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0;
+UPDATE users SET email_verified = 1;
+
+DROP TABLE IF EXISTS otp;
+CREATE TABLE otp (
+  id          TEXT PRIMARY KEY,
+  email       TEXT NOT NULL,
+  kode        TEXT NOT NULL,
+  tipe        TEXT NOT NULL,            -- verifikasi | reset
+  kadaluarsa  TEXT NOT NULL,
+  dipakai     INTEGER NOT NULL DEFAULT 0,
+  dibuat      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX idx_otp_email ON otp (email, tipe);

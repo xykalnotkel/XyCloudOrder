@@ -348,12 +348,8 @@ class _DialogAkun extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: XyTheme.success.withOpacity(.10), shape: BoxShape.circle),
-            child: const Icon(Icons.check_rounded, color: XyTheme.success, size: 28),
-          ),
-          const SizedBox(height: 14),
+          const XyIlustrasi('sukses', tinggi: 132),
+          const SizedBox(height: 6),
           const Text('Pembelian Berhasil', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 4),
           Text(produk.nama, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12.5, color: XyTheme.muted)),

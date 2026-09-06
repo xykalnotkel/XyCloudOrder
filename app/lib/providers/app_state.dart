@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../core/config.dart';
 import '../data/api_client.dart';
 import '../data/mock_data.dart';
+import '../data/push_service.dart';
 import '../data/realtime_service.dart';
 import '../data/repository.dart';
 import '../models/models.dart';
@@ -62,9 +63,14 @@ class AppState extends ChangeNotifier {
       user = await _repo.login(email, password);
       await muatSemua();
       _mulaiRealtime();
+      _daftarkanPush();
       return true;
+    } on PerluVerifikasi catch (e) {
+      emailMenungguVerifikasi = e.email;
+      error = e.pesan;
+      return false;
     } catch (e) {
-      error = 'Login gagal: $e';
+      error = _pesan(e);
       return false;
     } finally {
       loading = false;
@@ -72,7 +78,112 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Hasil pendaftaran: minta pengguna memasukkan kode dari email.
+  String? emailMenungguVerifikasi;
+
+  Future<Map<String, dynamic>?> daftar({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final d = await _repo.daftar(nama: nama, email: email, password: password, phone: phone);
+      emailMenungguVerifikasi = '${d['email'] ?? email}';
+      return d;
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> verifikasiEmail(String email, String kode) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      user = await _repo.verifikasiEmail(email, kode);
+      emailMenungguVerifikasi = null;
+      await muatSemua();
+      _mulaiRealtime();
+      _daftarkanPush();
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> kirimUlangKode(String email, {String tipe = 'verifikasi'}) async {
+    try {
+      return await _repo.kirimUlangKode(email, tipe: tipe);
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    }
+  }
+
+  Future<String?> lupaPassword(String email) async {
+    loading = true;
+    notifyListeners();
+    try {
+      return await _repo.lupaPassword(email);
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> resetPassword({required String email, required String kode, required String password}) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      user = await _repo.resetPassword(email: email, kode: kode, password: password);
+      await muatSemua();
+      _mulaiRealtime();
+      _daftarkanPush();
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Hubungkan akun ini ke OneSignal supaya notifikasi tetap masuk saat aplikasi tertutup.
+  void _daftarkanPush() {
+    final id = user?.id;
+    if (id != null) PushService.masuk(id);
+  }
+
+  /// Ubah pesan kesalahan teknis jadi kalimat yang mudah dimengerti.
+  String _pesan(Object e) {
+    final t = e.toString();
+    final i = t.indexOf('): ');
+    if (i > 0) return t.substring(i + 3);
+    if (t.contains('SocketException') || t.contains('Failed host lookup') || t.contains('TimeoutException')) {
+      return 'Tidak bisa terhubung ke server. Cek koneksi internet kamu.';
+    }
+    return t.replaceFirst('Exception: ', '');
+  }
+
   void logout() {
+    PushService.keluar();
     user = null;
     orders = [];
     chat = [];
