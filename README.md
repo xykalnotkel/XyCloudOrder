@@ -158,6 +158,45 @@ npm run deploy
 
 ---
 
+## Fitur v1.4.0
+
+### Login sosial sungguhan
+Alur OAuth dijalankan di server: aplikasi membuka `/api/auth/{provider}/start`, pengguna menyetujui di
+halaman resmi Google atau Facebook, lalu server menukar kode, membuat akun bila perlu, dan
+mengembalikan token lewat `xycloudstore://auth?token=...`. Tidak butuh Firebase, tidak butuh SHA-1.
+Tombol yang tampil di aplikasi mengikuti `GET /api/config`, jadi penyedia yang belum dikonfigurasi
+otomatis disembunyikan.
+
+Syarat Google: tambahkan `https://api.xycloud.my.id/api/auth/google/callback` pada Authorized redirect
+URIs di Google Cloud Console. Syarat Facebook: isi secret `FACEBOOK_APP_ID` dan `FACEBOOK_APP_SECRET`.
+
+### Dompet dengan pembayaran nyata
+1. Pengguna memilih nominal, server membuat permintaan dengan **kode unik 3 digit** supaya mudah dicocokkan.
+2. Aplikasi menampilkan rekening tujuan dan total yang harus ditransfer.
+3. Pengguna mengunggah bukti transfer (tersimpan di Cloudinary).
+4. Admin membuka menu **Top Up** di dashboard, melihat bukti, lalu menyetujui.
+5. Saldo bertambah otomatis, disertai push, email struk, dan pembaruan realtime.
+
+Rekening dan minimal top up diatur lewat variabel `BANK_NAMA`, `BANK_NOMOR`, `BANK_ATASNAMA`,
+`QRIS_URL`, dan `MIN_TOPUP` di `wrangler.toml`.
+
+### Produk akun lengkap
+Kolom baru: `gambar`, `deskripsi`, `detail` (peta spesifikasi), `jumlah_ulasan`. Dashboard bisa
+mengunggah gambar langsung dari komputer (otomatis ke Cloudinary) dan mengisi detail baris per baris.
+
+### Ulasan dan rating
+Tabel `ulasan` menyimpan rating 1-5, komentar, foto opsional, dan balasan admin. Rata-rata rating
+produk dihitung ulang otomatis setiap ada ulasan baru atau yang dihapus. Menu **Ulasan** di dashboard
+dipakai untuk membalas atau menghapus.
+
+### Chat seperti WhatsApp
+Dua arah realtime lewat WebSocket, kini mendukung kirim gambar (aplikasi dan dashboard), indikator
+mengetik, tanda dibaca, dan tombol pindah ke WhatsApp memakai nomor pada `WA_ADMIN`.
+Nomor WhatsApp yang diisi saat mendaftar tampil di dashboard sebagai tautan `wa.me` pada inbox CS,
+daftar pengguna, dan daftar top up.
+
+---
+
 ## Identitas Merek
 
 - Nama: **XyCloudStore**
