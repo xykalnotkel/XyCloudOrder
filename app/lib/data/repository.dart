@@ -101,6 +101,23 @@ class RemoteRepository implements XyRepository {
   }
 
   @override
+  Future<UserProfile> register({
+    required String nama,
+    required String email,
+    required String password,
+    String? phone,
+  }) async {
+    final d = await api.post('/auth/register', {
+      'nama': nama,
+      'email': email,
+      'password': password,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+    });
+    api.setToken(d['token']);
+    return UserProfile.fromJson(d['user']);
+  }
+
+  @override
   Future<List<PcPlan>> plans() async =>
       ((await api.get('/pc/plans')) as List).map((e) => PcPlan.fromJson(e)).toList();
 
