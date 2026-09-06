@@ -145,6 +145,7 @@ const P={
   trash:'<path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/>',
   edit:'<path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5 4 20Z"/>',
   refresh:'<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M21 3v5h-5"/>',
+  star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/>',
   wallet:'<rect x="2.5" y="5.5" width="19" height="14" rx="3"/><path d="M17 12.5h.01"/>',
   money:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5c-.5-.8-1.4-1.2-2.5-1.2-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.1 0-2-.4-2.5-1.2"/>',
   box:'<path d="m12 2.8 9 5v8.4l-9 5-9-5V7.8l9-5Z"/><path d="m3 7.8 9 5 9-5M12 12.8v10"/>',
@@ -201,11 +202,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['users','users','Pengguna'],['alat','send','Email & Push']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan}[TAB])();
 }
 function ke(t){TAB=t;render()}
 const head=(j,s,aksi='')=>`<div class="top"><div><h1>${j}</h1><p>${s}</p></div><div class="sp"></div>${aksi}</div>`;
@@ -322,43 +323,85 @@ async function vProduk(){
   m.innerHTML=head('Produk Akun','Katalog akun digital yang dijual',
     `<button class="btn" onclick="formProduk()">${ic('plus',16)}Tambah Produk</button>`)+
     `<div class="card" style="padding:18px 6px"><table><thead><tr>
-      <th>ID</th><th>Nama</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Terjual</th><th>Garansi</th><th></th></tr></thead>
+      <th>Gambar</th><th>Nama</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Rating</th><th>Terjual</th><th></th></tr></thead>
       <tbody>${d.map(p=>`<tr>
-        <td class="mono" style="color:var(--muted)">${p.id}</td><td><b>${p.nama}</b></td>
+        <td>${p.gambar?`<img src="${p.gambar}" style="width:46px;height:46px;object-fit:cover;border-radius:10px">`
+          :`<div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#4A12B8)"></div>`}</td>
+        <td><b>${p.nama}</b><div class="mono" style="color:var(--muted);font-size:11px">${p.id}</div></td>
         <td><span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${p.kategori}</span></td>
         <td><b>${rp(p.harga)}</b>${p.harga_coret?`<div style="color:var(--muted);font-size:11px;text-decoration:line-through">${rp(p.harga_coret)}</div>`:''}</td>
         <td><span class="tag" style="background:${p.stok?'rgba(34,197,94,.16)':'rgba(239,68,68,.16)'};
           color:${p.stok?'#6EE7A8':'#FCA5A5'}">${p.stok}</span></td>
-        <td>${p.terjual}</td><td style="font-size:12px;color:var(--muted)">${p.garansi}</td>
+        <td>${(p.rating||0).toFixed?(p.rating||0).toFixed(1):p.rating} <span style="color:var(--muted);font-size:11px">(${p.jumlah_ulasan||0})</span></td>
+        <td>${p.terjual}</td>
         <td style="white-space:nowrap"><button class="btn sm ghost" onclick='formProduk(${JSON.stringify(p).replace(/'/g,"&#39;")})'>${ic('edit',14)}</button>
           <button class="btn sm danger" onclick="hapus('produk','${p.id}')">${ic('trash',14)}</button></td>
       </tr>`).join('')}</tbody></table></div>`;
 }
 function formProduk(p={}){
   let fitur=[];try{fitur=typeof p.fitur==='string'?JSON.parse(p.fitur||'[]'):(p.fitur||[])}catch(e){}
+  let detail={};try{detail=typeof p.detail==='string'?JSON.parse(p.detail||'{}'):(p.detail||{})}catch(e){}
+  const detailTeks=Object.entries(detail).map(([k,v])=>`${k}: ${v}`).join('\n');
   buka(p.id?'Edit Produk Akun':'Tambah Produk Akun',`
     <div class="grid" style="grid-template-columns:1fr 1fr">
-      <div class="field"><label>ID (slug)</label><input id="f_id" value="${p.id||''}"></div>
-      <div class="field"><label>Kategori</label><input id="f_kategori" value="${p.kategori||'Gaming'}"></div></div>
+      <div class="field"><label>ID (slug)</label><input id="f_id" value="${p.id||''}" placeholder="netflix-premium"></div>
+      <div class="field"><label>Kategori</label><input id="f_kategori" value="${p.kategori||'Streaming'}"></div></div>
     <div class="field"><label>Nama Produk</label><input id="f_nama" value="${p.nama||''}"></div>
-    <div class="field"><label>Deskripsi</label><textarea id="f_deskripsi" rows="3">${p.deskripsi||''}</textarea></div>
+
+    <div class="field"><label>Gambar Produk</label>
+      <div class="row" style="gap:14px;align-items:flex-start">
+        <div id="pratinjauGambar" style="width:104px;height:104px;border-radius:14px;flex:none;overflow:hidden;
+          background:${p.gambar?'#0E0720':'linear-gradient(135deg,#7C3AED,#4A12B8)'};display:flex;align-items:center;justify-content:center">
+          ${p.gambar?`<img src="${p.gambar}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:11px;color:#fff;opacity:.7">belum ada</span>'}
+        </div>
+        <div style="flex:1">
+          <input type="file" id="f_file" accept="image/*" onchange="pilihGambarProduk(event)"
+            style="width:100%;padding:11px;border:1px dashed var(--line);border-radius:12px;background:var(--panel2);color:var(--ink)">
+          <div style="color:var(--muted);font-size:11.5px;margin-top:8px">
+            Unggah dari komputer (otomatis tersimpan di Cloudinary), atau tempel URL gambar di bawah.</div>
+          <input id="f_gambar" value="${p.gambar||''}" placeholder="https://..." style="margin-top:8px">
+        </div>
+      </div>
+    </div>
+
+    <div class="field"><label>Deskripsi</label><textarea id="f_deskripsi" rows="4"
+      placeholder="Ceritakan produknya: apa yang didapat pembeli, syarat pemakaian, dan lain-lain">${p.deskripsi||''}</textarea></div>
     <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
       <div class="field"><label>Harga</label><input id="f_harga" type="number" value="${p.harga||0}"></div>
       <div class="field"><label>Harga coret</label><input id="f_harga_coret" type="number" value="${p.harga_coret||0}"></div>
       <div class="field"><label>Stok</label><input id="f_stok" type="number" value="${p.stok||0}"></div></div>
-    <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
-      <div class="field"><label>Rating</label><input id="f_rating" type="number" step="0.1" value="${p.rating||4.8}"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
       <div class="field"><label>Terjual</label><input id="f_terjual" type="number" value="${p.terjual||0}"></div>
       <div class="field"><label>Garansi</label><input id="f_garansi" value="${p.garansi||'30 hari'}"></div></div>
-    <div class="field"><label>Fitur (pisahkan dengan koma)</label><input id="f_fitur" value="${fitur.join(', ')}"></div>`,
+    <div class="field"><label>Fitur (pisahkan dengan koma)</label><input id="f_fitur" value="${fitur.join(', ')}"></div>
+    <div class="field"><label>Detail / spesifikasi (satu baris satu, format "Label: isi")</label>
+      <textarea id="f_detail" rows="4" placeholder="Durasi: 1 bulan&#10;Tipe akun: Private&#10;Perangkat: 1 profil">${detailTeks}</textarea></div>`,
     async()=>{
       const g=k=>document.getElementById('f_'+k).value;
+      const detailObj={};
+      g('detail').split('\n').map(b=>b.trim()).filter(Boolean).forEach(b=>{
+        const i=b.indexOf(':'); if(i>0) detailObj[b.slice(0,i).trim()]=b.slice(i+1).trim();
+      });
       await api('/produk',{method:'POST',body:JSON.stringify({
         id:g('id'),nama:g('nama'),kategori:g('kategori'),deskripsi:g('deskripsi'),
-        harga:+g('harga'),harga_coret:+g('harga_coret'),stok:+g('stok'),rating:+g('rating'),
-        terjual:+g('terjual'),garansi:g('garansi'),
+        harga:+g('harga'),harga_coret:+g('harga_coret'),stok:+g('stok'),
+        terjual:+g('terjual'),garansi:g('garansi'),gambar:g('gambar'),detail:detailObj,
         fitur:g('fitur').split(',').map(x=>x.trim()).filter(Boolean)})});
       toast('Produk disimpan');tutupModal();vProduk()});
+}
+
+/* Baca berkas gambar jadi data URI lalu tampilkan pratinjaunya. */
+function pilihGambarProduk(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  if(f.size>5*1024*1024){ toast('Ukuran gambar maksimal 5 MB'); return }
+  const r=new FileReader();
+  r.onload=()=>{
+    document.getElementById('f_gambar').value=r.result;
+    document.getElementById('pratinjauGambar').innerHTML=
+      `<img src="${r.result}" style="width:100%;height:100%;object-fit:cover">`;
+    toast('Gambar siap, klik Simpan');
+  };
+  r.readAsDataURL(f);
 }
 
 /* ---------- banner ---------- */
@@ -451,11 +494,17 @@ function renderChat(){
       <div><div style="font-weight:800;font-size:14.5px">${u.nama||ROOM}</div>
         <div style="color:var(--muted);font-size:11.5px">${u.email||ROOM}</div></div>
       <div style="flex:1"></div>
+      ${u.phone?`<a class="btn sm ghost" target="_blank" style="text-decoration:none"
+        href="https://wa.me/${String(u.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}">WhatsApp</a>`:''}
       <button class="btn sm ghost" onclick="bukaRoom('${ROOM}')">${ic('refresh',14)}</button></div>
     <div class="body" id="cbody">${(DATA.msgs||[]).map(m=>m.dari==='system'
       ?`<div class="msg s">${m.teks}</div>`
-      :`<div class="msg ${m.dari==='user'?'u':'c'}">${m.teks}<time>${jm(m.waktu)}</time></div>`).join('')}</div>
-    <div class="foot"><input id="cinp" placeholder="Ketik balasan untuk pengguna..."
+      :`<div class="msg ${m.dari==='user'?'u':'c'}">${m.gambar?`<a href="${m.gambar}" target="_blank">
+          <img src="${m.gambar}" style="max-width:210px;border-radius:12px;display:block;margin-bottom:${m.teks?'7px':'2px'}"></a>`:''}${m.teks||''}<time>${jm(m.waktu)}</time></div>`).join('')}</div>
+    <div class="foot">
+      <input type="file" id="cfile" accept="image/*" style="display:none" onchange="kirimGambarCs(event)">
+      <button class="btn ghost sm" title="Kirim gambar" onclick="document.getElementById('cfile').click()">${ic('image',16)}</button>
+      <input id="cinp" placeholder="Ketik balasan untuk pengguna..."
         onkeydown="if(event.key==='Enter')balas()" oninput="ketik()">
       <button class="btn" onclick="balas()">${ic('send',16)}Kirim</button></div>`;
   const b=document.getElementById('cbody');b.scrollTop=b.scrollHeight;
@@ -463,6 +512,22 @@ function renderChat(){
 let _tt;
 function ketik(){clearTimeout(_tt);api('/cs/typing',{method:'POST',body:JSON.stringify({room:ROOM,typing:true})}).catch(()=>{});
   _tt=setTimeout(()=>api('/cs/typing',{method:'POST',body:JSON.stringify({room:ROOM,typing:false})}).catch(()=>{}),2200)}
+async function kirimGambarCs(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  if(f.size>5*1024*1024){ toast('Ukuran gambar maksimal 5 MB'); return }
+  toast('Mengunggah gambar...');
+  const r=new FileReader();
+  r.onload=async()=>{
+    try{
+      const up=await api('/upload',{method:'POST',body:JSON.stringify({file:r.result,folder:'xycloudstore/chat'})});
+      const m=await api('/cs/reply',{method:'POST',body:JSON.stringify({room:ROOM,teks:'',gambar:up.url})});
+      DATA.msgs.push(m); renderChat(); muatRooms(); toast('Gambar terkirim');
+    }catch(e){ toast(e.message) }
+  };
+  r.readAsDataURL(f);
+  ev.target.value='';
+}
+
 async function balas(){
   const i=document.getElementById('cinp');const t=i.value.trim();if(!t)return;i.value='';
   const m=await api('/cs/reply',{method:'POST',body:JSON.stringify({room:ROOM,teks:t})});
@@ -492,6 +557,76 @@ function formSaldo(id,nama){
     async()=>{await api('/users/saldo',{method:'POST',body:JSON.stringify({
         user_id:id,nominal:+document.getElementById('f_n').value,catatan:document.getElementById('f_c').value})});
       toast('Saldo diperbarui, push realtime terkirim');tutupModal();vUsers()});
+}
+
+/* ---------- konfirmasi top up ---------- */
+async function vTopup(){
+  const m=document.getElementById('main');
+  const d=await api('/topup');
+  const warna={menunggu:'#9A8CBF',diperiksa:'#D9A441',disetujui:'#22C55E',ditolak:'#EF4444'};
+  m.innerHTML=head('Permintaan Top Up','Verifikasi bukti transfer lalu setujui untuk menambah saldo')+
+    `<div class="card" style="padding:18px 6px"><table><thead><tr>
+      <th>Waktu</th><th>Pengguna</th><th>Nominal</th><th>Transfer</th><th>Bukti</th><th>Status</th><th></th></tr></thead>
+      <tbody>${d.length?d.map(t=>`<tr>
+        <td style="font-size:12px;color:var(--muted)">${(t.dibuat||'').replace('T',' ').slice(0,16)}</td>
+        <td><b>${t.nama}</b><div style="font-size:11px;color:var(--muted)">${t.email}</div>
+          ${t.phone?`<a href="https://wa.me/${String(t.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}" target="_blank"
+            style="font-size:11px;color:#6EE7A8;text-decoration:none">WhatsApp ${t.phone}</a>`:''}</td>
+        <td><b>${rp(t.nominal)}</b></td>
+        <td class="mono">${rp(t.total)}<div style="font-size:11px;color:var(--muted)">kode ${t.kode_unik}</div></td>
+        <td>${t.bukti?`<a href="${t.bukti}" target="_blank"><img src="${t.bukti}"
+          style="width:54px;height:54px;object-fit:cover;border-radius:10px"></a>`:'<span style="color:var(--muted);font-size:12px">belum ada</span>'}</td>
+        <td><span class="tag" style="background:${warna[t.status]}22;color:${warna[t.status]}">${t.status}</span></td>
+        <td style="white-space:nowrap">${t.status==='disetujui'?'':`
+          <button class="btn sm" onclick="prosesTopup('${t.id}','disetujui')">Setujui</button>
+          <button class="btn sm danger" onclick="prosesTopup('${t.id}','ditolak')">Tolak</button>`}</td>
+      </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:26px">Belum ada permintaan top up</td></tr>'}
+      </tbody></table></div>`;
+}
+async function prosesTopup(id,status){
+  let catatan=null;
+  if(status==='ditolak'){ catatan=prompt('Alasan penolakan:','Bukti transfer tidak cocok'); if(catatan===null) return }
+  await api('/topup/'+id,{method:'PATCH',body:JSON.stringify({status,catatan})});
+  toast(status==='disetujui'?'Saldo sudah ditambahkan':'Permintaan ditolak');
+  vTopup();
+}
+
+/* ---------- ulasan produk ---------- */
+async function vUlasan(){
+  const m=document.getElementById('main');
+  const d=await api('/ulasan');
+  m.innerHTML=head('Ulasan Produk','Balas atau hapus ulasan pembeli')+
+    `<div class="grid g2">${d.length?d.map(u=>`
+      <div class="card">
+        <div class="row" style="align-items:flex-start">
+          <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4A12B8);
+            display:flex;align-items:center;justify-content:center;font-weight:800">${(u.nama||'X')[0].toUpperCase()}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:14px">${u.nama}</div>
+            <div style="font-size:11.5px;color:var(--muted)">${u.produk||u.produk_id} &middot; ${(u.waktu||'').slice(0,10)}</div>
+          </div>
+          <div style="color:#EBC988;font-weight:800">${'★'.repeat(u.rating)}<span style="color:var(--line)">${'★'.repeat(5-u.rating)}</span></div>
+        </div>
+        ${u.komentar?`<p style="margin:12px 0 0;font-size:13px;line-height:1.6">${u.komentar}</p>`:''}
+        ${u.gambar?`<img src="${u.gambar}" style="width:100%;max-height:170px;object-fit:cover;border-radius:12px;margin-top:12px">`:''}
+        ${u.balasan?`<div style="margin-top:12px;padding:11px 13px;background:rgba(124,58,237,.14);border-radius:12px;font-size:12.5px">
+          <b style="color:#C4B5FD">Balasan kami:</b> ${u.balasan}</div>`:''}
+        <div class="row" style="margin-top:14px;gap:8px">
+          <button class="btn sm ghost" onclick="balasUlasan('${u.id}',${JSON.stringify(u.balasan||'').replace(/"/g,'&quot;')})">Balas</button>
+          <button class="btn sm danger" onclick="hapusUlasan('${u.id}')">Hapus</button>
+        </div>
+      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada ulasan masuk</div>'}</div>`;
+}
+async function balasUlasan(id,lama){
+  const t=prompt('Balasan untuk pembeli:',lama||'');
+  if(t===null) return;
+  await api('/ulasan/'+id,{method:'PATCH',body:JSON.stringify({balasan:t})});
+  toast('Balasan tersimpan'); vUlasan();
+}
+async function hapusUlasan(id){
+  if(!confirm('Hapus ulasan ini?')) return;
+  await api('/ulasan/'+id,{method:'DELETE'});
+  toast('Ulasan dihapus'); vUlasan();
 }
 
 /* ---------- alat email & push ---------- */

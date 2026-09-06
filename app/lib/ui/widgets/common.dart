@@ -135,7 +135,7 @@ class GradientButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: mati ? null : gradient,
           color: mati ? const Color(0xFFE3DAF5) : null,
-          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderRadius: BorderRadius.circular(XyRadius.tombol),
           boxShadow: mati ? null : XyTheme.glow(glowColor, .30),
         ),
         child: Center(

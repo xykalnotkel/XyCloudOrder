@@ -1,3 +1,4 @@
+import 'dart:convert';
 // ============================================================
 // XyCloudOrder — Model data (mirror dari tabel D1 Cloudflare)
 // ============================================================
@@ -182,6 +183,18 @@ class RentOrder {
 }
 
 /// Produk akun digital yang dijual (Steam, Netflix, Game Pass, dsb).
+/// Membaca kolom `detail` yang bisa berupa peta atau teks JSON.
+Map<String, dynamic> _petaAman(dynamic v) {
+  if (v == null) return const {};
+  if (v is Map) return Map<String, dynamic>.from(v);
+  if (v is String && v.trim().startsWith('{')) {
+    try {
+      return Map<String, dynamic>.from(jsonDecode(v));
+    } catch (_) {}
+  }
+  return const {};
+}
+
 class AkunProduk {
   final String id;
   final String nama;
@@ -195,6 +208,8 @@ class AkunProduk {
   final String gambar;
   final List<String> fitur;
   final String garansi;
+  final int jumlahUlasan;
+  final Map<String, dynamic> detail;
 
   AkunProduk({
     required this.id,
@@ -209,6 +224,8 @@ class AkunProduk {
     required this.gambar,
     required this.fitur,
     required this.garansi,
+    this.jumlahUlasan = 0,
+    this.detail = const {},
   });
 
   factory AkunProduk.fromJson(Map<String, dynamic> j) => AkunProduk(
@@ -224,6 +241,8 @@ class AkunProduk {
         gambar: j['gambar'] ?? '',
         fitur: (j['fitur'] as List?)?.map((e) => '$e').toList() ?? const [],
         garansi: j['garansi'] ?? '7 hari',
+        jumlahUlasan: j['jumlah_ulasan'] ?? 0,
+        detail: _petaAman(j['detail']),
       );
 }
 
@@ -232,8 +251,10 @@ class ChatMessage {
   final String room;
   final String dari; // 'user' | 'cs' | 'system'
   final String teks;
+  final String? gambar;
   final DateTime waktu;
   bool terkirim;
+  bool dibaca;
 
   ChatMessage({
     required this.id,
@@ -241,7 +262,9 @@ class ChatMessage {
     required this.dari,
     required this.teks,
     required this.waktu,
+    this.gambar,
     this.terkirim = true,
+    this.dibaca = false,
   });
 
   bool get milikSaya => dari == 'user';
@@ -251,7 +274,9 @@ class ChatMessage {
         room: j['room'] ?? '',
         dari: j['dari'] ?? j['from'] ?? 'cs',
         teks: j['teks'] ?? j['text'] ?? '',
+        gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
         waktu: DateTime.parse(j['waktu'] ?? j['at']),
+        dibaca: (j['dibaca'] ?? 0) == 1,
       );
 
   Map<String, dynamic> toJson() => {
@@ -259,6 +284,7 @@ class ChatMessage {
         'room': room,
         'dari': dari,
         'teks': teks,
+        'gambar': gambar,
         'waktu': waktu.toIso8601String(),
       };
 }
@@ -332,4 +358,108 @@ class PromoBanner {
         ikon: j['ikon'] ?? 'bolt',
         urutan: (j['urutan'] ?? 1) is int ? (j['urutan'] ?? 1) as int : 1,
       );
+}
+
+/// Ulasan pembeli untuk sebuah produk akun.
+class Ulasan {
+  final String id;
+  final String produkId;
+  final String nama;
+  final int rating;
+  final String komentar;
+  final String? gambar;
+  final String? balasan;
+  final DateTime waktu;
+
+  Ulasan({
+    required this.id,
+    required this.produkId,
+    required this.nama,
+    required this.rating,
+    required this.komentar,
+    required this.waktu,
+    this.gambar,
+    this.balasan,
+  });
+
+  factory Ulasan.fromJson(Map<String, dynamic> j) => Ulasan(
+        id: '${j['id']}',
+        produkId: '${j['produk_id'] ?? ''}',
+        nama: j['nama'] ?? 'Pengguna',
+        rating: (j['rating'] ?? 5) is int ? (j['rating'] ?? 5) : int.tryParse('${j['rating']}') ?? 5,
+        komentar: j['komentar'] ?? '',
+        gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
+        balasan: (j['balasan'] as String?)?.isNotEmpty == true ? j['balasan'] : null,
+        waktu: DateTime.tryParse('${j['waktu']}') ?? DateTime.now(),
+      );
+}
+
+/// Permintaan isi saldo yang menunggu konfirmasi admin.
+class PermintaanTopup {
+  final String id;
+  final int nominal;
+  final int kodeUnik;
+  final int total;
+  final String metode;
+  final String status; // menunggu | diperiksa | disetujui | ditolak
+  final String? bukti;
+  final String? catatan;
+  final DateTime dibuat;
+  final Map<String, dynamic> rekening;
+
+  PermintaanTopup({
+    required this.id,
+    required this.nominal,
+    required this.kodeUnik,
+    required this.total,
+    required this.metode,
+    required this.status,
+    required this.dibuat,
+    this.bukti,
+    this.catatan,
+    this.rekening = const {},
+  });
+
+  factory PermintaanTopup.fromJson(Map<String, dynamic> j) => PermintaanTopup(
+        id: '${j['id']}',
+        nominal: j['nominal'] ?? 0,
+        kodeUnik: j['kode_unik'] ?? 0,
+        total: j['total'] ?? (j['nominal'] ?? 0),
+        metode: j['metode'] ?? 'transfer',
+        status: j['status'] ?? 'menunggu',
+        bukti: (j['bukti'] as String?)?.isNotEmpty == true ? j['bukti'] : null,
+        catatan: (j['catatan'] as String?)?.isNotEmpty == true ? j['catatan'] : null,
+        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+        rekening: _petaAman(j['rekening']),
+      );
+
+  bool get selesai => status == 'disetujui' || status == 'ditolak';
+}
+
+/// Konfigurasi dari server: penyedia login aktif, nomor WhatsApp, rekening.
+class KonfigurasiApp {
+  final bool googleAktif;
+  final bool facebookAktif;
+  final String whatsapp;
+  final Map<String, dynamic> rekening;
+  final int minTopup;
+
+  const KonfigurasiApp({
+    this.googleAktif = false,
+    this.facebookAktif = false,
+    this.whatsapp = '',
+    this.rekening = const {},
+    this.minTopup = 10000,
+  });
+
+  factory KonfigurasiApp.fromJson(Map<String, dynamic> j) {
+    final p = _petaAman(j['providers']);
+    return KonfigurasiApp(
+      googleAktif: p['google'] == true,
+      facebookAktif: p['facebook'] == true,
+      whatsapp: '${j['whatsapp'] ?? ''}',
+      rekening: _petaAman(j['rekening']),
+      minTopup: j['minTopup'] ?? 10000,
+    );
+  }
 }

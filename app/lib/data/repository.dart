@@ -27,6 +27,20 @@ abstract class XyRepository {
   Future<String> kirimUlangKode(String email, {String tipe = 'verifikasi'});
   Future<String> lupaPassword(String email);
   Future<UserProfile> resetPassword({required String email, required String kode, required String password});
+
+  /// Konfigurasi server: penyedia login aktif, nomor WhatsApp, rekening top up.
+  Future<KonfigurasiApp> konfigurasi();
+
+  /// Ambil profil memakai token yang sudah dipasang (dipakai setelah login sosial).
+  Future<UserProfile> profilSaya();
+  void pasangToken(String token);
+
+  Future<List<Ulasan>> ulasan(String produkId);
+  Future<Ulasan> kirimUlasan({required String produkId, required int rating, required String komentar, String? gambar});
+
+  Future<PermintaanTopup> buatTopup(int nominal, String metode);
+  Future<List<PermintaanTopup>> daftarTopup();
+  Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri);
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -35,9 +49,8 @@ abstract class XyRepository {
   Future<RentOrder> orderDetail(String id);
   Future<Map<String, dynamic>> beliAkun({required AkunProduk produk, required String metode});
   Future<List<Transaksi>> transaksi();
-  Future<int> topup(int nominal);
   Future<List<ChatMessage>> riwayatChat();
-  Future<void> kirimChat(String teks);
+  Future<void> kirimChat(String teks, {String? gambar});
 
   factory XyRepository.create(ApiClient api) =>
       XyConfig.useMock ? MockRepository() : RemoteRepository(api);
@@ -101,6 +114,48 @@ class RemoteRepository implements XyRepository {
   }
 
   @override
+  Future<KonfigurasiApp> konfigurasi() async =>
+      KonfigurasiApp.fromJson(Map<String, dynamic>.from(await api.get('/config')));
+
+  @override
+  Future<UserProfile> profilSaya() async => UserProfile.fromJson(await api.get('/me'));
+
+  @override
+  void pasangToken(String token) => api.setToken(token);
+
+  @override
+  Future<List<Ulasan>> ulasan(String produkId) async =>
+      ((await api.get('/akun/produk/$produkId/ulasan')) as List).map((e) => Ulasan.fromJson(e)).toList();
+
+  @override
+  Future<Ulasan> kirimUlasan({
+    required String produkId,
+    required int rating,
+    required String komentar,
+    String? gambar,
+  }) async =>
+      Ulasan.fromJson(Map<String, dynamic>.from(await api.post('/ulasan', {
+        'produk_id': produkId,
+        'rating': rating,
+        'komentar': komentar,
+        if (gambar != null) 'gambar': gambar,
+      })));
+
+  @override
+  Future<PermintaanTopup> buatTopup(int nominal, String metode) async =>
+      PermintaanTopup.fromJson(Map<String, dynamic>.from(
+          await api.post('/wallet/topup', {'nominal': nominal, 'metode': metode})));
+
+  @override
+  Future<List<PermintaanTopup>> daftarTopup() async =>
+      ((await api.get('/wallet/topup')) as List).map((e) => PermintaanTopup.fromJson(e)).toList();
+
+  @override
+  Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) async =>
+      PermintaanTopup.fromJson(Map<String, dynamic>.from(
+          await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
+
+  @override
   Future<List<PcPlan>> plans() async =>
       ((await api.get('/pc/plans')) as List).map((e) => PcPlan.fromJson(e)).toList();
 
@@ -132,14 +187,13 @@ class RemoteRepository implements XyRepository {
       ((await api.get('/wallet/transaksi')) as List).map((e) => Transaksi.fromJson(e)).toList();
 
   @override
-  Future<int> topup(int nominal) async => (await api.post('/wallet/topup', {'nominal': nominal}))['saldo'] as int;
-
   @override
   Future<List<ChatMessage>> riwayatChat() async =>
       ((await api.get('/cs/messages')) as List).map((e) => ChatMessage.fromJson(e)).toList();
 
   @override
-  Future<void> kirimChat(String teks) async => api.post('/cs/messages', {'teks': teks});
+  Future<void> kirimChat(String teks, {String? gambar}) async =>
+      api.post('/cs/messages', {'teks': teks, if (gambar != null) 'gambar': gambar});
 }
 
 // ------------------------------------------------------------------
@@ -182,6 +236,55 @@ class MockRepository implements XyRepository {
   @override
   Future<UserProfile> resetPassword({required String email, required String kode, required String password}) =>
       _delay(MockData.user, 600);
+
+  @override
+  Future<KonfigurasiApp> konfigurasi() =>
+      _delay(const KonfigurasiApp(googleAktif: false, facebookAktif: false, whatsapp: '', minTopup: 10000), 200);
+
+  @override
+  Future<UserProfile> profilSaya() => _delay(MockData.user, 200);
+
+  @override
+  void pasangToken(String token) {}
+
+  @override
+  Future<List<Ulasan>> ulasan(String produkId) => _delay(<Ulasan>[], 300);
+
+  @override
+  Future<Ulasan> kirimUlasan({
+    required String produkId,
+    required int rating,
+    required String komentar,
+    String? gambar,
+  }) =>
+      _delay(
+        Ulasan(
+          id: 'r_demo', produkId: produkId, nama: MockData.user.nama, rating: rating,
+          komentar: komentar, waktu: DateTime.now(),
+        ),
+        400,
+      );
+
+  @override
+  Future<PermintaanTopup> buatTopup(int nominal, String metode) => _delay(
+        PermintaanTopup(
+          id: 'tp_demo', nominal: nominal, kodeUnik: 123, total: nominal + 123,
+          metode: metode, status: 'menunggu', dibuat: DateTime.now(),
+        ),
+        400,
+      );
+
+  @override
+  Future<List<PermintaanTopup>> daftarTopup() => _delay(<PermintaanTopup>[], 300);
+
+  @override
+  Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) => _delay(
+        PermintaanTopup(
+          id: idTopup, nominal: 0, kodeUnik: 0, total: 0, metode: 'transfer',
+          status: 'diperiksa', dibuat: DateTime.now(),
+        ),
+        400,
+      );
 
   @override
   Future<List<PcPlan>> plans() => _delay(_plans);
@@ -232,15 +335,8 @@ class MockRepository implements XyRepository {
   Future<List<Transaksi>> transaksi() => _delay(_trx);
 
   @override
-  Future<int> topup(int nominal) async {
-    MockData.user = MockData.user.copyWith(saldo: MockData.user.saldo + nominal);
-    _trx.insert(0, Transaksi(id: 'tx${DateTime.now().millisecondsSinceEpoch}', judul: 'Top up saldo', tipe: 'topup', nominal: nominal, waktu: DateTime.now(), status: 'sukses'));
-    return _delay(MockData.user.saldo, 900);
-  }
-
-  @override
   Future<List<ChatMessage>> riwayatChat() => _delay(_chat, 300);
 
   @override
-  Future<void> kirimChat(String teks) async {}
+  Future<void> kirimChat(String teks, {String? gambar}) async {}
 }

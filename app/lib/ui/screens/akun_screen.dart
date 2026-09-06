@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/produk_ulasan.dart';
 
 class AkunScreen extends StatefulWidget {
   const AkunScreen({super.key, this.fokusId});
@@ -104,7 +105,10 @@ class _KartuProduk extends StatelessWidget {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Stack(children: [
-          GradientThumb(seed: produk.id, icon: Icons.vpn_key_rounded, size: double.infinity, height: 92, radius: 14),
+          SizedBox(
+            width: double.infinity,
+            child: GambarProduk(produk: produk, tinggi: 92, radius: 14),
+          ),
           if (diskon > 0)
             Positioned(
               top: 8,
@@ -126,6 +130,7 @@ class _KartuProduk extends StatelessWidget {
         Row(children: [
           const Icon(Icons.star_rounded, size: 13, color: XyTheme.gold),
           Text(' ${produk.rating}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+          Text(' (${produk.jumlahUlasan})', style: const TextStyle(fontSize: 10.5, color: XyTheme.muted)),
           Text(' · ${produk.terjual}x', style: const TextStyle(fontSize: 11, color: XyTheme.muted)),
         ]),
         const Spacer(),
@@ -166,6 +171,15 @@ class _SheetDetailState extends State<_SheetDetail> {
   bool proses = false;
   String metode = 'saldo';
 
+  @override
+  void initState() {
+    super.initState();
+    // ambil ulasan terbaru begitu halaman dibuka
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().muatUlasan(widget.produk.id);
+    });
+  }
+
   Future<void> _beli() async {
     final s = context.read<AppState>();
     if (metode == 'saldo' && (s.user?.saldo ?? 0) < widget.produk.harga) {
@@ -204,21 +218,30 @@ class _SheetDetailState extends State<_SheetDetail> {
           ),
           Expanded(
             child: ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(20, 4, 20, 20), children: [
+              GambarProduk(produk: p, tinggi: 200),
+              const SizedBox(height: 16),
               Row(children: [
-                GradientThumb(seed: p.id, icon: Icons.vpn_key_rounded, size: 62, radius: 16),
-                const SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Pill(p.kategori, warna: XyTheme.violet),
-                    const SizedBox(height: 6),
-                    Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, height: 1.3)),
+                    const SizedBox(height: 8),
+                    Text(p.nama,
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, height: 1.28, letterSpacing: -.4)),
+                    const SizedBox(height: 8),
+                    Row(children: [
+                      Bintang(nilai: p.rating, ukuran: 15),
+                      const SizedBox(width: 7),
+                      Text('${p.rating}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                      Text('  ·  ${p.jumlahUlasan} ulasan  ·  ${p.terjual} terjual',
+                          style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+                    ]),
                   ]),
                 ),
               ]),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               XyCard(
                 child: Row(children: [
-                  Expanded(child: _Stat('Rating', '${p.rating}', Icons.star_rounded)),
+                  Expanded(child: _Stat('Stok', '${p.stok}', Icons.inventory_2_rounded)),
                   Container(width: 1, height: 34, color: XyTheme.line),
                   Expanded(child: _Stat('Terjual', '${p.terjual}', Icons.local_fire_department_rounded)),
                   Container(width: 1, height: 34, color: XyTheme.line),
@@ -226,7 +249,31 @@ class _SheetDetailState extends State<_SheetDetail> {
                 ]),
               ),
               const SectionHeader('Deskripsi'),
-              Text(p.deskripsi, style: const TextStyle(fontSize: 13.5, height: 1.6, color: XyTheme.muted)),
+              Text(p.deskripsi.isEmpty ? 'Belum ada deskripsi untuk produk ini.' : p.deskripsi,
+                  style: const TextStyle(fontSize: 13.5, height: 1.6, color: XyTheme.muted)),
+              if (p.detail.isNotEmpty) ...[
+                const SectionHeader('Detail Produk'),
+                XyCard(
+                  child: Column(
+                    children: p.detail.entries
+                        .map((e) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 7),
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                SizedBox(
+                                  width: 116,
+                                  child: Text(e.key,
+                                      style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+                                ),
+                                Expanded(
+                                  child: Text('${e.value}',
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.8, height: 1.45)),
+                                ),
+                              ]),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
               const SectionHeader('Yang Kamu Dapat'),
               ...p.fitur.map((f) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -236,6 +283,38 @@ class _SheetDetailState extends State<_SheetDetail> {
                       Expanded(child: Text(f, style: const TextStyle(fontSize: 13.5))),
                     ]),
                   )),
+              Row(children: [
+                const Expanded(child: SectionHeader('Ulasan Pembeli')),
+                TextButton.icon(
+                  onPressed: () => bukaFormUlasan(context, p),
+                  icon: const Icon(Icons.rate_review_outlined, size: 17),
+                  label: const Text('Tulis'),
+                ),
+              ]),
+              Builder(builder: (context) {
+                final daftar = context.watch<AppState>().ulasanProduk(p.id);
+                if (daftar.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: XyTheme.surface,
+                      borderRadius: BorderRadius.circular(XyRadius.lg),
+                      border: Border.all(color: XyTheme.line),
+                    ),
+                    child: const Column(children: [
+                      Icon(Icons.reviews_outlined, color: XyTheme.muted, size: 26),
+                      SizedBox(height: 10),
+                      Text('Belum ada ulasan untuk produk ini',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      SizedBox(height: 4),
+                      Text('Jadilah yang pertama memberi penilaian.',
+                          style: TextStyle(color: XyTheme.muted, fontSize: 12)),
+                    ]),
+                  );
+                }
+                return Column(children: daftar.take(8).map((u) => KartuUlasan(u)).toList());
+              }),
               const SectionHeader('Bayar Pakai'),
               Row(children: [
                 Expanded(child: _PilihBayar('saldo', 'Saldo', Icons.account_balance_wallet_rounded, metode, (v) => setState(() => metode = v))),

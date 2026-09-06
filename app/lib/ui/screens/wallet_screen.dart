@@ -4,6 +4,7 @@ import '../../core/format.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/topup_sheet.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -37,26 +38,28 @@ class WalletScreen extends StatelessWidget {
                   style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ]),
           ),
-          const SectionHeader('Top Up Cepat'),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [25000, 50000, 100000, 250000, 500000].map((n) {
-              return SizedBox(
-                width: (MediaQuery.of(context).size.width - 60) / 2,
-                child: OutlinedButton(
-                  onPressed: () async {
-                    await s.topup(n);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(SnackBar(content: Text('Top up ${rupiah(n)} berhasil')));
-                    }
-                  },
-                  child: Text('+ ${rupiah(n)}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                ),
-              );
-            }).toList(),
+          const SizedBox(height: 18),
+          GradientButton(
+            label: 'Isi Saldo',
+            icon: Icons.add_rounded,
+            onPressed: () => bukaTopup(context),
           ),
+          const SizedBox(height: 10),
+          Row(children: [
+            const Icon(Icons.verified_user_rounded, size: 15, color: XyTheme.muted),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                'Transfer bank atau QRIS, saldo masuk setelah admin memverifikasi bukti.',
+                style: const TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.45),
+              ),
+            ),
+          ]),
+
+          if (s.topupSaya.where((t) => !t.selesai).isNotEmpty) ...[
+            const SectionHeader('Top Up Berjalan'),
+            ...s.topupSaya.where((t) => !t.selesai).map((t) => KartuTopup(t)),
+          ],
           const SectionHeader('Riwayat Transaksi'),
           if (s.transaksi.isEmpty)
             const Kosong(icon: Icons.history_rounded, judul: 'Belum ada transaksi', sub: 'Top up saldo dulu untuk mulai transaksi.', ilustrasi: 'dompet')

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/prefs.dart';
+import '../../data/login_sosial.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../../core/motion.dart';
@@ -28,6 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool lihat = false;
   bool ingat = true;
   String? _galat;
+  String? _sosialProses;
 
   @override
   void initState() {
@@ -98,6 +100,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _galat = s.error ?? 'Terjadi kesalahan, coba lagi.');
+  }
+
+  /// Login lewat Google atau Facebook memakai halaman resmi penyedia.
+  Future<void> _masukSosial(String provider) async {
+    setState(() {
+      _galat = null;
+      _sosialProses = provider;
+    });
+    try {
+      final token = await LoginSosial.masuk(provider);
+      if (!mounted) return;
+      final ok = await context.read<AppState>().masukDenganToken(token);
+      if (!mounted) return;
+      if (ok) {
+        Navigator.of(context).popUntil((r) => r.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Berhasil masuk. Selamat datang.')),
+        );
+        return;
+      }
+      setState(() => _galat = context.read<AppState>().error ?? 'Login gagal, coba lagi.');
+    } on GagalLoginSosial catch (e) {
+      if (mounted) setState(() => _galat = e.pesan);
+    } finally {
+      if (mounted) setState(() => _sosialProses = null);
+    }
   }
 
   void _gantiMode() {
@@ -309,23 +337,42 @@ class _LoginScreenState extends State<LoginScreen> {
                     ]),
                     const SizedBox(height: 20),
 
-                    Row(children: [
-                      Expanded(
-                        child: _SosialBtn(
-                          logo: const GoogleLogo(size: 21),
-                          label: 'Google',
-                          onTap: _submit,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _SosialBtn(
-                          logo: const FacebookLogo(size: 22),
-                          label: 'Facebook',
-                          onTap: _submit,
-                        ),
-                      ),
-                    ]),
+                    Builder(builder: (context) {
+                      final cfg = context.watch<AppState>().konfigurasi;
+                      final tombol = <Widget>[
+                        if (cfg.googleAktif)
+                          Expanded(
+                            child: _SosialBtn(
+                              logo: const GoogleLogo(size: 21),
+                              label: _sosialProses == 'google' ? 'Menghubungkan...' : 'Google',
+                              onTap: _sosialProses != null ? null : () => _masukSosial('google'),
+                            ),
+                          ),
+                        if (cfg.facebookAktif)
+                          Expanded(
+                            child: _SosialBtn(
+                              logo: const FacebookLogo(size: 22),
+                              label: _sosialProses == 'facebook' ? 'Menghubungkan...' : 'Facebook',
+                              onTap: _sosialProses != null ? null : () => _masukSosial('facebook'),
+                            ),
+                          ),
+                      ];
+                      if (tombol.isEmpty) {
+                        return const Text(
+                          'Login sosial sedang tidak tersedia. Silakan pakai email dan password.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.5),
+                        );
+                      }
+                      return Row(
+                        children: [
+                          for (var i = 0; i < tombol.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 12),
+                            tombol[i],
+                          ],
+                        ],
+                      );
+                    }),
 
                     const SizedBox(height: 28),
                     Center(
@@ -374,7 +421,7 @@ class _SosialBtn extends StatelessWidget {
   const _SosialBtn({required this.logo, required this.label, required this.onTap});
   final Widget logo;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -384,7 +431,7 @@ class _SosialBtn extends StatelessWidget {
         height: 52,
         decoration: BoxDecoration(
           color: XyTheme.surface,
-          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderRadius: BorderRadius.circular(XyRadius.tombol),
           border: Border.all(color: XyTheme.line),
           boxShadow: XyTheme.shadowXs,
         ),

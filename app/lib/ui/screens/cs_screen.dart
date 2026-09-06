@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../core/theme.dart';
@@ -34,6 +38,38 @@ class _CsScreenState extends State<CsScreen> {
     if (!scroll.hasClients) return;
     scroll.animateTo(scroll.position.maxScrollExtent + 120,
         duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
+
+  /// Ambil gambar dari galeri lalu kirim sebagai lampiran chat.
+  Future<void> _kirimGambar() async {
+    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
+    if (f == null) return;
+    final bytes = await f.readAsBytes();
+    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    final dataUri = 'data:image/$tipe;base64,${base64Encode(bytes)}';
+    if (!mounted) return;
+    await context.read<AppState>().kirimChat('', gambar: dataUri, pratinjau: dataUri);
+    if (mounted) _keBawah();
+  }
+
+  /// Buka percakapan WhatsApp dengan admin.
+  Future<void> _bukaWhatsapp() async {
+    final nomor = context.read<AppState>().konfigurasi.whatsapp;
+    if (nomor.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nomor WhatsApp admin belum diatur.')),
+      );
+      return;
+    }
+    final pesan = Uri.encodeComponent('Halo admin XyCloudStore, saya butuh bantuan.');
+    final tujuan = Uri.parse('https://wa.me/$nomor?text=$pesan');
+    if (!await launchUrl(tujuan, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('WhatsApp tidak bisa dibuka di perangkat ini.')),
+        );
+      }
+    }
   }
 
   Future<void> _kirim([String? teks]) async {
@@ -91,8 +127,11 @@ class _CsScreenState extends State<CsScreen> {
           ]),
         ]),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.call_outlined)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
+          IconButton(
+            onPressed: _bukaWhatsapp,
+            icon: const Icon(Icons.chat_rounded, color: Color(0xFF16A34A)),
+            tooltip: 'Chat lewat WhatsApp',
+          ),
         ],
       ),
       body: Column(children: [
@@ -128,8 +167,9 @@ class _CsScreenState extends State<CsScreen> {
           decoration: BoxDecoration(color: XyTheme.surface, boxShadow: XyTheme.shadowMd),
           child: Row(children: [
             IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.attach_file_rounded, color: XyTheme.muted),
+              onPressed: _kirimGambar,
+              icon: const Icon(Icons.image_outlined, color: XyTheme.primary),
+              tooltip: 'Kirim gambar',
             ),
             Expanded(
               child: TextField(
@@ -207,16 +247,50 @@ class _Gelembung extends StatelessWidget {
           border: saya ? null : Border.all(color: XyTheme.line),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(msg.teks,
-              style: TextStyle(color: saya ? Colors.white : XyTheme.ink, fontSize: 13.8, height: 1.42)),
+          if (msg.gambar != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: msg.gambar!.startsWith('data:')
+                  ? Image.memory(
+                      base64Decode(msg.gambar!.split(',').last),
+                      width: 210,
+                      fit: BoxFit.cover,
+                    )
+                  : Image.network(
+                      msg.gambar!,
+                      width: 210,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (_, anak, p) => p == null
+                          ? anak
+                          : Container(
+                              width: 210,
+                              height: 150,
+                              color: XyTheme.lineSoft,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20, height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                                ),
+                              ),
+                            ),
+                    ),
+            ),
+            if (msg.teks.isNotEmpty) const SizedBox(height: 8),
+          ],
+          if (msg.teks.isNotEmpty)
+            Text(msg.teks,
+                style: TextStyle(color: saya ? Colors.white : XyTheme.ink, fontSize: 13.8, height: 1.42)),
           const SizedBox(height: 3),
           Row(mainAxisSize: MainAxisSize.min, children: [
             Text(jam(msg.waktu),
                 style: TextStyle(fontSize: 10, color: saya ? Colors.white70 : XyTheme.muted)),
             if (saya) ...[
               const SizedBox(width: 4),
-              Icon(msg.terkirim ? Icons.done_all_rounded : Icons.schedule_rounded,
-                  size: 12, color: Colors.white70),
+              Icon(
+                msg.terkirim ? Icons.done_all_rounded : Icons.schedule_rounded,
+                size: 13,
+                color: msg.dibaca ? const Color(0xFF7DD3FC) : Colors.white70,
+              ),
             ],
           ]),
         ]),

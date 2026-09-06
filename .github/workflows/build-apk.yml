@@ -99,9 +99,7 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's/android:label="[^"]*"/android:label="XyCloudStore"/' $MANIFEST
-          grep -q 'android.permission.INTERNET' $MANIFEST || \
-            sed -i 's|<application|<uses-permission android:name="android.permission.INTERNET"/>\n    <application|' $MANIFEST
+          python3 ../tools/patch_manifest.py "$MANIFEST"
           echo "----- manifest -----"
           cat $MANIFEST
 

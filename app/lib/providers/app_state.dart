@@ -14,6 +14,7 @@ class AppState extends ChangeNotifier {
   AppState() {
     _api = ApiClient();
     _repo = XyRepository.create(_api);
+    unawaited(muatKonfigurasi());
   }
 
   late final ApiClient _api;
@@ -165,6 +166,109 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ================= konfigurasi server =================
+  KonfigurasiApp konfigurasi = const KonfigurasiApp();
+
+  Future<void> muatKonfigurasi() async {
+    try {
+      konfigurasi = await _repo.konfigurasi();
+      notifyListeners();
+    } catch (_) {
+      // biarkan memakai nilai bawaan kalau server belum bisa dihubungi
+    }
+  }
+
+  // ================= login lewat Google atau Facebook =================
+  /// Dipanggil setelah aplikasi menerima token dari halaman OAuth.
+  Future<bool> masukDenganToken(String token) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      _repo.pasangToken(token);
+      user = await _repo.profilSaya();
+      await muatSemua();
+      _mulaiRealtime();
+      _daftarkanPush();
+      return true;
+    } catch (e) {
+      error = _pesan(e);
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  // ================= ulasan produk =================
+  final Map<String, List<Ulasan>> _ulasan = {};
+
+  List<Ulasan> ulasanProduk(String produkId) => _ulasan[produkId] ?? const [];
+
+  Future<List<Ulasan>> muatUlasan(String produkId) async {
+    try {
+      final data = await _repo.ulasan(produkId);
+      _ulasan[produkId] = data;
+      notifyListeners();
+      return data;
+    } catch (_) {
+      return _ulasan[produkId] ?? const [];
+    }
+  }
+
+  Future<String?> kirimUlasan({
+    required String produkId,
+    required int rating,
+    required String komentar,
+    String? gambar,
+  }) async {
+    try {
+      await _repo.kirimUlasan(produkId: produkId, rating: rating, komentar: komentar, gambar: gambar);
+      await muatUlasan(produkId);
+      await muatProduk();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  // ================= dompet: top up sungguhan =================
+  List<PermintaanTopup> topupSaya = [];
+
+  Future<void> muatTopup() async {
+    try {
+      topupSaya = await _repo.daftarTopup();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<PermintaanTopup?> buatTopup(int nominal, String metode) async {
+    loading = true;
+    error = null;
+    notifyListeners();
+    try {
+      final t = await _repo.buatTopup(nominal, metode);
+      await muatTopup();
+      return t;
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> unggahBukti(String idTopup, String dataUri) async {
+    try {
+      await _repo.unggahBukti(idTopup, dataUri);
+      await muatTopup();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
   /// Hubungkan akun ini ke OneSignal supaya notifikasi tetap masuk saat aplikasi tertutup.
   void _daftarkanPush() {
     final id = user?.id;
@@ -213,6 +317,24 @@ class AppState extends ChangeNotifier {
     transaksi = hasil[4] as List<Transaksi>;
     chat = hasil[5] as List<ChatMessage>;
     notifyListeners();
+    // data pelengkap, tidak perlu ditunggu
+    unawaited(muatTopup());
+  }
+
+  /// Muat ulang daftar produk saja (dipakai setelah menulis ulasan).
+  Future<void> muatProduk() async {
+    try {
+      produk = await _repo.produkAkun();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// Muat ulang riwayat chat.
+  Future<void> muatChat() async {
+    try {
+      chat = await _repo.riwayatChat();
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> refresh() => muatSemua();
@@ -374,19 +496,15 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<void> topup(int nominal) async {
-    final saldo = await _repo.topup(nominal);
-    user = user?.copyWith(saldo: saldo);
-    transaksi = await _repo.transaksi();
-    notifyListeners();
-  }
 
-  Future<void> kirimChat(String teks) async {
+
+  Future<void> kirimChat(String teks, {String? gambar, String? pratinjau}) async {
     final msg = ChatMessage(
       id: 'local_${DateTime.now().microsecondsSinceEpoch}',
       room: 'cs',
       dari: 'user',
       teks: teks,
+      gambar: pratinjau,
       waktu: DateTime.now(),
       terkirim: false,
     );
@@ -411,11 +529,14 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    _rt?.send('chat.message', {'teks': teks});
+    if (gambar == null) _rt?.send('chat.message', {'teks': teks});
     try {
-      await _repo.kirimChat(teks);
+      await _repo.kirimChat(teks, gambar: gambar);
       msg.terkirim = true;
-    } catch (_) {}
+      if (gambar != null) await muatChat();
+    } catch (e) {
+      error = _pesan(e);
+    }
     notifyListeners();
   }
 

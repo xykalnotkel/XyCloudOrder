@@ -17,11 +17,14 @@ class XySpace {
 }
 
 class XyRadius {
-  static const double sm = 12;
-  static const double md = 16;
-  static const double lg = 20;
-  static const double xl = 26;
+  static const double sm = 14;
+  static const double md = 18;
+  static const double lg = 22;
+  static const double xl = 28;
   static const double pill = 100;
+
+  /// Radius khusus tombol supaya bentuknya membulat, bukan kotak.
+  static const double tombol = 30;
 }
 
 class XyTheme {
@@ -151,7 +154,7 @@ class XyTheme {
           foregroundColor: Colors.white,
           disabledBackgroundColor: const Color(0xFFD9CFF0),
           minimumSize: const Size.fromHeight(54),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.md)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.tombol)),
           textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -.1),
         ),
       ),
@@ -161,7 +164,7 @@ class XyTheme {
           backgroundColor: surface,
           minimumSize: const Size.fromHeight(52),
           side: const BorderSide(color: line),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.md)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.tombol)),
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
         ),
       ),
