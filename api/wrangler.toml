@@ -1,0 +1,22 @@
+name = "xycloud-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# --- Database D1 ---
+[[d1_databases]]
+binding = "DB"
+database_name = "xycloud"
+database_id = "GANTI_DENGAN_ID_D1_KAMU"
+
+# --- Durable Object untuk realtime (WebSocket) ---
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "RealtimeHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RealtimeHub"]
+
+[vars]
+JWT_SECRET = "ganti-dengan-secret-panjang-random"
+ALLOW_ORIGIN = "*"

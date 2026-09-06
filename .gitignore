@@ -1,0 +1,19 @@
+# Flutter
+app/.dart_tool/
+app/.packages
+app/build/
+app/android/
+app/ios/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/pubspec.lock
+
+# Node
+api/node_modules/
+api/.wrangler/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml

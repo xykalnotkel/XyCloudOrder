@@ -1,0 +1,212 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// ============================================================
+///  XyCloud Design System — Premium Edition
+///  Token spasi, radius, elevasi, gradien, dan tema Material 3.
+/// ============================================================
+class XySpace {
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 20;
+  static const double xxl = 28;
+  static const double page = 22;
+}
+
+class XyRadius {
+  static const double sm = 12;
+  static const double md = 16;
+  static const double lg = 20;
+  static const double xl = 26;
+  static const double pill = 100;
+}
+
+class XyTheme {
+  // ---------- palet ----------
+  static const Color primary = Color(0xFF2F5BFF);
+  static const Color primaryDeep = Color(0xFF1B3CD6);
+  static const Color primarySoft = Color(0xFFEAF0FF);
+  static const Color violet = Color(0xFF7B5CFF);
+  static const Color cyan = Color(0xFF17C3E0);
+  static const Color gold = Color(0xFFE0A33B);
+
+  static const Color ink = Color(0xFF0B1220);
+  static const Color inkSoft = Color(0xFF334155);
+  static const Color muted = Color(0xFF7A879C);
+  static const Color line = Color(0xFFE9EDF5);
+  static const Color lineSoft = Color(0xFFF1F4FA);
+  static const Color bg = Color(0xFFF7F9FD);
+  static const Color surface = Color(0xFFFFFFFF);
+
+  static const Color success = Color(0xFF12A66C);
+  static const Color warning = Color(0xFFE0A33B);
+  static const Color danger = Color(0xFFE0453B);
+
+  // ---------- gradien ----------
+  static const LinearGradient gradPrimary = LinearGradient(
+    colors: [Color(0xFF2F5BFF), Color(0xFF6A4BFF)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const LinearGradient gradMidnight = LinearGradient(
+    colors: [Color(0xFF0B1220), Color(0xFF16213E), Color(0xFF1B2B5A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const LinearGradient gradAurora = LinearGradient(
+    colors: [Color(0xFF17C3E0), Color(0xFF2F5BFF), Color(0xFF7B5CFF)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+  static const LinearGradient gradGold = LinearGradient(
+    colors: [Color(0xFFF0C273), Color(0xFFC98A2B)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // ---------- elevasi ----------
+  static List<BoxShadow> get shadowXs => [
+        BoxShadow(color: ink.withOpacity(.035), blurRadius: 8, offset: const Offset(0, 2)),
+      ];
+  static List<BoxShadow> get shadowSm => [
+        BoxShadow(color: ink.withOpacity(.05), blurRadius: 16, offset: const Offset(0, 6)),
+      ];
+  static List<BoxShadow> get shadowMd => [
+        BoxShadow(color: ink.withOpacity(.07), blurRadius: 28, offset: const Offset(0, 12)),
+        BoxShadow(color: ink.withOpacity(.03), blurRadius: 4, offset: const Offset(0, 1)),
+      ];
+  static List<BoxShadow> glow(Color c, [double o = .32]) => [
+        BoxShadow(color: c.withOpacity(o), blurRadius: 26, offset: const Offset(0, 12)),
+      ];
+
+  // ---------- tema ----------
+  static ThemeData light() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        primary: primary,
+        surface: surface,
+        brightness: Brightness.light,
+      ),
+      scaffoldBackgroundColor: bg,
+      splashFactory: InkSparkle.splashFactory,
+    );
+
+    final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+      bodyColor: ink,
+      displayColor: ink,
+    );
+
+    return base.copyWith(
+      textTheme: text.copyWith(
+        displayLarge: text.displayLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1.6),
+        headlineMedium: text.headlineMedium?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+        titleLarge: text.titleLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -.5),
+        titleMedium: text.titleMedium?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -.2),
+        bodyMedium: text.bodyMedium?.copyWith(height: 1.55),
+        labelLarge: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bg,
+        foregroundColor: ink,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: ink,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -.4,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFCBD5E1),
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.md)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -.1),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ink,
+          backgroundColor: surface,
+          minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: line),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.md)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primary,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+        prefixIconColor: muted,
+        suffixIconColor: muted,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: line),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: primary, width: 1.6),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: danger),
+        ),
+        hintStyle: const TextStyle(color: muted, fontWeight: FontWeight.w500),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: surface,
+        side: const BorderSide(color: line),
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.pill)),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      ),
+      dividerTheme: const DividerThemeData(color: line, space: 1, thickness: 1),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: ink,
+        contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.sm)),
+        insetPadding: const EdgeInsets.all(16),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.xl)),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      }),
+    );
+  }
+}
