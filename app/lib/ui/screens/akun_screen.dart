@@ -209,7 +209,7 @@ class _SheetDetailState extends State<_SheetDetail> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Pill(p.kategori, warna: const XyTheme.violet),
+                    Pill(p.kategori, warna: XyTheme.violet),
                     const SizedBox(height: 6),
                     Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, height: 1.3)),
                   ]),

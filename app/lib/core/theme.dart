@@ -198,7 +198,7 @@ class XyTheme {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
       ),
-      dialogTheme: DialogThemeData(
+      dialogTheme: DialogTheme(
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.xl)),

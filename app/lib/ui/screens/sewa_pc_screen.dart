@@ -106,7 +106,7 @@ class _KartuPlan extends StatelessWidget {
               Row(children: [
                 Text(plan.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16.5, letterSpacing: -.3)),
                 const SizedBox(width: 8),
-                if (plan.tag.isNotEmpty) Pill(plan.tag, warna: const XyTheme.violet),
+                if (plan.tag.isNotEmpty) Pill(plan.tag, warna: XyTheme.violet),
               ]),
               const SizedBox(height: 3),
               Text(plan.gpu, style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),

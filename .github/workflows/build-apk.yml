@@ -61,6 +61,10 @@ jobs:
             --project-name xycloud_order \
             --description "XyCloudOrder - Sewa PC Cloud, Beli Akun, CS Realtime"
 
+      - name: Bersihkan berkas bawaan flutter create
+        working-directory: ${{ env.APP_DIR }}
+        run: rm -f test/widget_test.dart
+
       - name: Install dependencies
         working-directory: ${{ env.APP_DIR }}
         run: flutter pub get
