@@ -255,7 +255,6 @@ const P = {
   eye:'<path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/>',
   eyeOff:'<path d="M9.6 5.7A9.6 9.6 0 0 1 12 5.5c6.2 0 10 6.5 10 6.5a17 17 0 0 1-3.3 3.9M6.2 7.9A17 17 0 0 0 2 12s3.8 6.5 10 6.5c1.4 0 2.6-.3 3.7-.8"/><path d="m3 3 18 18"/>',
   google:'<path d="M21 12.2c0-.7-.1-1.3-.2-2H12v3.9h5.1a4.4 4.4 0 0 1-1.9 2.9v2.4h3c1.8-1.7 2.8-4.2 2.8-7.2Z"/><path d="M12 21.5c2.6 0 4.7-.9 6.2-2.3l-3-2.4c-.8.6-1.9.9-3.2.9-2.5 0-4.6-1.7-5.3-4H3.6v2.5A9.5 9.5 0 0 0 12 21.5Z"/><path d="M6.7 13.7a5.7 5.7 0 0 1 0-3.6V7.6H3.6a9.5 9.5 0 0 0 0 8.6l3.1-2.5Z"/><path d="M12 6.4c1.4 0 2.7.5 3.7 1.5l2.7-2.7A9.5 9.5 0 0 0 3.6 7.6l3.1 2.5c.7-2.3 2.8-3.7 5.3-3.7Z"/>',
-  apple:'<path d="M16.3 12.6c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.7.9s-1.9-.9-3.2-.8c-1.6 0-3.1 1-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.5.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.1-.8s1.9.8 3.2.7c1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-.1 0-2.6-1-2.6-3.6Z"/><path d="M14.2 5.3c.7-.8 1.1-1.9 1-3-1 0-2.2.7-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.5Z"/>',
   crown:'<path d="M3 7.5 6.5 12 12 4.5 17.5 12 21 7.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18V7.5Z"/>',
   qr:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M20 20v.01M17.5 17.5v.01"/>',
   bank:'<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18"/>',
@@ -284,6 +283,65 @@ function ic(n, s=20, c='currentColor', w=1.9){
 /* ============================================================
    STATE (mirror lib/providers/app_state.dart)
    ============================================================ */
+/* ---------- logo merek asli (dipakai tombol login sosial) ---------- */
+const LOGO_GOOGLE = `<svg width="19" height="19" viewBox="0 0 533.5 544.3" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.5-37.1-4.7-55.3H272.1v104.8h147c-6.1 33.8-25.7 63.7-54.4 82.7v68h87.7c51.5-47.4 81.1-117.4 81.1-200.2z"/>
+  <path fill="#34A853" d="M272.1 544.3c73.4 0 135.3-24.1 180.4-65.7l-87.7-68c-24.4 16.6-55.9 26-92.6 26-71 0-131.2-47.9-152.8-112.3H28.9v70.1c46.2 91.9 140.3 149.9 243.2 149.9z"/>
+  <path fill="#FBBC04" d="M119.3 324.3c-11.4-33.8-11.4-70.4 0-104.2V150H28.9c-38.6 76.9-38.6 167.5 0 244.4l90.4-70.1z"/>
+  <path fill="#EA4335" d="M272.1 107.7c38.8-.6 76.3 14 104.4 40.8l77.7-77.7C405 24.6 339.7-.8 272.1 0 169.2 0 75.1 58 28.9 150l90.4 70.1c21.5-64.5 81.8-112.4 152.8-112.4z"/></svg>`;
+const LOGO_FACEBOOK = `<svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="12" fill="#1877F2"/>
+  <path fill="#fff" d="M15.9 15.5l.53-3.47h-3.33V9.78c0-.95.47-1.88 1.96-1.88h1.51V4.95s-1.37-.23-2.69-.23c-2.74 0-4.53 1.66-4.53 4.67v2.64H6.3v3.47h3.05v8.39a12.1 12.1 0 0 0 3.75 0v-8.39h2.8z"/></svg>`;
+
+/* ---------- banner slider beranda ---------- */
+const BANNERS = [
+  {label:'PROMO DURASI',judul:'Diskon 10% sewa 8 jam ke atas',sub:'Otomatis diterapkan saat checkout, berlaku semua paket.',cta:'Sewa Sekarang',c1:'#2F5BFF',c2:'#6A4BFF',ikon:'bolt',aksi:'go(1)'},
+  {label:'BARU',judul:'RTX 4090 kini tersedia',sub:'Render dan gaming 4K tanpa kompromi di paket XyUltra.',cta:'Lihat Paket',c1:'#7B5CFF',c2:'#2F5BFF',ikon:'gpu',aksi:'go(1)'},
+  {label:'DOMPET',judul:'Bonus saldo 5% tiap top up',sub:'Minimal top up Rp100.000, langsung masuk ke dompet.',cta:'Top Up',c1:'#12A66C',c2:'#17C3E0',ikon:'wallet',aksi:'go(5)'},
+  {label:'TERPERCAYA',judul:'Akun premium bergaransi',sub:'Replace gratis kalau bermasalah dalam masa garansi.',cta:'Belanja',c1:'#E0A33B',c2:'#E0453B',ikon:'crown',aksi:'go(2)'},
+];
+let _bnIdx = 0;
+function bannerSlider(){
+  return `<div style="margin-top:22px">
+    <div id="bnScroll" class="scrollx" style="gap:11px;scroll-snap-type:x mandatory;padding-bottom:2px" onscroll="bnDots()">
+      ${BANNERS.map(b=>`<div class="tap" onclick="${b.aksi}" style="flex:none;width:86%;scroll-snap-align:center;
+        position:relative;overflow:hidden;border-radius:22px;padding:20px;color:#fff;
+        background:linear-gradient(135deg,${b.c1},${b.c2});box-shadow:0 16px 32px ${b.c1}40">
+        <div style="position:absolute;right:-34px;top:-42px;width:148px;height:148px;border-radius:50%;background:rgba(255,255,255,.12)"></div>
+        <div style="position:absolute;right:44px;bottom:-58px;width:116px;height:116px;border-radius:50%;background:rgba(255,255,255,.08)"></div>
+        <div style="position:absolute;right:18px;top:26px;opacity:.28">${ic(b.ikon,58,'#fff')}</div>
+        <div style="position:relative">
+          <span style="display:inline-block;background:rgba(255,255,255,.22);padding:4px 9px;border-radius:99px;
+            font-size:9.5px;font-weight:800;letter-spacing:1.1px">${b.label}</span>
+          <div style="font-size:17px;font-weight:800;letter-spacing:-.4px;line-height:1.22;margin:10px 0 6px;max-width:210px">${b.judul}</div>
+          <div style="font-size:11.8px;line-height:1.35;opacity:.86;max-width:218px">${b.sub}</div>
+          <div style="display:inline-flex;align-items:center;gap:4px;background:#fff;color:${b.c1};
+            padding:8px 13px;border-radius:99px;font-size:11.8px;font-weight:800;margin-top:13px">${b.cta} ${ic('arrowR',14,b.c1)}</div>
+        </div></div>`).join('')}
+    </div>
+    <div class="row" id="bnDots" style="justify-content:center;gap:4px;margin-top:11px">
+      ${BANNERS.map((_,i)=>`<span style="width:${i===_bnIdx?20:6}px;height:6px;border-radius:6px;transition:.28s;
+        background:${i===_bnIdx?'var(--primary)':'rgba(122,135,156,.28)'}"></span>`).join('')}</div></div>`;
+}
+function bnDots(){
+  const el=document.getElementById('bnScroll'); if(!el||!el.firstElementChild)return;
+  const w=el.firstElementChild.offsetWidth+11;
+  const i=Math.round(el.scrollLeft/w);
+  if(i===_bnIdx)return;
+  _bnIdx=i;
+  const d=document.getElementById('bnDots'); if(!d)return;
+  [...d.children].forEach((c,j)=>{
+    c.style.width=(j===_bnIdx?20:6)+'px';
+    c.style.background=j===_bnIdx?'var(--primary)':'rgba(122,135,156,.28)';
+  });
+}
+setInterval(()=>{
+  const el=document.getElementById('bnScroll'); if(!el||!el.firstElementChild)return;
+  const w=el.firstElementChild.offsetWidth+11;
+  const next=((Math.round(el.scrollLeft/w)+1)%BANNERS.length);
+  el.scrollTo({left:next*w,behavior:'smooth'});
+}, 5000);
+
 const S = {
   layar:'splash', ob:0, tab:0, loginDaftar:false, lihatPass:false,
   user:{nama:'Rangga Pratama',email:'rangga@xycloud.id',saldo:275000,tier:'pro'},
@@ -577,8 +635,8 @@ function vLogin(){
         <span style="color:var(--muted);font-size:12px;font-weight:600;padding:0 14px">atau lanjut dengan</span>
         <div style="flex:1;height:1px;background:var(--line)"></div></div>
       <div class="row" style="gap:12px">
-        <button class="btn ghost sm" style="flex:1" onclick="doLogin()">${ic('google',19)} Google</button>
-        <button class="btn ghost sm" style="flex:1" onclick="doLogin()">${ic('apple',19)} Apple</button></div>
+        <button class="btn ghost sm" style="flex:1;gap:9px" onclick="doLogin()">${LOGO_GOOGLE} Google</button>
+        <button class="btn ghost sm" style="flex:1;gap:9px" onclick="doLogin()">${LOGO_FACEBOOK} Facebook</button></div>
 
       <div style="text-align:center;margin-top:28px;font-size:13.5px;color:var(--muted);cursor:pointer"
         onclick="S.loginDaftar=!S.loginDaftar;render()">
@@ -656,13 +714,7 @@ function vHome(){
           <span class="muted" style="font-size:11.5px;font-weight:600"> /jam</span></div>
       </div>`).join('')}</div>
 
-    <div style="margin-top:22px;padding:18px;border-radius:var(--r-lg);border:1px solid rgba(123,92,255,.16);
-      background:linear-gradient(90deg,rgba(123,92,255,.1),rgba(47,91,255,.08))" class="row">
-      <div style="width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,#F0C273,#C98A2B);
-        display:flex;align-items:center;justify-content:center">${ic('crown',22,'#fff')}</div>
-      <div style="flex:1"><div style="font-weight:800;font-size:14px;letter-spacing:-.2px">Diskon 10% sewa 8 jam+</div>
-        <div class="muted" style="font-size:12px;margin-top:3px">Otomatis diterapkan saat checkout.</div></div>
-      ${ic('chevR',18,'#7A879C')}</div>
+    ${bannerSlider()}
 
     <div class="sec"><div><h3>Akun Terlaris</h3><span>Kredensial dikirim otomatis</span></div><a onclick="go(2)">Semua ${ic('chevR',15)}</a></div>
     ${S.produk.slice(0,3).map(p=>`<div class="card tap" style="padding:13px;margin-bottom:11px" onclick="bukaProduk('${p.id}')">
