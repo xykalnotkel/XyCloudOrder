@@ -97,8 +97,8 @@ Input opsional saat run manual:
 
 | Input | Default | Fungsi |
 |---|---|---|
-| `mock` | `true` | `true` = jalan dengan data demo tanpa server |
-| `base_url` | `https://xycloud-api.workers.dev` | Base URL API XyCloud |
+| `mock` | `false` | `true` = jalan dengan data demo tanpa server |
+| `base_url` | `https://xycloud-api.akuntiktok76y.workers.dev` | Base URL API XyCloud |
 
 Push tag `v1.0.0` untuk sekaligus membuat GitHub Release berisi APK.
 
@@ -119,7 +119,7 @@ Sambungkan ke server sungguhan:
 ```bash
 flutter build apk --release \
   --dart-define=XY_MOCK=false \
-  --dart-define=XY_BASE_URL=https://xycloud-api.AKUNKAMU.workers.dev
+  --dart-define=XY_BASE_URL=https://xycloud-api.akuntiktok76y.workers.dev
 ```
 
 ---
@@ -142,6 +142,7 @@ npm run deploy
 | POST | `/api/auth/login`, `/api/auth/register` | autentikasi (token HMAC) |
 | GET | `/api/pc/plans` | daftar paket PC |
 | GET | `/api/akun/produk` | katalog akun |
+| GET | `/api/banners` | banner slider beranda |
 | GET, POST | `/api/orders` | list dan buat order sewa |
 | GET | `/api/orders/:id` | detail order |
 | POST | `/api/akun/beli` | beli akun, kredensial otomatis |
@@ -150,7 +151,58 @@ npm run deploy
 | GET, POST | `/api/cs/messages` | riwayat dan kirim chat |
 | POST | `/api/cs/reply` | balasan dari dashboard admin |
 | WS | `/ws/user:<id>` | channel realtime user |
+| WS | `/ws/katalog` | channel stok unit dan banner |
 | WS | `/ws/cs:inbox` | channel dashboard CS |
+| GET | `/admin` | dashboard admin dan CS (butuh admin key) |
+| GET, POST, PATCH, DELETE | `/api/admin/*` | API dashboard, header `x-admin-key` |
+
+---
+
+## Dashboard Admin dan CS
+
+Dashboard web ikut dibundel di dalam Worker, jadi tidak perlu hosting terpisah.
+
+- URL: `https://xycloud-api.akuntiktok76y.workers.dev/admin`
+- Masuk dengan **admin key** (`wrangler secret put ADMIN_KEY`), tersimpan di browser.
+
+Yang bisa dikerjakan dari dashboard:
+
+| Menu | Fungsi |
+|---|---|
+| Dashboard | jumlah pengguna, order, order berjalan, pendapatan, grafik 7 hari |
+| Order | ubah status order; status `aktif` otomatis mengisi host, user, dan password lalu mendorong push realtime ke aplikasi |
+| Paket PC | tambah, ubah, hapus paket sewa beserta harga dan stok unit |
+| Produk Akun | kelola katalog akun digital (harga, stok, garansi, fitur) |
+| Banner Slider | kelola banner beranda; perubahan langsung tampil di aplikasi tanpa update APK |
+| Inbox CS | balas chat pengguna secara realtime, lengkap dengan indikator mengetik |
+| Pengguna | lihat daftar akun dan sesuaikan saldo dompet |
+
+Semua perubahan katalog dan banner disiarkan lewat WebSocket, aplikasi menerimanya tanpa perlu refresh manual.
+
+---
+
+## Menandatangani APK
+
+APK rilis ditandatangani otomatis oleh GitHub Actions memakai keystore yang disimpan sebagai secret repository:
+
+| Secret | Isi |
+|---|---|
+| `KEYSTORE_BASE64` | isi berkas `.jks` dalam base64 |
+| `KEY_ALIAS` | alias kunci |
+| `STORE_PASSWORD` | password keystore |
+| `KEY_PASSWORD` | password kunci |
+
+Membuat keystore baru:
+
+```bash
+keytool -genkeypair -v -keystore xycloud-release.jks -alias xycloud \
+  -keyalg RSA -keysize 2048 -validity 10950
+base64 -w0 xycloud-release.jks > keystore.b64
+```
+
+Saat build, workflow menulis `android/key.properties` lalu menjalankan `tools/patch_signing.py`
+untuk menyisipkan `signingConfigs.release` ke berkas Gradle, dan memverifikasi hasilnya dengan `apksigner`.
+Berkas keystore tidak pernah masuk ke repository.
 
 ---
 
@@ -162,7 +214,7 @@ npm run deploy
 Push pesan realtime dari sisi admin:
 
 ```bash
-curl -X POST https://xycloud-api.xxx.workers.dev/api/cs/reply \
+curl -X POST https://xycloud-api.akuntiktok76y.workers.dev/api/cs/reply \
   -H "Authorization: Bearer <token-admin>" \
   -H "Content-Type: application/json" \
   -d '{"room":"user:u_001","teks":"Order kakak sudah kami proses ya"}'
@@ -176,4 +228,4 @@ curl -X POST https://xycloud-api.xxx.workers.dev/api/cs/reply \
 - Sambungkan payment gateway sungguhan (Midtrans, Xendit, atau Tripay).
 - Hubungkan fungsi `provision()` di Worker ke API hypervisor atau panel VPS.
 - Tambahkan push notification agar notifikasi order tetap masuk saat aplikasi tertutup.
-- Tanda tangani APK dengan keystore rilis milikmu (`android/key.properties` + secret di GitHub).
+- Simpan berkas keystore rilis di tempat aman; kalau hilang, aplikasi tidak bisa diperbarui di Play Store.

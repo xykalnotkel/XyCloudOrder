@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/prefs.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
+import '../widgets/brand_logos.dart';
 import '../widgets/common.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -209,9 +210,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 20),
 
                     Row(children: [
-                      Expanded(child: _SosialBtn(icon: Icons.g_mobiledata_rounded, label: 'Google', onTap: _submit)),
+                      Expanded(
+                        child: _SosialBtn(
+                          logo: const GoogleLogo(size: 21),
+                          label: 'Google',
+                          onTap: _submit,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _SosialBtn(icon: Icons.apple_rounded, label: 'Apple', onTap: _submit)),
+                      Expanded(
+                        child: _SosialBtn(
+                          logo: const FacebookLogo(size: 22),
+                          label: 'Facebook',
+                          onTap: _submit,
+                        ),
+                      ),
                     ]),
 
                     const SizedBox(height: 28),
@@ -258,8 +271,8 @@ class _Label extends StatelessWidget {
 }
 
 class _SosialBtn extends StatelessWidget {
-  const _SosialBtn({required this.icon, required this.label, required this.onTap});
-  final IconData icon;
+  const _SosialBtn({required this.logo, required this.label, required this.onTap});
+  final Widget logo;
   final String label;
   final VoidCallback onTap;
 
@@ -276,9 +289,9 @@ class _SosialBtn extends StatelessWidget {
           boxShadow: XyTheme.shadowXs,
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 22, color: XyTheme.ink),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+          logo,
+          const SizedBox(width: 9),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8)),
         ]),
       ),
     );

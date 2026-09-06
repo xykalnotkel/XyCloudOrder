@@ -18,6 +18,7 @@ class AppState extends ChangeNotifier {
   late final ApiClient _api;
   late final XyRepository _repo;
   RealtimeService? _rt;
+  RealtimeService? _rtKatalog;
   StreamSubscription? _rtSub;
   StreamSubscription? _rtState;
   Timer? _mockTicker;
@@ -30,6 +31,7 @@ class AppState extends ChangeNotifier {
 
   List<PcPlan> plans = [];
   List<AkunProduk> produk = [];
+  List<PromoBanner> banners = [];
   List<RentOrder> orders = [];
   List<Transaksi> transaksi = [];
   List<ChatMessage> chat = [];
@@ -76,6 +78,8 @@ class AppState extends ChangeNotifier {
     chat = [];
     _rt?.dispose();
     _rt = null;
+    _rtKatalog?.dispose();
+    _rtKatalog = null;
     _mockTicker?.cancel();
     _clock?.cancel();
     notifyListeners();
@@ -86,15 +90,17 @@ class AppState extends ChangeNotifier {
     final hasil = await Future.wait([
       _repo.plans(),
       _repo.produkAkun(),
+      _repo.banners(),
       _repo.orders(),
       _repo.transaksi(),
       _repo.riwayatChat(),
     ]);
     plans = hasil[0] as List<PcPlan>;
     produk = hasil[1] as List<AkunProduk>;
-    orders = hasil[2] as List<RentOrder>;
-    transaksi = hasil[3] as List<Transaksi>;
-    chat = hasil[4] as List<ChatMessage>;
+    banners = hasil[2] as List<PromoBanner>;
+    orders = hasil[3] as List<RentOrder>;
+    transaksi = hasil[4] as List<Transaksi>;
+    chat = hasil[5] as List<ChatMessage>;
     notifyListeners();
   }
 
@@ -122,6 +128,11 @@ class AppState extends ChangeNotifier {
     });
     _rtSub = _rt!.events.listen(_handleEvent);
     _rt!.connect(room: 'user:${user!.id}', token: _api.token ?? '');
+
+    // channel katalog: stok unit dan banner promo untuk semua pengguna
+    _rtKatalog = RealtimeService();
+    _rtKatalog!.events.listen(_handleEvent);
+    _rtKatalog!.connect(room: 'katalog', token: _api.token ?? '');
   }
 
   void _handleEvent(RealtimeEvent e) {
@@ -149,6 +160,12 @@ class AppState extends ChangeNotifier {
         break;
       case 'cs.typing':
         csMengetik = e.payload['typing'] == true;
+        break;
+      case 'banner.update':
+        try {
+          final list = (e.payload['banners'] as List?) ?? const [];
+          banners = list.map((x) => PromoBanner.fromJson(Map<String, dynamic>.from(x))).toList();
+        } catch (_) {}
         break;
       case 'wallet.update':
         user = user?.copyWith(saldo: e.payload['saldo'] as int);
@@ -303,6 +320,7 @@ class AppState extends ChangeNotifier {
     _rtSub?.cancel();
     _rtState?.cancel();
     _rt?.dispose();
+    _rtKatalog?.dispose();
     _mockTicker?.cancel();
     _clock?.cancel();
     _api.dispose();

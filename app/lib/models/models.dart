@@ -289,3 +289,47 @@ class Transaksi {
         status: j['status'] ?? 'sukses',
       );
 }
+
+/// Banner promo yang tampil sebagai slider di beranda.
+/// Dikelola sepenuhnya lewat dashboard admin (tabel `banners` di D1).
+class PromoBanner {
+  final String id;
+  final String judul;
+  final String subjudul;
+  final String label;
+  final String cta;
+  final String aksi; // sewa | akun | topup | url
+  final String target;
+  final String warna1;
+  final String warna2;
+  final String ikon;
+  final int urutan;
+
+  PromoBanner({
+    required this.id,
+    required this.judul,
+    this.subjudul = '',
+    this.label = '',
+    this.cta = 'Lihat',
+    this.aksi = 'sewa',
+    this.target = '',
+    this.warna1 = '#2F5BFF',
+    this.warna2 = '#6A4BFF',
+    this.ikon = 'bolt',
+    this.urutan = 1,
+  });
+
+  factory PromoBanner.fromJson(Map<String, dynamic> j) => PromoBanner(
+        id: '${j['id']}',
+        judul: j['judul'] ?? '',
+        subjudul: j['subjudul'] ?? '',
+        label: j['label'] ?? '',
+        cta: j['cta'] ?? 'Lihat',
+        aksi: j['aksi'] ?? 'sewa',
+        target: j['target'] ?? '',
+        warna1: j['warna1'] ?? '#2F5BFF',
+        warna2: j['warna2'] ?? '#6A4BFF',
+        ikon: j['ikon'] ?? 'bolt',
+        urutan: (j['urutan'] ?? 1) is int ? (j['urutan'] ?? 1) as int : 1,
+      );
+}

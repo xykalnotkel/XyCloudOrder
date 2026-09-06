@@ -11,11 +11,11 @@ on:
       mock:
         description: "Pakai data demo (tanpa server)?"
         required: false
-        default: "true"
+        default: "false"
       base_url:
         description: "Base URL API XyCloud"
         required: false
-        default: "https://xycloud-api.workers.dev"
+        default: "https://xycloud-api.akuntiktok76y.workers.dev"
 
 concurrency:
   group: build-${{ github.ref }}
@@ -88,6 +88,28 @@ jobs:
           echo "----- manifest -----"
           cat $MANIFEST
 
+      - name: Siapkan keystore rilis
+        working-directory: ${{ env.APP_DIR }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "KEYSTORE_BASE64 kosong, build memakai kunci debug."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/xycloud-release.jks
+          cat > android/key.properties <<EOF
+          storeFile=xycloud-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          python3 ../tools/patch_signing.py android/app
+          echo "Keystore siap: $(sha256sum android/xycloud-release.jks | cut -c1-16)"
+
       - name: Analyze
         working-directory: ${{ env.APP_DIR }}
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -100,15 +122,15 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           flutter build apk --release \
-            --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'true' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.workers.dev' }}
+            --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.akuntiktok76y.workers.dev' }}
 
       - name: Build APK per-ABI
         working-directory: ${{ env.APP_DIR }}
         run: |
           flutter build apk --release --split-per-abi \
-            --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'true' }} \
-            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.workers.dev' }}
+            --dart-define=XY_MOCK=${{ github.event.inputs.mock || 'false' }} \
+            --dart-define=XY_BASE_URL=${{ github.event.inputs.base_url || 'https://xycloud-api.akuntiktok76y.workers.dev' }}
 
       - name: Rapikan hasil build
         run: |
@@ -119,6 +141,14 @@ jobs:
             [ -f "$f" ] && cp "$f" "dist/XyCloudOrder-$abi.apk" || true
           done
           ls -lh dist
+
+      - name: Verifikasi tanda tangan APK
+        run: |
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n1)
+          for f in dist/*.apk; do
+            echo "----- $f"
+            "$APKSIGNER" verify --print-certs "$f" | head -n 8 || echo "Tidak dapat diverifikasi"
+          done
 
       - name: Upload artifact APK
         uses: actions/upload-artifact@v4

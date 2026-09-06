@@ -1,12 +1,14 @@
 name = "xycloud-api"
+# account_id diambil dari variabel lingkungan CLOUDFLARE_ACCOUNT_ID saat deploy
 main = "src/index.js"
+workers_dev = true
 compatibility_date = "2025-01-01"
 
 # --- Database D1 ---
 [[d1_databases]]
 binding = "DB"
 database_name = "xycloud"
-database_id = "GANTI_DENGAN_ID_D1_KAMU"
+database_id = "9d9df6d2-1521-4697-b08d-ea5be2b652b5"
 
 # --- Durable Object untuk realtime (WebSocket) ---
 [[durable_objects.bindings]]
@@ -17,6 +19,11 @@ class_name = "RealtimeHub"
 tag = "v1"
 new_sqlite_classes = ["RealtimeHub"]
 
+# Dashboard admin & CS di-bundle sebagai modul teks
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+
 [vars]
-JWT_SECRET = "ganti-dengan-secret-panjang-random"
 ALLOW_ORIGIN = "*"
+# JWT_SECRET dan ADMIN_KEY di-set lewat `wrangler secret put`

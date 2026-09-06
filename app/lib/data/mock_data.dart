@@ -222,6 +222,58 @@ class MockData {
       ];
 
   /// Balasan CS otomatis (simulasi) berdasar kata kunci.
+  static List<PromoBanner> banners() => [
+        PromoBanner(
+          id: 'bn-1',
+          judul: 'Diskon 10% sewa 8 jam ke atas',
+          subjudul: 'Otomatis diterapkan saat checkout, berlaku semua paket.',
+          label: 'PROMO DURASI',
+          cta: 'Sewa Sekarang',
+          aksi: 'sewa',
+          warna1: '#2F5BFF',
+          warna2: '#6A4BFF',
+          ikon: 'bolt',
+          urutan: 1,
+        ),
+        PromoBanner(
+          id: 'bn-2',
+          judul: 'RTX 4090 kini tersedia',
+          subjudul: 'Render dan gaming 4K tanpa kompromi di paket XyUltra.',
+          label: 'BARU',
+          cta: 'Lihat Paket',
+          aksi: 'sewa',
+          target: 'pc-ultra',
+          warna1: '#7B5CFF',
+          warna2: '#2F5BFF',
+          ikon: 'gpu',
+          urutan: 2,
+        ),
+        PromoBanner(
+          id: 'bn-3',
+          judul: 'Bonus saldo 5% tiap top up',
+          subjudul: 'Minimal top up Rp100.000, langsung masuk ke dompet.',
+          label: 'DOMPET',
+          cta: 'Top Up',
+          aksi: 'topup',
+          warna1: '#12A66C',
+          warna2: '#17C3E0',
+          ikon: 'wallet',
+          urutan: 3,
+        ),
+        PromoBanner(
+          id: 'bn-4',
+          judul: 'Akun premium bergaransi',
+          subjudul: 'Replace gratis kalau bermasalah dalam masa garansi.',
+          label: 'TERPERCAYA',
+          cta: 'Belanja',
+          aksi: 'akun',
+          warna1: '#E0A33B',
+          warna2: '#E0453B',
+          ikon: 'shield',
+          urutan: 4,
+        ),
+      ];
+
   static String balasanCs(String pesan) {
     final p = pesan.toLowerCase();
     if (p.contains('lemot') || p.contains('lag') || p.contains('putus')) {

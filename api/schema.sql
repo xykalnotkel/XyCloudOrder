@@ -118,3 +118,37 @@ INSERT INTO akun_produk (id,nama,kategori,deskripsi,harga,harga_coret,stok,ratin
  ('ak-netflix','Netflix Premium 4K — 1 Profil','Streaming','Sharing profil privat kualitas 4K UHD.',28000,54000,3,4.7,8900,'','["4K UHD","Profil privat","Garansi full replace"]','30 hari'),
  ('ak-adobe','Adobe Creative Cloud All Apps','Produktivitas','Semua aplikasi Adobe untuk 1 tahun.',320000,600000,5,4.9,640,'','["All apps","1 tahun","Cloud storage 100GB"]','1 tahun'),
  ('ak-spotify','Spotify Premium Individual 3 Bulan','Streaming','Upgrade akun pribadi tanpa iklan.',42000,82000,40,4.8,5400,'','["Akun sendiri","Tanpa iklan","Proses instan"]','90 hari');
+
+-- ============================================================
+--  Banner slider (dikelola dari dashboard admin)
+-- ============================================================
+DROP TABLE IF EXISTS banners;
+CREATE TABLE banners (
+  id        TEXT PRIMARY KEY,
+  judul     TEXT NOT NULL,
+  subjudul  TEXT,
+  label     TEXT,              -- teks kecil di atas judul
+  cta       TEXT,              -- teks tombol
+  aksi      TEXT,              -- sewa | akun | topup | url
+  target    TEXT,              -- id produk / url
+  warna1    TEXT DEFAULT '#2F5BFF',
+  warna2    TEXT DEFAULT '#6A4BFF',
+  ikon      TEXT DEFAULT 'bolt',
+  urutan    INTEGER DEFAULT 0,
+  aktif     INTEGER DEFAULT 1
+);
+
+INSERT INTO banners (id,judul,subjudul,label,cta,aksi,target,warna1,warna2,ikon,urutan,aktif) VALUES
+ ('bn-1','Diskon 10% sewa 8 jam ke atas','Otomatis diterapkan saat checkout, berlaku untuk semua paket.','PROMO DURASI','Sewa Sekarang','sewa','','#2F5BFF','#6A4BFF','bolt',1,1),
+ ('bn-2','RTX 4090 kini tersedia','Render dan gaming 4K tanpa kompromi di paket XyUltra.','BARU','Lihat Paket','sewa','pc-ultra','#7B5CFF','#2F5BFF','gpu',2,1),
+ ('bn-3','Akun bergaransi 30 hari','Rusak atau bermasalah? Kami ganti tanpa biaya tambahan.','JAMINAN','Belanja Akun','akun','','#12A66C','#17C3E0','shield',3,1),
+ ('bn-4','Top up pertama bonus 5%','Isi saldo minimal Rp50.000 dan dapatkan bonus otomatis.','BONUS','Top Up','topup','','#E0A33B','#E0453B','wallet',4,1);
+
+-- stok kredensial akun siap kirim
+INSERT INTO akun_stok (produk_id,email,password,terpakai) VALUES
+ ('ak-steam','steam.xy001@mail.xycloud.id','StXy#4471a',0),
+ ('ak-steam','steam.xy002@mail.xycloud.id','StXy#8823b',0),
+ ('ak-gamepass','gp.xy001@mail.xycloud.id','GpXy#1190c',0),
+ ('ak-netflix','nf.xy001@mail.xycloud.id','NfXy#7745d',0),
+ ('ak-spotify','sp.xy001@mail.xycloud.id','SpXy#3312e',0),
+ ('ak-adobe','ad.xy001@mail.xycloud.id','AdXy#9908f',0);

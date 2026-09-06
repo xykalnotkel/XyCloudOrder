@@ -11,6 +11,8 @@
  *    wrangler deploy
  */
 
+import ADMIN_HTML from './admin.html';
+
 const json = (data, status = 200, env) =>
   new Response(JSON.stringify({ data }), {
     status,
@@ -59,6 +61,13 @@ async function auth(req, env) {
 
 const uid = (p = '') => p + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 
+/** Cek admin key dari header x-admin-key atau query ?key= */
+function isAdmin(req, env) {
+  const url = new URL(req.url);
+  const k = req.headers.get('x-admin-key') || url.searchParams.get('key');
+  return !!env.ADMIN_KEY && k === env.ADMIN_KEY;
+}
+
 /** Kirim event realtime ke room user lewat Durable Object. */
 async function push(env, room, type, payload) {
   const id = env.HUB.idFromName(room);
@@ -66,6 +75,13 @@ async function push(env, room, type, payload) {
     method: 'POST',
     body: JSON.stringify({ type, payload }),
   });
+}
+
+/** Siarkan daftar banner aktif ke seluruh aplikasi (room `katalog`). */
+async function kirimBanner(env) {
+  const { results } = await env.DB
+    .prepare('SELECT * FROM banners WHERE aktif = 1 ORDER BY urutan ASC').all();
+  return push(env, 'katalog', 'banner.update', { banners: results });
 }
 
 // ============================================================
@@ -84,6 +100,15 @@ export default {
       const id = env.HUB.idFromName(room);
       return env.HUB.get(id).fetch(req);
     }
+
+    // ---------- dashboard admin ----------
+    if (path === '/' || path === '/admin' || path === '/admin/') {
+      return new Response(ADMIN_HTML, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+    }
+
+    if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
 
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
     const p = path.slice(5);
@@ -113,6 +138,174 @@ export default {
       if (p === 'pc/plans' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT * FROM pc_plans').all();
         return json(results, 200, env);
+      }
+
+      if (p === 'banners' && req.method === 'GET') {
+        const { results } = await env.DB
+          .prepare('SELECT * FROM banners WHERE aktif = 1 ORDER BY urutan ASC').all();
+        return json(results, 200, env);
+      }
+
+      // ================= ADMIN =================
+      if (p.startsWith('admin/')) {
+        if (!isAdmin(req, env)) return err('Admin key salah', 401, env);
+        const a = p.slice(6);
+
+        if (a === 'stats' && req.method === 'GET') {
+          const q = (sql) => env.DB.prepare(sql).first();
+          const [u, o, oa, rev, prod, msg] = await Promise.all([
+            q('SELECT COUNT(*) c FROM users'),
+            q('SELECT COUNT(*) c FROM orders'),
+            q("SELECT COUNT(*) c FROM orders WHERE status IN ('aktif','provisioning','dibayar','pending')"),
+            q("SELECT COALESCE(SUM(ABS(nominal)),0) c FROM transaksi WHERE nominal < 0"),
+            q('SELECT COUNT(*) c FROM akun_produk'),
+            q('SELECT COUNT(*) c FROM cs_messages'),
+          ]);
+          const { results: harian } = await env.DB.prepare(
+            "SELECT substr(dibuat,1,10) d, COUNT(*) n, COALESCE(SUM(total),0) v FROM orders GROUP BY d ORDER BY d DESC LIMIT 7"
+          ).all();
+          return json({
+            users: u.c, orders: o.c, ordersAktif: oa.c, revenue: rev.c,
+            produk: prod.c, pesan: msg.c, harian,
+          }, 200, env);
+        }
+
+        if (a === 'orders' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            'SELECT o.*, u.nama AS user_nama, u.email AS user_email FROM orders o LEFT JOIN users u ON u.id=o.user_id ORDER BY o.dibuat DESC LIMIT 100'
+          ).all();
+          return json(results, 200, env);
+        }
+
+        if (a.startsWith('orders/') && req.method === 'PATCH') {
+          const id = a.split('/')[1];
+          const b = await req.json();
+          const kolom = ['status', 'progress', 'host', 'username', 'password', 'mulai', 'berakhir'];
+          const isi = kolom.filter((k) => b[k] !== undefined);
+          if (!isi.length) return err('Tidak ada perubahan', 400, env);
+          await env.DB.prepare(
+            `UPDATE orders SET ${isi.map((k) => `${k}=?`).join(',')} WHERE id=?`
+          ).bind(...isi.map((k) => b[k]), id).run();
+          const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(id).first();
+          ctx.waitUntil(push(env, `user:${o.user_id}`, 'order.update', o));
+          return json(o, 200, env);
+        }
+
+        // ---- katalog PC ----
+        if (a === 'plans' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM pc_plans').all();
+          return json(results, 200, env);
+        }
+        if (a === 'plans' && req.method === 'POST') {
+          const b = await req.json();
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO pc_plans
+             (id,nama,gpu,cpu,ram_gb,storage_gb,harga_per_jam,harga_per_hari,region,tag,total_unit,unit_tersedia,gambar)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          ).bind(b.id || uid('pc-'), b.nama, b.gpu, b.cpu, b.ram_gb, b.storage_gb, b.harga_per_jam,
+                 b.harga_per_hari, b.region, b.tag || '', b.total_unit, b.unit_tersedia, b.gambar || '').run();
+          ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: b.id, unitTersedia: b.unit_tersedia }));
+          return json({ ok: true }, 201, env);
+        }
+        if (a.startsWith('plans/') && req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM pc_plans WHERE id=?').bind(a.split('/')[1]).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- katalog akun ----
+        if (a === 'produk' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM akun_produk').all();
+          return json(results, 200, env);
+        }
+        if (a === 'produk' && req.method === 'POST') {
+          const b = await req.json();
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO akun_produk
+             (id,nama,kategori,deskripsi,harga,harga_coret,stok,rating,terjual,gambar,fitur,garansi)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+          ).bind(b.id || uid('ak-'), b.nama, b.kategori, b.deskripsi || '', b.harga, b.harga_coret || 0,
+                 b.stok || 0, b.rating || 5, b.terjual || 0, b.gambar || '',
+                 JSON.stringify(b.fitur || []), b.garansi || '30 hari').run();
+          return json({ ok: true }, 201, env);
+        }
+        if (a.startsWith('produk/') && req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM akun_produk WHERE id=?').bind(a.split('/')[1]).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- banner ----
+        if (a === 'banners' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM banners ORDER BY urutan ASC').all();
+          return json(results, 200, env);
+        }
+        if (a === 'banners' && req.method === 'POST') {
+          const b = await req.json();
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO banners
+             (id,judul,subjudul,label,cta,aksi,target,warna1,warna2,ikon,urutan,aktif)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+          ).bind(b.id || uid('bn-'), b.judul, b.subjudul || '', b.label || '', b.cta || 'Lihat',
+                 b.aksi || 'sewa', b.target || '', b.warna1 || '#2F5BFF', b.warna2 || '#6A4BFF',
+                 b.ikon || 'bolt', b.urutan || 0, b.aktif === 0 ? 0 : 1).run();
+          ctx.waitUntil(kirimBanner(env));
+          return json({ ok: true }, 201, env);
+        }
+        if (a.startsWith('banners/') && req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM banners WHERE id=?').bind(a.split('/')[1]).run();
+          ctx.waitUntil(kirimBanner(env));
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- inbox CS ----
+        if (a === 'cs/rooms' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT m.room, u.nama, u.email, COUNT(*) total,
+                    MAX(m.waktu) terakhir,
+                    (SELECT teks FROM cs_messages x WHERE x.room = m.room ORDER BY waktu DESC LIMIT 1) preview
+             FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
+             GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
+          ).all();
+          return json(results, 200, env);
+        }
+        if (a.startsWith('cs/room/') && req.method === 'GET') {
+          const room = decodeURIComponent(a.slice(8));
+          const { results } = await env.DB
+            .prepare('SELECT * FROM cs_messages WHERE room=? ORDER BY waktu ASC LIMIT 300').bind(room).all();
+          return json(results, 200, env);
+        }
+        if (a === 'cs/reply' && req.method === 'POST') {
+          const { room, teks } = await req.json();
+          const msg = { id: uid('m_'), room, dari: 'cs', teks, waktu: new Date().toISOString() };
+          await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
+            .bind(msg.id, room, room.split(':')[1] || '', 'cs', teks, msg.waktu).run();
+          ctx.waitUntil(push(env, room, 'chat.message', msg));
+          return json(msg, 201, env);
+        }
+        if (a === 'cs/typing' && req.method === 'POST') {
+          const { room, typing } = await req.json();
+          ctx.waitUntil(push(env, room, 'cs.typing', { typing: !!typing }));
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- pengguna ----
+        if (a === 'users' && req.method === 'GET') {
+          const { results } = await env.DB
+            .prepare('SELECT id,nama,email,phone,saldo,tier,created_at FROM users ORDER BY created_at DESC LIMIT 100').all();
+          return json(results, 200, env);
+        }
+        if (a === 'users/saldo' && req.method === 'POST') {
+          const { user_id, nominal, catatan } = await req.json();
+          await env.DB.batch([
+            env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, user_id),
+            env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+              .bind(uid('t_'), user_id, catatan || 'Penyesuaian saldo oleh admin', nominal > 0 ? 'topup' : 'sewa', nominal),
+          ]);
+          const u = await env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(user_id).first();
+          ctx.waitUntil(push(env, `user:${user_id}`, 'wallet.update', { saldo: u.saldo }));
+          return json({ saldo: u.saldo }, 200, env);
+        }
+
+        return err('Endpoint admin tidak dikenal', 404, env);
       }
 
       if (p === 'akun/produk' && req.method === 'GET') {

@@ -9,13 +9,13 @@
 class XyConfig {
   static const String baseUrl = String.fromEnvironment(
     'XY_BASE_URL',
-    defaultValue: 'https://xycloud-api.workers.dev',
+    defaultValue: 'https://xycloud-api.akuntiktok76y.workers.dev',
   );
 
   /// Kalau true, app jalan tanpa server (data dummy) — enak buat demo/UI test.
   static const bool useMock = bool.fromEnvironment(
     'XY_MOCK',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   static String get apiUrl => '$baseUrl/api';

@@ -5,6 +5,7 @@ import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
+import '../widgets/banner_slider.dart';
 import '../widgets/common.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
@@ -66,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                       ),
               ),
 
-              const _BannerPromo(),
+              BannerSlider(items: s.banners),
 
               SectionHeader(
                 'Akun Terlaris',
@@ -455,49 +456,6 @@ class _KartuPlanMini extends StatelessWidget {
               child: Text(' /jam', style: TextStyle(color: XyTheme.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
             ),
           ]),
-        ]),
-      ),
-    );
-  }
-}
-
-// ------------------------------------------------------------------
-class _BannerPromo extends StatelessWidget {
-  const _BannerPromo();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 22),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [XyTheme.violet.withOpacity(.10), XyTheme.primary.withOpacity(.08)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
-          borderRadius: BorderRadius.circular(XyRadius.lg),
-          border: Border.all(color: XyTheme.violet.withOpacity(.16)),
-        ),
-        child: Row(children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(gradient: XyTheme.gradGold, borderRadius: BorderRadius.circular(13)),
-            child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 22),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Diskon 10% sewa 8 jam+',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: -.2)),
-              SizedBox(height: 3),
-              Text('Otomatis diterapkan saat checkout.',
-                  style: TextStyle(color: XyTheme.muted, fontSize: 12)),
-            ]),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
         ]),
       ),
     );

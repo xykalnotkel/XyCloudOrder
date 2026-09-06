@@ -11,6 +11,7 @@ abstract class XyRepository {
   Future<UserProfile> login(String email, String password);
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
+  Future<List<PromoBanner>> banners();
   Future<List<RentOrder>> orders();
   Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode});
   Future<RentOrder> orderDetail(String id);
@@ -45,6 +46,10 @@ class RemoteRepository implements XyRepository {
   @override
   Future<List<AkunProduk>> produkAkun() async =>
       ((await api.get('/akun/produk')) as List).map((e) => AkunProduk.fromJson(e)).toList();
+
+  @override
+  Future<List<PromoBanner>> banners() async =>
+      ((await api.get('/banners')) as List).map((e) => PromoBanner.fromJson(e)).toList();
 
   @override
   Future<List<RentOrder>> orders() async =>
@@ -97,6 +102,9 @@ class MockRepository implements XyRepository {
 
   @override
   Future<List<AkunProduk>> produkAkun() => _delay(_akun);
+
+  @override
+  Future<List<PromoBanner>> banners() => _delay(MockData.banners(), 200);
 
   @override
   Future<List<RentOrder>> orders() => _delay(_orders);
