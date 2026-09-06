@@ -62,6 +62,19 @@ jobs:
             --project-name xycloud_order \
             --description "XyCloudStore - Sewa PC Cloud, Beli Akun, CS Realtime"
 
+      - name: Naikkan versi Kotlin (dibutuhkan OneSignal)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          for f in android/settings.gradle android/settings.gradle.kts; do
+            [ -f "$f" ] || continue
+            sed -i -E 's/(org\.jetbrains\.kotlin\.android["\)]?[[:space:]]+version[[:space:]]+")[^"]+"/\12.2.20"/' "$f"
+            echo "--- $f"
+            cat "$f"
+          done
+          for f in android/build.gradle android/build.gradle.kts; do
+            [ -f "$f" ] && sed -i -E 's/(kotlin-gradle-plugin:)[0-9.]+/\12.2.20/' "$f" || true
+          done
+
       - name: Bersihkan berkas bawaan flutter create
         working-directory: ${{ env.APP_DIR }}
         run: rm -f test/widget_test.dart
