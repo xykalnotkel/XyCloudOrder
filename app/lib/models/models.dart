@@ -12,6 +12,9 @@ class UserProfile {
   final String tier; // basic | pro | vip
   final String? avatar;
 
+  /// Foto profil dari server (Cloudinary atau Google).
+  final String? foto;
+
   UserProfile({
     required this.id,
     required this.nama,
@@ -20,6 +23,7 @@ class UserProfile {
     this.saldo = 0,
     this.tier = 'basic',
     this.avatar,
+    this.foto,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -30,6 +34,7 @@ class UserProfile {
         saldo: (j['saldo'] ?? 0) as int,
         tier: j['tier'] ?? 'basic',
         avatar: j['avatar'],
+        foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -40,15 +45,17 @@ class UserProfile {
         'saldo': saldo,
         'tier': tier,
         'avatar': avatar,
+        'foto': foto,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
         phone: phone ?? this.phone,
         saldo: saldo ?? this.saldo,
         tier: tier,
+        foto: foto ?? this.foto,
         avatar: avatar,
       );
 }
