@@ -374,8 +374,23 @@ function formPlan(p={}){
     ['total_unit','Total unit','number',p.total_unit||10],['unit_tersedia','Unit tersedia','number',p.unit_tersedia||10]];
   buka(p.id?'Edit Paket PC':'Tambah Paket PC',
     `<div class="grid" style="grid-template-columns:1fr 1fr">${f.map(([k,l,t,v])=>
-      `<div class="field"><label>${l}</label><input id="f_${k}" type="${t}" value="${v}"></div>`).join('')}</div>`,
+      `<div class="field"><label>${l}</label><input id="f_${k}" type="${t}" value="${v}"></div>`).join('')}</div>
+    <div class="field"><label>Gambar paket (opsional, tampil di kartu Sewa PC)</label>
+      <div class="row" style="gap:14px;align-items:flex-start">
+        <div id="pratinjauGambar" style="width:150px;height:96px;border-radius:12px;flex:none;overflow:hidden;
+          background:${p.gambar?'#0E0720':'linear-gradient(135deg,#7C3AED,#4A12B8)'};display:flex;align-items:center;justify-content:center">
+          ${p.gambar?`<img src="${p.gambar}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:10.5px;color:#fff;opacity:.75">tanpa gambar</span>'}
+        </div>
+        <div style="flex:1">
+          <input type="file" id="f_file" accept="image/*" onchange="pilihGambarProduk(event)"
+            style="width:100%;padding:10px;border:1px dashed var(--line);border-radius:12px;background:var(--panel2);color:var(--ink)">
+          <input id="f_gambar" value="${p.gambar||''}" placeholder="https://... atau unggah berkas"
+            style="margin-top:8px">
+        </div>
+      </div>
+    </div>`,
     async()=>{const b={};f.forEach(([k,,t])=>{const v=document.getElementById('f_'+k).value;b[k]=t==='number'?+v:v});
+      b.gambar=document.getElementById('f_gambar').value;
       await api('/plans',{method:'POST',body:JSON.stringify(b)});toast('Paket disimpan');tutupModal();vPlans()});
 }
 
@@ -497,6 +512,20 @@ function formBanner(b={}){
       <div class="field"><label>Label kecil</label><input id="f_label" value="${b.label||'PROMO'}"></div></div>
     <div class="field"><label>Judul</label><input id="f_judul" value="${b.judul||''}"></div>
     <div class="field"><label>Subjudul</label><textarea id="f_subjudul" rows="2">${b.subjudul||''}</textarea></div>
+    <div class="field"><label>Gambar latar (opsional, menggantikan gradasi warna)</label>
+      <div class="row" style="gap:14px;align-items:flex-start">
+        <div id="pratinjauBanner" style="width:150px;height:84px;border-radius:12px;flex:none;overflow:hidden;
+          background:${b.gambar?'#0E0720':'linear-gradient(135deg,'+(b.warna1||'#7C3AED')+','+(b.warna2||'#4A12B8')+')'};display:flex;align-items:center;justify-content:center">
+          ${b.gambar?`<img src="${b.gambar}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:10.5px;color:#fff;opacity:.75">tanpa gambar</span>'}
+        </div>
+        <div style="flex:1">
+          <input type="file" id="f_file_banner" accept="image/*" onchange="pilihGambarBanner(event)"
+            style="width:100%;padding:10px;border:1px dashed var(--line);border-radius:12px;background:var(--panel2);color:var(--ink)">
+          <input id="f_gambar" value="${b.gambar||''}" placeholder="https://... atau unggah berkas"
+            style="margin-top:8px">
+        </div>
+      </div>
+    </div>
     <div class="grid" style="grid-template-columns:1fr 1fr 1fr">
       <div class="field"><label>Teks tombol</label><input id="f_cta" value="${b.cta||'Lihat'}"></div>
       <div class="field"><label>Aksi</label><select id="f_aksi">
@@ -518,8 +547,21 @@ function formBanner(b={}){
       await api('/banners',{method:'POST',body:JSON.stringify({
         id:g('id'),judul:g('judul'),subjudul:g('subjudul'),label:g('label'),cta:g('cta'),
         aksi:g('aksi'),target:g('target'),warna1:g('warna1'),warna2:g('warna2'),
-        ikon:g('ikon'),urutan:+g('urutan'),aktif:+g('aktif'),kirimPush:g('push')==='1'})});
+        ikon:g('ikon'),urutan:+g('urutan'),aktif:+g('aktif'),kirimPush:g('push')==='1',
+        gambar:g('gambar')})});
       toast('Banner disimpan dan langsung tampil di aplikasi');tutupModal();vBanners()});
+}
+function pilihGambarBanner(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  if(f.size>5*1024*1024){ toast('Ukuran gambar maksimal 5 MB'); return }
+  const r=new FileReader();
+  r.onload=()=>{
+    document.getElementById('f_gambar').value=r.result;
+    document.getElementById('pratinjauBanner').innerHTML=
+      `<img src="${r.result}" style="width:100%;height:100%;object-fit:cover">`;
+    toast('Gambar siap, klik Simpan');
+  };
+  r.readAsDataURL(f);
 }
 
 /* ---------- inbox CS ---------- */

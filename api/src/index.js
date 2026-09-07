@@ -1119,14 +1119,29 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
         if (a === 'plans' && req.method === 'POST') {
           const b = await req.json();
+          const idPaket = b.id || uid('pc-');
+
+          // gambar boleh data URI hasil unggah dashboard; simpan ke Cloudinary
+          let gambar = b.gambar || '';
+          if (gambar.startsWith('data:')) {
+            const hasil = await unggahGambar(env, { dataUri: gambar, folder: 'xycloudstore/paket' });
+            if (!hasil.ok) return err(hasil.alasan, 502, env);
+            gambar = hasil.url;
+          }
+
+          // jaga nilai rating & jumlah ulasan saat paket diubah (jangan di-reset)
+          const lama = await env.DB.prepare('SELECT rating, jumlah_ulasan FROM pc_plans WHERE id = ?')
+            .bind(idPaket).first();
+
           await env.DB.prepare(
             `INSERT OR REPLACE INTO pc_plans
-             (id,nama,gpu,cpu,ram_gb,storage_gb,harga_per_jam,harga_per_hari,region,tag,total_unit,unit_tersedia,gambar)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
-          ).bind(b.id || uid('pc-'), b.nama, b.gpu, b.cpu, b.ram_gb, b.storage_gb, b.harga_per_jam,
-                 b.harga_per_hari, b.region, b.tag || '', b.total_unit, b.unit_tersedia, b.gambar || '').run();
-          ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: b.id, unitTersedia: b.unit_tersedia }));
-          return json({ ok: true }, 201, env);
+             (id,nama,gpu,cpu,ram_gb,storage_gb,harga_per_jam,harga_per_hari,region,tag,total_unit,unit_tersedia,gambar,rating,jumlah_ulasan)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          ).bind(idPaket, b.nama, b.gpu, b.cpu, b.ram_gb, b.storage_gb, b.harga_per_jam,
+                 b.harga_per_hari, b.region, b.tag || '', b.total_unit, b.unit_tersedia, gambar,
+                 lama?.rating ?? 5, lama?.jumlah_ulasan ?? 0).run();
+          ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: idPaket, unitTersedia: b.unit_tersedia }));
+          return json({ ok: true, id: idPaket, gambar }, 201, env);
         }
         if (a.startsWith('plans/') && req.method === 'DELETE') {
           await env.DB.prepare('DELETE FROM pc_plans WHERE id=?').bind(a.split('/')[1]).run();
@@ -1181,13 +1196,22 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
         if (a === 'banners' && req.method === 'POST') {
           const b = await req.json();
+
+          // latar banner boleh gambar kustom (data URI hasil unggah dashboard)
+          let gambarB = b.gambar || '';
+          if (gambarB.startsWith('data:')) {
+            const hasil = await unggahGambar(env, { dataUri: gambarB, folder: 'xycloudstore/banner' });
+            if (!hasil.ok) return err(hasil.alasan, 502, env);
+            gambarB = hasil.url;
+          }
+
           await env.DB.prepare(
             `INSERT OR REPLACE INTO banners
-             (id,judul,subjudul,label,cta,aksi,target,warna1,warna2,ikon,urutan,aktif)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+             (id,judul,subjudul,label,cta,aksi,target,warna1,warna2,ikon,urutan,aktif,gambar)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
           ).bind(b.id || uid('bn-'), b.judul, b.subjudul || '', b.label || '', b.cta || 'Lihat',
                  b.aksi || 'sewa', b.target || '', b.warna1 || '#2F5BFF', b.warna2 || '#6A4BFF',
-                 b.ikon || 'bolt', b.urutan || 0, b.aktif === 0 ? 0 : 1).run();
+                 b.ikon || 'bolt', b.urutan || 0, b.aktif === 0 ? 0 : 1, gambarB).run();
           ctx.waitUntil(kirimBanner(env));
           if (b.kirimPush) {
             ctx.waitUntil(siarkanPush(env, {
