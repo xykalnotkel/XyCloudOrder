@@ -18,12 +18,26 @@ import '../models/models.dart';
 class AppState extends ChangeNotifier {
   AppState() {
     _api = ApiClient();
+    _api.onPerawatan = (pesan) {
+      perawatan = true;
+      pesanPerawatan = pesan;
+      offline = false;
+      notifyListeners();
+    };
     _repo = XyRepository.create(_api);
     unawaited(muatKonfigurasi());
     unawaited(muatTema());
     unawaited(periksaPembaruan());
     unawaited(pulihkanSesi());
   }
+
+  /// True selama server dalam mode pemeliharaan (HTTP 503) — aplikasi
+  /// menampilkan halaman perawatan yang jelas alih-alih galat membingungkan.
+  bool perawatan = false;
+
+  /// Pesan dari server saat mode pemeliharaan menyala.
+  String pesanPerawatan =
+      'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.';
 
   /// True selama aplikasi masih memeriksa token tersimpan.
   bool memeriksaSesi = true;
@@ -102,13 +116,39 @@ class AppState extends ChangeNotifier {
       _daftarkanPush();
       unawaited(muatNotifikasi());
       unawaited(muatFavorit());
-    } catch (_) {
-      // token kedaluwarsa atau tidak valid
-      await Prefs.hapusToken();
-      _repo.pasangToken('');
-      user = null;
+    } catch (e) {
+      if (e is ApiException && e.sedangPerawatan) {
+        // server lagi perawatan: jangan buang token, biarkan pengguna tetap
+        // "masuk" lewat perangkat; halaman perawatan yang akan tampil
+        perawatan = true;
+        pesanPerawatan = e.pesan;
+        user = null;
+      } else {
+        // token kedaluwarsa atau tidak valid
+        await Prefs.hapusToken();
+        _repo.pasangToken('');
+        user = null;
+      }
     } finally {
       memeriksaSesi = false;
+      notifyListeners();
+    }
+  }
+
+  /// Dipanggil tombol "Coba Lagi" di halaman perawatan: coba pulihkan sesi
+  /// dan muat data lagi. Begitu server menjawab normal, [perawatan] mati
+  /// sendiri lewat [muatSemua].
+  Future<void> cobaLagiPerawatan() async {
+    perawatan = false;
+    error = null;
+    notifyListeners();
+    if (user == null) {
+      memeriksaSesi = true;
+      notifyListeners();
+      await pulihkanSesi();
+    } else {
+      await muatSemua(paksa: true);
+      await muatNotifikasi();
       notifyListeners();
     }
   }
@@ -863,6 +903,7 @@ class AppState extends ChangeNotifier {
     unawaited(Prefs.hapusToken());
     _api.setToken(null);
     PushService.keluar();
+    perawatan = false;
     user = null;
     orders = [];
     chat = [];
@@ -903,12 +944,19 @@ class AppState extends ChangeNotifier {
 
       offline = false;
       dariCache = false;
+      perawatan = false; // server menjawab normal
       error = null;
       unawaited(_simpanCache());
       unawaited(muatTopup());
     } catch (e) {
-      offline = _masalahJaringan(e);
-      error = _pesan(e);
+      if (e is ApiException && e.sedangPerawatan) {
+        perawatan = true;
+        pesanPerawatan = e.pesan;
+        offline = false;
+      } else {
+        offline = _masalahJaringan(e);
+        error = _pesan(e);
+      }
       // kalau belum ada isi sama sekali, coba singgahan sebagai penyelamat
       if (plans.isEmpty && produk.isEmpty) await _muatDariCache();
     }

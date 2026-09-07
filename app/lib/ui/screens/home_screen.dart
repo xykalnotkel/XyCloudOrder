@@ -14,6 +14,7 @@ import '../../core/prefs.dart';
 import '../widgets/error_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
+import 'notifikasi_screen.dart';
 import 'order_detail_screen.dart';
 import 'sewa_pc_screen.dart';
 import 'wallet_screen.dart';
@@ -41,7 +42,7 @@ class HomeScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.fromLTRB(XySpace.page, 6, XySpace.page, 120),
             children: [
-              _Header(user: u, koneksi: s.koneksi, notif: s.notifBelumDibaca),
+              _Header(user: u, koneksi: s.koneksi, notif: s.notifBelum),
               const SizedBox(height: 20),
               FadeInUp(child: _KartuSaldo(user: u)),
               const SizedBox(height: 22),
@@ -156,11 +157,27 @@ class _Header extends StatelessWidget {
         ]),
       ),
       LiveDot(state: koneksi),
-      const SizedBox(width: 8),
+      const SizedBox(width: 6),
+      // CS — chat langsung ke customer service
       Pressable(
-        onTap: () {
-          context.read<AppState>().bacaNotif();
-          Navigator.push(context, xyRoute(const CsScreen()));
+        onTap: () => Navigator.push(context, xyRoute(const CsScreen())),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: XyTheme.surface,
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: XyTheme.line),
+          ),
+          child: const Icon(Icons.forum_outlined, size: 20),
+        ),
+      ),
+      const SizedBox(width: 6),
+      // Notifikasi — kini di topbar, bukan tersembunyi di halaman profil
+      Pressable(
+        onTap: () async {
+          await Navigator.push(context, xyRoute(const NotifikasiScreen()));
+          if (context.mounted) context.read<AppState>().muatNotifikasi();
         },
         child: Container(
           width: 42,
@@ -171,18 +188,28 @@ class _Header extends StatelessWidget {
             border: Border.all(color: XyTheme.line),
           ),
           child: Stack(alignment: Alignment.center, children: [
-            const Icon(Icons.forum_outlined, size: 20),
+            const Icon(Icons.notifications_none_rounded, size: 21),
             if (notif > 0)
               Positioned(
-                right: 10,
-                top: 10,
+                right: 8,
+                top: 6,
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  constraints: const BoxConstraints(minWidth: 17),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: XyTheme.danger,
-                    shape: BoxShape.circle,
+                    gradient: XyTheme.gradPrimary,
+                    borderRadius: BorderRadius.circular(99),
                     border: Border.all(color: XyTheme.surface, width: 1.4),
+                  ),
+                  child: Text(
+                    notif > 99 ? '99+' : '$notif',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      height: 1.35,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),

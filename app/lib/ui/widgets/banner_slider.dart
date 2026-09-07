@@ -184,6 +184,7 @@ class _KartuBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final c1 = _hex(banner.warna1, XyTheme.primary);
     final c2 = _hex(banner.warna2, XyTheme.violet);
+    final adaGambar = banner.gambar.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
@@ -196,6 +197,29 @@ class _KartuBanner extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(XyRadius.xl),
           child: Stack(children: [
+            // latar gambar kustom (opsional) dengan lapisan gelap agar teks terbaca
+            if (adaGambar)
+              Positioned.fill(
+                child: Image.network(
+                  banner.gambar,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  loadingBuilder: (_, anak, kemajuan) =>
+                      kemajuan == null ? anak : const SizedBox.shrink(),
+                ),
+              ),
+            if (adaGambar)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [c1.withOpacity(.88), c2.withOpacity(.62), Colors.transparent],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                  ),
+                ),
+              ),
             // ornamen lingkaran lembut
             Positioned(
               right: -34,

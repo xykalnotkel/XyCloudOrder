@@ -9,7 +9,6 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
-import 'notifikasi_screen.dart';
 import 'pengaturan_screen.dart';
 import 'referral_screen.dart';
 import 'tentang_screen.dart';
@@ -168,61 +167,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
             child: Column(children: [
-              const SectionHeader('Aktivitas', top: 22),
-              Builder(builder: (context) {
-                final belum = context.watch<AppState>().notifBelum;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: XyCard(
-                    padding: const EdgeInsets.all(15),
-                    onTap: () => Navigator.push(context, xyRoute(const NotifikasiScreen())),
-                    child: Row(children: [
-                      Stack(children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                              color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
-                          child: const Icon(Icons.notifications_none_rounded, size: 20, color: XyTheme.primary),
-                        ),
-                        if (belum > 0)
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                              constraints: const BoxConstraints(minWidth: 17),
-                              height: 17,
-                              decoration: BoxDecoration(
-                                color: XyTheme.danger,
-                                borderRadius: BorderRadius.circular(9),
-                                border: Border.all(color: XyTheme.surface, width: 1.6),
-                              ),
-                              child: Center(
-                                child: Text('$belum',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
-                              ),
-                            ),
-                          ),
-                      ]),
-                      const SizedBox(width: 13),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('Pemberitahuan',
-                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                          const SizedBox(height: 3),
-                          Text(
-                            belum > 0 ? '$belum kabar baru menunggu' : 'Suka, balasan, pesanan, dan saldo',
-                            style: const TextStyle(color: XyTheme.muted, fontSize: 11.5),
-                          ),
-                        ]),
-                      ),
-                      const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
-                    ]),
-                  ),
-                );
-              }),
+              // Pemberitahuan kini ada di tombol lonceng pada bar atas beranda,
+              // supaya selalu terlihat dan cepat dijangkau dari mana pun.
 
               const SectionHeader('Akun'),
               _Menu(

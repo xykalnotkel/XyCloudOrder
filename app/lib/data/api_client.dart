@@ -7,6 +7,10 @@ class ApiException implements Exception {
   final int status;
   final String pesan;
   ApiException(this.status, this.pesan);
+
+  /// Benar kalau server sedang dalam mode pemeliharaan (HTTP 503).
+  bool get sedangPerawatan => status == 503;
+
   @override
   String toString() => 'ApiException($status): $pesan';
 }
@@ -16,6 +20,10 @@ class ApiClient {
   ApiClient({http.Client? client}) : _http = client ?? http.Client();
   final http.Client _http;
   String? _token;
+
+  /// Dipanggil setiap kali server menjawab 503 (mode pemeliharaan), supaya
+  /// aplikasi bisa menampilkan halaman perawatan yang jelas. Diisi oleh AppState.
+  void Function(String pesan)? onPerawatan;
 
   String? get token => _token;
   void setToken(String? t) => _token = t;
@@ -69,6 +77,7 @@ class ApiClient {
       return body;
     }
     final msg = (body is Map ? body['error'] ?? body['message'] : null) ?? 'Terjadi kesalahan';
+    if (r.statusCode == 503) onPerawatan?.call('$msg');
     throw ApiException(r.statusCode, '$msg');
   }
 

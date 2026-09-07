@@ -37,6 +37,10 @@ class PushService {
       OneSignal.Notifications.addClickListener((peristiwa) {
         final tambahan = peristiwa.notification.additionalData ?? const {};
         final data = Map<String, dynamic>.from(tambahan);
+        // tombol aksi (mis. "Balas", "Mulai Main") tersedia lewat result.actionId.
+        // Diteruskan supaya aplikasi bisa membuka halaman yang tepat.
+        final aksi = peristiwa.result.actionId;
+        if (aksi != null && aksi.isNotEmpty) data['aksi'] = aksi;
         if (saatDiketuk != null) {
           saatDiketuk!(data);
         } else {

@@ -10,6 +10,7 @@ import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
 import 'ui/screens/splash_screen.dart';
 import 'ui/screens/shell.dart';
+import 'ui/widgets/perawatan_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,16 @@ class _Root extends StatelessWidget {
     // selama token tersimpan sedang diperiksa, tetap tampilkan splash
     if (s.memeriksaSesi) {
       return const SplashScreen(pesan: 'Memulihkan sesi kamu');
+    }
+
+    // server sedang mode pemeliharaan: tampilkan halaman perawatan yang jelas
+    // (baik sebelum maupun sesudah login), bukan deretan galat yang membingungkan
+    if (s.perawatan) {
+      return PerawatanScreen(
+        pesan: s.pesanPerawatan,
+        onCoba: s.cobaLagiPerawatan,
+        onKeluar: s.masuk ? s.logout : null,
+      );
     }
 
     final masuk = s.masuk;

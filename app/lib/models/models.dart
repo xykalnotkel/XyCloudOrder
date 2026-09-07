@@ -426,6 +426,7 @@ class PromoBanner {
   final String warna2;
   final String ikon;
   final int urutan;
+  final String gambar; // opsional: URL/DataURI latar, bila kosong pakai gradasi warna
 
   PromoBanner({
     required this.id,
@@ -439,6 +440,7 @@ class PromoBanner {
     this.warna2 = '#6A4BFF',
     this.ikon = 'bolt',
     this.urutan = 1,
+    this.gambar = '',
   });
 
   factory PromoBanner.fromJson(Map<String, dynamic> j) => PromoBanner(
@@ -453,6 +455,7 @@ class PromoBanner {
         warna2: j['warna2'] ?? '#6A4BFF',
         ikon: j['ikon'] ?? 'bolt',
         urutan: (j['urutan'] ?? 1) is int ? (j['urutan'] ?? 1) as int : 1,
+        gambar: '${j['gambar'] ?? ''}',
       );
 
   Map<String, dynamic> toJson() => {
@@ -467,6 +470,7 @@ class PromoBanner {
         'warna2': warna2,
         'ikon': ikon,
         'urutan': urutan,
+        'gambar': gambar,
       };
 }
 

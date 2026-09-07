@@ -44,6 +44,19 @@ class _XyShellState extends State<XyShell> {
   void _tanganiNotif(Map<String, dynamic> data) {
     if (!mounted) return;
     final tipe = '${data['tipe'] ?? ''}';
+    final aksi = '${data['aksi'] ?? ''}';
+
+    // tombol aksi dari notifikasi Android (lihat api/src/push.js)
+    if (aksi == 'balas') {
+      Navigator.push(context, xyRoute(const CsScreen()));
+      context.read<AppState>().muatNotifikasi();
+      return;
+    }
+    if (aksi == 'mulai') {
+      Navigator.push(context, xyRoute(const OrderListScreen()));
+      context.read<AppState>().muatNotifikasi();
+      return;
+    }
 
     switch (tipe) {
       case 'cs':
@@ -121,22 +134,22 @@ class _XyShellState extends State<XyShell> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
-                      height: 38,
-                      width: on ? 64 : 46,
+                      height: 46,
+                      width: on ? 70 : 50,
                       decoration: BoxDecoration(
                         gradient: on ? XyTheme.gradPrimary : null,
                         borderRadius: BorderRadius.circular(XyRadius.pill),
                         boxShadow: on ? XyTheme.glow(XyTheme.primary, .28) : null,
                       ),
                       child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1, size: 21, color: on ? Colors.white : XyTheme.muted),
+                        Icon(on ? it.$2 : it.$1, size: 23, color: on ? Colors.white : XyTheme.muted),
                       ]),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: on ? FontWeight.w800 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.muted,
                       ),
