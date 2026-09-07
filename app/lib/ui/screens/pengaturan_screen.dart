@@ -43,7 +43,7 @@ class PengaturanScreen extends StatelessWidget {
             ikon: Icons.notifications_none_rounded,
             judul: 'Notifikasi',
             sub: 'Atur pemberitahuan komunitas',
-            tujuan: const NotifikasiScreen(),
+            tujuan: const PengaturanNotifikasiScreen(),
           ),
           _Baris(
             ikon: Icons.data_saver_on_rounded,
@@ -369,8 +369,8 @@ class _KeamananScreenState extends State<KeamananScreen> {
 // ============================================================
 //  Notifikasi
 // ============================================================
-class NotifikasiScreen extends StatelessWidget {
-  const NotifikasiScreen({super.key});
+class PengaturanNotifikasiScreen extends StatelessWidget {
+  const PengaturanNotifikasiScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
