@@ -55,7 +55,7 @@ class HomeScreen extends StatelessWidget {
 
               SectionHeader(
                 'PC Siap Pakai',
-                sub: 'Stok unit realtime',
+                sub: 'Stok unit tersedia',
                 aksi: 'Semua',
                 onAksi: () => Navigator.push(context, xyRoute(const SewaPcScreen())),
               ),

@@ -10,6 +10,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
+import 'dart:async';
 
 /// Live chat CS — pesan masuk lewat WebSocket (atau simulasi di mode mock).
 class CsScreen extends StatefulWidget {
@@ -21,6 +22,8 @@ class CsScreen extends StatefulWidget {
 class _CsScreenState extends State<CsScreen> {
   final ctrl = TextEditingController();
   final scroll = ScrollController();
+  bool _sending = false;
+  Timer? _retensi;
 
   static const cepat = [
     'Halo Kirana, aku mau tanya',
@@ -34,14 +37,21 @@ class _CsScreenState extends State<CsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _keBawah());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppState>().muatChat();
+      _keBawah();
+    });
+    _retensi = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) context.read<AppState>().muatChat();
+    });
   }
 
   void _keBawah({bool animasi = true}) {
     if (!scroll.hasClients) return;
     final tujuan = scroll.position.maxScrollExtent;
     if (animasi) {
-      scroll.animateTo(tujuan, duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+      scroll.animateTo(tujuan,
+          duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
     } else {
       scroll.jumpTo(tujuan);
     }
@@ -49,22 +59,31 @@ class _CsScreenState extends State<CsScreen> {
 
   /// Ambil gambar dari galeri lalu kirim sebagai lampiran chat.
   Future<void> _kirimGambar() async {
-    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
+    final f = await ImagePicker().pickImage(
+        source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
     if (f == null) return;
     final bytes = await f.readAsBytes();
     final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
     final dataUri = 'data:image/$tipe;base64,${base64Encode(bytes)}';
     if (!mounted) return;
-    await context.read<AppState>().kirimChat('', gambar: dataUri, pratinjau: dataUri);
+    await context
+        .read<AppState>()
+        .kirimChat('', gambar: dataUri, pratinjau: dataUri);
     if (mounted) _keBawah();
   }
 
   Future<void> _kirim([String? teks]) async {
     final t = (teks ?? ctrl.text).trim();
-    if (t.isEmpty) return;
-    ctrl.clear();
-    await context.read<AppState>().kirimChat(t);
-    if (mounted) _keBawah();
+    if (t.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    final e = await context.read<AppState>().kirimChat(t);
+    if (!mounted) return;
+    setState(() => _sending = false);
+    if (e == null)
+      ctrl.clear();
+    else
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e)));
+    _keBawah();
   }
 
   /// Menu saat pesan ditekan lama: salin atau hapus.
@@ -74,8 +93,9 @@ class _CsScreenState extends State<CsScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (d) => Container(
-        padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(d).padding.bottom + 18),
-        decoration:  BoxDecoration(
+        padding: EdgeInsets.fromLTRB(
+            20, 14, 20, MediaQuery.of(d).padding.bottom + 18),
+        decoration: BoxDecoration(
           color: XyTheme.of(context).bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
@@ -84,30 +104,40 @@ class _CsScreenState extends State<CsScreen> {
             width: 44,
             height: 4.5,
             margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: XyTheme.of(context).line,
+                borderRadius: BorderRadius.circular(10)),
           ),
           if (m.teks.isNotEmpty)
             ListTile(
               leading: const Icon(Icons.copy_rounded, color: XyTheme.primary),
-              title: const Text('Salin pesan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              title: const Text('Salin pesan',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: m.teks));
                 Navigator.pop(d);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Pesan disalin'), duration: Duration(seconds: 1)),
+                  const SnackBar(
+                      content: Text('Pesan disalin'),
+                      duration: Duration(seconds: 1)),
                 );
               },
             ),
           if (m.milikSaya)
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: XyTheme.danger),
+              leading: const Icon(Icons.delete_outline_rounded,
+                  color: XyTheme.danger),
               title: const Text('Hapus pesan',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: XyTheme.danger)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: XyTheme.danger)),
               onTap: () async {
                 Navigator.pop(d);
                 final pesan = await context.read<AppState>().hapusPesan(m.id);
                 if (pesan != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(pesan)));
                 }
               },
             ),
@@ -118,6 +148,7 @@ class _CsScreenState extends State<CsScreen> {
 
   @override
   void dispose() {
+    _retensi?.cancel();
     ctrl.dispose();
     scroll.dispose();
     super.dispose();
@@ -143,7 +174,8 @@ class _CsScreenState extends State<CsScreen> {
             const CircleAvatar(
               radius: 20,
               backgroundColor: XyTheme.primary,
-              child: Icon(Icons.support_agent_rounded, color: Colors.white, size: 22),
+              child: Icon(Icons.support_agent_rounded,
+                  color: Colors.white, size: 22),
             ),
             Positioned(
               right: 0,
@@ -152,7 +184,7 @@ class _CsScreenState extends State<CsScreen> {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: XyTheme.success,
+                  color: XyTheme.of(context).muted,
                   shape: BoxShape.circle,
                   border: Border.all(color: XyTheme.of(context).bg, width: 2),
                 ),
@@ -160,14 +192,24 @@ class _CsScreenState extends State<CsScreen> {
             ),
           ]),
           const SizedBox(width: 10),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Kirana', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
-            Text(s.csMengetik ? 'sedang mengetik...' : 'Admin XyCloudStore · biasanya balas < 2 menit',
-                style: TextStyle(
-                    fontSize: 11.5,
-                    color: s.csMengetik ? XyTheme.primary : XyTheme.success,
-                    fontWeight: FontWeight.w600)),
-          ]),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                const Text('Bantuan XyCloud',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                Text(
+                    s.csMengetik
+                        ? 'sedang mengetik...'
+                        : 'Riwayat disimpan 7 hari',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        color: XyTheme.of(context).muted,
+                        fontWeight: FontWeight.w600)),
+              ])),
         ]),
         actions: [
           IconButton(
@@ -182,7 +224,8 @@ class _CsScreenState extends State<CsScreen> {
               final yakin = await konfirmasi(
                 context,
                 judul: 'Bersihkan pesanmu?',
-                pesan: 'Semua pesan yang pernah kamu kirim akan dihapus dari percakapan ini. '
+                pesan:
+                    'Semua pesan yang pernah kamu kirim akan dihapus dari percakapan ini. '
                     'Balasan Kirana tetap tersimpan.',
                 tombolYa: 'Bersihkan',
                 ikon: Icons.delete_sweep_outlined,
@@ -192,7 +235,8 @@ class _CsScreenState extends State<CsScreen> {
               final pesan = await context.read<AppState>().hapusSemuaPesan();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(pesan ?? 'Pesanmu sudah dibersihkan.')),
+                  SnackBar(
+                      content: Text(pesan ?? 'Pesanmu sudah dibersihkan.')),
                 );
               }
             },
@@ -200,6 +244,19 @@ class _CsScreenState extends State<CsScreen> {
         ],
       ),
       body: Column(children: [
+        Padding(
+            padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+            child: Text(
+                'Pesan yang lebih tua dari 7 hari dihapus otomatis. Simpan informasi penting sebelum kedaluwarsa.',
+                style: TextStyle(
+                    color: XyTheme.of(context).muted,
+                    fontSize: 11,
+                    height: 1.4))),
+        if (s.chat.isEmpty)
+          const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                  'Belum ada percakapan aktif. Kirim pesan untuk memulai obrolan baru.')),
         Expanded(
           child: ListView.builder(
             controller: scroll,
@@ -210,6 +267,12 @@ class _CsScreenState extends State<CsScreen> {
               final m = s.chat[i];
               return GestureDetector(
                 onLongPress: () => _menuPesan(context, m),
+                onTap: m.gagal
+                    ? () => context.read<AppState>().kirimChat(m.teks,
+                        gambar: m.gambar,
+                        pratinjau: m.gambar,
+                        ulangId: m.clientId)
+                    : null,
                 child: _Gelembung(msg: m),
               );
             },
@@ -224,16 +287,20 @@ class _CsScreenState extends State<CsScreen> {
               itemCount: cepat.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (_, i) => ActionChip(
-                label: Text(cepat[i], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                label: Text(cepat[i],
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600)),
                 onPressed: () => _kirim(cepat[i]),
                 backgroundColor: XyTheme.of(context).surface,
-                side:  BorderSide(color: XyTheme.of(context).line),
+                side: BorderSide(color: XyTheme.of(context).line),
               ),
             ),
           ),
         Container(
-          padding: EdgeInsets.fromLTRB(12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
-          decoration: BoxDecoration(color: XyTheme.of(context).surface, boxShadow: XyTheme.shadowMd),
+          padding: EdgeInsets.fromLTRB(
+              12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
+          decoration: BoxDecoration(
+              color: XyTheme.of(context).surface, boxShadow: XyTheme.shadowMd),
           child: Row(children: [
             IconButton(
               onPressed: _kirimGambar,
@@ -247,18 +314,23 @@ class _CsScreenState extends State<CsScreen> {
                 maxLines: 4,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _kirim(),
-                onChanged: (v) => context.read<AppState>().ketikCs(v.isNotEmpty),
+                onChanged: (v) =>
+                    context.read<AppState>().ketikCs(v.isNotEmpty),
                 decoration: InputDecoration(
-                  hintText: 'Tulis pesan untuk Kirana...',
+                  hintText: 'Tulis pesan untuk tim CS…',
                   fillColor: XyTheme.of(context).bg,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none),
                   enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none),
                   focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: const BorderSide(color: XyTheme.primary, width: 1.4)),
+                      borderSide:
+                          const BorderSide(color: XyTheme.primary, width: 1.4)),
                 ),
               ),
             ),
@@ -271,7 +343,8 @@ class _CsScreenState extends State<CsScreen> {
                 onTap: () => _kirim(),
                 child: const Padding(
                   padding: EdgeInsets.all(12),
-                  child: Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  child:
+                      Icon(Icons.send_rounded, color: Colors.white, size: 20),
                 ),
               ),
             ),
@@ -293,8 +366,13 @@ class _Gelembung extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(color: XyTheme.of(context).line.withOpacity(.6), borderRadius: BorderRadius.circular(20)),
-          child: Text(msg.teks, textAlign: TextAlign.center, style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
+          decoration: BoxDecoration(
+              color: XyTheme.of(context).line.withOpacity(.6),
+              borderRadius: BorderRadius.circular(20)),
+          child: Text(msg.teks,
+              textAlign: TextAlign.center,
+              style:
+                  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
         ),
       );
     }
@@ -302,7 +380,8 @@ class _Gelembung extends StatelessWidget {
     return Align(
       alignment: saya ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * .76),
+        constraints:
+            BoxConstraints(maxWidth: MediaQuery.of(context).size.width * .76),
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         decoration: BoxDecoration(
@@ -338,8 +417,10 @@ class _Gelembung extends StatelessWidget {
                               color: XyTheme.of(context).lineSoft,
                               child: const Center(
                                 child: SizedBox(
-                                  width: 20, height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2.2),
                                 ),
                               ),
                             ),
@@ -349,11 +430,16 @@ class _Gelembung extends StatelessWidget {
           ],
           if (msg.teks.isNotEmpty)
             Text(msg.teks,
-                style: TextStyle(color: saya ? Colors.white : XyTheme.of(context).ink, fontSize: 13.8, height: 1.42)),
+                style: TextStyle(
+                    color: saya ? Colors.white : XyTheme.of(context).ink,
+                    fontSize: 13.8,
+                    height: 1.42)),
           const SizedBox(height: 3),
           Row(mainAxisSize: MainAxisSize.min, children: [
             Text(jam(msg.waktu),
-                style: TextStyle(fontSize: 10, color: saya ? Colors.white70 : XyTheme.of(context).muted)),
+                style: TextStyle(
+                    fontSize: 10,
+                    color: saya ? Colors.white70 : XyTheme.of(context).muted)),
             if (saya) ...[
               const SizedBox(width: 4),
               Icon(
@@ -383,9 +469,11 @@ class _Mengetik extends StatefulWidget {
   State<_Mengetik> createState() => _MengetikState();
 }
 
-class _MengetikState extends State<_Mengetik> with SingleTickerProviderStateMixin {
-  late final AnimationController c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..repeat();
+class _MengetikState extends State<_Mengetik>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController c = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900))
+    ..repeat();
 
   @override
   void dispose() {

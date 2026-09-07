@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../core/cache.dart';
 import '../core/config.dart';
 import '../core/prefs.dart';
+import '../core/pengaturan.dart';
 import '../data/api_client.dart';
 import '../data/mock_data.dart';
 import '../data/lapor_galat.dart';
@@ -31,6 +32,7 @@ class AppState extends ChangeNotifier {
     unawaited(muatKonfigurasi());
     unawaited(muatPromosi());
     unawaited(muatTema());
+    unawaited(muatPengaturan());
     unawaited(periksaPembaruan());
     unawaited(pulihkanSesi());
   }
@@ -72,6 +74,12 @@ class AppState extends ChangeNotifier {
     await Prefs.simpanTema(pilihan);
     await muatTema();
   }
+
+  Future<void> muatPengaturan() async {try{await PengaturanLokal.muat();notifyListeners();}catch(_){}}
+  Future<void> setPengaturan(String key,dynamic value) async {await PengaturanLokal.set(key,value);notifyListeners();}
+  Future<String?> tesNotifikasi() async {try{await _api.post('/me/notifikasi/tes');return null;}catch(e){return _pesan(e);}}
+  Future<void> tandaiVideo(String id) async {try{await _api.post('/sesi/$id/stream');}catch(_){}}
+  Future<String?> batalOrder(String id) async {try{await _api.post('/orders/$id/batal');await muatSemua(paksa:true);await muatProfilRingkas();return null;}catch(e){return _pesan(e);}}
 
   /// Info rilis terbaru untuk pengecek pembaruan.
   Map<String, dynamic>? rilisTerbaru;
@@ -431,19 +439,17 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<String?> kirimPinSesi(String id, String pin) async {
+  Future<String?> kirimPinSesi(String id, String pin, {String? clientId}) async {
     try {
-      await _repo.sesiPin(id, pin);
+      await _api.post('/sesi/$id/pin', {'pin':pin,if(clientId!=null)'client_id':clientId});
       return null;
     } catch (e) {
       return _pesan(e);
     }
   }
 
-  Future<void> akhiriSesi(String id) async {
-    try {
-      await _repo.sesiAkhiri(id);
-    } catch (_) {}
+  Future<String?> akhiriSesi(String id) async {
+    try { await _repo.sesiAkhiri(id); return null; } catch(e) { return _pesan(e); }
   }
 
   // ================= pemberitahuan =================
@@ -1040,8 +1046,12 @@ class AppState extends ChangeNotifier {
 
   /// Muat ulang riwayat chat.
   Future<void> muatChat() async {
+    if(!masuk)return;
     try {
-      chat = await _repo.riwayatChat();
+      final remote=await _repo.riwayatChat();
+      final clients=remote.map((x)=>x.clientId).whereType<String>().toSet();
+      final pending=chat.where((x)=>x.id.startsWith('local_')&&!clients.contains(x.clientId)).toList();
+      chat=[...remote,...pending]..sort((a,b)=>a.waktu.compareTo(b.waktu));
       notifyListeners();
     } catch (_) {}
   }
@@ -1066,6 +1076,7 @@ class AppState extends ChangeNotifier {
     _rt = RealtimeService();
     _rtState = _rt!.state.listen((s) {
       koneksi = s;
+      if(s==RealtimeState.online)unawaited(muatChat());
       notifyListeners();
     });
     _rtSub = _rt!.events.listen(_handleEvent);
@@ -1228,16 +1239,14 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------- aksi ----------------
-  Future<RentOrder?> sewaPc(PcPlan plan, int jam, String metode, {String? voucher}) async {
+  Future<RentOrder?> sewaPc(PcPlan plan, int jam, String metode, {String? voucher, String? requestId, int? totalDisetujui}) async {
     try {
-      final o = await _repo.buatOrderSewa(plan: plan, jam: jam, metode: metode, voucher: voucher);
+      final o = await _repo.buatOrderSewa(plan: plan, jam: jam, metode: metode, voucher: voucher, requestId:requestId,totalDisetujui:totalDisetujui);
       if (!orders.any((x) => x.id == o.id)) orders.insert(0, o);
-      if (metode == 'saldo' && user != null) {
-        user = user!.copyWith(saldo: (user!.saldo - o.total).clamp(0, 1 << 31));
-      }
-      transaksi = await _repo.transaksi();
+
+      try { transaksi = await _repo.transaksi(); } catch(_) {}
       // tier bisa naik setelah belanja
-      unawaited(muatProfilRingkas());
+      await muatProfilRingkas();
       notifyListeners();
       return o;
     } catch (e) {
@@ -1265,48 +1274,15 @@ class AppState extends ChangeNotifier {
 
 
 
-  Future<void> kirimChat(String teks, {String? gambar, String? pratinjau}) async {
-    final msg = ChatMessage(
-      id: 'local_${DateTime.now().microsecondsSinceEpoch}',
-      room: 'cs',
-      dari: 'user',
-      teks: teks,
-      gambar: pratinjau,
-      waktu: DateTime.now(),
-      terkirim: false,
-    );
-    chat.add(msg);
-    notifyListeners();
-
-    if (XyConfig.useMock) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      msg.terkirim = true;
-      csMengetik = true;
-      notifyListeners();
-      await Future.delayed(Duration(milliseconds: 900 + Random().nextInt(1200)));
-      csMengetik = false;
-      chat.add(ChatMessage(
-        id: 'cs_${DateTime.now().microsecondsSinceEpoch}',
-        room: 'cs',
-        dari: 'cs',
-        teks: MockData.balasanCs(teks),
-        waktu: DateTime.now(),
-      ));
-      notifyListeners();
-      return;
-    }
-
-    // hanya lewat REST; server yang menyiarkan ke WebSocket,
-    // jadi pesan tidak akan tampil dua kali
+  Future<String?> kirimChat(String teks,{String? gambar,String? pratinjau,String? ulangId}) async {
+    final client=ulangId??'msg_${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1<<30)}';
+    chat.removeWhere((m)=>m.clientId==client&&m.id.startsWith('local_'));
+    final msg=ChatMessage(id:'local_$client',clientId:client,room:'user:${user?.id}',dari:'user',teks:teks,gambar:pratinjau,waktu:DateTime.now(),terkirim:false);
+    chat.add(msg);notifyListeners();
     try {
-      await _repo.kirimChat(teks, gambar: gambar);
-      msg.terkirim = true;
-      if (gambar != null) await muatChat();
-    } catch (e) {
-      error = _pesan(e);
-      msg.gagal = true;
-    }
-    notifyListeners();
+      final result=await _repo.kirimChat(teks,gambar:gambar,clientId:client);
+      _terimaPesan(result);return null;
+    }catch(e){msg.gagal=true;error=_pesan(e);notifyListeners();return error;}
   }
 
   /// Masukkan pesan dari server sambil mencegah pesan kembar.
@@ -1320,7 +1296,7 @@ class AppState extends ChangeNotifier {
 
     if (baru.milikSaya) {
       final i = chat.lastIndexWhere(
-        (m) => m.id.startsWith('local_') && m.dari == 'user' && m.teks == baru.teks,
+        (m) => m.id.startsWith('local_') && m.dari == 'user' && ((baru.clientId!=null&&m.clientId==baru.clientId)||(baru.clientId==null&&m.teks==baru.teks)),
       );
       if (i >= 0) {
         chat[i] = baru;
@@ -1336,7 +1312,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void ketikCs(bool val) => _rt?.send('user.typing', {'typing': val});
+  DateTime _ketikTerakhir=DateTime(2000);
+  void ketikCs(bool val) { if(DateTime.now().difference(_ketikTerakhir).inMilliseconds<1400)return;_ketikTerakhir=DateTime.now();unawaited(_api.post('/cs/typing',{'typing':val}).catchError((_){return null;})); }
 
   void bacaNotif() {
     notifBelumDibaca = 0;

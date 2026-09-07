@@ -1,3 +1,4 @@
+import 'pengaturan.dart';
 import 'package:flutter/material.dart';
 
 /// ============================================================
@@ -13,8 +14,8 @@ const Duration _durasiBalik = Duration(milliseconds: 320);
 Route<T> xyRoute<T>(Widget page, {bool fullscreen = false}) {
   return PageRouteBuilder<T>(
     fullscreenDialog: fullscreen,
-    transitionDuration: _durasi,
-    reverseTransitionDuration: _durasiBalik,
+    transitionDuration: PengaturanLokal.animasi ? _durasi : Duration.zero,
+    reverseTransitionDuration: PengaturanLokal.animasi ? _durasiBalik : Duration.zero,
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, masuk, keluar, child) {
       final maju = CurvedAnimation(
@@ -51,8 +52,8 @@ Route<T> xyRoute<T>(Widget page, {bool fullscreen = false}) {
 /// Transisi lembut dari bawah, cocok untuk halaman berisi formulir.
 Route<T> xyRouteBawah<T>(Widget page) {
   return PageRouteBuilder<T>(
-    transitionDuration: _durasi,
-    reverseTransitionDuration: _durasiBalik,
+    transitionDuration: PengaturanLokal.animasi ? _durasi : Duration.zero,
+    reverseTransitionDuration: PengaturanLokal.animasi ? _durasiBalik : Duration.zero,
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, a, __, child) {
       final k = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
@@ -67,7 +68,7 @@ Route<T> xyRouteBawah<T>(Widget page) {
 /// Transisi khusus perpindahan alur besar (splash, onboarding, shell).
 Route<T> xyFadeRoute<T>(Widget page) {
   return PageRouteBuilder<T>(
-    transitionDuration: const Duration(milliseconds: 560),
+    transitionDuration: PengaturanLokal.animasi ? const Duration(milliseconds:560) : Duration.zero,
     pageBuilder: (_, __, ___) => page,
     transitionsBuilder: (_, a, __, child) {
       final k = CurvedAnimation(parent: a, curve: Curves.easeInOutCubic);

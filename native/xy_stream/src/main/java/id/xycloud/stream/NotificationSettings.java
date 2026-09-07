@@ -39,13 +39,13 @@ public final class NotificationSettings {
                 Map<String,Object> m=new HashMap<>();m.put("id",item[0]);m.put("name",item[1]);m.put("enabled",permission);m.put("sound","Diatur Android");
                 if(Build.VERSION.SDK_INT>=26){NotificationChannel c=manager.getNotificationChannel(item[0]);
                     m.put("enabled",permission&&c.getImportance()!=NotificationManager.IMPORTANCE_NONE);m.put("vibration",c.shouldVibrate());
-                    Ringtone ring=c.getSound()==null?null:RingtoneManager.getRingtone(activity,c.getSound());m.put("sound",ring==null?"Senyap":ring.getTitle(activity));}
+                    try { Ringtone ring=c.getSound()==null?null:RingtoneManager.getRingtone(activity,c.getSound());m.put("sound",ring==null?"Senyap":ring.getTitle(activity)); } catch(Exception e) {m.put("sound","Suara pilihan Android");}}
                 out.add(m);
             }
             Map<String,Object> result=new HashMap<>();result.put("enabled",permission);result.put("channels",out);return result;
         }
         if(method.equals("notificationSettings")){
-            String id=String.valueOf(args.getOrDefault("channel",""));boolean valid=false;for(String[] c:channels)if(c[0].equals(id))valid=true;
+            String id=String.valueOf(args.get("channel")==null?"":args.get("channel"));boolean valid=false;for(String[] c:channels)if(c[0].equals(id))valid=true;
             Intent i;
             if(Build.VERSION.SDK_INT>=26){i=new Intent(valid?Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS:Settings.ACTION_APP_NOTIFICATION_SETTINGS);i.putExtra(Settings.EXTRA_APP_PACKAGE,activity.getPackageName());if(valid)i.putExtra(Settings.EXTRA_CHANNEL_ID,id);}
             else{i=new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+activity.getPackageName()));}

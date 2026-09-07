@@ -8,6 +8,12 @@ Desain: modern, clean, quick. Tanpa satu pun emoji — seluruh ikon memakai sist
 
 ---
 
+## Pembaruan v2.5.0
+
+**Streaming native dalam satu APK**, pairing otomatis ke Sunshine melalui agen 1.1.0, alur sewa nyata/idempoten, timestamp komentar relatif, stiker transparan, retensi CS 7 hari, serta pengaturan streaming dan channel/nada Android.
+
+Panduan dan batas verifikasi: [docs/rilis-2.5.0.md](docs/rilis-2.5.0.md). Aplikasi terintegrasi memakai GPLv3; source lengkap menyertai rilis. Lihat [native/README.md](native/README.md).
+
 ## Pembaruan v2.4.0
 
 Tema gelap menyeluruh, perbaikan keluar/hapus akun, banner lebih tinggi, komentar bertingkat dengan stiker terenkripsi di koleksi lokal, sinkronisasi nama, serta floating promo/pop-up untuk aplikasi dan web. Email laporan harian sudah dihapus.

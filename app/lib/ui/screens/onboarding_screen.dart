@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     ),
     _Slide(
       'Pantau semuanya',
-      'secara realtime',
+      'langsung',
       'Status order, stok unit, dan chat customer service mengalir langsung dari server XyCloud. Tanpa perlu refresh.',
       (a) => const _Art('cs'),
       XyTheme.plum,

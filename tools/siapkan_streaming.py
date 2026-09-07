@@ -3,19 +3,20 @@
 No keys or credentials are downloaded/written by this script.
 """
 from pathlib import Path
-import subprocess, json, re
+import subprocess, json, re, sys
 ROOT=Path(__file__).resolve().parent.parent
 cfg=json.loads((ROOT/'native/moonlight.lock.json').read_text())
 vendor=ROOT/'.cache/moonlight'
 def run(*args,cwd=None):subprocess.run(args,cwd=cwd,check=True)
-if not (vendor/'.git').exists():
- vendor.mkdir(parents=True,exist_ok=True)
- run('git','init',str(vendor))
- run('git','remote','add','origin',cfg['repository'],cwd=vendor)
-run('git','fetch','--depth','1','origin',cfg['revision'],cwd=vendor)
-run('git','checkout','--detach',cfg['revision'],cwd=vendor)
-run('git','submodule','update','--init','--recursive','--depth','1',cwd=vendor)
-assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=vendor,text=True).strip()==cfg['revision']
+if '--offline' not in sys.argv:
+ if not (vendor/'.git').exists():
+  vendor.mkdir(parents=True,exist_ok=True)
+  run('git','init',str(vendor))
+  run('git','remote','add','origin',cfg['repository'],cwd=vendor)
+ run('git','fetch','--depth','1','origin',cfg['revision'],cwd=vendor)
+ run('git','checkout','--detach',cfg['revision'],cwd=vendor)
+ run('git','submodule','update','--init','--recursive','--depth','1',cwd=vendor)
+ assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=vendor,text=True).strip()==cfg['revision']
 # Minimal reproducible integration patches. Original copyright notices are retained.
 game=vendor/'app/src/main/java/com/limelight/Game.java'
 s=game.read_text()
@@ -32,6 +33,8 @@ if 'xyTapKey' not in s:
 # Bounded pairing wait (the UI can cancel rather than waiting forever).
 http=vendor/'app/src/main/java/com/limelight/nvstream/http/NvHTTP.java'
 s=http.read_text().replace('.readTimeout(0, TimeUnit.MILLISECONDS)', '.readTimeout(90_000, TimeUnit.MILLISECONDS)').replace('.readTimeout(0, TimeUnit.SECONDS)', '.readTimeout(90, TimeUnit.SECONDS)')
+s=s.replace('this.uniqueId = "0123456789ABCDEF";', 'this.uniqueId = uniqueId;')
+s=s.replace('"devicename=roth&updateState=1&" + additionalArguments', '"devicename=XyCloudStore-" + uniqueId + "&updateState=1&" + additionalArguments')
 http.write_text(s)
 mk=vendor/'app/src/main/jni/moonlight-core/Android.mk'
 s=mk.read_text().replace('LOCAL_LDFLAGS += -Wl,--exclude-libs,ALL','LOCAL_LDFLAGS += -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384');mk.write_text(s)

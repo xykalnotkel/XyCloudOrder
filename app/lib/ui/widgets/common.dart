@@ -204,76 +204,19 @@ class Pill extends StatelessWidget {
 }
 
 /// Indikator koneksi realtime dengan pulse ring.
-class LiveDot extends StatefulWidget {
-  const LiveDot({super.key, required this.state, this.compact = false});
+class LiveDot extends StatelessWidget {
+  const LiveDot({super.key,required this.state,this.compact=true});
   final RealtimeState state;
   final bool compact;
-
-  @override
-  State<LiveDot> createState() => _LiveDotState();
-}
-
-class _LiveDotState extends State<LiveDot> with SingleTickerProviderStateMixin {
-  late final AnimationController c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat();
-
-  @override
-  void dispose() {
-    c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final online = widget.state == RealtimeState.online;
-    final warna = online
-        ? XyTheme.success
-        : widget.state == RealtimeState.connecting
-            ? XyTheme.warning
-            : XyTheme.of(context).muted;
-    final label = online
-        ? 'Realtime'
-        : widget.state == RealtimeState.connecting
-            ? 'Menyambung'
-            : 'Offline';
-
-    final dot = SizedBox(
-      width: 14,
-      height: 14,
-      child: Stack(alignment: Alignment.center, children: [
-        if (online)
-          AnimatedBuilder(
-            animation: c,
-            builder: (_, __) => Container(
-              width: 6 + c.value * 8,
-              height: 6 + c.value * 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: warna.withOpacity((1 - c.value) * .35),
-              ),
-            ),
-          ),
-        Container(width: 7, height: 7, decoration: BoxDecoration(color: warna, shape: BoxShape.circle)),
-      ]),
-    );
-
-    if (widget.compact) return dot;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(7, 5, 11, 5),
-      decoration: BoxDecoration(
-        color: warna.withOpacity(.09),
-        borderRadius: BorderRadius.circular(XyRadius.pill),
-        border: Border.all(color: warna.withOpacity(.16)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        dot,
-        const SizedBox(width: 5),
-        Text(label, style: TextStyle(color: warna, fontSize: 11, fontWeight: FontWeight.w800)),
-      ]),
-    );
+  @override Widget build(BuildContext context) {
+    final online=state==RealtimeState.online;
+    final color=online?XyTheme.success:state==RealtimeState.connecting?XyTheme.warning:XyTheme.of(context).muted;
+    return Tooltip(message:online?'Terhubung ke server':state==RealtimeState.connecting?'Menghubungkan server':'Koneksi terputus',
+      child:Padding(padding:const EdgeInsets.all(4),child:Container(width:8,height:8,decoration:BoxDecoration(color:color,shape:BoxShape.circle))));
   }
 }
+
+
 
 class SectionHeader extends StatelessWidget {
   const SectionHeader(this.judul, {super.key, this.sub, this.aksi, this.onAksi, this.top = 26});

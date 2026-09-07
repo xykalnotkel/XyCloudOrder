@@ -52,7 +52,7 @@ public final class NativeStreaming {
     private void emitPin(String pin, int request) {
         main.postDelayed(() -> {
             if(request != generation) return;
-            Map<String,Object> map=new HashMap<>();map.put("type","pin");map.put("pin",pin);map.put("session",session);
+            Map<String,Object> map=new HashMap<>();map.put("type","pin");map.put("pin",pin);map.put("session",session);map.put("clientId",uniqueId);
             if(events!=null)events.event(map);
         },1500);
     }
@@ -65,7 +65,7 @@ public final class NativeStreaming {
             case "start": start(args,reply); return;
             case "cancel":
                 generation++; if(task!=null)task.cancel(true); computer=null; apps=null; reply.ok(null); return;
-            case "resetPairing": saved.edit().clear().apply(); computer=null;apps=null;reply.ok(null);return;
+            case "resetPairing": activity.deleteFile("uniqueid");activity.deleteFile("client.crt");activity.deleteFile("client.key");saved.edit().clear().apply(); computer=null;apps=null;reply.ok(null);return;
             default:reply.fail("UNKNOWN","Perintah streaming tidak dikenal.");
         }
     }

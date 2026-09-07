@@ -98,12 +98,12 @@ abstract class XyRepository {
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
   Future<List<RentOrder>> orders();
-  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher});
+  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher, String? requestId, int? totalDisetujui});
   Future<RentOrder> orderDetail(String id);
   Future<Map<String, dynamic>> beliAkun({required AkunProduk produk, required String metode});
   Future<List<Transaksi>> transaksi();
   Future<List<ChatMessage>> riwayatChat();
-  Future<void> kirimChat(String teks, {String? gambar});
+  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId});
 
   factory XyRepository.create(ApiClient api) =>
       XyConfig.useMock ? MockRepository() : RemoteRepository(api);
@@ -409,11 +409,14 @@ class RemoteRepository implements XyRepository {
     required int jam,
     required String metode,
     String? voucher,
+    String? requestId, int? totalDisetujui,
   }) async =>
       RentOrder.fromJson(Map<String, dynamic>.from(await api.post('/orders', {
         'plan_id': plan.id,
         'durasi_jam': jam,
         'metode': metode,
+        if(requestId!=null)'request_id':requestId,
+        if(totalDisetujui!=null)'total_disetujui':totalDisetujui,
         if (voucher != null && voucher.isNotEmpty) 'voucher': voucher,
       })));
 
@@ -429,13 +432,12 @@ class RemoteRepository implements XyRepository {
       ((await api.get('/wallet/transaksi')) as List).map((e) => Transaksi.fromJson(e)).toList();
 
   @override
-  @override
   Future<List<ChatMessage>> riwayatChat() async =>
       ((await api.get('/cs/messages')) as List).map((e) => ChatMessage.fromJson(e)).toList();
 
   @override
-  Future<void> kirimChat(String teks, {String? gambar}) async =>
-      api.post('/cs/messages', {'teks': teks, if (gambar != null) 'gambar': gambar});
+  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId}) async =>
+      ChatMessage.fromJson(Map<String,dynamic>.from(await api.post('/cs/messages', {'teks': teks, if (gambar != null) 'gambar': gambar, if(clientId!=null)'client_id':clientId})));
 }
 
 // ------------------------------------------------------------------
@@ -691,7 +693,7 @@ class MockRepository implements XyRepository {
   Future<List<RentOrder>> orders() => _delay(_orders);
 
   @override
-  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher}) async {
+  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher, String? requestId, int? totalDisetujui}) async {
     final kode = 'XY-${9000 + Random().nextInt(999)}';
     final o = RentOrder(
       id: 'o_${DateTime.now().millisecondsSinceEpoch}',
@@ -730,5 +732,5 @@ class MockRepository implements XyRepository {
   Future<List<ChatMessage>> riwayatChat() => _delay(_chat, 300);
 
   @override
-  Future<void> kirimChat(String teks, {String? gambar}) async {}
+  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId}) async => ChatMessage(id:clientId??'local-test',room:'cs',dari:'user',teks:teks,gambar:gambar,clientId:clientId,waktu:DateTime.now());
 }

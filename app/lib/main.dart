@@ -4,6 +4,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
+import 'core/pengaturan.dart';
+import 'package:flutter/foundation.dart';
 import 'data/lapor_galat.dart';
 import 'data/push_service.dart';
 import 'providers/app_state.dart';
@@ -21,6 +23,7 @@ Future<void> main() async {
     systemNavigationBarColor: Colors.white,
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
+  LicenseRegistry.addLicense(() async* {yield LicenseEntryWithLineBreaks(['Moonlight Android / XyCloudStore Streaming'],await rootBundle.loadString('assets/licenses/moonlight-gpl3.txt'));});
   await PushService.mulai();
   await LaporGalat.siapkan();
 
@@ -51,7 +54,7 @@ class XyCloudStoreApp extends StatelessWidget {
               systemNavigationBarColor: XyTheme.of(context).surface,
               systemNavigationBarIconBrightness: gelap ? Brightness.light : Brightness.dark,
             ),
-            child: MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5, child: child!),
+            child: MediaQuery(data:MediaQuery.of(context).copyWith(textScaler:TextScaler.linear((MediaQuery.textScalerOf(context).scale(1)*PengaturanLokal.skala).clamp(.85,1.6))),child:child!),
           );
         },
         home: const _Root(),

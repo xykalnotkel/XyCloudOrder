@@ -1,3 +1,4 @@
+import '../widgets/waktu_relatif.dart';
 import 'dart:async';
 import '../../models/stiker.dart';
 import '../../core/komentar_thread.dart';
@@ -623,10 +624,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.fromLTRB(13, 11, 13, 12),
                         decoration: BoxDecoration(
-                            color: pal.surface,
+                            color: b.stiker == null
+                                ? pal.surface
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(18),
-                            border:
-                                Border.all(color: pal.line.withOpacity(.7))),
+                            border: b.stiker == null ? Border.all(color:pal.line.withOpacity(.7)) : null),
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -643,16 +645,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                       LencanaTier(b.admin ? 'admin' : b.tier),
                                     if (b.badge != null) LencanaKhusus(b.badge!)
                                   ]),
-                              Text(tanggal(b.dibuat),
-                                  style: TextStyle(
-                                      fontSize: 10.5, color: pal.muted)),
                               if (parent != null) ...[
                                 const SizedBox(height: 8),
                                 Text(
                                     'Membalas ${s.namaPengguna(parent.userId, parent.nama)}',
                                     style: TextStyle(
                                         fontSize: 11,
-                                        color: pal.accent,
+                                        color: pal.muted,
                                         fontWeight: FontWeight.w700))
                               ],
                               if (b.isi.isNotEmpty) ...[
@@ -676,6 +675,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                       style: TextStyle(
                                           fontSize: 10, color: pal.muted))
                               ],
+                              const SizedBox(height: 6),
+                              Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: WaktuRelatif(b.dibuat)),
                             ])),
                     Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,

@@ -1,3 +1,4 @@
+import '../core/waktu.dart';
 import 'stiker.dart';
 import 'dart:convert';
 // ============================================================
@@ -335,6 +336,7 @@ class AkunProduk {
 class ChatMessage {
   final String id;
   final String room;
+  final String? clientId;
   final String dari; // 'user' | 'cs' | 'system'
   final String teks;
   final String? gambar;
@@ -350,6 +352,7 @@ class ChatMessage {
     required this.teks,
     required this.waktu,
     this.gambar,
+    this.clientId,
     this.terkirim = true,
     this.dibaca = false,
     this.gagal = false,
@@ -360,16 +363,18 @@ class ChatMessage {
   factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
         id: '${j['id']}',
         room: j['room'] ?? '',
+        clientId: j['client_id'],
         dari: j['dari'] ?? j['from'] ?? 'cs',
         teks: j['teks'] ?? j['text'] ?? '',
         gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
-        waktu: DateTime.parse(j['waktu'] ?? j['at']),
+        waktu: tanggalServer(j['waktu'] ?? j['at']),
         dibaca: (j['dibaca'] ?? 0) == 1,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'room': room,
+        'client_id': clientId,
         'dari': dari,
         'teks': teks,
         'gambar': gambar,
@@ -550,7 +555,7 @@ class PermintaanTopup {
         status: j['status'] ?? 'menunggu',
         bukti: (j['bukti'] as String?)?.isNotEmpty == true ? j['bukti'] : null,
         catatan: (j['catatan'] as String?)?.isNotEmpty == true ? j['catatan'] : null,
-        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+        dibuat: tanggalServer(j['dibuat']),
         rekening: _petaAman(j['rekening']),
         otomatis: j['otomatis'] == true,
         bayar: _petaAman(j['bayar']),
@@ -647,7 +652,7 @@ class ForumPost {
         suka: j['suka'] ?? 0,
         balasan: j['balasan'] ?? 0,
         disematkan: (j['disematkan'] ?? 0) == 1,
-        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+        dibuat: tanggalServer(j['dibuat']),
       );
 
   Map<String, dynamic> toJson() => {
@@ -712,7 +717,7 @@ class ForumBalasan {
         tier: j['tier'] ?? 'basic',
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         suka: j['suka'] ?? 0,
-        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+        dibuat: tanggalServer(j['dibuat']),
       );
 }
 
@@ -786,6 +791,6 @@ class Notifikasi {
         refJenis: j['ref_jenis'],
         refId: j['ref_id'],
         dibaca: (j['dibaca'] ?? 0) == 1,
-        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+        dibuat: tanggalServer(j['dibuat']),
       );
 }

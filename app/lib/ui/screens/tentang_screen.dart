@@ -1,3 +1,5 @@
+import 'cs_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -49,6 +51,7 @@ class _TentangScreenState extends State<TentangScreen> {
             ]),
           ),
 
+          ListTile(leading:const Icon(Icons.code_rounded),title:const Text('Source & lisensi streaming'),subtitle:const Text('XyCloudStore memakai engine Moonlight GPLv3'),onTap:()=>launchUrl(Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/tag/v2.5.0'),mode:LaunchMode.externalApplication)),
           const SectionHeader('Legal'),
           _Baris(
             ikon: Icons.description_outlined,
@@ -73,8 +76,8 @@ class _TentangScreenState extends State<TentangScreen> {
           _Baris(
             ikon: Icons.forum_outlined,
             judul: 'Chat Admin',
-            sub: 'Tanya langsung lewat aplikasi, dijawab realtime',
-            onTap: () => Navigator.pop(context, 'chat'),
+            sub: 'Tanya langsung lewat aplikasi, dijawab tim CS',
+            onTap: () => Navigator.push(context, xyRoute(const CsScreen())),
           ),
 
           const SectionHeader('Pengembang'),

@@ -13,6 +13,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'tentang_screen.dart';
+import 'opsi_screen.dart';
 import 'hapus_akun_screen.dart';
 
 /// ============================================================
@@ -50,12 +51,14 @@ class PengaturanScreen extends StatelessWidget {
             sub: 'Terang, gelap, atau ikut sistem',
             tujuan: const TemaScreen(),
           ),
+          _Baris(ikon:Icons.text_fields_rounded,judul:'Teks & Gerakan',sub:'Ukuran teks dan animasi halaman',tujuan:const OpsiTampilanScreen()),
+          _Baris(ikon:Icons.sports_esports_rounded,judul:'Streaming & Kontrol',sub:'Resolusi, FPS, bitrate, gamepad, dan keyboard',tujuan:const OpsiStreamingScreen()),
           const _Judul('Aplikasi'),
           _Baris(
             ikon: Icons.notifications_none_rounded,
             judul: 'Notifikasi',
             sub: 'Atur pemberitahuan komunitas',
-            tujuan: const PengaturanNotifikasiScreen(),
+            tujuan: const OpsiNotifikasiScreen(),
           ),
           _Baris(
             ikon: Icons.data_saver_on_rounded,

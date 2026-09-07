@@ -83,7 +83,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               FadeInUp(
                 delay: const Duration(milliseconds: 280),
                 child: Text(
-                  'Sewa cloud PC per jam, beli akun digital bergaransi, dan pantau semuanya secara realtime dalam satu aplikasi.',
+                  'Sewa cloud PC per jam, beli akun digital bergaransi, dan pantau semuanya langsung dalam satu aplikasi.',
                   style: TextStyle(
                     color: Colors.white.withOpacity(.60),
                     fontSize: 14.5,

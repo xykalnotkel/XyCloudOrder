@@ -44,6 +44,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Uji agen tanpa PC produksi
+        run: python3 -m unittest discover -s agent -p "test_*.py"
+
       - name: Uji backend tanpa data produksi
         working-directory: api
         run: |
@@ -76,6 +79,9 @@ jobs:
             --org id.xycloud \
             --project-name xycloud_order \
             --description "XyCloudStore - Sewa PC Cloud, Beli Akun, CS Realtime"
+
+      - name: Siapkan engine streaming native dalam APK
+        run: python3 tools/siapkan_streaming.py
 
       - name: Naikkan versi Kotlin (dibutuhkan OneSignal)
         working-directory: ${{ env.APP_DIR }}
@@ -183,11 +189,14 @@ jobs:
             "$APKSIGNER" verify --print-certs "$f" | head -n 8 || echo "Tidak dapat diverifikasi"
           done
 
+      - name: Sertakan corresponding source GPL
+        run: python3 tools/buat_sumber_streaming.py dist/XyCloudStore-2.5.0-source.zip
+
       - name: Upload artifact APK
         uses: actions/upload-artifact@v4
         with:
           name: XyCloudStore-APK
-          path: dist/*.apk
+          path: dist/*
           retention-days: 30
           if-no-files-found: error
 
@@ -219,7 +228,7 @@ jobs:
           path: dist
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.apk
+          files: dist/*
           generate_release_notes: true
 
       - name: Daftarkan rilis ke server XyCloudStore
