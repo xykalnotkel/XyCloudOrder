@@ -45,6 +45,17 @@ class SunshineTests(unittest.TestCase):
         self.assertTrue(r['siap'])
         self.assertEqual(r['status'], 'API_SIAP')
 
+    def test_modern_pairing_selects_matching_client(self):
+        replies = [{"pairings": [{"id": "a" * 32, "name": "XyCloudStore-0123456789abcdef"}, {"id": "b" * 32, "name": "Other client"}]}, {"status": True}]
+        with patch.object(agent, 'minta', side_effect=replies) as request:
+            result = self.sunshine.pasangkan('1234', client_id='0123456789abcdef')
+            self.assertTrue(agent.api_berhasil(result))
+            self.assertEqual(request.call_args.kwargs['data']['pairing_id'], 'a' * 32)
+
+    def test_http_200_with_false_status_is_failed_pairing(self):
+        with patch.object(agent, 'minta', side_effect=[{"pairings": [{"id": "a" * 32, "name": "Only client"}]}, {"status": False}]):
+            self.assertFalse(agent.api_berhasil(self.sunshine.pasangkan('1234')))
+
     def test_http_status_preserved_and_local_proxy_bypassed(self):
         error = urllib.error.HTTPError('https://127.0.0.1:47990/api/apps', 401, 'Unauthorized', {}, io.BytesIO(b'{}'))
         opener = MagicMock()

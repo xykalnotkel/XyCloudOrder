@@ -44,6 +44,7 @@ melaporkan pemakaian CPU dan RAM.
 from __future__ import annotations
 
 import argparse
+import datetime
 import base64
 import json
 import os
@@ -58,7 +59,7 @@ import urllib.error
 import urllib.request
 import urllib.parse
 
-VERSI = "1.0.1"
+VERSI = "1.1.0"
 
 SERVER_BAWAAN = "https://api.xycloud.my.id"
 SUNSHINE_BAWAAN = "https://127.0.0.1:47990"
@@ -114,6 +115,21 @@ def minta(url: str, data: dict | None = None, header: dict | None = None,
     except Exception as e:  # noqa: BLE001
         sebab = e.reason if isinstance(e, urllib.error.URLError) else e
         return {"_galat": str(sebab), "_jenis_galat": type(sebab).__name__}
+
+
+def api_berhasil(j) -> bool:
+    return isinstance(j, dict) and "_galat" not in j and "teks" not in j and not j.get("error") and j.get("status", True) not in (False, "false", 0)
+
+def epoch(teks):
+    if not teks:
+        return None
+    try:
+        d = datetime.datetime.fromisoformat(str(teks).replace("Z", "+00:00"))
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=datetime.timezone.utc)
+        return d.timestamp()
+    except (ValueError, TypeError):
+        return None
 
 
 def spesifikasi() -> dict:
@@ -214,15 +230,28 @@ class Sunshine:
     def hidup(self) -> bool:
         return self.periksa()["siap"]
 
-    def pasangkan(self, pin: str, nama: str = "XyCloudStore") -> dict:
-        """Masukkan PIN yang muncul di aplikasi penyewa."""
-        for jalur in (f"/api/pin?pin={pin}&name={nama}", "/api/pin"):
-            data = {"pin": pin, "name": nama} if jalur == "/api/pin" else None
-            j = minta(f"{self.alamat}{jalur}", data=data, header=self._header(),
-                      metode="POST", ssl_longgar=True, timeout=15)
-            if "_galat" not in j:
-                return j
-        return {"_galat": "Gagal mengirim PIN ke Sunshine"}
+    def pasangkan(self, pin: str, nama: str = "XyCloudStore", client_id: str | None = None) -> dict:
+        """Approve only the matching pending pairing request; never equate HTTP 200 with success."""
+        for _ in range(12):
+            pending = minta(f"{self.alamat}/api/pin", header=self._header(), ssl_longgar=True, timeout=8)
+            data = {"pin": pin, "name": nama}
+            if pending.get("_http_status") == 404:
+                # Older Sunshine/Apollo versions use the legacy one-request PIN API.
+                result = minta(f"{self.alamat}/api/pin", data=data, header=self._header(), metode="POST", ssl_longgar=True, timeout=12)
+                return result if api_berhasil(result) else {"_galat": "PIN ditolak Sunshine"}
+            if not api_berhasil(pending):
+                return {"_galat": "Tidak dapat membaca permintaan pairing Sunshine"}
+            candidates = pending.get("pairings", [])
+            if client_id:
+                candidates = [x for x in candidates if x.get("name") == "XyCloudStore-" + client_id]
+            if len(candidates) > 1:
+                return {"_galat": "Ada beberapa permintaan pairing. Tutup permintaan lain lalu coba lagi."}
+            if len(candidates) == 1:
+                data["pairing_id"] = candidates[0]["id"]
+                result = minta(f"{self.alamat}/api/pin", data=data, header=self._header(), metode="POST", ssl_longgar=True, timeout=12)
+                return result if api_berhasil(result) else {"_galat": "Permintaan pairing atau PIN ditolak Sunshine"}
+            time.sleep(1)
+        return {"_galat": "Belum ada permintaan pairing dari HP. Periksa port streaming dan koneksi HP."}
 
     def putuskan_semua(self) -> dict:
         """Hentikan sesi streaming yang sedang berjalan."""
@@ -281,6 +310,7 @@ class Agen:
         self.batas_waktu: float | None = None
         self._status_sunshine: str | None = None
         self._server_ok = False
+        self._akhir_pending = None
 
     # ---------- komunikasi ----------
     def lapor(self) -> list[dict]:
@@ -312,6 +342,20 @@ class Agen:
         if not self._server_ok:
             catat("Server   : HEARTBEAT DITERIMA (agen terhubung ke XyCloudStore)")
         self._server_ok = True
+        if "lease" in data:
+            lease = data.get("lease")
+            if lease:
+                self.sesi_aktif = lease["id"]
+                self.batas_waktu = epoch(lease.get("berakhir"))
+                if lease.get("status") == "mengakhiri":
+                    self.batas_waktu = time.time() - 1
+            elif not self._akhir_pending:
+                self.sesi_aktif = None
+                self.batas_waktu = None
+        if self._akhir_pending:
+            hasil = minta(f"{self.server}/api/agen/sesi/selesai", data={"sesi_id": self._akhir_pending, "ok": True}, header={"x-agen-kode": self.kode})
+            if "_galat" not in hasil:
+                self._akhir_pending = None
         return data.get("perintah", [])
 
     def balas(self, perintah_id: str, hasil: dict) -> None:
@@ -325,15 +369,23 @@ class Agen:
         sesi_id = muatan.get("sesi_id")
         catat(f"Perintah masuk: {jenis} ({sesi_id})")
 
+        if self.sesi_aktif and self.sesi_aktif != sesi_id:
+            self.balas(perintah["id"], {"ok": False, "sesi_id": sesi_id, "catatan": "Unit sedang menangani sesi lain"})
+            return
         if jenis == "mulai_sesi":
+            valid = epoch(muatan.get("valid_sampai"))
+            if valid and time.time() > valid:
+                self.balas(perintah["id"], {"ok": False, "sesi_id": sesi_id, "catatan": "Perintah mulai sudah kedaluwarsa"})
+                return
             cek = self.sunshine.periksa()
             if not cek["siap"]:
                 self.balas(perintah["id"], {"ok": False, "sesi_id": sesi_id,
                            "status": "gagal", "catatan": cek["pesan"]})
                 return
+            if not api_berhasil(self.sunshine.hapus_perangkat()):
+                self.balas(perintah["id"], {"ok": False, "sesi_id": sesi_id, "catatan": "Sunshine belum berhasil melepas perangkat lama. Sesi tidak dimulai."})
+                return
             langkah = bersihkan_sesi()
-            self.sunshine.hapus_perangkat()
-
             siap = self.sunshine.hidup()
             self.sesi_aktif = sesi_id if siap else None
             menit = int(muatan.get("durasi_menit") or 60)
@@ -350,32 +402,36 @@ class Agen:
             })
 
         elif jenis == "pasangkan":
-            hasil = self.sunshine.pasangkan(str(muatan.get("pin", "")))
-            berhasil = "_galat" not in hasil
+            hasil = self.sunshine.pasangkan(str(muatan.get("pin", "")), client_id=muatan.get("client_id"))
+            berhasil = api_berhasil(hasil)
             self.balas(perintah["id"], {
                 "ok": berhasil,
                 "sesi_id": sesi_id,
-                "status": "berjalan" if berhasil else "siap",
+                "status": "siap",
                 "catatan": "Perangkat berhasil dipasangkan" if berhasil
                            else "PIN ditolak, minta penyewa mencoba lagi",
             })
 
         elif jenis == "akhiri_sesi":
-            self.sunshine.putuskan_semua()
-            self.sunshine.hapus_perangkat()
-            langkah = bersihkan_sesi()
-            self.sesi_aktif = None
-            self.batas_waktu = None
-            self.balas(perintah["id"], {
-                "ok": True,
-                "sesi_id": sesi_id,
-                "status": "selesai",
-                "catatan": "Sesi ditutup dan mesin dibersihkan",
-                "langkah": langkah,
-            })
+            ok = self.tutup_sesi()
+            self.balas(perintah["id"], {"ok": ok, "sesi_id": sesi_id,
+                "status": "selesai" if ok else "mengakhiri",
+                "catatan": "Sesi dibersihkan" if ok else "API pembersihan belum berhasil; unit tetap dikunci"})
 
         else:
             self.balas(perintah["id"], {"ok": False, "catatan": f"Perintah {jenis} tidak dikenal"})
+
+    def tutup_sesi(self) -> bool:
+        close = self.sunshine.putuskan_semua()
+        unpair = self.sunshine.hapus_perangkat()
+        if not api_berhasil(close) or not api_berhasil(unpair):
+            catat("Pembersihan Sunshine belum berhasil; mencoba lagi pada putaran berikutnya")
+            return False
+        bersihkan_sesi()
+        self._akhir_pending = self.sesi_aktif
+        self.sesi_aktif = None
+        self.batas_waktu = None
+        return True
 
     # ---------- putaran utama ----------
     def jalan(self) -> None:
@@ -394,11 +450,7 @@ class Agen:
                 # waktu sewa habis: tutup sendiri walau aplikasi penyewa diam
                 if self.batas_waktu and time.time() > self.batas_waktu:
                     catat("Waktu sewa habis, menutup sesi")
-                    self.sunshine.putuskan_semua()
-                    self.sunshine.hapus_perangkat()
-                    bersihkan_sesi()
-                    self.sesi_aktif = None
-                    self.batas_waktu = None
+                    self.tutup_sesi()
 
             except KeyboardInterrupt:
                 catat("Agen dihentikan")

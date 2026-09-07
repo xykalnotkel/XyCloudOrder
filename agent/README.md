@@ -84,7 +84,7 @@ python3 xy_agent.py --cek
 python3 xy_agent.py
 ```
 
-## Diagnosis Sunshine (agen 1.0.1)
+## Diagnosis Sunshine (agen 1.1.0)
 
 ```powershell
 Test-NetConnection 127.0.0.1 -Port 47990
@@ -182,3 +182,14 @@ Game dengan anti-cheat tingkat kernel (Valorant/Vanguard, sebagian FACEIT, beber
 **menolak berjalan di dalam mesin virtual**. Kalau target jualannya game seperti itu, unit harus
 PC fisik, bukan VM cloud. Untuk game single player, Steam umum, emulator, dan pekerjaan
 render atau editing, VM cloud sudah cukup.
+
+
+## Integrasi APK 2.5.0 (agen 1.1.0)
+
+- Streaming sudah berada di APK XyCloudStore. HP tidak harus memasang Moonlight/Artemis terpisah.
+- Gunakan agen 1.1.0 atau lebih baru. Sunshine modern memakai `pairing_id`; agen membaca antrean pairing lokal dan hanya memilih permintaan dari identitas client yang dikirim APK.
+- Hasil JSON `status:false` adalah kegagalan meskipun HTTP 200. Sesi tidak dinyatakan terhubung hanya karena permintaan diterima.
+- Deadline sewa dipulihkan dari server saat agen restart. Agen menutup streaming dan melepas perangkat saat waktu habis, kemudian melaporkan pelepasan unit ke server.
+- Unit tetap dikunci jika pembersihan Sunshine gagal. Perbaiki kredensial/layanan dan biarkan agen mencoba ulang; jangan melepas unit secara paksa ketika penyewa lama masih bisa tersambung.
+- Perintah mulai kedaluwarsa setelah dua menit. Jangan menjalankan beberapa agen bersamaan untuk kode unit yang sama.
+- `--cek` tetap hanya memeriksa API lokal, bukan encoder/display ataupun port streaming dari internet. Port admin 47990 tetap lokal, tidak dibuka ke internet.
