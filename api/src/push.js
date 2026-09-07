@@ -13,8 +13,13 @@ const UNGU = '6C2BE2';
 /**
  * Kirim push ke satu pengguna berdasarkan external_id (= id user di D1).
  * Aman dipanggil kapan saja; kalau kredensial belum ada, fungsi diam saja.
+ *
+ * `tombol` (opsional): deretan aksi yang tampil di notifikasi Android,
+ * maksimal 3, bentuknya [{ id, text }] misalnya [{ id: 'buka', text: 'Buka' }].
+ * Saat diketuk, aplikasi menerima data.tipe seperti biasa (id tombol juga
+ * disertakan di data.aksi bila perangkat mendukungnya).
  */
-export async function kirimPush(env, { userId, judul, pesan, data, url }) {
+export async function kirimPush(env, { userId, judul, pesan, data, url, tombol }) {
   if (!env.ONESIGNAL_APP_ID || !env.ONESIGNAL_API_KEY || !userId) {
     return { ok: false, alasan: 'kredensial OneSignal belum diatur' };
   }
@@ -28,6 +33,9 @@ export async function kirimPush(env, { userId, judul, pesan, data, url }) {
     android_accent_color: `FF${UNGU}`,
     small_icon: 'ic_stat_onesignal_default',
     data: data || {},
+    ...(Array.isArray(tombol) && tombol.length
+      ? { buttons: tombol.slice(0, 3).map((t) => ({ id: String(t.id), text: String(t.text), icon: 'ic_stat_onesignal_default' })) }
+      : {}),
     ...(url ? { url } : {}),
   };
 

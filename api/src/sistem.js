@@ -235,6 +235,21 @@ export async function laporanHarian(env, kirimEmail) {
   if ((unit?.n ?? 0) > 0 && (unit?.hidup ?? 0) === 0) perhatian.push('Semua unit PC sedang tidak melapor.');
   if ((pesan?.n ?? 0) > 0) perhatian.push(`${pesan.n} pesan pelanggan menunggu balasan.`);
 
+  // Hemat email: kalau 24 jam terakhir sama sekali tidak ada aktivitas dan
+  // tidak ada yang perlu diperhatikan, jangan kirim laporan kosong.
+  const adaAktivitas = (order?.n ?? 0) > 0
+    || (topup?.masuk ?? 0) > 0
+    || (topup?.tertunda ?? 0) > 0
+    || (pengguna?.n ?? 0) > 0
+    || (forum?.n ?? 0) > 0
+    || (pesan?.n ?? 0) > 0
+    || (galat?.n ?? 0) > 0
+    || (unit?.n ?? 0) > 0;
+  if (!adaAktivitas && perhatian.length === 0) {
+    await catatLog(env, 'laporan', 'Tidak ada aktivitas 24 jam terakhir, laporan harian dilewati (hemat email).');
+    return { ok: true, dilewati: true, alasan: 'tidak ada aktivitas' };
+  }
+
   const hasil = await kirimEmail(env, {
     to: tujuan,
     template: 'laporanHarian',
@@ -273,13 +288,22 @@ export async function pantauKesehatan(env, kirimEmail) {
 
   if (!masalah.length) return { ok: true, sehat: true };
 
+  // Kooldown: masalah yang sama tidak perlu dikirim tiap jam. Maksimal satu
+  // email peringatan per enam jam, sisanya cukup dicatat ke log_sistem.
+  let terkirim = false;
   if (env.EMAIL_ADMIN) {
-    await kirimEmail(env, {
-      to: env.EMAIL_ADMIN,
-      template: 'peringatanSistem',
-      data: { judul: 'Ada yang perlu dicek', rincian: masalah.join('<br>') },
-    });
+    const terakhir = await setelan(env, 'peringatan_terakhir', '');
+    const lewat = terakhir ? Date.now() - Date.parse(terakhir) : Infinity;
+    if (!Number.isFinite(lewat) || lewat >= 6 * 3600 * 1000) {
+      await kirimEmail(env, {
+        to: env.EMAIL_ADMIN,
+        template: 'peringatanSistem',
+        data: { judul: 'Ada yang perlu dicek', rincian: masalah.join('<br>') },
+      });
+      await simpanSetelan(env, 'peringatan_terakhir', new Date().toISOString());
+      terkirim = true;
+    }
   }
-  await catatLog(env, 'peringatan', masalah.join(' | '));
-  return { ok: true, sehat: false, masalah };
+  await catatLog(env, 'peringatan', (terkirim ? '' : '(ditekan, menunggu kooldown) ') + masalah.join(' | '));
+  return { ok: true, sehat: false, masalah, terkirim };
 }

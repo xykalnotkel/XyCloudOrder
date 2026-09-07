@@ -158,6 +158,42 @@ export const TEMPLATE = {
 };
 
 /**
+ * Batas kirim email harian. Dipakai supaya kuota Resend tidak cepat habis
+ * gara-gara email otomatis yang dikirim tanpa kebutuhan jelas.
+ * Batas bisa diatur lewat variabel lingkungan EMAIL_BATAS_HARIAN
+ * (bawaan 100/hari — aman untuk paket gratis Resend yang 100/hari).
+ */
+async function catatDanBolehKirim(env) {
+  const db = env.DB;
+  if (!db) return true; // tanpa DB tidak bisa menghitung, biarkan saja
+  try {
+    const hariIni = new Date();
+    const kunci = 'email:' + hariIni.toISOString().slice(0, 10);
+    const besok = new Date(hariIni.getTime() + 86400000);
+    const sampai = `${besok.toISOString().slice(0, 10)}T00:00:00.000Z`;
+    const batas = Number(env.EMAIL_BATAS_HARIAN || 100);
+
+    const baris = await db.prepare('SELECT jumlah, sampai FROM batas WHERE kunci = ?').bind(kunci).first();
+    const kini = Date.now();
+
+    if (!baris) {
+      await db.prepare('INSERT INTO batas (kunci, jumlah, sampai) VALUES (?, 1, ?)').bind(kunci, sampai).run();
+      return true;
+    }
+    // hari berganti: reset
+    if (Date.parse(baris.sampai) <= kini) {
+      await db.prepare('UPDATE batas SET jumlah = 1, sampai = ? WHERE kunci = ?').bind(sampai, kunci).run();
+      return true;
+    }
+    if (Number(baris.jumlah) >= batas) return false;
+    await db.prepare('UPDATE batas SET jumlah = jumlah + 1 WHERE kunci = ?').bind(kunci).run();
+    return true;
+  } catch (_) {
+    return true; // kalau ada masalah, jangan halangi email penting
+  }
+}
+
+/**
  * Kirim email lewat Resend. Aman dipanggil walau kunci belum diisi
  * (fungsi hanya mencatat lalu keluar, tidak melempar error).
  */
@@ -166,6 +202,10 @@ export async function kirimEmail(env, { to, template, data, tombolTeks, tombolUr
 
   const t = TEMPLATE[template]?.(data || {});
   if (!t) return { ok: false, alasan: 'template tidak dikenal' };
+
+  // hemat kuota: lewati kalau kuota harian sudah tercapai
+  const boleh = await catatDanBolehKirim(env);
+  if (!boleh) return { ok: false, alasan: 'kuota email harian tercapai, pengiriman dilewati' };
 
   const logoUrl = `${env.PUBLIC_URL || 'https://api.xycloud.my.id'}/brand/logo.png`;
   const isi = tombolUrl ? t.isi + tombol(tombolTeks || 'Buka Aplikasi', tombolUrl) : t.isi;

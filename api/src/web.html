@@ -790,6 +790,10 @@ addEventListener('popstate', () => tampilkan(halamanDariJalur(location.pathname)
 /* ---------------- unduh dan deteksi perangkat ---------------- */
 const KUNCI_ABI = 'xy_abi_manual';
 
+// Diisi worker dari header `sec-ch-ua-*` saat halaman disajikan (lihat index.js).
+// Jauh lebih andal daripada getHighEntropyValues yang ditolak banyak peramban.
+window.__XY_CH__ = /*__XY_CH__*/ null;
+
 /** Aturan berkas mana yang boleh dipasang untuk tiap arsitektur. */
 function berkasCocok(abi, bit) {
   if (abi === 'x86_64') return ['x86_64', 'universal'];
@@ -816,6 +820,32 @@ async function deteksiPerangkat() {
     return { abi: 'universal', bit: null, android: false, pasti: true,
       teks: 'Kamu membuka dari perangkat non-Android. Unduh berkas universal untuk dipindahkan ke HP.',
       cocok: ['universal'] };
+  }
+
+  // ---- 1) Petunjuk yang sudah diinjeksi server dari header sec-ch-ua-* ----
+  // Cara ini paling akurat dan langsung tersedia, tanpa perlu izin tambahan.
+  const CH = window.__XY_CH__ || {};
+  const archCh = (CH.arch || '').toLowerCase();
+  const bitnessCh = String(CH.bitness || '');
+  const modelCh = CH.model || '';
+  if (archCh.includes('x86')) {
+    return { abi: 'x86_64', bit: 64, android: true, pasti: true,
+      teks: `Perangkat Intel terdeteksi${modelCh ? ' (' + modelCh + ')' : ''}.`, cocok: berkasCocok('x86_64', 64) };
+  }
+  if (archCh.includes('arm') && bitnessCh === '32') {
+    return { abi: 'armeabi-v7a', bit: 32, android: true, pasti: true,
+      teks: `HP kamu ARM 32-bit${modelCh ? ' (' + modelCh + ')' : ''}. Berkas 64-bit tidak bisa dipasang.`,
+      cocok: berkasCocok('armeabi-v7a', 32) };
+  }
+  if (archCh.includes('arm') && bitnessCh === '64') {
+    return { abi: 'arm64-v8a', bit: 64, android: true, pasti: true,
+      teks: `HP kamu ARM 64-bit${modelCh ? ' (' + modelCh + ')' : ''}.`, cocok: berkasCocok('arm64-v8a', 64) };
+  }
+  if (archCh.includes('arm')) {
+    // ada arsitektur ARM tapi bitness belum dikirim: anggap 64-bit (hampir semua HP modern)
+    return { abi: 'arm64-v8a', bit: 64, android: true, pasti: false,
+      teks: `HP kamu ARM${modelCh ? ' (' + modelCh + ')' : ''}. Kami asumsikan 64-bit.`,
+      cocok: berkasCocok('arm64-v8a', 64) };
   }
 
   // petunjuk resmi peramban, muncul karena server meminta lewat Accept-CH
@@ -857,6 +887,21 @@ async function deteksiPerangkat() {
   if (/armv7|armeabi|arm_32/.test(ua)) {
     return { abi: 'armeabi-v7a', bit: 32, android: true, pasti: true,
       teks: 'HP kamu ARM 32-bit menurut string peramban.', cocok: berkasCocok('armeabi-v7a', 32) };
+  }
+
+  // navigator.platform masih ada di Chrome/Samsung/WebView walau tanpa UA-CH
+  const plat = (navigator.platform || '').toLowerCase();
+  if (/armv8l|aarch64|arm64/.test(plat)) {
+    return { abi: 'arm64-v8a', bit: 64, android: true, pasti: true,
+      teks: 'HP kamu ARM 64-bit (deteksi platform).', cocok: berkasCocok('arm64-v8a', 64) };
+  }
+  if (/armv7l|armv7/.test(plat)) {
+    return { abi: 'armeabi-v7a', bit: 32, android: true, pasti: true,
+      teks: 'HP kamu ARM 32-bit (deteksi platform).', cocok: berkasCocok('armeabi-v7a', 32) };
+  }
+  if (/x86_64|x86/.test(plat)) {
+    return { abi: 'x86_64', bit: 64, android: true, pasti: true,
+      teks: 'Perangkat Intel terdeteksi (platform).', cocok: berkasCocok('x86_64', 64) };
   }
 
   const versi = Number((ua.match(/android\s([0-9]+)/) || [])[1] || 0);

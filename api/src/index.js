@@ -360,7 +360,20 @@ export default {
     if (domainWeb && (path === '/' || !path.includes('.')) && !path.startsWith('/api/')
         && !path.startsWith('/img/') && !path.startsWith('/unduh/') && !path.startsWith('/legal/')
         && !path.startsWith('/brand/') && !path.startsWith('/bayar/')) {
-      return new Response(WEB_HTML, {
+      // Petunjuk arsitektur dari header peramban (dikirim setelah permintaan
+      // Accept-CH di bawah). Disuntikkan ke halaman supaya deteksi ABI di web
+      // akurat tanpa menunggu getHighEntropyValues yang ditolak banyak browser.
+      const baca = (nama) => (req.headers.get(nama) || '').replace(/"/g, '').trim();
+      const hintArsitektur = JSON.stringify({
+        arch: baca('sec-ch-ua-arch'),
+        bitness: baca('sec-ch-ua-bitness'),
+        model: baca('sec-ch-ua-model'),
+        platform: baca('sec-ch-ua-platform'),
+      });
+      const WEB = WEB_HTML.includes('/*__XY_CH__*/')
+        ? WEB_HTML.replace('/*__XY_CH__*/', hintArsitektur)
+        : WEB_HTML;
+      return new Response(WEB, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'public, max-age=300',
@@ -638,6 +651,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
                   judul: 'PC kamu siap dimainkan',
                   pesan: 'Buka aplikasi lalu tekan Mulai Main untuk menyambung.',
                   data: { tipe: 'sesi', id: sesi.id },
+                  tombol: [{ id: 'mulai', text: 'Mulai Main' }],
                 }));
               }
             }
@@ -1218,6 +1232,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
             judul: 'Kirana membalas pesanmu',
             pesan: teks.length > 90 ? teks.slice(0, 90) + '...' : teks,
             data: { tipe: 'cs' },
+            tombol: [{ id: 'balas', text: 'Balas' }, { id: 'buka', text: 'Buka Chat' }],
           }));
           return json(msg, 201, env);
         }
@@ -2808,6 +2823,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           judul: 'Pembelian berhasil',
           pesan: `${prod.nama} sudah aktif. Kredensial juga dikirim ke emailmu.`,
           data: { tipe: 'akun', kode: kodeAkun },
+          tombol: [{ id: 'buka', text: 'Lihat Akun Saya' }],
         }));
 
         return json({
@@ -2977,6 +2993,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           judul: 'Kirana membalas pesanmu',
           pesan: msg.teks ? (msg.teks.length > 90 ? msg.teks.slice(0, 90) + '...' : msg.teks) : 'Mengirim sebuah gambar',
           data: { tipe: 'cs' },
+          tombol: [{ id: 'balas', text: 'Balas' }, { id: 'buka', text: 'Buka Chat' }],
         }));
         return json(msg, 201, env);
       }
