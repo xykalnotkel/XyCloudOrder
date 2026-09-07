@@ -76,7 +76,9 @@ tr:hover td{background:rgba(255,255,255,.018)}
 .modal{position:fixed;inset:0;background:rgba(4,7,14,.75);display:none;align-items:center;justify-content:center;z-index:80;padding:20px}
 .modal.on{display:flex}
 .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px;width:100%;
-  max-width:560px;max-height:88vh;overflow-y:auto}
+  max-width:560px;max-height:88vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+/* isi formulir panjang digulir di dalam kotak (penting di HP) */
+.modal .box .grid,.modal .box .field{scroll-margin-bottom:14px}
 
 /* ---------- chat ---------- */
 .chatwrap{display:grid;grid-template-columns:290px 1fr;gap:14px;height:calc(100vh - 150px);min-height:460px}
@@ -236,6 +238,7 @@ async function masuk(){
     KEY=k;localStorage.setItem('xy_admin_key',k);
     document.getElementById('gate').style.display='none';
     document.getElementById('wrap').classList.add('on');
+    TAB=tabDariHash();   // buka menu sesuai alamat (#/...), bukan selalu Dashboard
     konek();render();
   }catch(e){
     const el=document.getElementById('gerr');el.textContent='Admin key salah. Coba lagi.';el.style.display='block';
@@ -266,12 +269,24 @@ function render(){
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
   ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran,galat:vGalat,analitik:vAnalitik,referral:vReferral}[TAB])();
 }
-function ke(t){
+function bukaTab(t){
   TAB=t;
   render();
   tutupLaci();          // di layar kecil, laci menutup sendiri setelah memilih menu
   window.scrollTo({top:0,behavior:'smooth'});
 }
+function ke(t){
+  // Setiap menu punya alamat sendiri (#/orders, #/statistik, ...): halaman bisa
+  // dibagikan lewat tautan, tombol kembali browser bekerja, dan muat ulang
+  // tidak selalu melempar kembali ke Dashboard.
+  if(t===TAB){ bukaTab(t); return; }
+  location.hash='/'+t;
+}
+function tabDariHash(){
+  const t=(location.hash||'').replace(/^#\/?/,'').trim();
+  return MENU.some(m=>m[0]===t)?t:'dash';
+}
+window.addEventListener('hashchange',()=>bukaTab(tabDariHash()));
 const head=(j,s,aksi='')=>`<div class="top"><div><h1>${j}</h1><p>${s}</p></div><div class="sp"></div>${aksi}</div>`;
 
 /* ---------- dashboard ---------- */

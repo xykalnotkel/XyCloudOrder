@@ -316,22 +316,7 @@ class _SesiScreenState extends State<SesiScreen> {
                   ),
 
                 const SizedBox(height: 20),
-                XyCard(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-                    Row(children: [
-                      Icon(Icons.tips_and_updates_outlined, size: 18, color: XyTheme.primary),
-                      SizedBox(width: 9),
-                      Text('Biar lancar', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-                    ]),
-                    SizedBox(height: 10),
-                    Text(
-                      'Pakai WiFi 5 GHz atau sinyal 4G penuh, minimal 15 Mbps. '
-                      'Gamepad Bluetooth langsung terbaca. Kalau gambar patah-patah, turunkan bitrate '
-                      'di pengaturan aplikasi streaming ke 10 Mbps.',
-                      style: TextStyle(fontSize: 12.5, height: 1.6, color: XyTheme.muted),
-                    ),
-                  ]),
-                ),
+                const _PanduanStreaming(),
               ],
             ),
     );
@@ -469,4 +454,87 @@ class _BarisSalin extends StatelessWidget {
           ),
         ]),
       );
+}
+
+/// Panduan singkat layar penuh dan kendali remote saat streaming.
+class _PanduanStreaming extends StatelessWidget {
+  const _PanduanStreaming();
+
+  static const _baris = [
+    (
+      Icons.fullscreen_rounded,
+      'Layar penuh otomatis',
+      'Saat tersambung, video mengisi layar. Gesek dari tepi kiri untuk memunculkan panel '
+          'Moonlight: keluar sesi, atur bitrate, atau buka papan tombol di layar.',
+    ),
+    (
+      Icons.keyboard_rounded,
+      'Keyboard lengkap',
+      'Tombol F1 sampai F12, Esc, serta kombinasi Ctrl, Alt, dan tombol Windows diteruskan ke PC. '
+          'Papan tombol virtual bisa dimunculkan lewat panel Moonlight.',
+    ),
+    (
+      Icons.mouse_rounded,
+      'Sentuhan ala mouse',
+      'Satu jari = klik kiri, dua jari = klik kanan, seret dua jari = gulir. '
+          'Butuh presisi? Pakai trackpad virtual dari panel Moonlight.',
+    ),
+    (
+      Icons.sports_esports_rounded,
+      'Gamepad langsung terbaca',
+      'Sambungkan gamepad Bluetooth sebelum membuka streaming, lalu pilih desktop di Moonlight. '
+          'Tombol gamepad otomatis dipetakan untuk game.',
+    ),
+    (
+      Icons.wifi_rounded,
+      'Jaringan yang mulus',
+      'Pakai WiFi 5 GHz atau sinyal 4G/5G penuh, minimal 15 Mbps. '
+          'Kalau gambar patah-patah, turunkan bitrate ke 10 Mbps di pengaturan Moonlight.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return XyCard(
+      padding: const EdgeInsets.all(18),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Row(children: [
+          Icon(Icons.tips_and_updates_outlined, size: 18, color: XyTheme.primary),
+          SizedBox(width: 9),
+          Text('Panduan kontrol & layar penuh',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+        ]),
+        const SizedBox(height: 8),
+        const Text(
+          'Streaming dibuka di Moonlight atau Artemis. Ini panduan singkatnya.',
+          style: TextStyle(fontSize: 11.8, color: XyTheme.muted, height: 1.5),
+        ),
+        const SizedBox(height: 12),
+        ..._baris.map(
+          (b) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: XyTheme.primarySoft,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(b.$1, size: 16, color: XyTheme.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(b.$2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.8)),
+                  const SizedBox(height: 2),
+                  Text(b.$3, style: const TextStyle(fontSize: 12, height: 1.5, color: XyTheme.muted)),
+                ]),
+              ),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
 }

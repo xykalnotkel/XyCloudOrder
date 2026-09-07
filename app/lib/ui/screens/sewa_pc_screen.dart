@@ -98,6 +98,22 @@ class _KartuPlan extends StatelessWidget {
     final pakai = plan.totalUnit == 0 ? 0.0 : 1 - (plan.unitTersedia / plan.totalUnit);
     return XyCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (plan.gambar.isNotEmpty) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(XyRadius.md),
+            child: AspectRatio(
+              aspectRatio: 16 / 7,
+              child: Image.network(
+                plan.gambar,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                loadingBuilder: (_, anak, kemajuan) =>
+                    kemajuan == null ? anak : Container(color: XyTheme.lineSoft),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         Row(children: [
           GradientThumb(seed: plan.id, icon: Icons.memory_rounded, size: 54),
           const SizedBox(width: 14),

@@ -372,6 +372,7 @@ class ForumDetailScreen extends StatefulWidget {
 
 class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final _balas = TextEditingController();
+  final _fokusBalas = FocusNode();
   ForumBalasan? sedangDibalas;
   List<ForumBalasan> balasan = [];
   bool memuat = true;
@@ -387,6 +388,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void dispose() {
     _balas.dispose();
+    _fokusBalas.dispose();
     super.dispose();
   }
 
@@ -652,7 +654,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                           Pressable(
                             onTap: () {
                               setState(() => sedangDibalas = b);
-                              FocusScope.of(context).requestFocus(FocusNode());
+                              _fokusBalas.requestFocus();
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(vertical: 3, horizontal: 2),
@@ -748,6 +750,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             Expanded(
               child: TextField(
                 controller: _balas,
+                focusNode: _fokusBalas,
                 minLines: 1,
                 maxLines: 4,
                 decoration: InputDecoration(
