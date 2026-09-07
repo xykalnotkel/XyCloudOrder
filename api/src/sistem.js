@@ -1,3 +1,4 @@
+import { hapusMediaChat } from './upload.js';
 /**
  * ============================================================
  *  XyCloudStore - Pemeliharaan dan statistik sistem
@@ -51,12 +52,16 @@ export async function jalankanPemeliharaan(env) {
     const batas = await env.DB.prepare('DELETE FROM batas WHERE sampai < ?').bind(sekarang).run();
     hasil.batasDibersihkan = batas.meta?.changes ?? 0;
 
-    // sesi main yang menggantung lebih dari 12 jam
-    const ambang = new Date(Date.now() - 12 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 19);
-    const sesi = await env.DB.prepare(
-      "UPDATE sesi SET status='selesai', berakhir=? WHERE status NOT IN ('selesai','gagal') AND dibuat < ?"
-    ).bind(sekarang, ambang).run();
-    hasil.sesiDitutup = sesi.meta?.changes ?? 0;
+    // Retensi CS disetujui pemilik: tujuh hari, bukan reset tiap membuka layar.
+    await env.DB.prepare("INSERT OR IGNORE INTO media_hapus(url) SELECT DISTINCT gambar FROM cs_messages WHERE gambar IS NOT NULL AND gambar!='' AND datetime(waktu)<datetime('now','-7 days')").run();
+    const chat = await env.DB.prepare("DELETE FROM cs_messages WHERE datetime(waktu)<datetime('now','-7 days')").run();
+    hasil.chatDihapus = chat.meta?.changes ?? 0;
+    const expired=await env.DB.prepare('SELECT url FROM media_hapus ORDER BY percobaan,dibuat LIMIT 15').all();
+    for(const m of expired.results){
+      if(await hapusMediaChat(env,m.url))await env.DB.prepare('DELETE FROM media_hapus WHERE url=?').bind(m.url).run();
+      else await env.DB.prepare('UPDATE media_hapus SET percobaan=percobaan+1 WHERE url=?').bind(m.url).run();
+    }
+    hasil.sesiDitutup = 0; // lifecycle sesi dikelola sewa.js dan ACK agen
 
     // unit yang tidak melapor lebih dari 5 menit ditandai mati
     const mati = new Date(Date.now() - 300000).toISOString();

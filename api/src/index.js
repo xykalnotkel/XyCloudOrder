@@ -1,3 +1,4 @@
+import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa } from './sewa.js';
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
 /**
@@ -190,11 +191,11 @@ async function akunSosial(env, ctx, prof, provider) {
     const sapa = {
       id: uid('m_'),
       room: `user:${idBaru}`,
-      teks: `Halo ${prof.nama.split(' ')[0]}, aku Kirana dari XyCloudStore. Ada yang bisa aku bantu hari ini?`,
+      teks: `Selamat datang, ${prof.nama.split(' ')[0]}. Kirim pesan untuk menghubungi tim CS. Percakapan disimpan selama 7 hari.`,
       waktu: new Date().toISOString(),
     };
     ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
-      .bind(sapa.id, sapa.room, idBaru, 'cs', sapa.teks, sapa.waktu).run());
+      .bind(sapa.id, sapa.room, idBaru, 'system', sapa.teks, sapa.waktu).run());
     ctx.waitUntil(kirimEmail(env, { to: prof.email, template: 'selamatDatang', data: { nama: prof.nama } }));
 
     u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idBaru).first();
@@ -326,6 +327,7 @@ export default {
   /** Penjadwal Cloudflare: pemeliharaan otomatis berjalan sendiri. */
   async scheduled(event, env, ctx) {
     ctx.waitUntil(jalankanPemeliharaan(env));
+    ctx.waitUntil(rawatSewa(env));
     // pantau kesehatan tiap jam
     ctx.waitUntil(pantauKesehatan(env, kirimEmail));
     // cadangan otomatis sekali sehari pada jam 19 UTC (dini hari WIB)
@@ -343,9 +345,16 @@ export default {
 
     if (req.method === 'OPTIONS') return json({}, 204, env);
 
-    // ---------- WebSocket realtime ----------
+    // Private rooms require a valid user token or an authorized admin key.
     if (path.startsWith('/ws/')) {
       const room = decodeURIComponent(path.slice(4));
+      if (!['forum','katalog'].includes(room)) {
+        const admin = await kenaliAdmin(req, env);
+        const user = await verify(url.searchParams.get('token'), env.JWT_SECRET);
+        const exists = user && await env.DB.prepare('SELECT id FROM users WHERE id=?').bind(user.sub).first();
+        if (!admin && (!exists || room !== `user:${user.sub}`)) return err('Unauthorized room',401,env);
+        if (admin && !['pemilik','cs'].includes(admin.peran)) return err('Akses chat ditolak',403,env);
+      }
       const id = env.HUB.idFromName(room);
       return env.HUB.get(id).fetch(req);
     }
@@ -598,6 +607,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
         // ---- laporan hidup + spesifikasi ----
         if (p === 'agen/heartbeat' && req.method === 'POST') {
+          await rawatSewa(env);
           const b = await req.json().catch(() => ({}));
           await env.DB.prepare(
             "UPDATE agen SET status = ?, spec = COALESCE(?, spec), versi = COALESCE(?, versi), host = COALESCE(?, host), terakhir = ? WHERE id = ?"
@@ -620,41 +630,35 @@ ${halaman.map(([u, p2, f]) => `  <url>
             ).bind(...results.map((r) => r.id)).run();
           }
 
+          const lease = await env.DB.prepare("SELECT s.id,s.berakhir,s.status FROM sesi s JOIN agen a ON a.sesi_aktif=s.id WHERE a.id=?").bind(agen.id).first();
           return json({
-            ok: true,
+            ok: true, lease,
             perintah: results.map((r) => ({ ...r, muatan: r.muatan ? JSON.parse(r.muatan) : {} })),
           }, 200, env);
         }
 
-        // ---- agen melaporkan hasil sebuah perintah ----
+        // Only the owning agent can acknowledge a persisted command/session.
         if (p.startsWith('agen/perintah/') && req.method === 'POST') {
-          const id = p.split('/')[2];
           const b = await req.json().catch(() => ({}));
-          await env.DB.prepare("UPDATE perintah SET status = ?, hasil = ?, diproses = ? WHERE id = ? AND agen_id = ?")
-            .bind(b.ok === false ? 'gagal' : 'selesai', JSON.stringify(b), new Date().toISOString(), id, agen.id)
-            .run();
-
-          // perbarui sesi yang terkait
-          if (b.sesi_id) {
-            const status = b.status || (b.ok === false ? 'gagal' : 'siap');
-            await env.DB.prepare('UPDATE sesi SET status = ?, host = COALESCE(?, host), catatan = ? WHERE id = ?')
-              .bind(status, b.host || null, b.catatan || null, b.sesi_id).run();
-
-            const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ?').bind(b.sesi_id).first();
-            if (sesi) {
-              ctx.waitUntil(push(env, `user:${sesi.user_id}`, 'sesi.update', sesi));
-              if (status === 'siap') {
-                ctx.waitUntil(kirimPush(env, {
-                  userId: sesi.user_id,
-                  judul: 'PC kamu siap dimainkan',
-                  pesan: 'Buka aplikasi lalu tekan Mulai Main untuk menyambung.',
-                  data: { tipe: 'sesi', id: sesi.id },
-                  tombol: [{ id: 'mulai', text: 'Mulai Main' }],
-                }));
-              }
-            }
-          }
-          return json({ ok: true }, 200, env);
+          const command = await env.DB.prepare('SELECT * FROM perintah WHERE id=? AND agen_id=?').bind(p.split('/')[2],agen.id).first();
+          const session = await konfirmasiAgen(env,agen,command,b);
+          if(session.status==='siap'&&command?.jenis==='mulai_sesi'&&command.status!=='selesai')ctx.waitUntil(kirimPush(env,{userId:session.user_id,judul:'Unit siap dimainkan',pesan:'Buka sesi PC di XyCloudStore untuk menyambung.',data:{tipe:'sesi',id:session.id},tombol:[{id:'mulai',text:'Mulai Main'}]}));
+          ctx.waitUntil(push(env,`user:${session.user_id}`,'sesi.update',session));
+          const order = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(session.order_id).first();
+          if(order) { ctx.waitUntil(push(env,`user:${session.user_id}`,'order.update',order));
+            const plan=await env.DB.prepare('SELECT id,unit_tersedia FROM pc_plans WHERE id=?').bind(order.plan_id).first();
+            if(plan)ctx.waitUntil(push(env,'katalog','stock.update',{id:plan.id,unitTersedia:plan.unit_tersedia}));
+            ctx.waitUntil(segarkanTier(env,session.user_id)); }
+          return json({ok:true},200,env);
+        }
+        if(p==='agen/sesi/selesai' && req.method==='POST') {
+          const b=await req.json();
+          const session=await env.DB.prepare('SELECT * FROM sesi WHERE id=? AND agen_id=?').bind(String(b.sesi_id||''),agen.id).first();
+          if(!session)return err('Sesi tidak ditemukan',404,env);
+          if(b.ok!==true)return err('Pembersihan host belum berhasil',409,env);
+          await tutupSewa(env,session);
+          ctx.waitUntil(push(env,`user:${session.user_id}`,'sesi.update',{...session,status:'selesai'}));
+          return json({ok:true},200,env);
         }
 
         return err('Endpoint agen tidak dikenal', 404, env);
@@ -1069,47 +1073,21 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json(results, 200, env);
         }
 
-        if (a.startsWith('orders/') && req.method === 'PATCH') {
-          const id = a.split('/')[1];
-          const b = await req.json();
-          const kolom = ['status', 'progress', 'host', 'username', 'password', 'mulai', 'berakhir'];
-          const isi = kolom.filter((k) => b[k] !== undefined);
-          if (!isi.length) return err('Tidak ada perubahan', 400, env);
-          await env.DB.prepare(
-            `UPDATE orders SET ${isi.map((k) => `${k}=?`).join(',')} WHERE id=?`
-          ).bind(...isi.map((k) => b[k]), id).run();
-          const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(id).first();
-          ctx.waitUntil(push(env, `user:${o.user_id}`, 'order.update', o));
-
-          // beri tahu pemilik order lewat push dan email
-          const pemilik = await env.DB.prepare('SELECT nama, email FROM users WHERE id = ?')
-            .bind(o.user_id).first();
-          const pesanStatus = {
-            dibayar: 'Pembayaran diterima, unit sedang disiapkan.',
-            provisioning: 'Unit sedang dinyalakan, tunggu sebentar ya.',
-            aktif: 'PC kamu sudah aktif dan siap dipakai.',
-            selesai: 'Sesi sewa sudah selesai. Terima kasih.',
-            batal: 'Order dibatalkan. Saldo dikembalikan bila sudah terbayar.',
-          }[o.status];
-          if (pesanStatus) {
-            ctx.waitUntil(kirimPush(env, {
-              userId: o.user_id,
-              judul: `Order ${o.kode}`,
-              pesan: pesanStatus,
-              data: { tipe: 'order', id: o.id },
-            }));
+        if(a.startsWith('orders/') && req.method==='PATCH'){
+          const order=await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(a.split('/')[1]).first();
+          if(!order)return err('Pesanan tidak ditemukan',404,env);
+          const body=await req.json();
+          if(!['selesai','batal'].includes(body.status))return err('Status siap/aktif berasal dari agen. Mulai sesi melalui aplikasi.',409,env);
+          const session=await env.DB.prepare("SELECT * FROM sesi WHERE order_id=? AND status NOT IN ('selesai','gagal') ORDER BY dibuat DESC LIMIT 1").bind(order.id).first();
+          if(session){
+            if(body.status==='batal'&&['dibayar','provisioning'].includes(order.status))await env.DB.prepare("UPDATE orders SET status='batal' WHERE id=?").bind(order.id).run();
+            await antreAkhir(env,session,'Sesi dihentikan melalui dashboard');
+          }else{
+            await env.DB.prepare("UPDATE orders SET status=? WHERE id=? AND status NOT IN ('selesai','batal')").bind(order.status==='dibayar'?'batal':body.status,order.id).run();
           }
-          if (o.status === 'aktif' && pemilik?.email) {
-            ctx.waitUntil(kirimEmail(env, {
-              to: pemilik.email,
-              template: 'orderAktif',
-              data: {
-                nama: pemilik.nama, kode: o.kode, plan: o.plan_nama, host: o.host,
-                username: o.username, password: o.password, durasi: o.durasi_jam,
-              },
-            }));
-          }
-          return json(o, 200, env);
+          const result=await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(order.id).first();
+          ctx.waitUntil(push(env,`user:${order.user_id}`,'order.update',result));
+          return json(result,200,env);
         }
 
         // ---- katalog PC ----
@@ -1262,6 +1240,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
                     MAX(m.waktu) terakhir,
                     (SELECT teks FROM cs_messages x WHERE x.room = m.room ORDER BY waktu DESC LIMIT 1) preview
              FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
+             WHERE m.dihapus=0 AND datetime(m.waktu)>=datetime('now','-7 days')
              GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
           ).all();
           return json(results, 200, env);
@@ -1269,11 +1248,12 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a.startsWith('cs/room/') && req.method === 'GET') {
           const room = decodeURIComponent(a.slice(8));
           const { results } = await env.DB
-            .prepare('SELECT * FROM cs_messages WHERE room=? ORDER BY waktu ASC LIMIT 300').bind(room).all();
+            .prepare(`SELECT * FROM (SELECT * FROM cs_messages WHERE room=? AND dihapus=0 AND datetime(waktu)>=datetime('now','-7 days') ORDER BY waktu DESC,id DESC LIMIT 300) ORDER BY waktu,id`).bind(room).all();
           return json(results, 200, env);
         }
         if (a === 'cs/reply' && req.method === 'POST') {
           const { room, teks } = await req.json();
+          if(!/^user:[A-Za-z0-9_-]+$/.test(String(room||''))||!String(teks||'').trim())return err('Room dan pesan diperlukan',400,env);
           const msg = { id: uid('m_'), room, dari: 'cs', teks, waktu: new Date().toISOString() };
           await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
             .bind(msg.id, room, room.split(':')[1] || '', 'cs', teks, msg.waktu).run();
@@ -1285,6 +1265,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
             data: { tipe: 'cs' },
             tombol: [{ id: 'balas', text: 'Balas' }, { id: 'buka', text: 'Buka Chat' }],
           }));
+          ctx.waitUntil(kirimPush(env,{userId:room.slice(5),judul:'Tim CS membalas pesanmu',pesan:String(teks).slice(0,120),data:{tipe:'cs'},tombol:[{id:'balas',text:'Balas'}]}));
           return json(msg, 201, env);
         }
         if (a === 'cs/typing' && req.method === 'POST') {
@@ -1980,6 +1961,13 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json(await terimaStiker(env, await req.json()), 201, env);
       }
 
+      if(p==='me/notifikasi/tes'&&req.method==='POST'){
+        if(!(await bolehLanjut(env,`push-test:${me.sub}`,3,3600)))return err('Tes notifikasi maksimal 3 kali per jam.',429,env);
+        const result=await kirimPush(env,{userId:me.sub,judul:'Tes notifikasi XyCloudStore',pesan:'Jika pesan ini terdengar, pengaturan nada Android sudah diterapkan.',data:{tipe:'sistem'}});
+        if(!result.ok)return err('Push belum diterima penyedia. Periksa izin perangkat dan konfigurasi OneSignal/FCM.',502,env);
+        return json({ok:true,pesan:'Permintaan dikirim ke penyedia push. Periksa pemberitahuan HP.'},200,env);
+      }
+
       // ---- profil pengguna yang sedang login ----
       if (p === 'me' && req.method === 'GET') {
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
@@ -1988,100 +1976,30 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json(u, 200, env);
       }
 
-      // ---- mulai sesi main ----
-      if (p === 'sesi/mulai' && req.method === 'POST') {
-        const b = await req.json().catch(() => ({}));
-        const orderId = String(b.order_id || '');
-
-        const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?')
-          .bind(orderId, me.sub).first();
-        if (!order) return err('Order tidak ditemukan', 404, env);
-        if (!['dibayar', 'provisioning', 'aktif'].includes(order.status)) {
-          return err('Order ini belum siap dimainkan', 409, env);
-        }
-
-        // sesi yang masih hidup dipakai ulang
-        const lama = await env.DB
-          .prepare("SELECT * FROM sesi WHERE order_id = ? AND status NOT IN ('selesai','gagal') ORDER BY dibuat DESC LIMIT 1")
-          .bind(orderId).first();
-        if (lama) return json(lama, 200, env);
-
-        // cari unit yang menganggur untuk paket ini.
-        // "hidup" dinilai dari laporan terakhir, bukan label status,
-        // supaya unit yang baru selesai dipakai langsung bisa dipilih lagi.
-        const ambang = new Date(Date.now() - 90000).toISOString();
-        const agen = await env.DB.prepare(
-          `SELECT * FROM agen
-           WHERE (sesi_aktif IS NULL OR sesi_aktif = '')
-             AND terakhir IS NOT NULL AND terakhir > ?
-             AND (plan_id IS NULL OR plan_id = ?)
-           ORDER BY terakhir DESC LIMIT 1`
-        ).bind(ambang, order.plan_id).first();
-
-        if (!agen) {
-          return err('Semua unit sedang dipakai. Coba beberapa menit lagi atau hubungi admin.', 503, env);
-        }
-
-        const id = uid('s_');
-        const durasi = (order.durasi_jam || 1) * 60;
-        await env.DB.batch([
-          env.DB.prepare(
-            "INSERT INTO sesi (id,order_id,user_id,agen_id,status,durasi_menit,host) VALUES (?,?,?,?,'menyiapkan',?,?)"
-          ).bind(id, orderId, me.sub, agen.id, durasi, agen.host || null),
-          env.DB.prepare('UPDATE agen SET sesi_aktif = ? WHERE id = ?').bind(id, agen.id),
-          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'mulai_sesi',?)")
-            .bind(uid('c_'), agen.id, JSON.stringify({
-              sesi_id: id,
-              order_id: orderId,
-              user_id: me.sub,
-              durasi_menit: durasi,
-              plan: order.plan_nama,
-            })),
-        ]);
-
-        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ?').bind(id).first();
-        return json(sesi, 201, env);
+      // Session ownership and real physical host allocation are enforced server-side.
+      if(p==='sesi/mulai' && req.method==='POST') {
+        const b=await req.json();return json(await mulaiSewa(env,me.sub,String(b.order_id||'')),201,env);
       }
-
-      // ---- pantau sesi ----
-      if (p.startsWith('sesi/') && p.split('/').length === 2 && req.method === 'GET') {
-        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?')
-          .bind(p.split('/')[1], me.sub).first();
-        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
-        return json(sesi, 200, env);
-      }
-
-      // ---- kirim PIN dari aplikasi streaming ke host ----
-      if (p.startsWith('sesi/') && p.endsWith('/pin') && req.method === 'POST') {
-        const id = p.split('/')[1];
-        const { pin } = await req.json().catch(() => ({}));
-        if (!/^[0-9]{4}$/.test(String(pin || ''))) return err('PIN harus 4 angka', 400, env);
-
-        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?').bind(id, me.sub).first();
-        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
-
+      if(p.startsWith('sesi/') && p.split('/').length===2 && req.method==='GET') return json(await bacaSewa(env,me.sub,p.split('/')[1]),200,env);
+      if(p.startsWith('sesi/') && p.endsWith('/pin') && req.method==='POST') {
+        const {pin,client_id:clientId}=await req.json();if(!/^[0-9]{4}$/.test(String(pin||'')))return err('PIN harus 4 angka',400,env);
+        const session=await bacaSewa(env,me.sub,p.split('/')[1]);
+        if(!['siap','pairing','berjalan'].includes(session.status))return err('Sesi tidak menerima pairing',409,env);
+        if(!(await bolehLanjut(env,`pair:${session.id}`,6,300)))return err('Terlalu banyak percobaan pairing',429,env);
         await env.DB.batch([
-          env.DB.prepare("UPDATE sesi SET pin = ?, status = 'pairing' WHERE id = ?").bind(String(pin), id),
-          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'pasangkan',?)")
-            .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id, pin: String(pin) })),
+          env.DB.prepare("UPDATE sesi SET status='pairing',pin=? WHERE id=?").bind(String(pin),session.id),
+          env.DB.prepare("INSERT INTO perintah(id,agen_id,jenis,muatan) VALUES(?,?,'pasangkan',?)").bind(uid('c_'),session.agen_id,JSON.stringify({sesi_id:session.id,pin:String(pin),client_id:typeof clientId==='string'&&/^[a-f0-9]{16}$/i.test(clientId)?clientId:null})),
         ]);
-        return json({ ok: true, pesan: 'PIN dikirim ke PC, tunggu beberapa detik.' }, 200, env);
+        return json({ok:true},200,env);
       }
-
-      // ---- akhiri sesi ----
-      if (p.startsWith('sesi/') && p.endsWith('/akhiri') && req.method === 'POST') {
-        const id = p.split('/')[1];
-        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?').bind(id, me.sub).first();
-        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
-
-        await env.DB.batch([
-          env.DB.prepare("UPDATE sesi SET status = 'selesai', berakhir = ? WHERE id = ?")
-            .bind(new Date().toISOString(), id),
-          env.DB.prepare("UPDATE agen SET sesi_aktif = NULL WHERE id = ?").bind(sesi.agen_id),
-          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'akhiri_sesi',?)")
-            .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id })),
-        ]);
-        return json({ ok: true }, 200, env);
+      if(p.startsWith('sesi/') && p.endsWith('/stream') && req.method==='POST') {
+        const session=await bacaSewa(env,me.sub,p.split('/')[1]);
+        if(!['siap','pairing','berjalan'].includes(session.status))return err('Sesi sudah berakhir',409,env);
+        await env.DB.prepare("UPDATE sesi SET status='berjalan',catatan='Klien melaporkan koneksi video aktif' WHERE id=?").bind(session.id).run();
+        return json({ok:true},200,env);
+      }
+      if(p.startsWith('sesi/') && p.endsWith('/akhiri') && req.method==='POST') {
+        const session=await bacaSewa(env,me.sub,p.split('/')[1]);return json(await antreAkhir(env,session),200,env);
       }
 
       // ---- kode referral milikku ----
@@ -2737,73 +2655,27 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json(results, 200, env);
       }
 
-      // ---- buat order sewa PC ----
-      if (p === 'orders' && req.method === 'POST') {
-        const { plan_id, durasi_jam, metode, voucher } = await req.json();
-        const plan = await env.DB.prepare('SELECT * FROM pc_plans WHERE id = ?').bind(plan_id).first();
-        if (!plan) return err('Paket tidak ditemukan', 404, env);
-        if (plan.unit_tersedia <= 0) return err('Unit sedang penuh', 409, env);
-
-        const kotor = plan.harga_per_jam * durasi_jam;
-        const pembeli = await env.DB.prepare('SELECT saldo, tier FROM users WHERE id = ?').bind(me.sub).first();
-
-        // potongan tier keanggotaan
-        const persenTier = diskonTier(pembeli?.tier);
-        const potonganTier = Math.floor((kotor * persenTier) / 100);
-
-        // potongan voucher
-        let potonganVoucher = 0;
-        let kodeVoucher = null;
-        if (voucher) {
-          const cek = await cekVoucher(env, { kode: voucher, userId: me.sub, jenis: 'sewa', total: kotor });
-          if (!cek.ok) return err(cek.alasan, 400, env);
-          potonganVoucher = cek.potongan;
-          kodeVoucher = cek.voucher.kode;
+      if(p==='orders/estimasi' && req.method==='POST') {
+        const q=await estimasiSewa(env,me.sub,await req.json());const {plan,...price}=q;return json(price,200,env);
+      }
+      if(p==='orders' && req.method==='POST') {
+        await rawatSewa(env);
+        const r=await buatSewa(env,me.sub,await req.json());
+        if(r.baru){
+          ctx.waitUntil(push(env,room,'order.update',r.order));
+          ctx.waitUntil(push(env,'cs:inbox','order.baru',{...r.order,user_id:me.sub}));
+          ctx.waitUntil(segarkanTier(env,me.sub));
+          const plan=await env.DB.prepare('SELECT unit_tersedia FROM pc_plans WHERE id=?').bind(r.order.plan_id).first();
+          ctx.waitUntil(push(env,'katalog','stock.update',{id:r.order.plan_id,unitTersedia:plan.unit_tersedia}));
         }
-
-        const total = Math.max(0, kotor - potonganTier - potonganVoucher);
-        if (metode === 'saldo' && (pembeli?.saldo ?? 0) < total) return err('Saldo tidak cukup', 402, env);
-
-        const id = uid('o_');
-        const kode = 'XY-' + Math.floor(1000 + Math.random() * 8999);
-
-        await env.DB.batch([
-          env.DB.prepare(
-            `INSERT INTO orders (id,kode,user_id,plan_id,plan_nama,durasi_jam,total,status,progress,voucher,potongan)
-             VALUES (?,?,?,?,?,?,?,'dibayar',0,?,?)`
-          ).bind(id, kode, me.sub, plan_id, plan.nama, durasi_jam, total, kodeVoucher,
-                 potonganTier + potonganVoucher),
-          env.DB.prepare('UPDATE pc_plans SET unit_tersedia = unit_tersedia - 1 WHERE id = ?').bind(plan_id),
-          env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-            .bind(uid('t_'), me.sub, `Sewa ${plan.nama} ${durasi_jam} jam`, 'sewa', -total),
-          ...(metode === 'saldo'
-            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ?, total_belanja = total_belanja + ? WHERE id = ?')
-                .bind(total, total, me.sub)]
-            : [env.DB.prepare('UPDATE users SET total_belanja = total_belanja + ? WHERE id = ?')
-                .bind(total, me.sub)]),
-        ]);
-
-        if (kodeVoucher) {
-          ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: id, potongan: potonganVoucher }));
-        }
-        ctx.waitUntil((async () => {
-          const tierBaru = await segarkanTier(env, me.sub);
-          if (tierBaru) {
-            await buatNotif(env, ctx, {
-              userId: me.sub,
-              jenis: 'sistem',
-              judul: `Selamat, kamu naik ke tier ${tierBaru.toUpperCase()}`,
-              pesan: `Mulai sekarang kamu dapat diskon ${diskonTier(tierBaru)} persen tiap transaksi.`,
-              aktor: 'XyCloudStore',
-            });
-          }
-        })());
-
-        const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first();
-        ctx.waitUntil(push(env, room, 'order.update', order));
-        ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: plan_id, unitTersedia: plan.unit_tersedia - 1 }));
-        ctx.waitUntil(push(env, 'cs:inbox', 'order.baru', { ...order, user_id: me.sub }));
-        return json(order, 201, env);
+        return json(r.order,r.baru?201:200,env);
+      }
+      if(p.startsWith('orders/') && p.endsWith('/batal') && req.method==='POST') {
+        const o=await env.DB.prepare('SELECT * FROM orders WHERE id=? AND user_id=?').bind(p.split('/')[1],me.sub).first();
+        if(!o)return err('Pesanan tidak ditemukan',404,env);
+        if(o.status!=='dibayar')return err('Hanya pesanan yang belum disiapkan dapat dibatalkan di sini.',409,env);
+        await env.DB.prepare("UPDATE orders SET status='batal' WHERE id=? AND status='dibayar'").bind(o.id).run();
+        return json({ok:true},200,env);
       }
 
       // ---- detail order ----
@@ -2816,6 +2688,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       // ---- beli akun ----
       if (p === 'akun/beli' && req.method === 'POST') {
         const { produk_id, metode, voucher } = await req.json();
+        if(metode!=='saldo')return err('Gunakan saldo untuk pembelian. Top up terlebih dahulu.',400,env);
         const prod = await env.DB.prepare('SELECT * FROM akun_produk WHERE id = ?').bind(produk_id).first();
         if (!prod) return err('Produk tidak ditemukan', 404, env);
         if (prod.stok <= 0) return err('Stok habis', 409, env);
@@ -2979,16 +2852,25 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }, 201, env);
       }
 
+      if(p==='cs/typing'&&req.method==='POST'){
+        if(!(await bolehLanjut(env,`typing:${me.sub}`,45,60)))return json({ok:true},200,env);
+        const b=await req.json();ctx.waitUntil(push(env,'cs:inbox','user.typing',{room,typing:b.typing===true}));return json({ok:true},200,env);
+      }
+
       // ---- customer service ----
       if (p === 'cs/messages' && req.method === 'GET') {
         const { results } = await env.DB
-          .prepare('SELECT * FROM cs_messages WHERE room = ? ORDER BY waktu ASC LIMIT 200')
+          .prepare(`SELECT * FROM (SELECT * FROM cs_messages WHERE room=? AND dihapus=0 AND datetime(waktu)>=datetime('now','-7 days') ORDER BY waktu DESC,id DESC LIMIT 200) ORDER BY waktu,id`)
           .bind(room).all();
         return json(results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'm') })), 200, env);
       }
 
       if (p === 'cs/messages' && req.method === 'POST') {
-        const { teks, gambar } = await req.json();
+        const { teks, gambar, client_id: clientId } = await req.json();
+        if(!String(teks||'').trim()&&!gambar)return err('Pesan kosong',400,env);
+        if(String(teks||'').length>5000)return err('Pesan maksimal 5.000 karakter',400,env);
+        if(clientId&&!/^[A-Za-z0-9_-]{12,100}$/.test(clientId))return err('ID pesan tidak valid',400,env);
+        if(clientId){const old=await env.DB.prepare('SELECT * FROM cs_messages WHERE room=? AND client_id=?').bind(room,clientId).first();if(old)return json(old,200,env);}
         let urlGambar = null;
         if (gambar) {
           const hasil = await unggahGambar(env, { dataUri: gambar, folder: 'xycloudstore/chat' });
@@ -2996,11 +2878,12 @@ ${halaman.map(([u, p2, f]) => `  <url>
           urlGambar = hasil.url;
         }
         const msg = {
-          id: uid('m_'), room, dari: 'user', teks: teks || '', gambar: urlGambar,
+          id: uid('m_'), room, dari: 'user', client_id: clientId || null, teks: teks || '', gambar: urlGambar,
           waktu: new Date().toISOString(), dibaca: 0,
         };
-        await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,gambar,waktu) VALUES (?,?,?,?,?,?,?)')
-          .bind(msg.id, room, me.sub, 'user', msg.teks, urlGambar, msg.waktu).run();
+        await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,gambar,waktu,client_id) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(room,client_id) DO NOTHING')
+          .bind(msg.id, room, me.sub, 'user', msg.teks, urlGambar, msg.waktu,clientId||null).run();
+        if(clientId){const stored=await env.DB.prepare('SELECT * FROM cs_messages WHERE room=? AND client_id=?').bind(room,clientId).first();if(stored.id!==msg.id)return json(stored,200,env);}
         ctx.waitUntil(Promise.all([
           push(env, room, 'chat.message', msg),
           push(env, 'cs:inbox', 'chat.message', { ...msg, user_id: me.sub }), // dashboard admin
@@ -3038,25 +2921,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json({ ok: true }, 200, env);
       }
 
-      // ---- endpoint untuk dashboard admin/CS ----
-      if (p === 'cs/reply' && req.method === 'POST') {
-        const { room: target, teks, gambar } = await req.json();
-        const msg = {
-          id: uid('m_'), room: target, dari: 'cs', teks: teks || '',
-          gambar: gambar || null, waktu: new Date().toISOString(),
-        };
-        await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,gambar,waktu) VALUES (?,?,?,?,?,?,?)')
-          .bind(msg.id, target, target.split(':')[1], 'cs', msg.teks, msg.gambar, msg.waktu).run();
-        ctx.waitUntil(push(env, target, 'chat.message', msg));
-        ctx.waitUntil(kirimPush(env, {
-          userId: target.split(':')[1],
-          judul: 'Kirana membalas pesanmu',
-          pesan: msg.teks ? (msg.teks.length > 90 ? msg.teks.slice(0, 90) + '...' : msg.teks) : 'Mengirim sebuah gambar',
-          data: { tipe: 'cs' },
-          tombol: [{ id: 'balas', text: 'Balas' }, { id: 'buka', text: 'Buka Chat' }],
-        }));
-        return json(msg, 201, env);
-      }
+      if(p==='cs/reply')return err('Balasan CS hanya melalui dashboard admin.',403,env);
 
       return err('Endpoint tidak dikenal', 404, env);
     } catch (e) {
@@ -3064,34 +2929,6 @@ ${halaman.map(([u, p2, f]) => `  <url>
     }
   },
 };
-
-/** Simulasi/orkestrasi penyalaan mesin + push progress realtime. */
-async function provision(env, room, orderId) {
-  const set = async (fields) => {
-    const keys = Object.keys(fields);
-    await env.DB.prepare(`UPDATE orders SET ${keys.map(k => `${k}=?`).join(',')} WHERE id=?`)
-      .bind(...keys.map(k => fields[k]), orderId).run();
-    const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(orderId).first();
-    await push(env, room, 'order.update', o);
-  };
-
-  await set({ status: 'provisioning', progress: 15 });
-  await set({ progress: 55 });
-  await set({ progress: 85 });
-
-  const o = await env.DB.prepare('SELECT * FROM orders WHERE id=?').bind(orderId).first();
-  const mulai = new Date();
-  const berakhir = new Date(mulai.getTime() + o.durasi_jam * 3600_000);
-  await set({
-    status: 'aktif',
-    progress: 100,
-    host: `103.44.12.${20 + Math.floor(Math.random() * 200)}:3389`,
-    username: `xy_${o.kode.toLowerCase().replace('-', '')}`,
-    password: `Xy#${Math.floor(Math.random() * 9999)}ok`,
-    mulai: mulai.toISOString(),
-    berakhir: berakhir.toISOString(),
-  });
-}
 
 // ============================================================
 //  Durable Object — hub WebSocket per room
@@ -3127,8 +2964,8 @@ export class RealtimeHub {
       try { m = JSON.parse(e.data); } catch { return; }
       if (m.type === 'ping') return server.send(JSON.stringify({ type: 'pong' }));
       if (url.pathname === '/ws/forum' || url.pathname === '/ws/katalog') return;
-      // relay ke peserta lain di room yang sama (mis. user <-> CS)
-      this.kirimSemua(JSON.stringify(m), server);
+      // Pesan tersimpan, saldo dan status hanya disiarkan oleh Worker melalui /broadcast.
+      return;
     });
 
     const tutup = () => this.clients.delete(server);

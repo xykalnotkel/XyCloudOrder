@@ -285,7 +285,7 @@
 .xy-popup{position:fixed;inset:0;z-index:120;background:#120c22b8;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:28px}
 .xy-popup-box{position:relative;width:max-content;max-width:420px;max-height:84dvh;padding:18px 12px 0 0}
 .xy-popup .xy-promo-image{max-height:calc(84dvh - 18px);border-radius:22px;overflow:hidden}.xy-popup img{max-height:calc(84dvh - 18px);display:block}.xy-popup button:focus-visible,.xy-floating button:focus-visible{outline:3px solid #A78BFA;outline-offset:3px}
-.web-thread{position:relative;display:flex;align-items:flex-start;gap:10px;margin:14px 0 0 calc(var(--depth)*18px);padding-bottom:5px}.web-thread .avatar{width:32px;height:32px;flex-shrink:0;font-size:12px;margin-top:5px}.thread-content{min-width:0;flex:1;border:1px solid var(--line);border-radius:17px;padding:12px 14px;background:var(--surface,#fff)}.web-thread.child:before{content:'';position:absolute;left:-15px;top:-15px;width:13px;height:39px;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-radius:0 0 0 11px}.thread-author{font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}.thread-content time{font-size:10.5px}.thread-content p{margin-top:8px;font-size:13.5px;white-space:normal;overflow-wrap:anywhere}.thread-sticker{display:block;width:156px;height:156px;max-width:100%;object-fit:contain;margin-top:8px}
+.web-thread{position:relative;display:flex;align-items:flex-start;gap:10px;margin:14px 0 0 calc(var(--depth)*18px);padding-bottom:5px}.web-thread .avatar{width:32px;height:32px;flex-shrink:0;font-size:12px;margin-top:5px}.thread-content{min-width:0;flex:1;border:1px solid var(--line);border-radius:17px;padding:12px 14px;background:var(--surface,#fff)}.web-thread.child:before{content:'';position:absolute;left:-15px;top:-15px;width:13px;height:39px;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-radius:0 0 0 11px}.thread-author{font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}.thread-content time{font-size:10.5px;display:block;text-align:right;margin-top:8px}.web-thread.has-sticker .thread-content{background:transparent;border:0}.thread-content p{margin-top:8px;font-size:13.5px;white-space:normal;overflow-wrap:anywhere}.thread-sticker{display:block;width:156px;height:156px;max-width:100%;object-fit:contain;margin-top:8px}
 
 </style>
 </head>
@@ -1189,6 +1189,7 @@ async function bukaSewa(id) {
   const p = (SEMUA_PAKET || []).find((x) => x.id === id);
   if (!p) return;
 
+  JAM_DIPILIH=1;SEWA_PLAN=id;SEWA_HARGA=null;SEWA_REQUEST='web_'+crypto.randomUUID();
   bukaModal(`
     <h2 style="font-size:22px">Sewa ${esc(p.nama)}</h2>
     <p class="muted" style="font-size:13.5px;margin-top:6px">${esc(p.gpu)} &middot; ${p.ram_gb} GB RAM &middot; ${esc(p.region)}</p>
@@ -1201,8 +1202,9 @@ async function bukaSewa(id) {
     </div>
     <div style="margin-top:20px;background:var(--soft);border-radius:16px;padding:16px">
       <div style="display:flex;justify-content:space-between;font-size:13.5px">
-        <span class="muted">Total bayar</span><b id="totalSewa" style="color:var(--u);font-size:20px">${rp(p.harga_per_jam)}</b>
+        <span class="muted">Total bayar</span><b id="totalSewa" style="color:var(--u);font-size:20px">Menghitung…</b>
       </div>
+      <small class="muted">Termasuk biaya layanan Rp1.000 dan potongan yang berlaku.</small>
       <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-top:8px">
         <span class="muted">Saldo kamu</span><b>${rp(SAYA.saldo || 0)}</b>
       </div>
@@ -1210,24 +1212,32 @@ async function bukaSewa(id) {
     <button class="btn" style="width:100%;margin-top:18px" id="tombolPesan"
       onclick="kirimSewa('${esc(p.id)}')">Bayar dengan Saldo</button>
     <button class="btn ghost" style="width:100%;margin-top:10px" onclick="bukaTopup()">Isi Saldo Dulu</button>`);
+  await hitungSewaWeb();
 }
 
-let JAM_DIPILIH = 1;
+let JAM_DIPILIH=1,SEWA_PLAN=null,SEWA_HARGA=null,SEWA_REQUEST=null,SEWA_VERSI=0;
+async function hitungSewaWeb(){
+ const versi=++SEWA_VERSI,button=document.getElementById('tombolPesan');if(!button)return;
+ button.disabled=true;SEWA_HARGA=null;
+ try{const q=await apiAuth('/orders/estimasi',{method:'POST',body:JSON.stringify({plan_id:SEWA_PLAN,durasi_jam:JAM_DIPILIH})});if(versi!==SEWA_VERSI||!document.getElementById('totalSewa'))return;SEWA_HARGA=q.total;document.getElementById('totalSewa').textContent=rp(q.total);button.disabled=false;}
+ catch(e){const el=document.getElementById('galatPesan');if(el){el.textContent=e.message;el.style.display='block';}}
+}
 function pilihJam(tombol, hargaPerJam) {
   document.querySelectorAll('#pilihanJam .btn').forEach((b) => b.classList.add('ghost'));
   tombol.classList.remove('ghost');
   JAM_DIPILIH = Number(tombol.dataset.jam);
-  document.getElementById('totalSewa').textContent = rp(hargaPerJam * JAM_DIPILIH);
+  document.getElementById('totalSewa').textContent='Menghitung…';hitungSewaWeb();
 }
 
 async function kirimSewa(planId) {
   const tombol = document.getElementById('tombolPesan');
   tombol.disabled = true;
   tombol.textContent = 'Memproses...';
+  if(SEWA_HARGA===null){tombol.textContent='Bayar dengan Saldo';return;}
   try {
     const o = await apiAuth('/orders', {
       method: 'POST',
-      body: JSON.stringify({ plan_id: planId, durasi_jam: JAM_DIPILIH, metode: 'saldo' }),
+      body: JSON.stringify({ plan_id: planId, durasi_jam: JAM_DIPILIH, metode: 'saldo',total_disetujui:SEWA_HARGA,request_id:SEWA_REQUEST }),
     });
     await muatSaya();
     bukaModal(`
@@ -1237,7 +1247,7 @@ async function kirimSewa(planId) {
           stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></div>
         <h2 style="font-size:22px;margin-top:16px">Pesanan dibuat</h2>
         <p class="muted" style="font-size:13.5px;margin-top:8px">Kode pesanan <b>${esc(o.kode)}</b>.
-          Unit sedang disiapkan. Buka aplikasi untuk menyambung dan bermain.</p>
+          Unit sudah direservasi. Buka aplikasi dan tekan Mulai Main untuk menyiapkannya.</p>
         <a class="btn" style="margin-top:20px" href="/unduh" data-rute onclick="tutupModal()">Buka lewat Aplikasi</a>
         <button class="btn ghost" style="margin-top:10px;width:100%" onclick="tutupModal();keHalaman('/akun-saya')">Lihat Pesanan</button>
       </div>`);
@@ -1639,6 +1649,7 @@ setInterval(()=>{if(!document.hidden)muatPromosi()},60000);
 muatPromosi();
 
 /* ---------------- komentar bertingkat dan stiker publik ---------------- */
+function umurKomentar(raw){let t=String(raw||'').replace(' ','T');if(!/(Z|[+-]\d{2}:?\d{2})$/i.test(t))t+='Z';const sec=Math.max(0,Math.floor((Date.now()-Date.parse(t))/1000));if(!Number.isFinite(sec)||sec<1)return 'baru saja';if(sec<60)return sec+' detik lalu';if(sec<3600)return Math.floor(sec/60)+' menit lalu';if(sec<86400)return Math.floor(sec/3600)+' jam lalu';return Math.floor(sec/86400)+' hari lalu';}
 function renderThreadWeb(list){
   const ids=new Set(list.map(x=>x.id)),children=new Map(),seen=new Set(),result=[];
   for(const b of list){const id=ids.has(b.balas_ke)&&b.balas_ke!==b.id?b.balas_ke:null;if(!children.has(id))children.set(id,[]);children.get(id).push(b)}
@@ -1646,7 +1657,7 @@ function renderThreadWeb(list){
     if(seen.has(b.id))return;seen.add(b.id);
     let sticker=b.stiker;try{if(typeof sticker==='string')sticker=JSON.parse(sticker)}catch{sticker=null}
     const stickerHtml=sticker&&/^https:\/\//.test(sticker.url)?`<img class="thread-sticker" src="${esc(sticker.url)}" alt="${esc(sticker.nama||'Stiker')}" loading="lazy">${sticker.sumber==='giphy'?'<small class="muted">via GIPHY</small>':''}`:'';
-    result.push(`<article class="web-thread ${depth?'child':''}" style="--depth:${Math.min(depth,3)}"><div class="avatar">${esc((b.nama||'X')[0].toUpperCase())}</div><div class="thread-content"><div class="thread-author"><strong>${esc(b.nama)}</strong>${lencana(b.admin?'admin':b.tier)}</div><time class="muted">${esc((b.dibuat||'').slice(0,16).replace('T',' '))}</time>${b.isi?`<p>${esc(b.isi).replace(/\n/g,'<br>')}</p>`:''}${stickerHtml}</div></article>`);
+    result.push(`<article class="web-thread ${depth?'child':''} ${stickerHtml?'has-sticker':''}" style="--depth:${Math.min(depth,3)}"><div class="avatar">${esc((b.nama||'X')[0].toUpperCase())}</div><div class="thread-content"><div class="thread-author"><strong>${esc(b.nama)}</strong>${lencana(b.admin?'admin':b.tier)}</div>${b.isi?`<p>${esc(b.isi).replace(/\n/g,'<br>')}</p>`:''}${stickerHtml}<time class="muted" title="${esc(b.dibuat||'')}">${umurKomentar(b.dibuat)}</time></div></article>`);
     for(const child of children.get(b.id)||[])walk(child,depth+1);
   }
   for(const b of children.get(null)||[])walk(b,0);for(const b of list)if(!seen.has(b.id))walk(b,0);

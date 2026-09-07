@@ -274,7 +274,7 @@ function keluar(){localStorage.removeItem('xy_admin_key');location.reload()}
 /* ---------- realtime inbox ---------- */
 function konek(){
   try{
-    WS=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/cs:inbox');
+    WS=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws/cs:inbox?key='+encodeURIComponent(KEY));
     WS.onmessage=e=>{
       let m;try{m=JSON.parse(e.data)}catch{return}
       if(m.type==='chat.message'){
@@ -363,10 +363,10 @@ const STATUS=['pending','dibayar','provisioning','aktif','selesai','batal'];
 const warnaStatus=s=>({aktif:'var(--ok)',selesai:'var(--muted)',batal:'var(--danger)'}[s]||'var(--warn)');
 async function vOrders(){
   const m=document.getElementById('main');
-  m.innerHTML=head('Order','Kelola dan ubah status order sewa PC',
+  m.innerHTML=head('Order','Status sesi mengikuti agen; jangan isi host atau kredensial contoh',
     `<button class="btn ghost" onclick="vOrders()">${ic('refresh',16)}Muat ulang</button>`)+'<div class="empty">Memuat...</div>';
   const d=await api('/orders');DATA.orders=d;
-  m.innerHTML=head('Order','Kelola dan ubah status order sewa PC',
+  m.innerHTML=head('Order','Status sesi mengikuti agen; jangan isi host atau kredensial contoh',
     `<button class="btn ghost" onclick="vOrders()">${ic('refresh',16)}Muat ulang</button>`)+
     (d.length?`<div class="card" style="padding:18px 6px"><table><thead><tr>
       <th>Kode</th><th>Pengguna</th><th>Paket</th><th>Durasi</th><th>Total</th><th>Status</th><th>Dibuat</th><th></th></tr></thead>
@@ -382,15 +382,9 @@ async function vOrders(){
     :'<div class="card empty">Belum ada order masuk.</div>');
 }
 async function ubahStatus(id,status){
-  const body={status};
-  if(status==='aktif'){const o=DATA.orders.find(x=>x.id===id);
-    body.progress=100;body.mulai=new Date().toISOString();
-    body.berakhir=new Date(Date.now()+o.durasi_jam*3600e3).toISOString();
-    body.host='103.44.12.'+(20+Math.floor(Math.random()*200))+':3389';
-    body.username='xy_'+o.kode.toLowerCase().replace('-','');body.password='Xy#'+Math.floor(Math.random()*9999)+'ok';}
-  if(status==='provisioning')body.progress=35;
-  await api('/orders/'+id,{method:'PATCH',body:JSON.stringify(body)});
-  toast('Status '+id+' diubah ke '+status+'. Push realtime terkirim.');
+  if(!['batal','selesai'].includes(status)){toast('Status siap/aktif diperbarui otomatis oleh agen, bukan dibuat manual.');vOrders();return;}
+  if(!await xkonfirmasi('Akhiri atau batalkan pesanan?','Host akan dibersihkan. Pengembalian otomatis hanya berlaku sebelum unit siap.',{tombol:'Lanjutkan',bahaya:true})){vOrders();return;}
+  try{await api('/orders/'+id,{method:'PATCH',body:JSON.stringify({status})});toast('Permintaan diteruskan ke agen.');vOrders();}catch(e){toast(e.message);vOrders();}
 }
 
 /* ---------- paket PC ---------- */

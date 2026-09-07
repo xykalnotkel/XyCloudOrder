@@ -101,3 +101,19 @@ export async function layaniGambar(env, jalur, req) {
   kepala.delete('set-cookie');
   return new Response(jawab.body, { status: 200, headers: kepala });
 }
+
+/** Delete only expired CS uploads; never product/profile/other people's media. */
+export async function hapusMediaChat(env, url) {
+  try {
+    const u=new URL(url);
+    const prefix=`/${env.CLOUDINARY_CLOUD}/image/upload/`;
+    if(u.hostname!=='res.cloudinary.com'||!u.pathname.startsWith(prefix))return true;
+    const match=u.pathname.match(/\/(xycloudstore\/chat\/[^?]+)\.[a-zA-Z0-9]+$/);
+    if(!match)return true;
+    const publicId=decodeURIComponent(match[1]), timestamp=Math.floor(Date.now()/1000);
+    const signature=await sha1(`invalidate=true&public_id=${publicId}&timestamp=${timestamp}${env.CLOUDINARY_SECRET}`);
+    const form=new FormData();form.set('public_id',publicId);form.set('invalidate','true');form.set('timestamp',String(timestamp));form.set('signature',signature);form.set('api_key',env.CLOUDINARY_KEY);
+    const r=await fetch(`https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD}/image/destroy`,{method:'POST',body:form});
+    const j=await r.json();return r.ok&&['ok','not found'].includes(j.result);
+  }catch{return false;}
+}

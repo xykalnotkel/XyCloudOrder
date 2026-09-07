@@ -1,3 +1,4 @@
+export const kanalPush = tipe => ['cs'].includes(tipe) ? 'xy_cs_v1' : ['order','sesi','wallet','akun'].includes(tipe) ? 'xy_orders_v1' : ['forum','balasan','suka','komunitas'].includes(tipe) ? 'xy_forum_v1' : ['promo','banner'].includes(tipe) ? 'xy_promo_v1' : 'xy_system_v1';
 /**
  * ============================================================
  *  XyCloudStore - Push notification (OneSignal)
@@ -31,6 +32,7 @@ export async function kirimPush(env, { userId, judul, pesan, data, url, tombol }
     headings: { en: judul, id: judul },
     contents: { en: pesan, id: pesan },
     android_accent_color: `FF${UNGU}`,
+    existing_android_channel_id: kanalPush(data?.tipe),
     small_icon: 'ic_stat_onesignal_default',
     data: data || {},
     ...(Array.isArray(tombol) && tombol.length
@@ -73,6 +75,7 @@ export async function siarkanPush(env, { judul, pesan, data }) {
         headings: { en: judul, id: judul },
         contents: { en: pesan, id: pesan },
         android_accent_color: `FF${UNGU}`,
+    existing_android_channel_id: kanalPush(data?.tipe),
         data: data || {},
       }),
     });
