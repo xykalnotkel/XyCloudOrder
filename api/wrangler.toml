@@ -53,6 +53,9 @@ MIN_TOPUP = "10000"
 EMAIL_ADMIN = "xycdigital@gmail.com"
 BONUS_REFERRAL = "10000"
 BONUS_DIUNDANG = "5000"
+# OAuth Android: package id.xycloud.xycloud_order + SHA-1 sertifikat APK rilis.
+# serverClientId Flutter tetap memakai OAuth client tipe Web (lihat docs/login-google.md).
+GOOGLE_CLIENT_ID_ANDROID = "495336144977-1b3k66ngo4nhjf6kuetcl5j1vosfgbg4.apps.googleusercontent.com"
 # Secret: JWT_SECRET, ADMIN_KEY, RESEND_API_KEY, ONESIGNAL_API_KEY,
 #         CLOUDINARY_KEY, CLOUDINARY_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
 #         FACEBOOK_APP_ID, FACEBOOK_APP_SECRET

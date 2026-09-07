@@ -170,6 +170,8 @@ otomatis disembunyikan.
 Syarat Google: tambahkan `https://api.xycloud.my.id/api/auth/google/callback` pada Authorized redirect
 URIs di Google Cloud Console. Syarat Facebook: isi secret `FACEBOOK_APP_ID` dan `FACEBOOK_APP_SECRET`.
 
+**Login Google native pada versi terbaru:** membutuhkan OAuth client Android dengan package name dan SHA-1 sertifikat APK rilis. Web client tetap digunakan sebagai `serverClientId`; jangan diganti dengan Android client. Lihat [panduan konfigurasi beserta fingerprint APK](docs/login-google.md).
+
 ### Dompet dengan pembayaran nyata
 1. Pengguna memilih nominal, server membuat permintaan dengan **kode unik 3 digit** supaya mudah dicocokkan.
 2. Aplikasi menampilkan rekening tujuan dan total yang harus ditransfer.
