@@ -159,9 +159,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color: XyTheme.surface,
+                            color: XyTheme.of(context).surface,
                             borderRadius: BorderRadius.circular(XyRadius.sm),
-                            border: Border.all(color: XyTheme.line),
+                            border: Border.all(color: XyTheme.of(context).line),
                           ),
                           child: const Icon(Icons.arrow_back_rounded, size: 20),
                         ),
@@ -191,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         daftar
                             ? 'Daftar gratis. Kami kirim kode verifikasi ke emailmu, jadi pastikan emailnya aktif.'
                             : 'Masuk untuk melanjutkan sewa PC, membeli akun, dan memantau order kamu.',
-                        style: const TextStyle(color: XyTheme.muted, fontSize: 14, height: 1.6),
+                        style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 14, height: 1.6),
                       ),
                     ),
 
@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           value: ingat,
                           onChanged: (v) => setState(() => ingat = v ?? true),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          side: const BorderSide(color: XyTheme.line, width: 1.6),
+                          side:  BorderSide(color: XyTheme.of(context).line, width: 1.6),
                           activeColor: XyTheme.primary,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -327,12 +327,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 24),
-                    Row(children: const [
+                    Row(children:  [
                       Expanded(child: Divider()),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 14),
                         child: Text('atau lanjut dengan',
-                            style: TextStyle(color: XyTheme.muted, fontSize: 12, fontWeight: FontWeight.w600)),
+                            style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
                       Expanded(child: Divider()),
                     ]),
@@ -359,10 +359,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                       ];
                       if (tombol.isEmpty) {
-                        return const Text(
+                        return  Text(
                           'Login sosial sedang tidak tersedia. Silakan pakai email dan password.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.5),
+                          style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.5),
                         );
                       }
                       return Row(
@@ -384,7 +384,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           padding: const EdgeInsets.all(6),
                           child: RichText(
                             text: TextSpan(
-                              style: const TextStyle(color: XyTheme.muted, fontSize: 13.5, fontWeight: FontWeight.w500),
+                              style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13.5, fontWeight: FontWeight.w500),
                               children: [
                                 TextSpan(text: daftar ? 'Sudah punya akun?  ' : 'Belum punya akun?  '),
                                 TextSpan(
@@ -431,9 +431,9 @@ class _SosialBtn extends StatelessWidget {
       child: Container(
         height: 52,
         decoration: BoxDecoration(
-          color: XyTheme.surface,
+          color: XyTheme.of(context).surface,
           borderRadius: BorderRadius.circular(XyRadius.tombol),
-          border: Border.all(color: XyTheme.line),
+          border: Border.all(color: XyTheme.of(context).line),
           boxShadow: XyTheme.shadowXs,
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [

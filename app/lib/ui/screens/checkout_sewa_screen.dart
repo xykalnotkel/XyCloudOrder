@@ -114,7 +114,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                  Text('${p.gpu} · ${p.ramGb}GB RAM', style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+                  Text('${p.gpu} · ${p.ramGb}GB RAM', style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
                   const SizedBox(height: 6),
                   Pill('${p.unitTersedia} unit ready', warna: XyTheme.success, icon: Icons.bolt_rounded),
                 ]),
@@ -133,13 +133,13 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
                   duration: const Duration(milliseconds: 180),
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   decoration: BoxDecoration(
-                    color: aktif ? XyTheme.primary : XyTheme.surface,
+                    color: aktif ? XyTheme.primary : XyTheme.of(context).surface,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: aktif ? XyTheme.primary : XyTheme.line),
+                    border: Border.all(color: aktif ? XyTheme.primary : XyTheme.of(context).line),
                   ),
                   child: Text('$j jam',
                       style: TextStyle(
-                          color: aktif ? Colors.white : XyTheme.ink, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                          color: aktif ? Colors.white : XyTheme.of(context).ink, fontWeight: FontWeight.w700, fontSize: 13.5)),
                 ),
               );
             }).toList(),
@@ -263,10 +263,10 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
       ),
       bottomNavigationBar: Container(
         padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-        decoration: BoxDecoration(color: XyTheme.surface, boxShadow: XyTheme.shadowMd),
+        decoration: BoxDecoration(color: XyTheme.of(context).surface, boxShadow: XyTheme.shadowMd),
         child: Row(children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            const Text('Total bayar', style: TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+             Text('Total bayar', style: TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
             Text(rupiah(total), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -.5)),
           ]),
           const SizedBox(width: 16),
@@ -301,9 +301,9 @@ class _Metode extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: XyTheme.surface,
+          color: XyTheme.of(context).surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.line, width: aktif ? 1.7 : 1),
+          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.of(context).line, width: aktif ? 1.7 : 1),
         ),
         child: Row(children: [
           Container(
@@ -316,11 +316,11 @@ class _Metode extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-              Text(sub, style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+              Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
             ]),
           ),
           Icon(aktif ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-              color: aktif ? XyTheme.primary : XyTheme.line),
+              color: aktif ? XyTheme.primary : XyTheme.of(context).line),
         ]),
       ),
     );
@@ -338,9 +338,9 @@ class _Baris extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        Text(kiri, style: TextStyle(fontSize: 13.5, color: tebal ? XyTheme.ink : XyTheme.muted, fontWeight: tebal ? FontWeight.w800 : FontWeight.w500)),
+        Text(kiri, style: TextStyle(fontSize: 13.5, color: tebal ? XyTheme.of(context).ink : XyTheme.of(context).muted, fontWeight: tebal ? FontWeight.w800 : FontWeight.w500)),
         const Spacer(),
-        Text(kanan, style: TextStyle(fontSize: tebal ? 16 : 13.5, fontWeight: FontWeight.w800, color: warna ?? XyTheme.ink)),
+        Text(kanan, style: TextStyle(fontSize: tebal ? 16 : 13.5, fontWeight: FontWeight.w800, color: warna ?? XyTheme.of(context).ink)),
       ]),
     );
   }

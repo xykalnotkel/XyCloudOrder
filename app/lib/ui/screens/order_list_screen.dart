@@ -32,7 +32,7 @@ class OrderListScreen extends StatelessWidget {
           ],
           bottom: TabBar(
             labelColor: XyTheme.primary,
-            unselectedLabelColor: XyTheme.muted,
+            unselectedLabelColor: XyTheme.of(context).muted,
             indicatorColor: XyTheme.primary,
             indicatorSize: TabBarIndicatorSize.label,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
@@ -68,7 +68,7 @@ class _List extends StatelessWidget {
           final o = orders[i];
           final warna = switch (o.status) {
             OrderStatus.aktif => XyTheme.success,
-            OrderStatus.selesai => XyTheme.muted,
+            OrderStatus.selesai => XyTheme.of(context).muted,
             OrderStatus.batal => XyTheme.danger,
             _ => XyTheme.warning,
           };
@@ -81,7 +81,7 @@ class _List extends StatelessWidget {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(o.planNama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                    Text('${o.kode} · ${tanggal(o.dibuat)}', style: const TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+                    Text('${o.kode} · ${tanggal(o.dibuat)}', style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
                   ]),
                 ),
                 Pill(o.status.label, warna: warna),
@@ -91,16 +91,16 @@ class _List extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
-                      value: o.progress / 100, minHeight: 6, backgroundColor: XyTheme.line, color: XyTheme.primary),
+                      value: o.progress / 100, minHeight: 6, backgroundColor: XyTheme.of(context).line, color: XyTheme.primary),
                 ),
               ],
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 10),
               Row(children: [
-                Text('${o.durasiJam} jam', style: const TextStyle(fontSize: 12.5, color: XyTheme.muted)),
+                Text('${o.durasiJam} jam', style:  TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted)),
                 if (o.status == OrderStatus.aktif && o.berakhir != null) ...[
-                  const Text('  ·  ', style: TextStyle(color: XyTheme.muted)),
+                   Text('  ·  ', style: TextStyle(color: XyTheme.of(context).muted)),
                   Text('sisa ${durasiSisa(o.berakhir!)}',
                       style: const TextStyle(fontSize: 12.5, color: XyTheme.success, fontWeight: FontWeight.w700)),
                 ],

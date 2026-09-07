@@ -49,12 +49,12 @@ class WalletScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Row(children: [
-            const Icon(Icons.verified_user_rounded, size: 15, color: XyTheme.muted),
+             Icon(Icons.verified_user_rounded, size: 15, color: XyTheme.of(context).muted),
             const SizedBox(width: 7),
             Expanded(
               child: Text(
                 'Transfer bank atau QRIS, saldo masuk setelah admin memverifikasi bukti.',
-                style: const TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.45),
+                style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.45),
               ),
             ),
           ]),
@@ -96,14 +96,14 @@ class WalletScreen extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                        Text(tanggal(t.waktu), style: const TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+                        Text(tanggal(t.waktu), style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
                       ]),
                     ),
                     Text('${masuk ? '+' : '-'} ${rupiah(t.nominal.abs())}',
                         style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 13.5,
-                            color: masuk ? XyTheme.success : XyTheme.ink)),
+                            color: masuk ? XyTheme.success : XyTheme.of(context).ink)),
                   ]),
                 ),
               );
@@ -116,19 +116,19 @@ class WalletScreen extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
                 child: const Icon(Icons.info_outline_rounded, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Tentang Aplikasi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Versi, syarat, privasi, dan lisensi',
-                      style: TextStyle(color: XyTheme.muted, fontSize: 11.8)),
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8)),
                 ]),
               ),
-              const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+               Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
             ]),
           ),
           const SizedBox(height: 14),

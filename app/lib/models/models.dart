@@ -1,3 +1,4 @@
+import 'stiker.dart';
 import 'dart:convert';
 // ============================================================
 // XyCloudOrder — Model data (mirror dari tabel D1 Cloudflare)
@@ -675,6 +676,7 @@ class ForumBalasan {
   final String nama;
   final String? foto;
   final String isi;
+  final Stiker? stiker;
   final bool admin;
   final String tier;
   final String? badge;
@@ -688,6 +690,7 @@ class ForumBalasan {
     this.userId = '',
     this.balasKe,
     required this.isi,
+    this.stiker,
     required this.dibuat,
     this.foto,
     this.admin = false,
@@ -704,6 +707,7 @@ class ForumBalasan {
         nama: j['nama'] ?? 'Pengguna',
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         isi: j['isi'] ?? '',
+        stiker: Stiker.baca(j['stiker']),
         admin: (j['admin'] ?? 0) == 1,
         tier: j['tier'] ?? 'basic',
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,

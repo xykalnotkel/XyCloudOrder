@@ -62,7 +62,7 @@ class _AkunScreenState extends State<AkunScreen> {
                 onSelected: (_) => setState(() => kategori = k),
                 selectedColor: XyTheme.primary,
                 labelStyle: TextStyle(
-                    color: aktif ? Colors.white : XyTheme.ink, fontWeight: FontWeight.w700, fontSize: 12.5),
+                    color: aktif ? Colors.white : XyTheme.of(context).ink, fontWeight: FontWeight.w700, fontSize: 12.5),
               );
             },
           ),
@@ -128,7 +128,7 @@ class _KartuProduk extends StatelessWidget {
                   child: Icon(
                     suka ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     size: 16,
-                    color: suka ? XyTheme.danger : XyTheme.muted,
+                    color: suka ? XyTheme.danger : XyTheme.of(context).muted,
                   ),
                 ),
               );
@@ -155,14 +155,14 @@ class _KartuProduk extends StatelessWidget {
         Row(children: [
           const Icon(Icons.star_rounded, size: 13, color: XyTheme.gold),
           Text(' ${produk.rating}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-          Text(' (${produk.jumlahUlasan})', style: const TextStyle(fontSize: 10.5, color: XyTheme.muted)),
-          Text(' · ${produk.terjual}x', style: const TextStyle(fontSize: 11, color: XyTheme.muted)),
+          Text(' (${produk.jumlahUlasan})', style:  TextStyle(fontSize: 10.5, color: XyTheme.of(context).muted)),
+          Text(' · ${produk.terjual}x', style:  TextStyle(fontSize: 11, color: XyTheme.of(context).muted)),
         ]),
         const Spacer(),
         if (produk.hargaCoret > 0)
           Text(rupiah(produk.hargaCoret),
-              style: const TextStyle(
-                  fontSize: 11, color: XyTheme.muted, decoration: TextDecoration.lineThrough)),
+              style:  TextStyle(
+                  fontSize: 11, color: XyTheme.of(context).muted, decoration: TextDecoration.lineThrough)),
         Text(rupiah(produk.harga),
             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: XyTheme.primary, letterSpacing: -.3)),
         const SizedBox(height: 6),
@@ -235,8 +235,8 @@ class _SheetDetailState extends State<_SheetDetail> {
       minChildSize: .5,
       expand: false,
       builder: (_, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: XyTheme.bg,
+        decoration:  BoxDecoration(
+          color: XyTheme.of(context).bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
         child: Column(children: [
@@ -244,7 +244,7 @@ class _SheetDetailState extends State<_SheetDetail> {
             width: 44,
             height: 4.5,
             margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
           ),
           Expanded(
             child: ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(20, 4, 20, 20), children: [
@@ -263,7 +263,7 @@ class _SheetDetailState extends State<_SheetDetail> {
                       const SizedBox(width: 7),
                       Text('${p.rating}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
                       Text('  ·  ${p.jumlahUlasan} ulasan  ·  ${p.terjual} terjual',
-                          style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+                          style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
                     ]),
                   ]),
                 ),
@@ -272,15 +272,15 @@ class _SheetDetailState extends State<_SheetDetail> {
               XyCard(
                 child: Row(children: [
                   Expanded(child: _Stat('Stok', '${p.stok}', Icons.inventory_2_rounded)),
-                  Container(width: 1, height: 34, color: XyTheme.line),
+                  Container(width: 1, height: 34, color: XyTheme.of(context).line),
                   Expanded(child: _Stat('Terjual', '${p.terjual}', Icons.local_fire_department_rounded)),
-                  Container(width: 1, height: 34, color: XyTheme.line),
+                  Container(width: 1, height: 34, color: XyTheme.of(context).line),
                   Expanded(child: _Stat('Garansi', p.garansi, Icons.verified_user_rounded)),
                 ]),
               ),
               const SectionHeader('Deskripsi'),
               Text(p.deskripsi.isEmpty ? 'Belum ada deskripsi untuk produk ini.' : p.deskripsi,
-                  style: const TextStyle(fontSize: 13.5, height: 1.6, color: XyTheme.muted)),
+                  style:  TextStyle(fontSize: 13.5, height: 1.6, color: XyTheme.of(context).muted)),
               if (p.detail.isNotEmpty) ...[
                 const SectionHeader('Detail Produk'),
                 XyCard(
@@ -292,7 +292,7 @@ class _SheetDetailState extends State<_SheetDetail> {
                                 SizedBox(
                                   width: 116,
                                   child: Text(e.key,
-                                      style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+                                      style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
                                 ),
                                 Expanded(
                                   child: Text('${e.value}',
@@ -328,18 +328,18 @@ class _SheetDetailState extends State<_SheetDetail> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
                     decoration: BoxDecoration(
-                      color: XyTheme.surface,
+                      color: XyTheme.of(context).surface,
                       borderRadius: BorderRadius.circular(XyRadius.lg),
-                      border: Border.all(color: XyTheme.line),
+                      border: Border.all(color: XyTheme.of(context).line),
                     ),
-                    child: const Column(children: [
-                      Icon(Icons.reviews_outlined, color: XyTheme.muted, size: 26),
+                    child:  Column(children: [
+                      Icon(Icons.reviews_outlined, color: XyTheme.of(context).muted, size: 26),
                       SizedBox(height: 10),
                       Text('Belum ada ulasan untuk produk ini',
                           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                       SizedBox(height: 4),
                       Text('Jadilah yang pertama memberi penilaian.',
-                          style: TextStyle(color: XyTheme.muted, fontSize: 12)),
+                          style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
                     ]),
                   );
                 }
@@ -357,10 +357,10 @@ class _SheetDetailState extends State<_SheetDetail> {
           ),
           Container(
             padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(context).padding.bottom + 14),
-            decoration: BoxDecoration(color: XyTheme.surface, boxShadow: XyTheme.shadowMd),
+            decoration: BoxDecoration(color: XyTheme.of(context).surface, boxShadow: XyTheme.shadowMd),
             child: Row(children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                const Text('Harga', style: TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+                 Text('Harga', style: TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
                 Text(rupiah(p.harga), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -.5)),
               ]),
               const SizedBox(width: 16),
@@ -397,14 +397,14 @@ class _PilihBayar extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: aktif ? XyTheme.primary.withOpacity(.08) : XyTheme.surface,
+          color: aktif ? XyTheme.primary.withOpacity(.08) : XyTheme.of(context).surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.line, width: aktif ? 1.6 : 1),
+          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.of(context).line, width: aktif ? 1.6 : 1),
         ),
         child: Column(children: [
-          Icon(icon, size: 21, color: aktif ? XyTheme.primary : XyTheme.muted),
+          Icon(icon, size: 21, color: aktif ? XyTheme.primary : XyTheme.of(context).muted),
           const SizedBox(height: 6),
-          Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: aktif ? XyTheme.primary : XyTheme.muted)),
+          Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: aktif ? XyTheme.primary : XyTheme.of(context).muted)),
         ]),
       ),
     );
@@ -421,7 +421,7 @@ class _Stat extends StatelessWidget {
       Icon(icon, size: 18, color: XyTheme.primary),
       const SizedBox(height: 5),
       Text(nilai, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-      Text(label, style: const TextStyle(fontSize: 10.5, color: XyTheme.muted)),
+      Text(label, style:  TextStyle(fontSize: 10.5, color: XyTheme.of(context).muted)),
     ]);
   }
 }
@@ -438,7 +438,7 @@ class _DialogAkun extends StatelessWidget {
           child: Row(children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(k, style: const TextStyle(fontSize: 11, color: XyTheme.muted)),
+                Text(k, style:  TextStyle(fontSize: 11, color: XyTheme.of(context).muted)),
                 SelectableText(v, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, fontFamily: 'monospace')),
               ]),
             ),
@@ -453,8 +453,8 @@ class _DialogAkun extends StatelessWidget {
         );
 
     return Container(
-      decoration: const BoxDecoration(
-        color: XyTheme.bg,
+      decoration:  BoxDecoration(
+        color: XyTheme.of(context).bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Padding(
@@ -464,11 +464,11 @@ class _DialogAkun extends StatelessWidget {
           const SizedBox(height: 6),
           const Text('Pembelian Berhasil', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
           const SizedBox(height: 4),
-          Text(produk.nama, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12.5, color: XyTheme.muted)),
+          Text(produk.nama, textAlign: TextAlign.center, style:  TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted)),
           const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: XyTheme.bg, borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: XyTheme.of(context).bg, borderRadius: BorderRadius.circular(14)),
             child: Column(children: [
               baris('Kode Pesanan', '${data['kode']}'),
               baris('Email Akun', '${data['email']}'),
@@ -476,7 +476,7 @@ class _DialogAkun extends StatelessWidget {
             ]),
           ),
           const SizedBox(height: 12),
-          Text('${data['catatan']}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, color: XyTheme.muted, height: 1.5)),
+          Text('${data['catatan']}', textAlign: TextAlign.center, style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted, height: 1.5)),
           const SizedBox(height: 18),
           GradientButton(label: 'Selesai', onPressed: () => Navigator.pop(context)),
         ]),

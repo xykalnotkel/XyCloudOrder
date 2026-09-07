@@ -1,3 +1,4 @@
+import '../widgets/promo_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
@@ -106,15 +107,15 @@ class _XyShellState extends State<XyShell> {
   Widget build(BuildContext context) {
     final pad = MediaQuery.of(context).padding.bottom;
 
-    return Scaffold(
+    return PromoLayer(child: Scaffold(
       extendBody: true,
       body: IndexedStack(index: idx, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: XyTheme.surface,
-          border: const Border(top: BorderSide(color: XyTheme.line)),
+          color: XyTheme.of(context).surface,
+          border:  Border(top: BorderSide(color: XyTheme.of(context).line)),
           boxShadow: [
-            BoxShadow(color: XyTheme.ink.withOpacity(.06), blurRadius: 24, offset: const Offset(0, -6)),
+            BoxShadow(color: XyTheme.of(context).ink.withOpacity(.06), blurRadius: 24, offset: const Offset(0, -6)),
           ],
         ),
         padding: EdgeInsets.only(bottom: pad > 0 ? pad - 2 : 11, top: 11, left: 6, right: 6),
@@ -142,7 +143,7 @@ class _XyShellState extends State<XyShell> {
                         boxShadow: on ? XyTheme.glow(XyTheme.primary, .28) : null,
                       ),
                       child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1, size: 23, color: on ? Colors.white : XyTheme.muted),
+                        Icon(on ? it.$2 : it.$1, size: 23, color: on ? Colors.white : XyTheme.of(context).muted),
                       ]),
                     ),
                     const SizedBox(height: 6),
@@ -151,7 +152,7 @@ class _XyShellState extends State<XyShell> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: on ? FontWeight.w800 : FontWeight.w600,
-                        color: on ? XyTheme.primary : XyTheme.muted,
+                        color: on ? XyTheme.primary : XyTheme.of(context).muted,
                       ),
                       child: Text(it.$3),
                     ),
@@ -162,6 +163,6 @@ class _XyShellState extends State<XyShell> {
           }),
         ),
       ),
-    );
+    ));
   }
 }

@@ -29,7 +29,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: XyTheme.ink,
+      backgroundColor: XyTheme.of(context).ink,
       body: Stack(children: [
         const Positioned.fill(child: AuroraBackground(dark: true)),
         const Positioned.fill(child: DotGrid(color: Color(0x0AFFFFFF), gap: 28)),

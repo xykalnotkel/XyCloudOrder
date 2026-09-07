@@ -70,7 +70,7 @@ class Bintang extends StatelessWidget {
         final ikon = Icon(
           penuh ? Icons.star_rounded : Icons.star_outline_rounded,
           size: ukuran,
-          color: penuh ? XyTheme.gold : XyTheme.line,
+          color: penuh ? XyTheme.gold : XyTheme.of(context).line,
         );
         if (onPilih == null) return ikon;
         return Pressable(
@@ -113,14 +113,14 @@ class KartuUlasan extends StatelessWidget {
                 Row(children: [
                   Bintang(nilai: u.rating.toDouble(), ukuran: 13),
                   const SizedBox(width: 7),
-                  Text(tanggal(u.waktu), style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
+                  Text(tanggal(u.waktu), style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
                 ]),
               ]),
             ),
           ]),
           if (u.komentar.isNotEmpty) ...[
             const SizedBox(height: 11),
-            Text(u.komentar, style: const TextStyle(fontSize: 13.2, height: 1.55, color: XyTheme.inkSoft)),
+            Text(u.komentar, style:  TextStyle(fontSize: 13.2, height: 1.55, color: XyTheme.of(context).inkSoft)),
           ],
           if (u.gambar != null) ...[
             const SizedBox(height: 11),
@@ -135,7 +135,7 @@ class KartuUlasan extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: XyTheme.primarySoft,
+                color: XyTheme.of(context).primarySoft,
                 borderRadius: BorderRadius.circular(XyRadius.sm),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -221,8 +221,8 @@ class _FormUlasanState extends State<_FormUlasan> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
-      decoration: const BoxDecoration(
-        color: XyTheme.bg,
+      decoration:  BoxDecoration(
+        color: XyTheme.of(context).bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -230,14 +230,14 @@ class _FormUlasanState extends State<_FormUlasan> {
           child: Container(
             width: 44,
             height: 4.5,
-            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
           ),
         ),
         const SizedBox(height: 18),
         const Text('Tulis Ulasan',
             style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -.6)),
         const SizedBox(height: 4),
-        Text(widget.produk.nama, style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+        Text(widget.produk.nama, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
         const SizedBox(height: 18),
         Center(child: Bintang(nilai: rating.toDouble(), ukuran: 36, onPilih: (v) => setState(() => rating = v))),
         const SizedBox(height: 18),

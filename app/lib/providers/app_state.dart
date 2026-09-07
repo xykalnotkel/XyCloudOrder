@@ -13,6 +13,9 @@ import '../data/push_service.dart';
 import '../data/realtime_service.dart';
 import '../data/repository.dart';
 import '../models/models.dart';
+import '../models/stiker.dart';
+import '../models/promosi.dart';
+import '../data/stiker_store.dart';
 
 /// State global aplikasi + jembatan ke channel realtime.
 class AppState extends ChangeNotifier {
@@ -26,6 +29,7 @@ class AppState extends ChangeNotifier {
     };
     _repo = XyRepository.create(_api);
     unawaited(muatKonfigurasi());
+    unawaited(muatPromosi());
     unawaited(muatTema());
     unawaited(periksaPembaruan());
     unawaited(pulihkanSesi());
@@ -162,6 +166,25 @@ class AppState extends ChangeNotifier {
   StreamSubscription? _rtState;
   Timer? _mockTicker;
   Timer? _clock;
+
+  List<Promosi> promosi = [];
+  Future<void> muatPromosi() async {
+    try {
+      final d = await _api.get('/promosi');
+      promosi = (d as List).map((x)=>Promosi.fromJson(Map<String,dynamic>.from(x)))
+          .where((x)=>x.platform=='app'||x.platform=='semua').toList();
+      notifyListeners();
+    } catch (_) {}
+  }
+  Future<Map<String,dynamic>> cariStiker(String q, {String jenis='stiker', int offset=0}) async =>
+    Map<String,dynamic>.from(await _api.get('/stiker/giphy',{'q':q,'jenis':jenis,'offset':offset}));
+  Future<Stiker> imporStiker(String url) async => Stiker.fromJson(Map<String,dynamic>.from(await _api.post('/stiker/impor',{'url':url})));
+  Future<Map<String,dynamic>> infoHapusAkun() async => Map<String,dynamic>.from(await _api.get('/me/hapus/info'));
+  Future<void> mintaKodeHapus() async { await _api.post('/me/hapus/kode'); }
+  int forumRevisi = 0;
+  final Map<String,Map<String,dynamic>> _identitasForum = {};
+  String namaPengguna(String id, String cadangan) => id==user?.id ? user!.nama : '${_identitasForum[id]?['nama']??cadangan}';
+  String? fotoPengguna(String id, String? cadangan) => id==user?.id ? user!.foto : _identitasForum[id]?['foto'] as String? ?? cadangan;
 
   // ---------------- state ----------------
   UserProfile? user;
@@ -616,23 +639,26 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= hapus akun =================
-  Future<String?> hapusAkun({String? password, bool paksa = false}) async {
+  Future<String?> hapusAkun({String? password, String? kode, bool paksa = false}) async {
     try {
-      await _repo.hapusAkun(password: password, paksa: paksa);
-      await Prefs.hapusToken();
-      _api.setToken(null);
-      user = null;
-      notifyListeners();
+      final id = user?.id;
+      await _repo.hapusAkun(password: password, kode: kode);
+      if (id != null) {
+        try { await StikerStore.untuk(id).hapusSemua(); } catch (_) {}
+      }
+      await logout();
       return null;
-    } catch (e) {
-      return _pesan(e);
-    }
+    } catch (e) { return _pesan(e); }
   }
 
   // ================= profil =================
   Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async {
     try {
       user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum);
+      forumRevisi++;
+      forum = forum.map((p) => p.userId == user!.id ? ForumPost.fromJson({...p.toJson(), 'nama': user!.nama, 'foto': user!.foto}) : p).toList();
+      _ulasan.clear();
+      unawaited(muatForum(paksa: true));
       notifyListeners();
       return null;
     } catch (e) {
@@ -705,11 +731,10 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<String?> balasForum(String id, String isi, {String? balasKe}) async {
+  Future<String?> balasForum(String id, String isi, {String? balasKe, Map<String,dynamic>? stiker}) async {
     try {
-      await _repo.forumBalas(id, isi, balasKe: balasKe);
-      final i = forum.indexWhere((f) => f.id == id);
-      if (i >= 0) forum[i].balasan++;
+      await _repo.forumBalas(id, isi, balasKe: balasKe, stiker: stiker);
+      unawaited(muatForum(paksa: true));
       notifyListeners();
       return null;
     } catch (e) {
@@ -761,8 +786,7 @@ class AppState extends ChangeNotifier {
   Future<String?> hapusBalasanForum(String id, String postId) async {
     try {
       await _repo.forumHapusBalasan(id);
-      final i = forum.indexWhere((f) => f.id == postId);
-      if (i >= 0 && forum[i].balasan > 0) forum[i].balasan--;
+      unawaited(muatForum(paksa: true));
       notifyListeners();
       return null;
     } catch (e) {
@@ -899,23 +923,27 @@ class AppState extends ChangeNotifier {
     return t.replaceFirst('Exception: ', '');
   }
 
-  void logout() {
-    unawaited(Prefs.hapusToken());
+  bool sedangKeluar = false;
+  Future<void> logout() async {
+    if (sedangKeluar) return;
+    sedangKeluar = true;
     _api.setToken(null);
-    PushService.keluar();
-    perawatan = false;
-    user = null;
-    orders = [];
-    chat = [];
-    _rt?.dispose();
-    _rt = null;
-    _rtKatalog?.dispose();
-    _rtForum?.dispose();
-    _rtKatalog = null;
-    _rtForum?.dispose();
-    _rtForum = null;
-    _mockTicker?.cancel();
-    _clock?.cancel();
+    _rtSub?.cancel(); _rtState?.cancel();
+    _rt?.dispose(); _rtKatalog?.dispose(); _rtForum?.dispose();
+    _rt = null; _rtKatalog = null; _rtForum = null;
+    _mockTicker?.cancel(); _clock?.cancel();
+    await Prefs.hapusToken();
+    await Cache.bersihkan();
+    await PushService.keluar().timeout(const Duration(seconds: 5), onTimeout: () {});
+    LaporGalat.userId = null;
+    perawatan = false; memeriksaSesi = false; loading = false;
+    offline = false; dariCache = false; error = null;
+    user = null; orders = []; transaksi = []; chat = []; topupSaya = [];
+    forum = []; forumDisukai.clear(); balasanDisukai.clear();
+    notifikasi = []; notifBelum = 0; notifBelumDibaca = 0;
+    favorit.clear(); _ulasan.clear(); _identitasForum.clear();
+    csMengetik = false; koneksi = RealtimeState.offline;
+    sedangKeluar = false;
     notifyListeners();
   }
 
@@ -978,8 +1006,8 @@ class AppState extends ChangeNotifier {
       final p = await Cache.daftar('plans');
       final pr = await Cache.daftar('produk');
       final bn = await Cache.daftar('banners');
-      final od = await Cache.daftar('orders');
-      final tr = await Cache.daftar('transaksi');
+      final od = await Cache.daftar('orders_${user?.id}');
+      final tr = await Cache.daftar('transaksi_${user?.id}');
       if (p.isEmpty && pr.isEmpty) return;
 
       plans = p.map((e) => PcPlan.fromJson(Map<String, dynamic>.from(e))).toList();
@@ -997,8 +1025,8 @@ class AppState extends ChangeNotifier {
       await Cache.simpan('plans', plans.map((e) => e.toJson()).toList());
       await Cache.simpan('produk', produk.map((e) => e.toJson()).toList());
       await Cache.simpan('banners', banners.map((e) => e.toJson()).toList());
-      await Cache.simpan('orders', orders.map((e) => e.toJson()).toList());
-      await Cache.simpan('transaksi', transaksi.map((e) => e.toJson()).toList());
+      await Cache.simpan('orders_${user?.id}', orders.map((e) => e.toJson()).toList());
+      await Cache.simpan('transaksi_${user?.id}', transaksi.map((e) => e.toJson()).toList());
     } catch (_) {}
   }
 
@@ -1054,7 +1082,19 @@ class AppState extends ChangeNotifier {
   }
 
   void _handleEvent(RealtimeEvent e) {
+    if (!masuk) return;
+    if (e.type.startsWith('forum.')) forumRevisi++;
     switch (e.type) {
+      case 'promosi.update':
+        unawaited(muatPromosi());
+        break;
+      case 'forum.profil':
+        _identitasForum['${e.payload['user_id']}'] = Map<String,dynamic>.from(e.payload);
+        unawaited(muatForum(paksa: true));
+        break;
+      case 'forum.refresh':
+        unawaited(muatForum(paksa: true));
+        break;
       case 'order.update':
         final upd = RentOrder.fromJson(e.payload);
         final i = orders.indexWhere((o) => o.id == upd.id);
@@ -1105,10 +1145,7 @@ class AppState extends ChangeNotifier {
         } catch (_) {}
         break;
       case 'forum.balasan.hapus':
-        try {
-          final i = forum.indexWhere((f) => f.id == '${e.payload['post_id']}');
-          if (i >= 0 && forum[i].balasan > 0) forum[i].balasan--;
-        } catch (_) {}
+        unawaited(muatForum(paksa: true));
         break;
       case 'forum.baru':
         try {
@@ -1117,11 +1154,7 @@ class AppState extends ChangeNotifier {
         } catch (_) {}
         break;
       case 'forum.balasan':
-        try {
-          final id = '${e.payload['post_id']}';
-          final i = forum.indexWhere((f) => f.id == id);
-          if (i >= 0) forum[i].balasan++;
-        } catch (_) {}
+        unawaited(muatForum(paksa: true));
         break;
       case 'forum.suka':
         try {

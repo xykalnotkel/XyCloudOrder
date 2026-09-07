@@ -91,7 +91,7 @@ class _Baris extends StatelessWidget {
   const _Baris({required this.notif});
   final Notifikasi notif;
 
-  (IconData, Color) get _tampilan => switch (notif.jenis) {
+  (IconData, Color) _tampilan(BuildContext context) => switch (notif.jenis) {
         'suka' => (Icons.favorite_rounded, XyTheme.danger),
         'balasan' => (Icons.reply_rounded, XyTheme.primary),
         'komunitas' => (Icons.groups_2_rounded, XyTheme.violet),
@@ -99,7 +99,7 @@ class _Baris extends StatelessWidget {
         'sistem' => (Icons.verified_user_rounded, XyTheme.primary),
         'order' => (Icons.receipt_long_rounded, XyTheme.success),
         'wallet' => (Icons.account_balance_wallet_rounded, XyTheme.success),
-        _ => (Icons.notifications_rounded, XyTheme.muted),
+        _ => (Icons.notifications_rounded, XyTheme.of(context).muted),
       };
 
   Future<void> _buka(BuildContext context) async {
@@ -124,7 +124,7 @@ class _Baris extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (ikon, warna) = _tampilan;
+    final (ikon, warna) = _tampilan(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -163,11 +163,11 @@ class _Baris extends StatelessWidget {
               if (notif.pesan.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(notif.pesan,
-                    style: const TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.5)),
+                    style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.5)),
               ],
               const SizedBox(height: 6),
               Text(tanggal(notif.dibuat),
-                  style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
+                  style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
             ]),
           ),
         ]),

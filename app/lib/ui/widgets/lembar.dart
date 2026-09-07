@@ -40,7 +40,7 @@ Future<bool> konfirmasi(
         const SizedBox(height: 8),
         Text(pesan,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: XyTheme.muted, fontSize: 13.2, height: 1.6)),
+            style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13.2, height: 1.6)),
         const SizedBox(height: 22),
         Row(children: [
           Expanded(
@@ -88,7 +88,7 @@ Future<void> beritahu(
         Container(
           width: 54,
           height: 54,
-          decoration: BoxDecoration(color: XyTheme.primarySoft, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, shape: BoxShape.circle),
           child: Icon(ikon, color: XyTheme.primary, size: 26),
         ),
         const SizedBox(height: 16),
@@ -98,7 +98,7 @@ Future<void> beritahu(
         const SizedBox(height: 8),
         Text(pesan,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: XyTheme.muted, fontSize: 13.2, height: 1.6)),
+            style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13.2, height: 1.6)),
         const SizedBox(height: 20),
         GradientButton(label: tombol, height: 50, onPressed: () => Navigator.pop(d)),
       ]),
@@ -129,7 +129,7 @@ Future<String?> tanyaTeks(
           Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
           if (keterangan != null) ...[
             const SizedBox(height: 6),
-            Text(keterangan, style: const TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.5)),
+            Text(keterangan, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.5)),
           ],
           const SizedBox(height: 16),
           TextField(
@@ -170,8 +170,8 @@ class _Bingkai extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: EdgeInsets.fromLTRB(22, 14, 22, MediaQuery.of(context).padding.bottom + 22),
-        decoration: const BoxDecoration(
-          color: XyTheme.bg,
+        decoration:  BoxDecoration(
+          color: XyTheme.of(context).bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -179,7 +179,7 @@ class _Bingkai extends StatelessWidget {
             width: 44,
             height: 4.5,
             margin: const EdgeInsets.only(bottom: 20),
-            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
           ),
           child,
         ]),
@@ -205,8 +205,8 @@ Future<String?> pilihAlasanLaporan(BuildContext context) async {
         const Text('Laporkan konten',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
         const SizedBox(height: 6),
-        const Text('Pilih alasannya. Admin akan meninjau dalam waktu singkat.',
-            style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.5)),
+         Text('Pilih alasannya. Admin akan meninjau dalam waktu singkat.',
+            style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.5)),
         const SizedBox(height: 14),
         ...alasan.map((a) => Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -216,13 +216,13 @@ Future<String?> pilihAlasanLaporan(BuildContext context) async {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
                   decoration: BoxDecoration(
-                    color: XyTheme.surface,
+                    color: XyTheme.of(context).surface,
                     borderRadius: BorderRadius.circular(XyRadius.md),
-                    border: Border.all(color: XyTheme.line),
+                    border: Border.all(color: XyTheme.of(context).line),
                   ),
                   child: Row(children: [
                     Expanded(child: Text(a, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600))),
-                    const Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.muted),
+                     Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.of(context).muted),
                   ]),
                 ),
               ),

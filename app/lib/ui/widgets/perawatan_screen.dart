@@ -24,7 +24,7 @@ class PerawatanScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final gelap = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: XyTheme.bg,
+      backgroundColor: XyTheme.of(context).bg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -72,7 +72,7 @@ class PerawatanScreen extends StatelessWidget {
                   'Data dan saldo kamu aman — tinggal tunggu sampai selesai.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: XyTheme.muted,
+                    color: XyTheme.of(context).muted,
                     fontSize: 13.5,
                     height: 1.6,
                   ),
@@ -82,15 +82,15 @@ class PerawatanScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                     decoration: BoxDecoration(
-                      color: gelap ? XyTheme.lineGelap.withOpacity(.5) : XyTheme.primarySoft,
+                      color: gelap ? XyTheme.lineGelap.withOpacity(.5) : XyTheme.of(context).primarySoft,
                       borderRadius: BorderRadius.circular(XyRadius.lg),
                       border: Border.all(
-                          color: gelap ? XyTheme.lineGelap : XyTheme.line),
+                          color: gelap ? XyTheme.lineGelap : XyTheme.of(context).line),
                     ),
                     child: Text(
                       pesan,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 12, height: 1.5, color: XyTheme.muted),
+                      style:  TextStyle(fontSize: 12, height: 1.5, color: XyTheme.of(context).muted),
                     ),
                   ),
                 ],
@@ -113,10 +113,10 @@ class PerawatanScreen extends StatelessWidget {
                     child: Text(
                       'Keluar dari akun ini',
                       style: TextStyle(
-                        color: XyTheme.muted,
+                        color: XyTheme.of(context).muted,
                         fontWeight: FontWeight.w700,
                         decoration: TextDecoration.underline,
-                        decorationColor: XyTheme.muted.withOpacity(.5),
+                        decorationColor: XyTheme.of(context).muted.withOpacity(.5),
                       ),
                     ),
                   ),

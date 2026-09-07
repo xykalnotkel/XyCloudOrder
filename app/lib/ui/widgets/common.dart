@@ -47,10 +47,10 @@ class _XyCardState extends State<XyCard> {
         duration: const Duration(milliseconds: 180),
         padding: widget.padding,
         decoration: BoxDecoration(
-          color: widget.gradient == null ? (widget.color ?? XyTheme.surface) : null,
+          color: widget.gradient == null ? (widget.color ?? XyTheme.of(context).surface) : null,
           gradient: widget.gradient,
           borderRadius: BorderRadius.circular(widget.radius),
-          border: widget.border ? Border.all(color: XyTheme.line) : null,
+          border: widget.border ? Border.all(color: XyTheme.of(context).line) : null,
           boxShadow: widget.elevated ? (_down ? XyTheme.shadowXs : XyTheme.shadowSm) : null,
         ),
         child: widget.child,
@@ -134,7 +134,7 @@ class GradientButton extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           gradient: mati ? null : gradient,
-          color: mati ? const Color(0xFFE3DAF5) : null,
+          color: mati ? XyTheme.of(context).primarySoft : null,
           borderRadius: BorderRadius.circular(XyRadius.tombol),
           boxShadow: mati ? null : XyTheme.glow(glowColor, .30),
         ),
@@ -146,13 +146,13 @@ class GradientButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (icon != null) ...[
-                      Icon(icon, size: 19, color: mati ? XyTheme.muted : Colors.white),
+                      Icon(icon, size: 19, color: mati ? XyTheme.of(context).muted : Colors.white),
                       const SizedBox(width: 9),
                     ],
                     Text(
                       label,
                       style: TextStyle(
-                        color: mati ? XyTheme.muted : Colors.white,
+                        color: mati ? XyTheme.of(context).muted : Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
                         letterSpacing: -.1,
@@ -230,7 +230,7 @@ class _LiveDotState extends State<LiveDot> with SingleTickerProviderStateMixin {
         ? XyTheme.success
         : widget.state == RealtimeState.connecting
             ? XyTheme.warning
-            : XyTheme.muted;
+            : XyTheme.of(context).muted;
     final label = online
         ? 'Realtime'
         : widget.state == RealtimeState.connecting
@@ -294,7 +294,7 @@ class SectionHeader extends StatelessWidget {
             if (sub != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(sub!, style: const TextStyle(fontSize: 12.5, color: XyTheme.muted)),
+                child: Text(sub!, style:  TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted)),
               ),
           ]),
         ),
@@ -324,11 +324,11 @@ class SpecChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(color: XyTheme.lineSoft, borderRadius: BorderRadius.circular(9)),
+      decoration: BoxDecoration(color: XyTheme.of(context).lineSoft, borderRadius: BorderRadius.circular(9)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 13, color: XyTheme.muted),
+        Icon(icon, size: 13, color: XyTheme.of(context).muted),
         const SizedBox(width: 5),
-        Text(teks, style: const TextStyle(fontSize: 11.5, color: XyTheme.inkSoft, fontWeight: FontWeight.w700)),
+        Text(teks, style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).inkSoft, fontWeight: FontWeight.w700)),
       ]),
     );
   }
@@ -505,7 +505,7 @@ class Kosong extends StatelessWidget {
           if (sub != null) ...[
             const SizedBox(height: 7),
             Text(sub!, textAlign: TextAlign.center,
-                style: const TextStyle(color: XyTheme.muted, fontSize: 13, height: 1.55)),
+                style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13, height: 1.55)),
           ],
           if (aksi != null) ...[const SizedBox(height: 20), aksi!],
         ]),
@@ -547,7 +547,7 @@ class XyLogo extends StatelessWidget {
       decoration: BoxDecoration(
         color: putih ? Colors.white.withOpacity(.12) : Colors.white,
         borderRadius: BorderRadius.circular(radius),
-        border: putih ? Border.all(color: Colors.white.withOpacity(.18)) : Border.all(color: XyTheme.line),
+        border: putih ? Border.all(color: Colors.white.withOpacity(.18)) : Border.all(color: XyTheme.of(context).line),
         boxShadow: glow && !putih ? XyTheme.glow(XyTheme.primary, .16) : null,
       ),
       child: Center(child: gambar),

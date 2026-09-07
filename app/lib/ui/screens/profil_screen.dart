@@ -1,3 +1,4 @@
+import 'hapus_akun_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -216,6 +217,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
               ),
 
+              _Menu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const TemaScreen()))),
+              _Menu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
               const SizedBox(height: 18),
               OutlinedButton.icon(
                 onPressed: () async {
@@ -282,7 +285,7 @@ class _Menu extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
               child: Icon(ikon, size: 20, color: XyTheme.primary),
             ),
             const SizedBox(width: 13),
@@ -290,10 +293,10 @@ class _Menu extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 const SizedBox(height: 3),
-                Text(sub, style: const TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
               ]),
             ),
-            const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
           ]),
         ),
       );

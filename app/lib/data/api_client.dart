@@ -41,12 +41,18 @@ class ApiClient {
 
   /// Jalankan permintaan; kalau jaringan gagal, coba sekali lagi lewat alamat cadangan.
   Future<dynamic> _coba(Future<http.Response> Function() aksi) async {
+    final sesi = _token;
+    Future<dynamic> jalankan() async {
+      final hasil = await aksi();
+      if (sesi != null && sesi != _token) throw ApiException(401, 'Sesi telah berubah.');
+      return _parse(hasil);
+    }
     try {
-      return _parse(await aksi());
+      return await jalankan();
     } on ApiException {
       rethrow;
     } catch (e) {
-      if (XyConfig.pindahKeCadangan()) return _parse(await aksi());
+      if (XyConfig.pindahKeCadangan()) return jalankan();
       rethrow;
     }
   }

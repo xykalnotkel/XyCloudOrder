@@ -244,14 +244,14 @@ class _SesiScreenState extends State<SesiScreen> {
                         ),
                       ]),
                       if (status == 'pairing')
-                        const Padding(
+                         Padding(
                           padding: EdgeInsets.only(top: 6),
                           child: Row(children: [
                             SizedBox(
                                 width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                             SizedBox(width: 10),
                             Text('Memasangkan perangkat...',
-                                style: TextStyle(fontSize: 12, color: XyTheme.muted)),
+                                style: TextStyle(fontSize: 12, color: XyTheme.of(context).muted)),
                           ]),
                         ),
                     ]),
@@ -337,7 +337,7 @@ class _KartuStatus extends StatelessWidget {
       'pairing' => (XyTheme.warning, 'Memasangkan'),
       'berjalan' => (XyTheme.success, 'Sedang berjalan'),
       'gagal' => (XyTheme.danger, 'Bermasalah'),
-      'selesai' => (XyTheme.muted, 'Selesai'),
+      'selesai' => (XyTheme.of(context).muted, 'Selesai'),
       _ => (XyTheme.primary, 'Menyiapkan'),
     };
 
@@ -395,7 +395,7 @@ class _Langkah extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final warna = selesai ? XyTheme.success : (aktif ? XyTheme.primary : XyTheme.muted);
+    final warna = selesai ? XyTheme.success : (aktif ? XyTheme.primary : XyTheme.of(context).muted);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: XyCard(
@@ -417,7 +417,7 @@ class _Langkah extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
                 const SizedBox(height: 5),
-                Text(isi, style: const TextStyle(fontSize: 12.8, height: 1.55, color: XyTheme.muted)),
+                Text(isi, style:  TextStyle(fontSize: 12.8, height: 1.55, color: XyTheme.of(context).muted)),
               ]),
             ),
           ]),
@@ -436,11 +436,11 @@ class _BarisSalin extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.fromLTRB(14, 11, 8, 11),
         decoration: BoxDecoration(
-          color: XyTheme.lineSoft,
+          color: XyTheme.of(context).lineSoft,
           borderRadius: BorderRadius.circular(XyRadius.md),
         ),
         child: Row(children: [
-          Text(label, style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+          Text(label, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
           const Spacer(),
           Text(nilai, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
           IconButton(
@@ -505,9 +505,9 @@ class _PanduanStreaming extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
         ]),
         const SizedBox(height: 8),
-        const Text(
+         Text(
           'Streaming dibuka di Moonlight atau Artemis. Ini panduan singkatnya.',
-          style: TextStyle(fontSize: 11.8, color: XyTheme.muted, height: 1.5),
+          style: TextStyle(fontSize: 11.8, color: XyTheme.of(context).muted, height: 1.5),
         ),
         const SizedBox(height: 12),
         ..._baris.map(
@@ -518,7 +518,7 @@ class _PanduanStreaming extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: XyTheme.primarySoft,
+                  color: XyTheme.of(context).primarySoft,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(b.$1, size: 16, color: XyTheme.primary),
@@ -528,7 +528,7 @@ class _PanduanStreaming extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(b.$2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.8)),
                   const SizedBox(height: 2),
-                  Text(b.$3, style: const TextStyle(fontSize: 12, height: 1.5, color: XyTheme.muted)),
+                  Text(b.$3, style:  TextStyle(fontSize: 12, height: 1.5, color: XyTheme.of(context).muted)),
                 ]),
               ),
             ]),

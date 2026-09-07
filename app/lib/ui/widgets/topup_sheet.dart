@@ -103,8 +103,8 @@ class _SheetTopupState extends State<_SheetTopup> {
       minChildSize: .5,
       expand: false,
       builder: (_, ctrl) => Container(
-        decoration: const BoxDecoration(
-          color: XyTheme.bg,
+        decoration:  BoxDecoration(
+          color: XyTheme.of(context).bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
         child: Column(children: [
@@ -112,7 +112,7 @@ class _SheetTopupState extends State<_SheetTopup> {
             width: 44,
             height: 4.5,
             margin: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
           ),
           Expanded(
             child: ListView(
@@ -132,7 +132,7 @@ class _SheetTopupState extends State<_SheetTopup> {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.8)),
         const SizedBox(height: 6),
         Text('Minimal ${rupiah(s.konfigurasi.minTopup)}. Saldo dipakai untuk sewa PC dan beli akun.',
-            style: const TextStyle(color: XyTheme.muted, fontSize: 13, height: 1.5)),
+            style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13, height: 1.5)),
         const SizedBox(height: 20),
         Wrap(
           spacing: 10,
@@ -149,9 +149,9 @@ class _SheetTopupState extends State<_SheetTopup> {
                 width: (MediaQuery.of(context).size.width - 60) / 2,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 decoration: BoxDecoration(
-                  color: aktif ? XyTheme.primary : XyTheme.surface,
+                  color: aktif ? XyTheme.primary : XyTheme.of(context).surface,
                   borderRadius: BorderRadius.circular(XyRadius.tombol),
-                  border: Border.all(color: aktif ? XyTheme.primary : XyTheme.line),
+                  border: Border.all(color: aktif ? XyTheme.primary : XyTheme.of(context).line),
                   boxShadow: aktif ? XyTheme.glow(XyTheme.primary, .22) : null,
                 ),
                 child: Center(
@@ -159,7 +159,7 @@ class _SheetTopupState extends State<_SheetTopup> {
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14.5,
-                        color: aktif ? Colors.white : XyTheme.ink,
+                        color: aktif ? Colors.white : XyTheme.of(context).ink,
                       )),
                 ),
               ),
@@ -218,9 +218,9 @@ class _SheetTopupState extends State<_SheetTopup> {
           onPressed: nominal < s.konfigurasi.minTopup ? null : _buat,
         ),
         const SizedBox(height: 10),
-        const Center(
+         Center(
           child: Text('Saldo masuk setelah admin memverifikasi bukti transfer.',
-              style: TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
         ),
       ];
 
@@ -240,18 +240,18 @@ class _SheetTopupState extends State<_SheetTopup> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: aktif ? XyTheme.primarySoft : XyTheme.surface,
+          color: aktif ? XyTheme.of(context).primarySoft : XyTheme.of(context).surface,
           borderRadius: BorderRadius.circular(XyRadius.lg),
-          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.line, width: aktif ? 1.6 : 1),
+          border: Border.all(color: aktif ? XyTheme.primary : XyTheme.of(context).line, width: aktif ? 1.6 : 1),
         ),
         child: Column(children: [
-          Icon(ikon, size: 22, color: aktif ? XyTheme.primary : XyTheme.muted),
+          Icon(ikon, size: 22, color: aktif ? XyTheme.primary : XyTheme.of(context).muted),
           const SizedBox(height: 7),
           Text(label,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 12.5,
-                color: aktif ? XyTheme.primary : XyTheme.inkSoft,
+                color: aktif ? XyTheme.primary : XyTheme.of(context).inkSoft,
               )),
         ]),
       ),
@@ -269,7 +269,7 @@ class _SheetTopupState extends State<_SheetTopup> {
           Container(
             width: 42,
             height: 42,
-            decoration: const BoxDecoration(color: XyTheme.primarySoft, shape: BoxShape.circle),
+            decoration:  BoxDecoration(color: XyTheme.of(context).primarySoft, shape: BoxShape.circle),
             child: const Icon(Icons.bolt_rounded, color: XyTheme.primary, size: 22),
           ),
           const SizedBox(width: 12),
@@ -321,10 +321,10 @@ class _SheetTopupState extends State<_SheetTopup> {
             onPressed: () => _bukaTautan('${t.bayar['url']}'),
           ),
         const SizedBox(height: 12),
-        const Center(
+         Center(
           child: Text('Saldo bertambah otomatis setelah pembayaran berhasil.\nHalaman ini boleh ditutup.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.5)),
+              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.5)),
         ),
         const SizedBox(height: 8),
         Center(
@@ -338,7 +338,7 @@ class _SheetTopupState extends State<_SheetTopup> {
         Container(
           width: 42,
           height: 42,
-          decoration: BoxDecoration(color: XyTheme.primarySoft, shape: BoxShape.circle),
+          decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, shape: BoxShape.circle),
           child: const Icon(Icons.receipt_long_rounded, color: XyTheme.primary, size: 21),
         ),
         const SizedBox(width: 12),
@@ -430,13 +430,13 @@ class _SheetTopupState extends State<_SheetTopup> {
           borderRadius: BorderRadius.circular(XyRadius.md),
           border: Border.all(color: XyTheme.warning.withOpacity(.25)),
         ),
-        child: const Row(children: [
+        child:  Row(children: [
           Icon(Icons.info_outline_rounded, color: XyTheme.warning, size: 19),
           SizedBox(width: 10),
           Expanded(
             child: Text(
               'Transfer sampai 3 angka terakhir persis, lalu unggah bukti supaya admin bisa langsung memverifikasi.',
-              style: TextStyle(fontSize: 12.3, height: 1.5, fontWeight: FontWeight.w600, color: XyTheme.inkSoft),
+              style: TextStyle(fontSize: 12.3, height: 1.5, fontWeight: FontWeight.w600, color: XyTheme.of(context).inkSoft),
             ),
           ),
         ]),
@@ -476,7 +476,7 @@ class _SheetTopupState extends State<_SheetTopup> {
   }
 
   Widget _barisRek(String k, String v, {bool salin = false}) => Row(children: [
-        Text(k, style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+        Text(k, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
         const Spacer(),
         Text(v, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
         if (salin) ...[
@@ -505,7 +505,7 @@ class KartuTopup extends StatelessWidget {
       'disetujui' => (XyTheme.success, 'Saldo sudah masuk', Icons.check_circle_rounded),
       'ditolak' => (XyTheme.danger, 'Ditolak', Icons.cancel_rounded),
       'diperiksa' => (XyTheme.warning, 'Sedang diperiksa admin', Icons.hourglass_bottom_rounded),
-      _ => (XyTheme.muted, 'Menunggu pembayaran', Icons.schedule_rounded),
+      _ => (XyTheme.of(context).muted, 'Menunggu pembayaran', Icons.schedule_rounded),
     };
 
     return Padding(
@@ -530,7 +530,7 @@ class KartuTopup extends StatelessWidget {
             ]),
           ),
           Text(tanggal(t.dibuat),
-              style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
+              style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
         ]),
       ),
     );

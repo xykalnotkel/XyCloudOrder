@@ -1,19 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../../core/motion.dart';
+import 'tautan_promo.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
-import '../screens/akun_screen.dart';
-import '../screens/sewa_pc_screen.dart';
-import '../screens/wallet_screen.dart';
-import 'common.dart';
 
 /// Slider banner promo di beranda.
 /// Isi banner diambil dari server (tabel `banners`) dan bisa diubah kapan saja
 /// lewat dashboard admin tanpa perlu update aplikasi.
 class BannerSlider extends StatefulWidget {
-  const BannerSlider({super.key, required this.items, this.tinggi = 158});
+  const BannerSlider({super.key, required this.items, this.tinggi = 244});
   final List<PromoBanner> items;
   final double tinggi;
 
@@ -22,7 +17,7 @@ class BannerSlider extends StatefulWidget {
 }
 
 class _BannerSliderState extends State<BannerSlider> {
-  late final PageController _pc = PageController(viewportFraction: .895);
+  late final PageController _pc = PageController(viewportFraction: .96);
   Timer? _auto;
   int _index = 0;
   double _page = 0;
@@ -61,39 +56,18 @@ class _BannerSliderState extends State<BannerSlider> {
     super.dispose();
   }
 
-  void _buka(PromoBanner b) {
-    switch (b.aksi) {
-      case 'akun':
-        Navigator.push(context, xyRoute(AkunScreen(fokusId: b.target.isEmpty ? null : b.target)));
-        break;
-      case 'topup':
-        Navigator.push(context, xyRoute(const WalletScreen()));
-        break;
-      case 'url':
-        Clipboard.setData(ClipboardData(text: b.target));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tautan disalin: ${b.target}')),
-        );
-        break;
-      default:
-        Navigator.push(context, xyRoute(SewaPcScreen(fokusId: b.target.isEmpty ? null : b.target)));
-    }
-  }
+  void _buka(PromoBanner b) => bukaTujuanPromo(context, b.aksi, b.target);
 
   @override
   Widget build(BuildContext context) {
-    if (widget.items.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(top: 22),
-        child: Shimmer(height: widget.tinggi, radius: XyRadius.lg),
-      );
-    }
+    if (widget.items.isEmpty) return const SizedBox.shrink();
+    final tinggi = widget.tinggi.clamp(244.0, 400.0) * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.5);
 
     return Padding(
       padding: const EdgeInsets.only(top: 22),
       child: Column(children: [
         SizedBox(
-          height: widget.tinggi,
+          height: tinggi,
           child: PageView.builder(
             controller: _pc,
             physics: const BouncingScrollPhysics(),
@@ -131,7 +105,7 @@ class _BannerSliderState extends State<BannerSlider> {
               width: aktif ? 20 : 6,
               height: 6,
               decoration: BoxDecoration(
-                color: aktif ? XyTheme.primary : XyTheme.muted.withOpacity(.28),
+                color: aktif ? XyTheme.primary : XyTheme.of(context).muted.withOpacity(.28),
                 borderRadius: BorderRadius.circular(6),
               ),
             );
@@ -259,6 +233,7 @@ class _KartuBanner extends StatelessWidget {
                       ),
                       child: Text(
                         banner.label,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9.5,
@@ -268,8 +243,8 @@ class _KartuBanner extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    width: 210,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 280),
                     child: Text(
                       banner.judul,
                       maxLines: 2,
@@ -285,8 +260,8 @@ class _KartuBanner extends StatelessWidget {
                   ),
                   if (banner.subjudul.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    SizedBox(
-                      width: 218,
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 280),
                       child: Text(
                         banner.subjudul,
                         maxLines: 2,
@@ -303,10 +278,11 @@ class _KartuBanner extends StatelessWidget {
                       borderRadius: BorderRadius.circular(XyRadius.pill),
                     ),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text(
+                      Flexible(child: Text(
                         banner.cta,
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: c1, fontSize: 11.8, fontWeight: FontWeight.w800),
-                      ),
+                      )),
                       const SizedBox(width: 3),
                       Icon(Icons.arrow_forward_rounded, size: 14, color: c1),
                     ]),

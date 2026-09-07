@@ -58,6 +58,9 @@ def main() -> int:
             1,
         )
 
+    isi = re.sub(r'android:allowBackup="[^"]*"', '', isi)
+    isi = isi.replace('<application', '<application android:allowBackup="false"', 1)
+
     if 'flutter_web_auth_2.CallbackActivity' not in isi:
         isi = isi.replace('    </application>', ACTIVITY_CALLBACK, 1)
 

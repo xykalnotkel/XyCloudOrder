@@ -21,12 +21,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: XyTheme.ink,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
     if (widget.onSelesai != null) _lanjut();
   }
 
@@ -34,20 +28,17 @@ class _SplashScreenState extends State<SplashScreen> {
     final selesai = await Prefs.onboardingSelesai();
     await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ));
     widget.onSelesai!(selesai);
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: XyTheme.ink,
-      body: Center(child: XyWordmark(tinggi: 40, putih: true)),
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light, systemNavigationBarColor: XyTheme.ink,
+        systemNavigationBarIconBrightness: Brightness.light),
+      child: Scaffold(backgroundColor: XyTheme.ink,
+        body: Center(child: XyWordmark(tinggi: 40, putih: true))),
     );
   }
 }

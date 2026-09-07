@@ -13,6 +13,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'tentang_screen.dart';
+import 'hapus_akun_screen.dart';
 
 /// ============================================================
 ///  Pengaturan: daftar utama dan halaman turunannya
@@ -74,6 +75,10 @@ class PengaturanScreen extends StatelessWidget {
             sub: 'Pastikan aplikasimu versi terbaru',
             tujuan: const PembaruanScreen(),
           ),
+          const _Judul('Sesi dan akun'),
+          _Baris(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Konfirmasi identitas sebelum menghapus', tujuan: const HapusAkunScreen()),
+          ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 8), leading: const Icon(Icons.logout_rounded, color: XyTheme.danger), title: const Text('Keluar dari Akun'),
+            onTap: () async { if (await konfirmasi(context, judul:'Keluar dari akun?', pesan:'Data sesi di HP akan dibersihkan. Akunmu tidak dihapus.', tombolYa:'Keluar', bahaya:true) && context.mounted) { await context.read<AppState>().logout(); } }),
           const _Judul('Lainnya'),
           _Baris(
             ikon: Icons.help_outline_rounded,
@@ -101,8 +106,8 @@ class _Judul extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
         child: Text(teks.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: XyTheme.muted)),
+            style:  TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: XyTheme.of(context).muted)),
       );
 }
 
@@ -122,7 +127,7 @@ class _Baris extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
               child: Icon(ikon, size: 20, color: XyTheme.primary),
             ),
             const SizedBox(width: 13),
@@ -130,10 +135,10 @@ class _Baris extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 const SizedBox(height: 3),
-                Text(sub, style: const TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
               ]),
             ),
-            const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
           ]),
         ),
       );
@@ -218,27 +223,27 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          const Text('Nomor ini dipakai admin untuk menghubungimu soal pesanan.',
-              style: TextStyle(color: XyTheme.muted, fontSize: 12, height: 1.5)),
+           Text('Nomor ini dipakai admin untuk menghubungimu soal pesanan.',
+              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.5)),
           if (u?.email != null) ...[
             const SizedBox(height: 18),
             const _Label('Email'),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
-                color: XyTheme.lineSoft,
+                color: XyTheme.of(context).lineSoft,
                 borderRadius: BorderRadius.circular(XyRadius.md),
               ),
               child: Row(children: [
-                const Icon(Icons.mail_outline_rounded, size: 19, color: XyTheme.muted),
+                 Icon(Icons.mail_outline_rounded, size: 19, color: XyTheme.of(context).muted),
                 const SizedBox(width: 12),
                 Expanded(child: Text(u!.email, style: const TextStyle(fontWeight: FontWeight.w600))),
                 const Icon(Icons.verified_rounded, size: 17, color: XyTheme.success),
               ]),
             ),
             const SizedBox(height: 6),
-            const Text('Email tidak bisa diubah sendiri. Hubungi admin kalau perlu diganti.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+             Text('Email tidak bisa diubah sendiri. Hubungi admin kalau perlu diganti.',
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
           ],
           if (pesan != null) ...[
             const SizedBox(height: 16),
@@ -321,12 +326,12 @@ class _KeamananScreenState extends State<KeamananScreen> {
                 child: const Icon(Icons.shield_rounded, color: XyTheme.success, size: 21),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Akunmu terlindungi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Password disimpan terenkripsi dan sesi otomatis kedaluwarsa 30 hari.',
-                      style: TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.45)),
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.45)),
                 ]),
               ),
             ]),
@@ -335,8 +340,8 @@ class _KeamananScreenState extends State<KeamananScreen> {
           const Text('Ganti Password',
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -.3)),
           const SizedBox(height: 4),
-          const Text('Kosongkan password lama kalau kamu mendaftar lewat Google.',
-              style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.5)),
+           Text('Kosongkan password lama kalau kamu mendaftar lewat Google.',
+              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.5)),
           const SizedBox(height: 18),
           const _Label('Password Lama'),
           TextField(
@@ -384,11 +389,11 @@ class _KeamananScreenState extends State<KeamananScreen> {
           const SizedBox(height: 10),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text(
+               Text(
                 'Menghapus akun akan menghilangkan profil, riwayat chat, diskusi, ulasan, dan pemberitahuanmu '
                 'secara permanen. Riwayat pembayaran disamarkan untuk keperluan pembukuan. '
                 'Pastikan saldomu sudah habis sebelum menghapus.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -409,35 +414,9 @@ class _KeamananScreenState extends State<KeamananScreen> {
   }
 
   Future<void> _hapusAkun(BuildContext context) async {
-    final yakin = await konfirmasi(
-      context,
-      judul: 'Hapus akun selamanya?',
-      pesan: 'Tindakan ini tidak bisa dibatalkan. Semua data pribadimu akan dihapus dari server kami.',
-      tombolYa: 'Lanjut Hapus',
-      ikon: Icons.delete_forever_rounded,
-      bahaya: true,
-    );
-    if (!yakin || !context.mounted) return;
-
-    final sandi = await tanyaTeks(
-      context,
-      judul: 'Konfirmasi password',
-      keterangan: 'Ketik password akunmu. Kosongkan kalau kamu mendaftar lewat Google.',
-      petunjuk: 'Password',
-    );
-    if (sandi == null || !context.mounted) return;
-
-    final galat = await context.read<AppState>().hapusAkun(password: sandi, paksa: true);
-    if (!context.mounted) return;
-    if (galat != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(galat)));
-      return;
-    }
-    Navigator.of(context).popUntil((r) => r.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Akunmu sudah dihapus. Terima kasih pernah memakai XyCloudStore.')),
-    );
+    await Navigator.push(context, xyRoute(const HapusAkunScreen()));
   }
+
 }
 
 // ============================================================
@@ -464,16 +443,16 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
                 child: const Icon(Icons.groups_2_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Komunitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Balasan diskusi, suka, dan pengumuman admin',
-                      style: TextStyle(color: XyTheme.muted, fontSize: 11.5, height: 1.4)),
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
                 ]),
               ),
               Switch(
@@ -491,16 +470,16 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
           const SizedBox(height: 12),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: const [
-                Icon(Icons.lock_clock_rounded, size: 18, color: XyTheme.muted),
+              Row(children:  [
+                Icon(Icons.lock_clock_rounded, size: 18, color: XyTheme.of(context).muted),
                 SizedBox(width: 9),
                 Text('Selalu aktif', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
               ]),
               const SizedBox(height: 10),
-              const Text(
+               Text(
                 'Pemberitahuan pesanan, balasan admin, dan perubahan saldo tetap dikirim karena '
                 'bersifat penting. Kamu masih bisa mematikannya lewat pengaturan Android.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
             ]),
           ),
@@ -549,16 +528,16 @@ class _DataScreenState extends State<DataScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
                 child: const Icon(Icons.data_saver_on_rounded, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Mode Hemat Data', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Gambar produk dan komunitas tidak diunduh otomatis',
-                      style: TextStyle(color: XyTheme.muted, fontSize: 11.5, height: 1.4)),
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
                 ]),
               ),
               Switch(value: s.hematData, activeColor: XyTheme.primary, onChanged: s.setHematData),
@@ -577,10 +556,10 @@ class _DataScreenState extends State<DataScreen> {
                 Text('$kb KB', style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary)),
               ]),
               const SizedBox(height: 10),
-              const Text(
+               Text(
                 'Katalog, pesanan, dan diskusi disimpan supaya aplikasi langsung terisi saat dibuka '
                 'dan tetap bisa dilihat ketika sedang tanpa internet.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -647,16 +626,16 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
                 child: const Icon(Icons.shield_moon_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
-              const Expanded(
+               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Saringan Konten Dewasa', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Gambar yang ditandai sensitif ditutup dulu, ketuk untuk melihat',
-                      style: TextStyle(color: XyTheme.muted, fontSize: 11.5, height: 1.4)),
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
                 ]),
               ),
               Switch(
@@ -671,7 +650,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
           ),
           const SizedBox(height: 12),
           XyCard(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:  [
               Row(children: [
                 Icon(Icons.flag_outlined, size: 18, color: XyTheme.primary),
                 SizedBox(width: 9),
@@ -682,7 +661,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
                 'Setiap diskusi dan komentar punya tombol Laporkan. Pilih alasannya, admin akan meninjau '
                 'lalu menandai konten sebagai sensitif atau menghapusnya. Kami tidak memblokir gambar secara '
                 'membabi buta supaya diskusi tetap hidup.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
             ]),
           ),
@@ -695,10 +674,10 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
                 Text('Unduh dataku', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
               ]),
               const SizedBox(height: 10),
-              const Text(
+               Text(
                 'Ambil seluruh data yang kami simpan tentangmu: profil, pesanan, transaksi, '
                 'percakapan, diskusi, dan ulasan. Hasilnya disalin ke papan klip dalam bentuk JSON.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
               const SizedBox(height: 14),
               SizedBox(
@@ -732,7 +711,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
           ),
           const SizedBox(height: 12),
           XyCard(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children:  [
               Row(children: [
                 Icon(Icons.privacy_tip_outlined, size: 18, color: XyTheme.primary),
                 SizedBox(width: 9),
@@ -742,7 +721,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Text(
                 'Nama, email, nomor WhatsApp, riwayat pesanan, dan percakapan dengan admin. '
                 'Kami tidak pernah menjual data dan tidak memasang pelacak pihak ketiga.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
               ),
             ]),
           ),
@@ -798,14 +777,14 @@ class BantuanScreen extends StatelessWidget {
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                       iconColor: XyTheme.primary,
-                      collapsedIconColor: XyTheme.muted,
+                      collapsedIconColor: XyTheme.of(context).muted,
                       title: Text(t.$1,
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8, height: 1.4)),
                       children: [
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Text(t.$2,
-                              style: const TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.65)),
+                              style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.65)),
                         ),
                       ],
                     ),
@@ -864,7 +843,7 @@ class _TemaScreenState extends State<TemaScreen> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: aktif ? XyTheme.primary : XyTheme.primarySoft,
+                    color: aktif ? XyTheme.primary : XyTheme.of(context).primarySoft,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(o.$4, size: 21, color: aktif ? Colors.white : XyTheme.primary),
@@ -874,11 +853,11 @@ class _TemaScreenState extends State<TemaScreen> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(o.$2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
                     const SizedBox(height: 3),
-                    Text(o.$3, style: const TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.4)),
+                    Text(o.$3, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.4)),
                   ]),
                 ),
                 Icon(aktif ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                    color: aktif ? XyTheme.primary : XyTheme.line),
+                    color: aktif ? XyTheme.primary : XyTheme.of(context).line),
               ]),
             ),
           );
@@ -932,8 +911,8 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
               const SizedBox(height: 6),
               if (memeriksa)
-                const Text('Memeriksa versi terbaru...',
-                    style: TextStyle(color: XyTheme.muted, fontSize: 12.5))
+                 Text('Memeriksa versi terbaru...',
+                    style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5))
               else
                 Text(
                   ada
@@ -958,10 +937,10 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
                 ]),
                 const SizedBox(height: 10),
-                const Text(
+                 Text(
                   'Unduh berkas terbaru lalu pasang menimpa aplikasi yang sekarang. '
                   'Datamu tetap aman karena ditandatangani kunci yang sama.',
-                  style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.6),
+                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.6),
                 ),
                 const SizedBox(height: 16),
                 GradientButton(

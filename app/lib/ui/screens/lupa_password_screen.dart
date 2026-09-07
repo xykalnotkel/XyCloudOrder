@@ -61,9 +61,9 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: XyTheme.surface,
+                      color: XyTheme.of(context).surface,
                       borderRadius: BorderRadius.circular(XyRadius.sm),
-                      border: Border.all(color: XyTheme.line),
+                      border: Border.all(color: XyTheme.of(context).line),
                     ),
                     child: const Icon(Icons.arrow_back_rounded, size: 20),
                   ),
@@ -78,9 +78,9 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
                 style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -1.1, height: 1.2),
               ),
               const SizedBox(height: 8),
-              const Text(
+               Text(
                 'Masukkan email akunmu. Kami kirim kode 6 digit untuk membuat password baru.',
-                style: TextStyle(color: XyTheme.muted, fontSize: 14, height: 1.6),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 14, height: 1.6),
               ),
 
               const SizedBox(height: 26),

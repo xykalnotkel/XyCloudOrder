@@ -34,7 +34,7 @@ abstract class XyRepository {
   /// Info rilis terbaru untuk pengecek pembaruan di dalam aplikasi.
   Future<Map<String, dynamic>> rilis();
   Future<Map<String, dynamic>> cekVoucher({required String kode, required String jenis, required int total});
-  Future<void> hapusAkun({String? password, bool paksa});
+  Future<void> hapusAkun({String? password, String? kode, bool paksa});
 
   // ---------- undang teman, favorit, ulasan paket ----------
   Future<Map<String, dynamic>> dataReferral();
@@ -76,7 +76,7 @@ abstract class XyRepository {
   Future<List<ForumPost>> forum();
   Future<List<ForumBalasan>> forumDetail(String id);
   Future<ForumPost> forumBuat({required String judul, required String isi, required String kategori, String? gambar});
-  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe});
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe, Map<String, dynamic>? stiker});
   Future<Map<String, dynamic>> forumSuka(String id);
   Future<List<String>> forumSukaSaya();
   Future<void> forumHapus(String id);
@@ -190,8 +190,8 @@ class RemoteRepository implements XyRepository {
       }));
 
   @override
-  Future<void> hapusAkun({String? password, bool paksa = false}) async =>
-      api.hapus('/me', {if (password != null) 'password': password, 'paksa': paksa});
+  Future<void> hapusAkun({String? password, String? kode, bool paksa = false}) async =>
+      api.hapus('/me', {if (password != null) 'password': password, if (kode != null) 'kode': kode, 'konfirmasi': 'HAPUS'});
 
   @override
   Future<Map<String, dynamic>> dataReferral() async =>
@@ -327,9 +327,9 @@ class RemoteRepository implements XyRepository {
       })));
 
   @override
-  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe}) async =>
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe, Map<String, dynamic>? stiker}) async =>
       ForumBalasan.fromJson(Map<String, dynamic>.from(
-          await api.post('/forum/$id/balas', {'isi': isi, if (balasKe != null) 'balas_ke': balasKe})));
+          await api.post('/forum/$id/balas', {'isi': isi, if (balasKe != null) 'balas_ke': balasKe, if (stiker != null) 'stiker': stiker})));
 
   @override
   Future<Map<String, dynamic>> forumSuka(String id) async =>
@@ -491,7 +491,7 @@ class MockRepository implements XyRepository {
       _delay({'potongan': 0, 'kode': kode}, 200);
 
   @override
-  Future<void> hapusAkun({String? password, bool paksa = false}) async {}
+  Future<void> hapusAkun({String? password, String? kode, bool paksa = false}) async {}
 
   @override
   Future<Map<String, dynamic>> dataReferral() =>
@@ -613,7 +613,7 @@ class MockRepository implements XyRepository {
       );
 
   @override
-  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe}) => _delay(
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe, Map<String, dynamic>? stiker}) => _delay(
         ForumBalasan(id: 'fb_demo', postId: id, nama: MockData.user.nama, isi: isi, dibuat: DateTime.now()),
         300,
       );

@@ -54,7 +54,7 @@ class GagalMuat extends StatelessWidget {
           Text(
             pesan,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: XyTheme.muted, fontSize: 13, height: 1.6),
+            style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13, height: 1.6),
           ),
           if (onCoba != null) ...[
             const SizedBox(height: 20),

@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
     final aktif = s.orderAktif;
 
     return Scaffold(
-      backgroundColor: XyTheme.bg,
+      backgroundColor: XyTheme.of(context).bg,
       body: SafeArea(
         bottom: false,
         child: Column(children: [
@@ -138,7 +138,7 @@ class _Header extends StatelessWidget {
       const SizedBox(width: 13),
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Selamat datang', style: TextStyle(color: XyTheme.muted, fontSize: 12, fontWeight: FontWeight.w600)),
+           Text('Selamat datang', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 1),
           Row(children: [
             Flexible(
@@ -165,9 +165,9 @@ class _Header extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: XyTheme.surface,
+            color: XyTheme.of(context).surface,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: XyTheme.line),
+            border: Border.all(color: XyTheme.of(context).line),
           ),
           child: const Icon(Icons.forum_outlined, size: 20),
         ),
@@ -183,9 +183,9 @@ class _Header extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: XyTheme.surface,
+            color: XyTheme.of(context).surface,
             borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: XyTheme.line),
+            border: Border.all(color: XyTheme.of(context).line),
           ),
           child: Stack(alignment: Alignment.center, children: [
             const Icon(Icons.notifications_none_rounded, size: 21),
@@ -199,7 +199,7 @@ class _Header extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: XyTheme.gradPrimary,
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: XyTheme.surface, width: 1.4),
+                    border: Border.all(color: XyTheme.of(context).surface, width: 1.4),
                   ),
                   child: Text(
                     notif > 99 ? '99+' : '$notif',
@@ -537,9 +537,9 @@ class _MenuCepat extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  color: XyTheme.surface,
+                  color: XyTheme.of(context).surface,
                   borderRadius: BorderRadius.circular(XyRadius.lg),
-                  border: Border.all(color: XyTheme.line),
+                  border: Border.all(color: XyTheme.of(context).line),
                   boxShadow: XyTheme.shadowXs,
                 ),
                 child: Column(children: [
@@ -581,7 +581,7 @@ class _KartuOrderAktif extends StatelessWidget {
               Text(order.planNama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
               const SizedBox(height: 2),
               Text('${order.kode} · ${order.durasiJam} jam',
-                  style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+                  style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
             ]),
           ),
           Pill(order.status.label,
@@ -592,12 +592,12 @@ class _KartuOrderAktif extends StatelessWidget {
           Row(children: [
             ProgressRing(value: order.progress / 100, size: 58),
             const SizedBox(width: 16),
-            const Expanded(
+             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Menyiapkan mesin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
                 SizedBox(height: 3),
                 Text('Boot image, mount storage, cek driver GPU.',
-                    style: TextStyle(color: XyTheme.muted, fontSize: 12, height: 1.45)),
+                    style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.45)),
               ]),
             ),
           ])
@@ -605,13 +605,13 @@ class _KartuOrderAktif extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: XyTheme.lineSoft,
+              color: XyTheme.of(context).lineSoft,
               borderRadius: BorderRadius.circular(XyRadius.sm),
             ),
             child: Row(children: [
               const Icon(Icons.timer_outlined, size: 17, color: XyTheme.primary),
               const SizedBox(width: 9),
-              const Text('Sisa waktu sesi', style: TextStyle(fontSize: 12.5, color: XyTheme.muted, fontWeight: FontWeight.w600)),
+               Text('Sisa waktu sesi', style: TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted, fontWeight: FontWeight.w600)),
               const Spacer(),
               Text(order.berakhir == null ? '-' : durasiSisa(order.berakhir!),
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, letterSpacing: -.3)),
@@ -626,7 +626,7 @@ class _KartuOrderAktif extends StatelessWidget {
           ),
         ] else
           Text('Status saat ini: ${order.status.label}',
-              style: const TextStyle(fontSize: 12.5, color: XyTheme.muted)),
+              style:  TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted)),
       ]),
     );
   }
@@ -657,7 +657,7 @@ class _KartuPlanMini extends StatelessWidget {
           Text(plan.gpu,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+              style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
           const SizedBox(height: 11),
           Row(children: [
             SpecChip(Icons.memory_outlined, '${plan.ramGb}GB'),
@@ -668,9 +668,9 @@ class _KartuPlanMini extends StatelessWidget {
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(rupiah(plan.hargaPerJam),
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: XyTheme.primary, letterSpacing: -.5)),
-            const Padding(
+             Padding(
               padding: EdgeInsets.only(bottom: 2),
-              child: Text(' /jam', style: TextStyle(color: XyTheme.muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
+              child: Text(' /jam', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
             ),
           ]),
         ]),
@@ -704,7 +704,7 @@ class _BarisProduk extends StatelessWidget {
               Text(' ${produk.rating}',
                   style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
               Text('  ·  ${produk.terjual} terjual',
-                  style: const TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+                  style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
             ]),
             const SizedBox(height: 6),
             Text(rupiah(produk.harga),

@@ -141,9 +141,9 @@ class _OtpScreenState extends State<OtpScreen> {
                     width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: XyTheme.surface,
+                      color: XyTheme.of(context).surface,
                       borderRadius: BorderRadius.circular(XyRadius.sm),
-                      border: Border.all(color: XyTheme.line),
+                      border: Border.all(color: XyTheme.of(context).line),
                     ),
                     child: const Icon(Icons.arrow_back_rounded, size: 20),
                   ),
@@ -167,7 +167,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   const TextSpan(text: '. Kode berlaku 15 menit.'),
                 ]),
-                style: const TextStyle(color: XyTheme.muted, fontSize: 13.8, height: 1.6),
+                style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13.8, height: 1.6),
               ),
 
               const SizedBox(height: 26),
@@ -254,7 +254,7 @@ class _OtpScreenState extends State<OtpScreen> {
               Center(
                 child: _hitungMundur > 0
                     ? Text('Kirim ulang kode dalam $_hitungMundur detik',
-                        style: const TextStyle(color: XyTheme.muted, fontSize: 13, fontWeight: FontWeight.w600))
+                        style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13, fontWeight: FontWeight.w600))
                     : Pressable(
                         onTap: _kirimUlang,
                         child: const Padding(
@@ -266,10 +266,10 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
 
               const SizedBox(height: 10),
-              const Center(
+               Center(
                 child: Text('Tidak ada emailnya? Cek folder spam atau promosi.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: XyTheme.muted, fontSize: 12, height: 1.5)),
+                    style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.5)),
               ),
             ],
           ),

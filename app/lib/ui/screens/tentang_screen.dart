@@ -42,10 +42,10 @@ class _TentangScreenState extends State<TentangScreen> {
               const XyWordmark(tinggi: 26),
               const SizedBox(height: 10),
               Text('Versi $versi',
-                  style: const TextStyle(color: XyTheme.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
-              const Text('Sewa PC Cloud dan Akun Digital',
-                  style: TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+               Text('Sewa PC Cloud dan Akun Digital',
+                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
             ]),
           ),
 
@@ -82,21 +82,21 @@ class _TentangScreenState extends State<TentangScreen> {
             child: Column(children: [
               Image.asset('assets/brand/xyspace_wordmark.png', height: 34),
               const SizedBox(height: 14),
-              const Text(
+               Text(
                 'XyCloudStore dikembangkan oleh XySpace, studio kecil asal Indonesia yang membangun '
                 'produk digital untuk pemain dan kreator.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.65),
+                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.65),
               ),
             ]),
           ),
           const SizedBox(height: 22),
           Center(
-            child: Column(children: const [
+            child: Column(children:  [
               Text('Dibuat dengan sepenuh hati di Indonesia',
-                  style: TextStyle(color: XyTheme.muted, fontSize: 11)),
+                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
               SizedBox(height: 4),
-              Text('© 2026 XyCloudStore by XySpace', style: TextStyle(color: XyTheme.muted, fontSize: 11)),
+              Text('© 2026 XyCloudStore by XySpace', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
             ]),
           ),
         ],
@@ -122,7 +122,7 @@ class _Baris extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
               child: Icon(ikon, size: 20, color: XyTheme.primary),
             ),
             const SizedBox(width: 13),
@@ -130,10 +130,10 @@ class _Baris extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                 const SizedBox(height: 3),
-                Text(sub, style: const TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.4)),
+                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.4)),
               ]),
             ),
-            const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
           ]),
         ),
       );
@@ -180,7 +180,7 @@ class _LegalScreenState extends State<_LegalScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
                   children: [
                     Text('Pembaruan terakhir: ${data!['pembaruan']}',
-                        style: const TextStyle(color: XyTheme.muted, fontSize: 12)),
+                        style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
                     const SizedBox(height: 18),
                     ...List.generate((data!['bagian'] as List).length, (i) {
                       final b = (data!['bagian'] as List)[i] as Map;
@@ -193,7 +193,7 @@ class _LegalScreenState extends State<_LegalScreen> {
                                 width: 26,
                                 height: 26,
                                 decoration: BoxDecoration(
-                                  color: XyTheme.primarySoft,
+                                  color: XyTheme.of(context).primarySoft,
                                   borderRadius: BorderRadius.circular(9),
                                 ),
                                 child: Center(
@@ -210,7 +210,7 @@ class _LegalScreenState extends State<_LegalScreen> {
                             ]),
                             const SizedBox(height: 10),
                             Text('${b['teks']}',
-                                style: const TextStyle(fontSize: 13.2, height: 1.65, color: XyTheme.inkSoft)),
+                                style:  TextStyle(fontSize: 13.2, height: 1.65, color: XyTheme.of(context).inkSoft)),
                           ]),
                         ),
                       );
@@ -249,10 +249,10 @@ class _LisensiScreenState extends State<LisensiScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 34),
         children: [
-          const Text(
+           Text(
             'XyCloudStore dibangun memakai perangkat lunak sumber terbuka berikut. '
             'Terima kasih kepada seluruh pembuatnya.',
-            style: TextStyle(color: XyTheme.muted, fontSize: 13, height: 1.6),
+            style: TextStyle(color: XyTheme.of(context).muted, fontSize: 13, height: 1.6),
           ),
           const SizedBox(height: 18),
           if (lisensi == null)
@@ -271,7 +271,7 @@ class _LisensiScreenState extends State<LisensiScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
                         const SizedBox(height: 3),
                         Text('${m['pembuat']}',
-                            style: const TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+                            style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                       ]),
                     ),
                     Pill('${m['lisensi']}', warna: XyTheme.violet),

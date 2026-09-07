@@ -75,8 +75,8 @@ class _CsScreenState extends State<CsScreen> {
       backgroundColor: Colors.transparent,
       builder: (d) => Container(
         padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(d).padding.bottom + 18),
-        decoration: const BoxDecoration(
-          color: XyTheme.bg,
+        decoration:  BoxDecoration(
+          color: XyTheme.of(context).bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -84,7 +84,7 @@ class _CsScreenState extends State<CsScreen> {
             width: 44,
             height: 4.5,
             margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: XyTheme.of(context).line, borderRadius: BorderRadius.circular(10)),
           ),
           if (m.teks.isNotEmpty)
             ListTile(
@@ -154,7 +154,7 @@ class _CsScreenState extends State<CsScreen> {
                 decoration: BoxDecoration(
                   color: XyTheme.success,
                   shape: BoxShape.circle,
-                  border: Border.all(color: XyTheme.bg, width: 2),
+                  border: Border.all(color: XyTheme.of(context).bg, width: 2),
                 ),
               ),
             ),
@@ -226,14 +226,14 @@ class _CsScreenState extends State<CsScreen> {
               itemBuilder: (_, i) => ActionChip(
                 label: Text(cepat[i], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 onPressed: () => _kirim(cepat[i]),
-                backgroundColor: XyTheme.surface,
-                side: const BorderSide(color: XyTheme.line),
+                backgroundColor: XyTheme.of(context).surface,
+                side:  BorderSide(color: XyTheme.of(context).line),
               ),
             ),
           ),
         Container(
           padding: EdgeInsets.fromLTRB(12, 10, 12, MediaQuery.of(context).padding.bottom + 10),
-          decoration: BoxDecoration(color: XyTheme.surface, boxShadow: XyTheme.shadowMd),
+          decoration: BoxDecoration(color: XyTheme.of(context).surface, boxShadow: XyTheme.shadowMd),
           child: Row(children: [
             IconButton(
               onPressed: _kirimGambar,
@@ -250,7 +250,7 @@ class _CsScreenState extends State<CsScreen> {
                 onChanged: (v) => context.read<AppState>().ketikCs(v.isNotEmpty),
                 decoration: InputDecoration(
                   hintText: 'Tulis pesan untuk Kirana...',
-                  fillColor: XyTheme.bg,
+                  fillColor: XyTheme.of(context).bg,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
@@ -293,8 +293,8 @@ class _Gelembung extends StatelessWidget {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 10),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(color: XyTheme.line.withOpacity(.6), borderRadius: BorderRadius.circular(20)),
-          child: Text(msg.teks, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11.5, color: XyTheme.muted)),
+          decoration: BoxDecoration(color: XyTheme.of(context).line.withOpacity(.6), borderRadius: BorderRadius.circular(20)),
+          child: Text(msg.teks, textAlign: TextAlign.center, style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
         ),
       );
     }
@@ -306,14 +306,14 @@ class _Gelembung extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
         decoration: BoxDecoration(
-          color: saya ? XyTheme.primary : XyTheme.surface,
+          color: saya ? XyTheme.primary : XyTheme.of(context).surface,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(saya ? 18 : 4),
             bottomRight: Radius.circular(saya ? 4 : 18),
           ),
-          border: saya ? null : Border.all(color: XyTheme.line),
+          border: saya ? null : Border.all(color: XyTheme.of(context).line),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           if (msg.gambar != null) ...[
@@ -335,7 +335,7 @@ class _Gelembung extends StatelessWidget {
                           : Container(
                               width: 210,
                               height: 150,
-                              color: XyTheme.lineSoft,
+                              color: XyTheme.of(context).lineSoft,
                               child: const Center(
                                 child: SizedBox(
                                   width: 20, height: 20,
@@ -349,11 +349,11 @@ class _Gelembung extends StatelessWidget {
           ],
           if (msg.teks.isNotEmpty)
             Text(msg.teks,
-                style: TextStyle(color: saya ? Colors.white : XyTheme.ink, fontSize: 13.8, height: 1.42)),
+                style: TextStyle(color: saya ? Colors.white : XyTheme.of(context).ink, fontSize: 13.8, height: 1.42)),
           const SizedBox(height: 3),
           Row(mainAxisSize: MainAxisSize.min, children: [
             Text(jam(msg.waktu),
-                style: TextStyle(fontSize: 10, color: saya ? Colors.white70 : XyTheme.muted)),
+                style: TextStyle(fontSize: 10, color: saya ? Colors.white70 : XyTheme.of(context).muted)),
             if (saya) ...[
               const SizedBox(width: 4),
               Icon(
@@ -401,14 +401,14 @@ class _MengetikState extends State<_Mengetik> with SingleTickerProviderStateMixi
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: XyTheme.surface,
+          color: XyTheme.of(context).surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(18),
             topRight: Radius.circular(18),
             bottomRight: Radius.circular(18),
             bottomLeft: Radius.circular(4),
           ),
-          border: Border.all(color: XyTheme.line),
+          border: Border.all(color: XyTheme.of(context).line),
         ),
         child: AnimatedBuilder(
           animation: c,
@@ -423,7 +423,7 @@ class _MengetikState extends State<_Mengetik> with SingleTickerProviderStateMixi
                 height: 7,
                 transform: Matrix4.translationValues(0, -naik * 4, 0),
                 decoration: BoxDecoration(
-                  color: XyTheme.muted.withOpacity(.4 + naik * .5),
+                  color: XyTheme.of(context).muted.withOpacity(.4 + naik * .5),
                   shape: BoxShape.circle,
                 ),
               );

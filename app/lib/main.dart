@@ -36,12 +36,24 @@ class XyCloudStoreApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
       child: Builder(builder: (context) => MaterialApp(
+        key: ValueKey(context.watch<AppState>().user?.id ?? 'tamu'),
         title: 'XyCloudStore',
         debugShowCheckedModeBanner: false,
         theme: XyTheme.light(),
         darkTheme: XyTheme.gelap(),
         themeMode: context.watch<AppState>().modeTema,
-        builder: (context, child) => MediaQuery.withNoTextScaling(child: child!),
+        builder: (context, child) {
+          final gelap = Theme.of(context).brightness == Brightness.dark;
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: gelap ? Brightness.light : Brightness.dark,
+              systemNavigationBarColor: XyTheme.of(context).surface,
+              systemNavigationBarIconBrightness: gelap ? Brightness.light : Brightness.dark,
+            ),
+            child: MediaQuery.withClampedTextScaling(maxScaleFactor: 1.5, child: child!),
+          );
+        },
         home: const _Root(),
       )),
     );

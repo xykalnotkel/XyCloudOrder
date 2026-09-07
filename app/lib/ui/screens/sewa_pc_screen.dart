@@ -51,7 +51,7 @@ class _SewaPcScreenState extends State<SewaPcScreen> {
                     onSelected: (_) => setState(() => filter = f),
                     selectedColor: XyTheme.primary,
                     labelStyle: TextStyle(
-                      color: aktif ? Colors.white : XyTheme.ink,
+                      color: aktif ? Colors.white : XyTheme.of(context).ink,
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
@@ -70,9 +70,9 @@ class _SewaPcScreenState extends State<SewaPcScreen> {
               child: Row(children: [
                 const Icon(Icons.bolt_rounded, color: XyTheme.cyan, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(
+                 Expanded(
                   child: Text('Stok unit diperbarui otomatis setiap detik dari server XyCloud.',
-                      style: TextStyle(fontSize: 12, color: XyTheme.ink)),
+                      style: TextStyle(fontSize: 12, color: XyTheme.of(context).ink)),
                 ),
               ]),
             ),
@@ -108,7 +108,7 @@ class _KartuPlan extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 loadingBuilder: (_, anak, kemajuan) =>
-                    kemajuan == null ? anak : Container(color: XyTheme.lineSoft),
+                    kemajuan == null ? anak : Container(color: XyTheme.of(context).lineSoft),
               ),
             ),
           ),
@@ -125,7 +125,7 @@ class _KartuPlan extends StatelessWidget {
                 if (plan.tag.isNotEmpty) Pill(plan.tag, warna: XyTheme.violet),
               ]),
               const SizedBox(height: 3),
-              Text(plan.gpu, style: const TextStyle(color: XyTheme.muted, fontSize: 12.5)),
+              Text(plan.gpu, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
             ]),
           ),
         ]),
@@ -147,7 +147,7 @@ class _KartuPlan extends StatelessWidget {
                 builder: (_, v, __) => LinearProgressIndicator(
                   value: v,
                   minHeight: 7,
-                  backgroundColor: XyTheme.line,
+                  backgroundColor: XyTheme.of(context).line,
                   color: plan.ready ? XyTheme.success : XyTheme.danger,
                 ),
               ),
@@ -155,7 +155,7 @@ class _KartuPlan extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text('${plan.unitTersedia}/${plan.totalUnit} unit',
-              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: XyTheme.muted)),
+              style:  TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: XyTheme.of(context).muted)),
         ]),
         const SizedBox(height: 16),
         Row(children: [
@@ -163,9 +163,9 @@ class _KartuPlan extends StatelessWidget {
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(rupiah(plan.hargaPerJam),
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: XyTheme.primary, letterSpacing: -.5)),
-              const Text('  /jam', style: TextStyle(color: XyTheme.muted, fontSize: 12)),
+               Text('  /jam', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
             ]),
-            Text('atau ${rupiah(plan.hargaPerHari)} /hari', style: const TextStyle(color: XyTheme.muted, fontSize: 11.5)),
+            Text('atau ${rupiah(plan.hargaPerHari)} /hari', style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
           ]),
           const Spacer(),
           SizedBox(

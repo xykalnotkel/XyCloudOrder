@@ -109,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [s.warna.withOpacity(.10), XyTheme.bg, XyTheme.bg],
+                colors: [s.warna.withOpacity(.10), XyTheme.of(context).bg, XyTheme.of(context).bg],
                 stops: const [0, .55, 1],
               ),
             ),
@@ -128,7 +128,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   duration: const Duration(milliseconds: 250),
                   child: TextButton(
                     onPressed: _i == _slides.length - 1 ? null : _selesai,
-                    style: TextButton.styleFrom(foregroundColor: XyTheme.muted),
+                    style: TextButton.styleFrom(foregroundColor: XyTheme.of(context).muted),
                     child: const Text('Lewati'),
                   ),
                 ),
@@ -172,8 +172,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           Text(
                             sl.deskripsi,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: XyTheme.muted, fontSize: 14, height: 1.65, fontWeight: FontWeight.w500),
+                            style:  TextStyle(
+                                color: XyTheme.of(context).muted, fontSize: 14, height: 1.65, fontWeight: FontWeight.w500),
                           ),
                         ]),
                       ),
@@ -199,7 +199,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       width: on ? 26 : 7,
                       height: 7,
                       decoration: BoxDecoration(
-                        color: on ? s.warna : XyTheme.line,
+                        color: on ? s.warna : XyTheme.of(context).line,
                         borderRadius: BorderRadius.circular(10),
                       ),
                     );
