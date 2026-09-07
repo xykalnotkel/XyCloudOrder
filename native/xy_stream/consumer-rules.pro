@@ -1,0 +1,2 @@
+-keep class com.limelight.nvstream.jni.** { *; }
+-keep class id.xycloud.stream.** { *; }

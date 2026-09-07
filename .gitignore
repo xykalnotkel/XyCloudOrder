@@ -18,3 +18,6 @@ api/.wrangler/
 .vscode/
 *.iml
 .raw-ilustrasi/
+
+# Pinned streaming sources are fetched reproducibly; included in release source bundles.
+.cache/
