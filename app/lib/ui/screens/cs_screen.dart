@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
@@ -8,6 +9,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/lembar.dart';
 
 /// Live chat CS — pesan masuk lewat WebSocket (atau simulasi di mode mock).
 class CsScreen extends StatefulWidget {
@@ -63,6 +65,55 @@ class _CsScreenState extends State<CsScreen> {
     ctrl.clear();
     await context.read<AppState>().kirimChat(t);
     if (mounted) _keBawah();
+  }
+
+  /// Menu saat pesan ditekan lama: salin atau hapus.
+  Future<void> _menuPesan(BuildContext context, ChatMessage m) async {
+    if (m.teks.isEmpty && m.gambar == null) return;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (d) => Container(
+        padding: EdgeInsets.fromLTRB(20, 14, 20, MediaQuery.of(d).padding.bottom + 18),
+        decoration: const BoxDecoration(
+          color: XyTheme.bg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 44,
+            height: 4.5,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(color: XyTheme.line, borderRadius: BorderRadius.circular(10)),
+          ),
+          if (m.teks.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.copy_rounded, color: XyTheme.primary),
+              title: const Text('Salin pesan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: m.teks));
+                Navigator.pop(d);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Pesan disalin'), duration: Duration(seconds: 1)),
+                );
+              },
+            ),
+          if (m.milikSaya)
+            ListTile(
+              leading: const Icon(Icons.delete_outline_rounded, color: XyTheme.danger),
+              title: const Text('Hapus pesan',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: XyTheme.danger)),
+              onTap: () async {
+                Navigator.pop(d);
+                final pesan = await context.read<AppState>().hapusPesan(m.id);
+                if (pesan != null && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(pesan)));
+                }
+              },
+            ),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -124,6 +175,28 @@ class _CsScreenState extends State<CsScreen> {
             icon: const Icon(Icons.refresh_rounded),
             tooltip: 'Muat ulang percakapan',
           ),
+          IconButton(
+            tooltip: 'Bersihkan pesanku',
+            icon: const Icon(Icons.delete_sweep_outlined),
+            onPressed: () async {
+              final yakin = await konfirmasi(
+                context,
+                judul: 'Bersihkan pesanmu?',
+                pesan: 'Semua pesan yang pernah kamu kirim akan dihapus dari percakapan ini. '
+                    'Balasan Kirana tetap tersimpan.',
+                tombolYa: 'Bersihkan',
+                ikon: Icons.delete_sweep_outlined,
+                bahaya: true,
+              );
+              if (!yakin || !context.mounted) return;
+              final pesan = await context.read<AppState>().hapusSemuaPesan();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(pesan ?? 'Pesanmu sudah dibersihkan.')),
+                );
+              }
+            },
+          ),
         ],
       ),
       body: Column(children: [
@@ -134,7 +207,11 @@ class _CsScreenState extends State<CsScreen> {
             itemCount: s.chat.length + (s.csMengetik ? 1 : 0),
             itemBuilder: (_, i) {
               if (i == s.chat.length) return const _Mengetik();
-              return _Gelembung(msg: s.chat[i]);
+              final m = s.chat[i];
+              return GestureDetector(
+                onLongPress: () => _menuPesan(context, m),
+                child: _Gelembung(msg: m),
+              );
             },
           ),
         ),

@@ -77,13 +77,26 @@ class _TentangScreenState extends State<TentangScreen> {
             onTap: () => Navigator.pop(context, 'chat'),
           ),
 
-          const SizedBox(height: 26),
+          const SectionHeader('Pengembang'),
+          XyCard(
+            child: Column(children: [
+              Image.asset('assets/brand/xyspace_wordmark.png', height: 34),
+              const SizedBox(height: 14),
+              const Text(
+                'XyCloudStore dikembangkan oleh XySpace, studio kecil asal Indonesia yang membangun '
+                'produk digital untuk pemain dan kreator.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.65),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 22),
           Center(
             child: Column(children: const [
               Text('Dibuat dengan sepenuh hati di Indonesia',
                   style: TextStyle(color: XyTheme.muted, fontSize: 11)),
               SizedBox(height: 4),
-              Text('© 2026 XyCloudStore', style: TextStyle(color: XyTheme.muted, fontSize: 11)),
+              Text('© 2026 XyCloudStore by XySpace', style: TextStyle(color: XyTheme.muted, fontSize: 11)),
             ]),
           ),
         ],

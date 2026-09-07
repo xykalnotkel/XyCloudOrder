@@ -53,3 +53,7 @@ MIN_TOPUP = "10000"
 # Secret: JWT_SECRET, ADMIN_KEY, RESEND_API_KEY, ONESIGNAL_API_KEY,
 #         CLOUDINARY_KEY, CLOUDINARY_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
 #         FACEBOOK_APP_ID, FACEBOOK_APP_SECRET
+
+# --- Pemeliharaan otomatis tiap jam ---
+[triggers]
+crons = ["0 * * * *"]

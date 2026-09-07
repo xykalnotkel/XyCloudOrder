@@ -197,6 +197,24 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## Pengembang
+
+XyCloudStore dikembangkan oleh **XySpace**. Logo XySpace ada di
+`app/assets/brand/xyspace_wordmark.png` dan dipakai pada menu Tentang di aplikasi,
+kaki halaman situs, serta bilah samping dashboard admin.
+
+## Pemeliharaan Sistem
+
+| Bagian | Keterangan |
+|---|---|
+| Pemeliharaan otomatis | Penjadwal Cloudflare berjalan tiap jam: menghapus kode OTP kedaluwarsa, membersihkan penghitung pembatas laju, menutup sesi menggantung lebih dari 12 jam, menandai unit yang tidak melapor, membatalkan top up manual yang tidak dibayar 24 jam, dan memangkas catatan sistem lebih dari 30 hari |
+| Mode pemeliharaan | Sakelar di dashboard. Saat menyala, seluruh API pengguna menjawab 503 dengan pesan yang bisa diatur. Dashboard dan agen PC tetap jalan |
+| Singgahan | Tombol kosongkan singgahan tepi untuk halaman unduh, info rilis, dan logo email |
+| Kesehatan layanan | Cek langsung D1, Resend, OneSignal, Cloudinary, Google OAuth, dan penyedia pembayaran beserta waktu tanggap basis data |
+| Statistik | Pengguna, omzet, saldo beredar, top up, produk, unit, sesi, komunitas, grafik 30 hari, produk dan paket terlaris |
+
+---
+
 ## Situs Web Publik
 
 Worker yang sama juga melayani situs `xycloud.my.id` dan `www.xycloud.my.id`.

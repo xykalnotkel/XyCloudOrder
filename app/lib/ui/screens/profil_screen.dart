@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../core/cache.dart';
 import '../../core/format.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
@@ -10,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
+import 'pengaturan_screen.dart';
 import 'tentang_screen.dart';
 import 'wallet_screen.dart';
 
@@ -24,19 +24,6 @@ class ProfilScreen extends StatefulWidget {
 }
 
 class _ProfilScreenState extends State<ProfilScreen> {
-  int cacheKb = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _hitungCache();
-  }
-
-  Future<void> _hitungCache() async {
-    final n = await Cache.ukuranKb();
-    if (mounted) setState(() => cacheKb = n);
-  }
-
   Future<void> _gantiFoto() async {
     final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 700, imageQuality: 80);
     if (f == null) return;
@@ -163,14 +150,14 @@ class _ProfilScreenState extends State<ProfilScreen> {
               _Menu(
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',
-                sub: 'Nama dan nomor WhatsApp',
-                onTap: () => _dialogUbahProfil(context),
+                sub: 'Nama, nomor WhatsApp, dan foto',
+                onTap: () => Navigator.push(context, xyRoute(const UbahProfilScreen())),
               ),
               _Menu(
                 ikon: Icons.lock_outline_rounded,
-                judul: 'Ganti Password',
-                sub: 'Amankan akunmu secara berkala',
-                onTap: () => _dialogGantiPassword(context),
+                judul: 'Keamanan',
+                sub: 'Ganti password dan info sesi',
+                onTap: () => Navigator.push(context, xyRoute(const KeamananScreen())),
               ),
               _Menu(
                 ikon: Icons.account_balance_wallet_outlined,
@@ -185,91 +172,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const OrderListScreen())),
               ),
 
-              const SectionHeader('Notifikasi'),
-              XyCard(
-                padding: const EdgeInsets.fromLTRB(15, 6, 8, 6),
-                child: Row(children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
-                    child: const Icon(Icons.notifications_active_outlined, size: 20, color: XyTheme.primary),
-                  ),
-                  const SizedBox(width: 13),
-                  const Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Notifikasi Komunitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                      SizedBox(height: 3),
-                      Text('Balasan diskusi, suka, dan pengumuman admin',
-                          style: TextStyle(color: XyTheme.muted, fontSize: 11.5)),
-                    ]),
-                  ),
-                  Switch(
-                    value: u.notifForum,
-                    activeColor: XyTheme.primary,
-                    onChanged: (v) async {
-                      final galat = await s.perbaruiProfil(notifForum: v);
-                      if (galat != null && context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(galat)));
-                      }
-                    },
-                  ),
-                ]),
-              ),
-              const SizedBox(height: 10),
-              _Menu(
-                ikon: Icons.notifications_none_rounded,
-                judul: 'Pemberitahuan Pesanan',
-                sub: 'Status order, chat admin, dan saldo selalu aktif',
-                onTap: () => beritahu(
-                  context,
-                  judul: 'Selalu aktif',
-                  pesan: 'Pemberitahuan pesanan, chat, dan saldo bersifat penting sehingga tidak bisa '
-                      'dimatikan dari sini. Kamu tetap bisa mengaturnya lewat pengaturan Android.',
-                  ikon: Icons.notifications_active_outlined,
-                ),
-              ),
-
               const SectionHeader('Aplikasi'),
-              XyCard(
-                padding: const EdgeInsets.fromLTRB(15, 6, 8, 6),
-                child: Row(children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
-                    child: const Icon(Icons.data_saver_on_rounded, size: 20, color: XyTheme.primary),
-                  ),
-                  const SizedBox(width: 13),
-                  const Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Mode Hemat Data', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                      SizedBox(height: 3),
-                      Text('Gambar produk tidak diunduh otomatis',
-                          style: TextStyle(color: XyTheme.muted, fontSize: 11.5)),
-                    ]),
-                  ),
-                  Switch(
-                    value: s.hematData,
-                    activeColor: XyTheme.primary,
-                    onChanged: (v) => s.setHematData(v),
-                  ),
-                ]),
-              ),
-              const SizedBox(height: 10),
               _Menu(
-                ikon: Icons.cleaning_services_outlined,
-                judul: 'Bersihkan Data Tersimpan',
-                sub: cacheKb > 0 ? 'Sekitar $cacheKb KB tersimpan di perangkat' : 'Tidak ada data tersimpan',
-                onTap: () async {
-                  await Cache.bersihkan();
-                  await _hitungCache();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Data tersimpan dibersihkan.')),
-                    );
-                  }
-                },
+                ikon: Icons.tune_rounded,
+                judul: 'Pengaturan',
+                sub: 'Notifikasi, hemat data, penyimpanan',
+                onTap: () => Navigator.push(context, xyRoute(const PengaturanScreen())),
               ),
               _Menu(
                 ikon: Icons.info_outline_rounded,
@@ -301,62 +209,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
       ),
     );
   }
-}
-
-// ---------------- lembar bawah, bukan popup ----------------
-Future<void> _dialogUbahProfil(BuildContext context) async {
-  final s = context.read<AppState>();
-
-  final nama = await tanyaTeks(
-    context,
-    judul: 'Ubah nama',
-    keterangan: 'Nama ini yang tampil di komunitas dan pada struk pembelian.',
-    nilaiAwal: s.user?.nama,
-    petunjuk: 'Nama lengkap',
-  );
-  if (nama == null || !context.mounted) return;
-
-  final phone = await tanyaTeks(
-    context,
-    judul: 'Nomor WhatsApp',
-    keterangan: 'Dipakai admin untuk menghubungi kamu soal pesanan.',
-    nilaiAwal: s.user?.phone,
-    petunjuk: '08xxxxxxxxxx',
-    tipe: TextInputType.phone,
-  );
-  if (!context.mounted) return;
-
-  final galat = await s.perbaruiProfil(nama: nama, phone: phone ?? s.user?.phone);
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(galat ?? 'Profil diperbarui.')),
-  );
-}
-
-Future<void> _dialogGantiPassword(BuildContext context) async {
-  final s = context.read<AppState>();
-
-  final lama = await tanyaTeks(
-    context,
-    judul: 'Password lama',
-    keterangan: 'Kosongkan kalau kamu mendaftar lewat Google.',
-    petunjuk: 'Password sekarang',
-  );
-  if (lama == null || !context.mounted) return;
-
-  final baru = await tanyaTeks(
-    context,
-    judul: 'Password baru',
-    keterangan: 'Minimal 6 karakter. Gunakan kombinasi huruf dan angka.',
-    petunjuk: 'Password baru',
-  );
-  if (baru == null || !context.mounted) return;
-
-  final galat = await s.gantiPassword(lama, baru);
-  if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(galat ?? 'Password berhasil diganti.')),
-  );
 }
 
 // ---------------- potongan kecil ----------------
