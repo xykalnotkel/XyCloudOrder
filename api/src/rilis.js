@@ -41,8 +41,28 @@ function abiDariNama(nama) {
   return 'universal';
 }
 
-/** Ambil rilis terbaru dari GitHub, disimpan sebentar supaya tidak boros. */
+/**
+ * Info rilis diambil dari basis data sendiri supaya tidak bergantung
+ * pada GitHub saat pengguna membuka halaman unduh. Isinya dikirim oleh
+ * alur build begitu rilis baru terbit. Kalau basis data masih kosong,
+ * barulah GitHub ditanya sekali lalu hasilnya disimpan.
+ */
 export async function infoRilis(env, ctx) {
+  try {
+    const baris = await env.DB.prepare('SELECT * FROM rilis WHERE id = 1').first();
+    if (baris && baris.versi) {
+      return {
+        versi: baris.versi,
+        nama: baris.versi,
+        tanggal: baris.tanggal,
+        catatan: baris.catatan || '',
+        berkas: JSON.parse(baris.berkas || '[]'),
+      };
+    }
+  } catch (_) {
+    // lanjut ke GitHub
+  }
+
   const kunciCache = new Request('https://xycloud.my.id/__cache/rilis');
   const cache = caches.default;
 
@@ -54,7 +74,7 @@ export async function infoRilis(env, ctx) {
     headers: { 'User-Agent': 'XyCloudStore-Worker', Accept: 'application/vnd.github+json' },
   });
 
-  if (!r.ok) return { versi: null, berkas: [] };
+  if (!r.ok) return { versi: null, berkas: [], catatan: 'Info rilis belum tersedia.' };
   const j = await r.json();
 
   const hasil = {
@@ -149,4 +169,36 @@ export function tebakAbi(req) {
     return { abi: 'arm64-v8a', alasan: `Android ${versi[1]}, umumnya ARM 64-bit` };
   }
   return { abi: 'universal', alasan: 'perangkat tidak dikenali, dipakai versi universal' };
+}
+
+/** Simpan info rilis ke basis data. Dipanggil alur build setelah rilis terbit. */
+export async function simpanRilis(env, data) {
+  const berkas = (data.berkas || []).map((b) => {
+    const abi = abiDariNama(b.nama || '');
+    const ukuran = Number(b.ukuran || 0);
+    return {
+      nama: b.nama,
+      abi,
+      label: JENIS_ABI[abi].nama,
+      keterangan: JENIS_ABI[abi].keterangan,
+      utama: JENIS_ABI[abi].utama,
+      ukuran,
+      ukuranMb: Math.round((ukuran / 1048576) * 10) / 10,
+      url: `/unduh/${b.nama}`,
+    };
+  }).sort((a, b) => Number(b.utama) - Number(a.utama));
+
+  await env.DB.prepare(
+    `INSERT INTO rilis (id,versi,tanggal,catatan,berkas,diperbarui) VALUES (1,?,?,?,?,?)
+     ON CONFLICT(id) DO UPDATE SET versi=excluded.versi, tanggal=excluded.tanggal,
+       catatan=excluded.catatan, berkas=excluded.berkas, diperbarui=excluded.diperbarui`
+  ).bind(
+    data.versi,
+    data.tanggal || new Date().toISOString(),
+    data.catatan || '',
+    JSON.stringify(berkas),
+    new Date().toISOString(),
+  ).run();
+
+  return { versi: data.versi, berkas };
 }

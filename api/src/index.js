@@ -13,7 +13,7 @@
 
 import ADMIN_HTML from './admin.html';
 import WEB_HTML from './web.html';
-import { infoRilis, unduhApk, tebakAbi } from './rilis.js';
+import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
@@ -1059,6 +1059,14 @@ export default {
               .bind(agg.r || 5, agg.n || 0, r.produk_id).run();
           }
           return json({ ok: true }, 200, env);
+        }
+
+        // ---- catat rilis aplikasi baru (dipanggil alur build) ----
+        if (a === 'rilis' && req.method === 'POST') {
+          const b = await req.json();
+          if (!b.versi || !Array.isArray(b.berkas)) return err('Data rilis tidak lengkap', 400, env);
+          const hasil = await simpanRilis(env, b);
+          return json(hasil, 201, env);
         }
 
         // ---- unit / agen PC host ----
