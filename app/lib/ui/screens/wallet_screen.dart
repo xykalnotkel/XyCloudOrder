@@ -5,6 +5,7 @@ import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/lembar.dart';
 import '../widgets/topup_sheet.dart';
 import 'tentang_screen.dart';
 
@@ -133,21 +134,15 @@ class WalletScreen extends StatelessWidget {
           const SizedBox(height: 14),
           OutlinedButton.icon(
             onPressed: () async {
-              final yakin = await showDialog<bool>(
-                context: context,
-                builder: (d) => AlertDialog(
-                  title: const Text('Keluar dari akun?'),
-                  content: const Text('Kamu perlu masuk lagi untuk memakai aplikasi.'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Batal')),
-                    TextButton(
-                      onPressed: () => Navigator.pop(d, true),
-                      child: const Text('Keluar', style: TextStyle(color: XyTheme.danger)),
-                    ),
-                  ],
-                ),
+              final yakin = await konfirmasi(
+                context,
+                judul: 'Keluar dari akun?',
+                pesan: 'Kamu perlu masuk lagi untuk memakai aplikasi.',
+                tombolYa: 'Keluar',
+                ikon: Icons.logout_rounded,
+                bahaya: true,
               );
-              if (yakin == true && context.mounted) context.read<AppState>().logout();
+              if (yakin && context.mounted) context.read<AppState>().logout();
             },
             icon: const Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
             label: const Text('Keluar', style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),

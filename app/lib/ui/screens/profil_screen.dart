@@ -8,6 +8,7 @@ import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
 import 'tentang_screen.dart';
 import 'wallet_screen.dart';
@@ -220,11 +221,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 ikon: Icons.notifications_none_rounded,
                 judul: 'Pemberitahuan Pesanan',
                 sub: 'Status order, chat admin, dan saldo selalu aktif',
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Notifikasi pesanan dan chat penting, jadi tidak bisa dimatikan dari sini. '
-                        'Kamu tetap bisa mengaturnya lewat pengaturan Android.'),
-                  ),
+                onTap: () => beritahu(
+                  context,
+                  judul: 'Selalu aktif',
+                  pesan: 'Pemberitahuan pesanan, chat, dan saldo bersifat penting sehingga tidak bisa '
+                      'dimatikan dari sini. Kamu tetap bisa mengaturnya lewat pengaturan Android.',
+                  ikon: Icons.notifications_active_outlined,
                 ),
               ),
 
@@ -279,21 +281,15 @@ class _ProfilScreenState extends State<ProfilScreen> {
               const SizedBox(height: 18),
               OutlinedButton.icon(
                 onPressed: () async {
-                  final yakin = await showDialog<bool>(
-                    context: context,
-                    builder: (d) => AlertDialog(
-                      title: const Text('Keluar dari akun?'),
-                      content: const Text('Kamu perlu masuk lagi untuk memakai aplikasi.'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Batal')),
-                        TextButton(
-                          onPressed: () => Navigator.pop(d, true),
-                          child: const Text('Keluar', style: TextStyle(color: XyTheme.danger)),
-                        ),
-                      ],
-                    ),
+                  final yakin = await konfirmasi(
+                    context,
+                    judul: 'Keluar dari akun?',
+                    pesan: 'Kamu perlu masuk lagi untuk memakai aplikasi.',
+                    tombolYa: 'Keluar',
+                    ikon: Icons.logout_rounded,
+                    bahaya: true,
                   );
-                  if (yakin == true && context.mounted) context.read<AppState>().logout();
+                  if (yakin && context.mounted) context.read<AppState>().logout();
                 },
                 icon: const Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
                 label: const Text('Keluar',
@@ -307,86 +303,59 @@ class _ProfilScreenState extends State<ProfilScreen> {
   }
 }
 
-// ---------------- dialog ----------------
+// ---------------- lembar bawah, bukan popup ----------------
 Future<void> _dialogUbahProfil(BuildContext context) async {
   final s = context.read<AppState>();
-  final nama = TextEditingController(text: s.user?.nama ?? '');
-  final phone = TextEditingController(text: s.user?.phone ?? '');
 
-  await showDialog(
-    context: context,
-    builder: (d) => AlertDialog(
-      title: const Text('Ubah Profil'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(
-          controller: nama,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Nama lengkap'),
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: phone,
-          keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(labelText: 'Nomor WhatsApp'),
-        ),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Batal')),
-        TextButton(
-          onPressed: () async {
-            final galat = await s.perbaruiProfil(nama: nama.text.trim(), phone: phone.text.trim());
-            if (d.mounted) Navigator.pop(d);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(galat ?? 'Profil diperbarui.')),
-              );
-            }
-          },
-          child: const Text('Simpan'),
-        ),
-      ],
-    ),
+  final nama = await tanyaTeks(
+    context,
+    judul: 'Ubah nama',
+    keterangan: 'Nama ini yang tampil di komunitas dan pada struk pembelian.',
+    nilaiAwal: s.user?.nama,
+    petunjuk: 'Nama lengkap',
+  );
+  if (nama == null || !context.mounted) return;
+
+  final phone = await tanyaTeks(
+    context,
+    judul: 'Nomor WhatsApp',
+    keterangan: 'Dipakai admin untuk menghubungi kamu soal pesanan.',
+    nilaiAwal: s.user?.phone,
+    petunjuk: '08xxxxxxxxxx',
+    tipe: TextInputType.phone,
+  );
+  if (!context.mounted) return;
+
+  final galat = await s.perbaruiProfil(nama: nama, phone: phone ?? s.user?.phone);
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(galat ?? 'Profil diperbarui.')),
   );
 }
 
 Future<void> _dialogGantiPassword(BuildContext context) async {
   final s = context.read<AppState>();
-  final lama = TextEditingController();
-  final baru = TextEditingController();
 
-  await showDialog(
-    context: context,
-    builder: (d) => AlertDialog(
-      title: const Text('Ganti Password'),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(
-          controller: lama,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Password lama'),
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: baru,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Password baru (min. 6 karakter)'),
-        ),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(d), child: const Text('Batal')),
-        TextButton(
-          onPressed: () async {
-            final galat = await s.gantiPassword(lama.text, baru.text);
-            if (d.mounted) Navigator.pop(d);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(galat ?? 'Password berhasil diganti.')),
-              );
-            }
-          },
-          child: const Text('Simpan'),
-        ),
-      ],
-    ),
+  final lama = await tanyaTeks(
+    context,
+    judul: 'Password lama',
+    keterangan: 'Kosongkan kalau kamu mendaftar lewat Google.',
+    petunjuk: 'Password sekarang',
+  );
+  if (lama == null || !context.mounted) return;
+
+  final baru = await tanyaTeks(
+    context,
+    judul: 'Password baru',
+    keterangan: 'Minimal 6 karakter. Gunakan kombinasi huruf dan angka.',
+    petunjuk: 'Password baru',
+  );
+  if (baru == null || !context.mounted) return;
+
+  final galat = await s.gantiPassword(lama, baru);
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(galat ?? 'Password berhasil diganti.')),
   );
 }
 

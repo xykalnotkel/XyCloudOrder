@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import 'akun_screen.dart';
-import 'cs_screen.dart';
 import 'home_screen.dart';
 import 'forum_screen.dart';
 import 'profil_screen.dart';
@@ -23,7 +22,6 @@ class _XyShellState extends State<XyShell> {
     SewaPcScreen(),
     AkunScreen(),
     ForumScreen(),
-    CsScreen(),
     ProfilScreen(),
   ];
 
@@ -32,13 +30,11 @@ class _XyShellState extends State<XyShell> {
     (Icons.desktop_windows_outlined, Icons.desktop_windows_rounded, 'Sewa PC'),
     (Icons.storefront_outlined, Icons.storefront_rounded, 'Akun'),
     (Icons.groups_2_outlined, Icons.groups_2_rounded, 'Komunitas'),
-    (Icons.forum_outlined, Icons.forum_rounded, 'Chat'),
     (Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final belum = context.select<AppState, int>((s) => s.notifBelumDibaca);
     final pad = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -62,7 +58,6 @@ class _XyShellState extends State<XyShell> {
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
                   setState(() => idx = i);
-                  if (i == 4) context.read<AppState>().bacaNotif();
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -71,7 +66,7 @@ class _XyShellState extends State<XyShell> {
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
                       height: 32,
-                      width: on ? 50 : 36,
+                      width: on ? 56 : 40,
                       decoration: BoxDecoration(
                         gradient: on ? XyTheme.gradPrimary : null,
                         borderRadius: BorderRadius.circular(XyRadius.pill),
@@ -79,33 +74,13 @@ class _XyShellState extends State<XyShell> {
                       ),
                       child: Stack(alignment: Alignment.center, children: [
                         Icon(on ? it.$2 : it.$1, size: 19, color: on ? Colors.white : XyTheme.muted),
-                        if (i == 4 && belum > 0)
-                          Positioned(
-                            right: on ? 9 : 4,
-                            top: 2,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              constraints: const BoxConstraints(minWidth: 15),
-                              height: 15,
-                              decoration: BoxDecoration(
-                                color: XyTheme.danger,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white, width: 1.5),
-                              ),
-                              child: Center(
-                                child: Text('$belum',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800)),
-                              ),
-                            ),
-                          ),
                       ]),
                     ),
                     const SizedBox(height: 5),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
-                        fontSize: 9.8,
+                        fontSize: 10.4,
                         fontWeight: on ? FontWeight.w800 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.muted,
                       ),

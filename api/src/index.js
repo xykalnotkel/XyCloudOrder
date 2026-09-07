@@ -15,7 +15,8 @@ import ADMIN_HTML from './admin.html';
 import LOGO_PNG from './brand-logo.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
-import { unggahGambar } from './upload.js';
+import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
+import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
 
@@ -156,7 +157,7 @@ async function akunSosial(env, ctx, prof, provider) {
     const sapa = {
       id: uid('m_'),
       room: `user:${idBaru}`,
-      teks: `Halo ${prof.nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
+      teks: `Halo ${prof.nama.split(' ')[0]}, aku Kirana dari XyCloudStore. Ada yang bisa aku bantu hari ini?`,
       waktu: new Date().toISOString(),
     };
     ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
@@ -276,6 +277,8 @@ export default {
       });
     }
 
+    if (path.startsWith('/img/')) return layaniGambar(env, path);
+
     if (path === '/brand/logo.png') {
       return new Response(LOGO_PNG, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
@@ -283,6 +286,50 @@ export default {
     }
 
     if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
+
+    // pemberitahuan dari penyedia pembayaran
+    if (path.startsWith('/bayar/webhook/')) {
+      const provider = path.split('/')[3];
+      const teks = await req.text();
+      const hasil = await bacaPemberitahuan(env, provider, req, teks);
+      if (!hasil.sah) return new Response('signature tidak sah', { status: 401 });
+
+      if (hasil.status === 'lunas') {
+        const t = await env.DB.prepare("SELECT * FROM topup WHERE id = ? AND status != 'disetujui'")
+          .bind(hasil.id).first();
+        if (t) {
+          const waktu = new Date().toISOString();
+          await env.DB.batch([
+            env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(t.nominal, t.user_id),
+            env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+              .bind(uid('t_'), t.user_id, 'Top up saldo otomatis', 'topup', t.nominal),
+            env.DB.prepare("UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=?")
+              .bind(`Lunas otomatis lewat ${provider}`, waktu, t.id),
+          ]);
+
+          const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?')
+            .bind(t.user_id).first();
+          ctx.waitUntil(push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u?.saldo ?? 0 }));
+          ctx.waitUntil(kirimPush(env, {
+            userId: t.user_id,
+            judul: 'Saldo berhasil ditambahkan',
+            pesan: `Pembayaran Rp${Number(t.nominal).toLocaleString('id-ID')} sudah kami terima.`,
+            data: { tipe: 'wallet' },
+          }));
+          if (u?.email) {
+            ctx.waitUntil(kirimEmail(env, {
+              to: u.email, template: 'struk',
+              data: { nama: u.nama, kode: t.id.toUpperCase(), judul: 'Top up saldo', total: t.nominal, metode: t.metode },
+            }));
+          }
+        }
+      } else if (hasil.status === 'gagal') {
+        await env.DB.prepare("UPDATE topup SET status='ditolak', catatan='Pembayaran kedaluwarsa atau dibatalkan' WHERE id = ? AND status != 'disetujui'")
+          .bind(hasil.id).run();
+      }
+
+      return new Response('OK', { status: 200 });
+    }
 
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
     const p = path.slice(5);
@@ -382,17 +429,39 @@ export default {
         sql += ' ORDER BY disematkan DESC, dibuat DESC LIMIT ? OFFSET ?';
         nilai.push(per, (halaman - 1) * per);
 
+        // ambil tier penulis supaya lencana member tampil di komunitas
+        sql = sql.replace(
+          'SELECT * FROM forum_post',
+          `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
+                  COALESCE(u.foto, f.foto) AS foto
+           FROM forum_post f LEFT JOIN users u ON u.id = f.user_id`
+        ).replace(/\bWHERE (kategori|\()/, 'WHERE f.$1')
+         .replace('ORDER BY disematkan DESC, dibuat DESC', 'ORDER BY f.disematkan DESC, f.dibuat DESC');
+
         const { results } = await env.DB.prepare(sql).bind(...nilai).all();
-        return json(results, 200, env);
+        return json(results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'm'), foto: samarkanGambar(env, r.foto, 's') })), 200, env);
       }
 
       if (p.startsWith('forum/') && p.split('/').length === 2 && req.method === 'GET') {
         const id = p.split('/')[1];
-        const post = await env.DB.prepare('SELECT * FROM forum_post WHERE id = ?').bind(id).first();
+        const post = await env.DB.prepare(
+          `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
+                  COALESCE(u.foto, f.foto) AS foto
+           FROM forum_post f LEFT JOIN users u ON u.id = f.user_id WHERE f.id = ?`
+        ).bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
-        const { results } = await env.DB
-          .prepare('SELECT * FROM forum_balasan WHERE post_id = ? ORDER BY dibuat ASC LIMIT 200').bind(id).all();
-        return json({ post, balasan: results }, 200, env);
+
+        const { results } = await env.DB.prepare(
+          `SELECT b.*, COALESCE(u.tier, CASE WHEN b.admin = 1 THEN 'admin' ELSE 'basic' END) AS tier,
+                  COALESCE(u.foto, b.foto) AS foto
+           FROM forum_balasan b LEFT JOIN users u ON u.id = b.user_id
+           WHERE b.post_id = ? ORDER BY b.dibuat ASC LIMIT 200`
+        ).bind(id).all();
+
+        return json({
+          post: { ...post, gambar: samarkanGambar(env, post.gambar, 'l'), foto: samarkanGambar(env, post.foto, 's') },
+          balasan: results.map((r) => ({ ...r, foto: samarkanGambar(env, r.foto, 's') })),
+        }, 200, env);
       }
 
       // ---------------- LEGAL ----------------
@@ -411,6 +480,11 @@ export default {
             qris: env.QRIS_URL || '',
           },
           minTopup: Number(env.MIN_TOPUP || 10000),
+          pembayaran: {
+            otomatis: penyediaBayar(env) !== 'manual',
+            penyedia: penyediaBayar(env),
+            metode: metodeTersedia(env),
+          },
         }, 200, env);
       }
 
@@ -568,7 +642,7 @@ export default {
         // sapaan CS + email selamat datang
         const sapa = {
           id: uid('m_'), room: `user:${u.id}`, dari: 'cs',
-          teks: `Halo ${u.nama.split(' ')[0]}, selamat datang di XyCloudStore. Ada yang bisa kami bantu?`,
+          teks: `Halo ${u.nama.split(' ')[0]}, aku Kirana dari XyCloudStore. Ada yang bisa aku bantu hari ini?`,
           waktu: new Date().toISOString(),
         };
         ctx.waitUntil(env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
@@ -839,7 +913,7 @@ export default {
           ctx.waitUntil(push(env, room, 'chat.message', msg));
           ctx.waitUntil(kirimPush(env, {
             userId: room.split(':')[1],
-            judul: 'Balasan customer service',
+            judul: 'Kirana membalas pesanmu',
             pesan: teks.length > 90 ? teks.slice(0, 90) + '...' : teks,
             data: { tipe: 'cs' },
           }));
@@ -1012,7 +1086,7 @@ export default {
           }
 
           const post = {
-            id: uid('f_'), user_id: 'admin', nama: 'Admin XyCloudStore', foto: null,
+            id: uid('f_'), user_id: 'admin', nama: 'Kirana - XyCloudStore', foto: null,
             kategori: b.kategori || 'Pengumuman', judul, isi, gambar,
             suka: 0, balasan: 0, disematkan: b.sematkan === false ? 0 : 1,
             dibuat: new Date().toISOString(),
@@ -1044,7 +1118,7 @@ export default {
           const id = a.split('/')[1];
           const { isi } = await req.json();
           const baris = {
-            id: uid('fb_'), post_id: id, user_id: 'admin', nama: 'Admin XyCloudStore',
+            id: uid('fb_'), post_id: id, user_id: 'admin', nama: 'Kirana - XyCloudStore',
             foto: null, isi: String(isi || '').trim(), admin: 1, dibuat: new Date().toISOString(),
           };
           await env.DB.batch([
@@ -1062,7 +1136,7 @@ export default {
             const tujuan = [p2?.user_id, ...results.map((r) => r.user_id)];
             const cuplikan = baris.isi.length > 80 ? `${baris.isi.slice(0, 80)}...` : baris.isi;
             await pushForum(env, tujuan, {
-              judul: 'Admin membalas diskusimu',
+              judul: 'Kirana membalas diskusimu',
               pesan: cuplikan,
               data: { tipe: 'forum', id },
             });
@@ -1114,12 +1188,20 @@ export default {
         const pid = p.split('/')[2];
         const { results } = await env.DB
           .prepare('SELECT * FROM ulasan WHERE produk_id = ? ORDER BY waktu DESC LIMIT 100').bind(pid).all();
-        return json(results, 200, env);
+        return json(results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'm') })), 200, env);
       }
 
       if (p === 'akun/produk' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT * FROM akun_produk').all();
-        return json(results.map(r => ({ ...r, fitur: JSON.parse(r.fitur || '[]') })), 200, env);
+        return json(
+          results.map((r) => ({
+            ...r,
+            fitur: JSON.parse(r.fitur || '[]'),
+            gambar: samarkanGambar(env, r.gambar, 'm'),
+          })),
+          200,
+          env,
+        );
       }
 
       // ---------------- butuh login ----------------
@@ -1603,28 +1685,76 @@ export default {
         const minimal = Number(env.MIN_TOPUP || 10000);
         if (jumlah < minimal) return err(`Minimal top up Rp${minimal.toLocaleString('id-ID')}`, 400, env);
 
-        // kode unik supaya transfer mudah dicocokkan
-        const kodeUnik = 100 + (crypto.getRandomValues(new Uint32Array(1))[0] % 800);
         const id = uid('tp_');
+        const otomatis = penyediaBayar(env) !== 'manual';
+        const pemilik = await env.DB.prepare('SELECT nama, email, phone FROM users WHERE id = ?')
+          .bind(me.sub).first();
+
+        // ---- jalur otomatis lewat penyedia pembayaran ----
+        if (otomatis) {
+          const tagihan = await buatTagihan(env, {
+            id,
+            nominal: jumlah,
+            metode,
+            nama: pemilik?.nama,
+            email: pemilik?.email,
+            phone: pemilik?.phone,
+            keterangan: 'Isi saldo XyCloudStore',
+          });
+
+          if (tagihan.ok) {
+            await env.DB.prepare(
+              "INSERT INTO topup (id,user_id,nominal,kode_unik,total,metode,status,catatan) VALUES (?,?,?,0,?,?,'menunggu',?)"
+            ).bind(id, me.sub, jumlah, jumlah, metode || tagihan.penyedia, tagihan.referensi || null).run();
+
+            ctx.waitUntil(push(env, 'cs:inbox', 'topup.baru', { id, user_id: me.sub, nominal: jumlah, otomatis: true }));
+
+            return json({
+              id,
+              nominal: jumlah,
+              total: jumlah,
+              kode_unik: 0,
+              metode: metode || tagihan.penyedia,
+              status: 'menunggu',
+              otomatis: true,
+              bayar: {
+                url: tagihan.url,
+                qr: tagihan.qr,
+                kode: tagihan.kode_bayar,
+                kedaluwarsa: tagihan.kedaluwarsa || null,
+              },
+              catatan: 'Selesaikan pembayaran, saldo masuk otomatis dalam hitungan detik.',
+            }, 201, env);
+          }
+          // kalau penyedia gagal, lanjut ke jalur manual di bawah
+        }
+
+        // ---- jalur manual: transfer + bukti + konfirmasi admin ----
+        const kodeUnik = 100 + (crypto.getRandomValues(new Uint32Array(1))[0] % 800);
         const total = jumlah + kodeUnik;
 
         await env.DB.prepare(
           "INSERT INTO topup (id,user_id,nominal,kode_unik,total,metode,status) VALUES (?,?,?,?,?,?,'menunggu')"
         ).bind(id, me.sub, jumlah, kodeUnik, total, metode || 'transfer').run();
 
-        const data = {
-          id, nominal: jumlah, kode_unik: kodeUnik, total, metode: metode || 'transfer', status: 'menunggu',
+        ctx.waitUntil(push(env, 'cs:inbox', 'topup.baru', { id, user_id: me.sub, nominal: jumlah, status: 'menunggu' }));
+
+        return json({
+          id,
+          nominal: jumlah,
+          kode_unik: kodeUnik,
+          total,
+          metode: metode || 'transfer',
+          status: 'menunggu',
+          otomatis: false,
           rekening: {
-            bank: env.BANK_NAMA || 'BCA',
-            nomor: env.BANK_NOMOR || '1234567890',
+            bank: env.BANK_NAMA || 'DANA',
+            nomor: env.BANK_NOMOR || '-',
             atasNama: env.BANK_ATASNAMA || 'XyCloudStore',
-            qris: env.QRIS_URL || '',
+            qris: env.QRIS_URL ? samarkanGambar(env, env.QRIS_URL, 'l') : '',
           },
           catatan: 'Transfer tepat sampai 3 angka terakhir supaya otomatis kami cocokkan, lalu unggah bukti transfer.',
-        };
-
-        ctx.waitUntil(push(env, 'cs:inbox', 'topup.baru', { id, user_id: me.sub, nominal: jumlah, status: 'menunggu' }));
-        return json(data, 201, env);
+        }, 201, env);
       }
 
       // ---- customer service ----
@@ -1632,7 +1762,7 @@ export default {
         const { results } = await env.DB
           .prepare('SELECT * FROM cs_messages WHERE room = ? ORDER BY waktu ASC LIMIT 200')
           .bind(room).all();
-        return json(results, 200, env);
+        return json(results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'm') })), 200, env);
       }
 
       if (p === 'cs/messages' && req.method === 'POST') {
@@ -1674,7 +1804,7 @@ export default {
         ctx.waitUntil(push(env, target, 'chat.message', msg));
         ctx.waitUntil(kirimPush(env, {
           userId: target.split(':')[1],
-          judul: 'Balasan customer service',
+          judul: 'Kirana membalas pesanmu',
           pesan: msg.teks ? (msg.teks.length > 90 ? msg.teks.slice(0, 90) + '...' : msg.teks) : 'Mengirim sebuah gambar',
           data: { tipe: 'cs' },
         }));

@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/error_state.dart';
+import '../widgets/lembar.dart';
 
 /// ============================================================
 ///  Layar sesi main: menyiapkan PC, memasangkan perangkat,
@@ -141,21 +142,15 @@ class _SesiScreenState extends State<SesiScreen> {
   }
 
   Future<void> _akhiri() async {
-    final yakin = await showDialog<bool>(
-      context: context,
-      builder: (d) => AlertDialog(
-        title: const Text('Akhiri sesi sekarang?'),
-        content: const Text('PC akan dibersihkan dan sisa waktu sewa tidak dapat dilanjutkan.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Batal')),
-          TextButton(
-            onPressed: () => Navigator.pop(d, true),
-            child: const Text('Akhiri', style: TextStyle(color: XyTheme.danger)),
-          ),
-        ],
-      ),
+    final yakin = await konfirmasi(
+      context,
+      judul: 'Akhiri sesi sekarang?',
+      pesan: 'PC akan dibersihkan dan sisa waktu sewa tidak dapat dilanjutkan.',
+      tombolYa: 'Akhiri',
+      ikon: Icons.stop_circle_outlined,
+      bahaya: true,
     );
-    if (yakin != true || !mounted) return;
+    if (!yakin || !mounted) return;
     await context.read<AppState>().akhiriSesi(sesi!.id);
     if (mounted) Navigator.pop(context);
   }

@@ -45,3 +45,51 @@ export async function unggahGambar(env, { dataUri, folder = 'xycloudstore' }) {
     return { ok: false, alasan: String(e) };
   }
 }
+
+/**
+ * Ubah URL Cloudinary menjadi tautan milik domain sendiri.
+ *
+ *   https://res.cloudinary.com/awan/image/upload/v123/xycloudstore/produk/abc.png
+ *   -> https://api.xycloud.my.id/img/m/xycloudstore/produk/abc.png
+ *
+ * Selain menyembunyikan penyedia penyimpanan, jalur ini juga
+ * memampatkan gambar otomatis lewat transformasi Cloudinary.
+ */
+export function samarkanGambar(env, url, ukuran = 'm') {
+  if (!url || typeof url !== 'string') return url;
+  const dasar = env.PUBLIC_URL || 'https://api.xycloud.my.id';
+
+  const cocok = url.match(/res\.cloudinary\.com\/[^/]+\/image\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/);
+  if (!cocok) return url;
+  return `${dasar}/img/${ukuran}/${cocok[1]}`;
+}
+
+/** Transformasi untuk tiap ukuran: tajam tapi ringan. */
+export const UKURAN_GAMBAR = {
+  s: 'f_auto,q_auto:good,c_limit,w_240,dpr_2.0',
+  t: 'f_auto,q_auto:good,c_limit,w_420,dpr_2.0',
+  m: 'f_auto,q_auto:good,c_limit,w_720,dpr_2.0',
+  l: 'f_auto,q_auto:good,c_limit,w_1280',
+  o: 'f_auto,q_auto:best',
+};
+
+/** Ambil gambar dari Cloudinary lewat Worker sendiri, lalu simpan di singgahan tepi. */
+export async function layaniGambar(env, jalur) {
+  const potong = jalur.replace(/^\/img\//, '');
+  const pisah = potong.split('/');
+  const ukuran = UKURAN_GAMBAR[pisah[0]] ? pisah.shift() : 'm';
+  const publicId = pisah.join('/');
+
+  if (!publicId || !env.CLOUDINARY_CLOUD) return new Response('Not found', { status: 404 });
+
+  const asal = `https://res.cloudinary.com/${env.CLOUDINARY_CLOUD}/image/upload/${UKURAN_GAMBAR[ukuran]}/${publicId}`;
+
+  const jawab = await fetch(asal, { cf: { cacheTtl: 86400, cacheEverything: true } });
+  if (!jawab.ok) return new Response('Not found', { status: 404 });
+
+  const kepala = new Headers(jawab.headers);
+  kepala.set('Cache-Control', 'public, max-age=604800, immutable');
+  kepala.set('X-Content-Type-Options', 'nosniff');
+  kepala.delete('set-cookie');
+  return new Response(jawab.body, { status: 200, headers: kepala });
+}

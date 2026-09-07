@@ -496,6 +496,10 @@ class PermintaanTopup {
   final DateTime dibuat;
   final Map<String, dynamic> rekening;
 
+  /// Kalau penyedia pembayaran aktif, di sini ada tautan atau QR-nya.
+  final bool otomatis;
+  final Map<String, dynamic> bayar;
+
   PermintaanTopup({
     required this.id,
     required this.nominal,
@@ -507,6 +511,8 @@ class PermintaanTopup {
     this.bukti,
     this.catatan,
     this.rekening = const {},
+    this.otomatis = false,
+    this.bayar = const {},
   });
 
   factory PermintaanTopup.fromJson(Map<String, dynamic> j) => PermintaanTopup(
@@ -520,6 +526,8 @@ class PermintaanTopup {
         catatan: (j['catatan'] as String?)?.isNotEmpty == true ? j['catatan'] : null,
         dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
         rekening: _petaAman(j['rekening']),
+        otomatis: j['otomatis'] == true,
+        bayar: _petaAman(j['bayar']),
       );
 
   bool get selesai => status == 'disetujui' || status == 'ditolak';
@@ -527,6 +535,8 @@ class PermintaanTopup {
 
 /// Konfigurasi dari server: penyedia login aktif, nomor WhatsApp, rekening.
 class KonfigurasiApp {
+  final bool bayarOtomatis;
+  final List<Map<String, dynamic>> metodeBayar;
   final bool googleAktif;
   final bool facebookAktif;
   final String whatsapp;
@@ -534,6 +544,8 @@ class KonfigurasiApp {
   final int minTopup;
 
   const KonfigurasiApp({
+    this.bayarOtomatis = false,
+    this.metodeBayar = const [],
     this.googleAktif = false,
     this.facebookAktif = false,
     this.whatsapp = '',
@@ -543,7 +555,12 @@ class KonfigurasiApp {
 
   factory KonfigurasiApp.fromJson(Map<String, dynamic> j) {
     final p = _petaAman(j['providers']);
+    final bayar = _petaAman(j['pembayaran']);
     return KonfigurasiApp(
+      bayarOtomatis: bayar['otomatis'] == true,
+      metodeBayar: ((bayar['metode'] as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList(),
       googleAktif: p['google'] == true,
       facebookAktif: p['facebook'] == true,
       whatsapp: '${j['whatsapp'] ?? ''}',
@@ -563,6 +580,7 @@ class ForumPost {
   final String judul;
   final String isi;
   final String? gambar;
+  final String tier;
   int suka;
   int balasan;
   final bool disematkan;
@@ -578,6 +596,7 @@ class ForumPost {
     required this.dibuat,
     this.foto,
     this.gambar,
+    this.tier = 'basic',
     this.suka = 0,
     this.balasan = 0,
     this.disematkan = false,
@@ -592,6 +611,7 @@ class ForumPost {
         judul: j['judul'] ?? '',
         isi: j['isi'] ?? '',
         gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
+        tier: j['tier'] ?? 'basic',
         suka: j['suka'] ?? 0,
         balasan: j['balasan'] ?? 0,
         disematkan: (j['disematkan'] ?? 0) == 1,
@@ -607,6 +627,7 @@ class ForumPost {
         'judul': judul,
         'isi': isi,
         'gambar': gambar,
+        'tier': tier,
         'suka': suka,
         'balasan': balasan,
         'disematkan': disematkan ? 1 : 0,
@@ -622,6 +643,7 @@ class ForumBalasan {
   final String? foto;
   final String isi;
   final bool admin;
+  final String tier;
   final DateTime dibuat;
 
   ForumBalasan({
@@ -632,6 +654,7 @@ class ForumBalasan {
     required this.dibuat,
     this.foto,
     this.admin = false,
+    this.tier = 'basic',
   });
 
   factory ForumBalasan.fromJson(Map<String, dynamic> j) => ForumBalasan(
@@ -641,6 +664,7 @@ class ForumBalasan {
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         isi: j['isi'] ?? '',
         admin: (j['admin'] ?? 0) == 1,
+        tier: j['tier'] ?? 'basic',
         dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
       );
 }

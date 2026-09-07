@@ -192,7 +192,12 @@ class _SheetDetailState extends State<_SheetDetail> {
     setState(() => proses = false);
     Navigator.pop(context);
     if (hasil != null) {
-      showDialog(context: context, builder: (_) => _DialogAkun(data: hasil, produk: widget.produk));
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (_) => _DialogAkun(data: hasil, produk: widget.produk),
+      );
     }
   }
 
@@ -422,10 +427,13 @@ class _DialogAkun extends StatelessWidget {
           ]),
         );
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+    return Container(
+      decoration: const BoxDecoration(
+        color: XyTheme.bg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(22),
+        padding: EdgeInsets.fromLTRB(22, 18, 22, MediaQuery.of(context).padding.bottom + 22),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const XyIlustrasi('sukses', tinggi: 132),
           const SizedBox(height: 6),

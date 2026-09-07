@@ -7,6 +7,8 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/banner_slider.dart';
 import '../widgets/common.dart';
+import '../widgets/topup_sheet.dart';
+import '../../core/prefs.dart';
 import '../widgets/error_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
@@ -154,8 +156,10 @@ class _Header extends StatelessWidget {
       LiveDot(state: koneksi),
       const SizedBox(width: 8),
       Pressable(
-        onTap: () => ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Belum ada notifikasi baru.'))),
+        onTap: () {
+          context.read<AppState>().bacaNotif();
+          Navigator.push(context, xyRoute(const CsScreen()));
+        },
         child: Container(
           width: 42,
           height: 42,
@@ -165,7 +169,7 @@ class _Header extends StatelessWidget {
             border: Border.all(color: XyTheme.line),
           ),
           child: Stack(alignment: Alignment.center, children: [
-            const Icon(Icons.notifications_none_rounded, size: 20),
+            const Icon(Icons.forum_outlined, size: 20),
             if (notif > 0)
               Positioned(
                 right: 10,
@@ -188,88 +192,180 @@ class _Header extends StatelessWidget {
 }
 
 // ------------------------------------------------------------------
-class _KartuSaldo extends StatelessWidget {
+class _KartuSaldo extends StatefulWidget {
   const _KartuSaldo({required this.user});
   final UserProfile user;
 
   @override
+  State<_KartuSaldo> createState() => _KartuSaldoState();
+}
+
+class _KartuSaldoState extends State<_KartuSaldo> {
+  bool tampil = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.saldoTampil().then((v) => mounted ? setState(() => tampil = v) : null);
+  }
+
+  Future<void> _ubah() async {
+    setState(() => tampil = !tampil);
+    await Prefs.simpanSaldoTampil(tampil);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final u = widget.user;
+
     return Container(
       decoration: BoxDecoration(
-        gradient: XyTheme.gradMidnight,
-        borderRadius: BorderRadius.circular(XyRadius.xl),
-        boxShadow: XyTheme.glow(XyTheme.primaryDark, .35),
+        borderRadius: BorderRadius.circular(26),
+        gradient: XyTheme.gradDeep,
+        boxShadow: [
+          BoxShadow(color: XyTheme.primaryDark.withOpacity(.35), blurRadius: 30, offset: const Offset(0, 14)),
+        ],
       ),
       child: Stack(children: [
+        // guratan cahaya khas kartu premium
+        Positioned(
+          right: -50,
+          top: -60,
+          child: Container(
+            width: 190,
+            height: 190,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: [Colors.white.withOpacity(.16), Colors.transparent]),
+            ),
+          ),
+        ),
+        Positioned(
+          left: -40,
+          bottom: -70,
+          child: Container(
+            width: 170,
+            height: 170,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: [XyTheme.violet.withOpacity(.28), Colors.transparent]),
+            ),
+          ),
+        ),
         Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(XyRadius.xl),
-            child: Stack(children: [
-              const Positioned.fill(child: DotGrid(color: Color(0x0AFFFFFF), gap: 20)),
-              Positioned(
-                right: -50,
-                top: -60,
+          child: CustomPaint(painter: _GarisKartu()),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(.14),
+                  borderRadius: BorderRadius.circular(XyRadius.pill),
+                  border: Border.all(color: Colors.white.withOpacity(.16)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.workspace_premium_rounded, size: 13, color: Color(0xFFE8C07A)),
+                  const SizedBox(width: 5),
+                  Text(u.tier.toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                ]),
+              ),
+              const Spacer(),
+              Image.asset('assets/brand/logo_icon_putih.png', width: 26, height: 26),
+            ]),
+
+            const SizedBox(height: 20),
+            Text('Saldo XyCloudStore',
+                style: TextStyle(color: Colors.white.withOpacity(.60), fontSize: 12, letterSpacing: .3)),
+            const SizedBox(height: 7),
+            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  child: tampil
+                      ? AnimatedRupiah(
+                          key: const ValueKey('tampil'),
+                          nilai: u.saldo,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 31,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -1.2,
+                          ),
+                        )
+                      : const Text('Rp • • • • • • •',
+                          key: ValueKey('sembunyi'),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 27,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -.5,
+                          )),
+                ),
+              ),
+              Pressable(
+                onTap: _ubah,
                 child: Container(
-                  width: 190,
-                  height: 190,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.14),
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [XyTheme.primary.withOpacity(.42), XyTheme.primary.withOpacity(0)],
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(.16)),
+                  ),
+                  child: Icon(
+                    tampil ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                    size: 18,
+                    color: Colors.white,
                   ),
                 ),
               ),
             ]),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(Icons.account_balance_wallet_rounded, size: 15, color: Colors.white.withOpacity(.55)),
-              const SizedBox(width: 7),
-              Text('Saldo XyCloudStore',
-                  style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 12.5, fontWeight: FontWeight.w600)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(.10),
-                  borderRadius: BorderRadius.circular(XyRadius.pill),
-                  border: Border.all(color: Colors.white.withOpacity(.14)),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.shield_rounded, size: 11, color: XyTheme.cyan),
-                  const SizedBox(width: 4),
-                  Text('Terlindungi',
-                      style: TextStyle(color: Colors.white.withOpacity(.75), fontSize: 10, fontWeight: FontWeight.w700)),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: 10),
-            AnimatedRupiah(
-              user.saldo,
-              format: rupiah,
-              style: const TextStyle(
-                  color: Colors.white, fontSize: 33, fontWeight: FontWeight.w800, letterSpacing: -1.4),
-            ),
+
             const SizedBox(height: 18),
             Row(children: [
               Expanded(
-                child: _MiniBtn(
-                  icon: Icons.add_rounded,
-                  label: 'Top Up',
-                  utama: true,
-                  onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
+                child: Pressable(
+                  onTap: () => bukaTopup(context),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(XyRadius.pill),
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.add_rounded, size: 18, color: XyTheme.primaryDeep),
+                      SizedBox(width: 7),
+                      Text('Isi Saldo',
+                          style: TextStyle(
+                              color: XyTheme.primaryDeep, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    ]),
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
               Expanded(
-                child: _MiniBtn(
-                  icon: Icons.receipt_long_rounded,
-                  label: 'Riwayat',
+                child: Pressable(
                   onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.13),
+                      borderRadius: BorderRadius.circular(XyRadius.pill),
+                      border: Border.all(color: Colors.white.withOpacity(.18)),
+                    ),
+                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.receipt_long_rounded, size: 17, color: Colors.white),
+                      SizedBox(width: 7),
+                      Text('Riwayat',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    ]),
+                  ),
                 ),
               ),
             ]),
@@ -278,6 +374,23 @@ class _KartuSaldo extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Garis halus diagonal supaya kartu terasa seperti kartu member.
+class _GarisKartu extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cat = Paint()
+      ..color = Colors.white.withOpacity(.05)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    for (var x = -size.height; x < size.width; x += 26) {
+      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), cat);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 class _MiniBtn extends StatelessWidget {
@@ -319,7 +432,7 @@ class _MenuCepat extends StatelessWidget {
       (Icons.rocket_launch_rounded, 'Sewa PC', XyTheme.primary, const SewaPcScreen()),
       (Icons.shopping_bag_rounded, 'Beli Akun', XyTheme.violet, const AkunScreen()),
       (Icons.credit_card_rounded, 'Top Up', XyTheme.success, const WalletScreen()),
-      (Icons.headset_mic_rounded, 'Bantuan', XyTheme.warning, const CsScreen()),
+      (Icons.support_agent_rounded, 'Chat Kirana', XyTheme.warning, const CsScreen()),
     ];
 
     return Row(

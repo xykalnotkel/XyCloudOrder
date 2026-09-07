@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
@@ -179,11 +181,35 @@ class _SheetTopupState extends State<_SheetTopup> {
         const Text('Metode Pembayaran',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
         const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: _pilihMetode('transfer', 'Transfer Bank', Icons.account_balance_rounded)),
-          const SizedBox(width: 10),
-          Expanded(child: _pilihMetode('qris', 'QRIS', Icons.qr_code_2_rounded)),
-        ]),
+        if (s.konfigurasi.metodeBayar.isEmpty)
+          Row(children: [
+            Expanded(child: _pilihMetode('transfer', 'Transfer Bank', Icons.account_balance_rounded)),
+            const SizedBox(width: 10),
+            Expanded(child: _pilihMetode('qris', 'QRIS', Icons.qr_code_2_rounded)),
+          ])
+        else
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: s.konfigurasi.metodeBayar.map((m) {
+              final kode = '${m['kode']}';
+              return SizedBox(
+                width: (MediaQuery.of(context).size.width - 60) / 2,
+                child: _pilihMetode(kode, '${m['nama']}', _ikonMetode(kode)),
+              );
+            }).toList(),
+          ),
+        if (s.konfigurasi.bayarOtomatis) ...[
+          const SizedBox(height: 12),
+          Row(children: const [
+            Icon(Icons.flash_on_rounded, size: 15, color: XyTheme.success),
+            SizedBox(width: 7),
+            Expanded(
+              child: Text('Saldo masuk otomatis begitu pembayaran berhasil, tanpa menunggu admin.',
+                  style: TextStyle(color: XyTheme.success, fontSize: 11.8, fontWeight: FontWeight.w600)),
+            ),
+          ]),
+        ],
         const SizedBox(height: 22),
         GradientButton(
           label: 'Lanjut Bayar ${rupiah(nominal)}',
@@ -197,6 +223,15 @@ class _SheetTopupState extends State<_SheetTopup> {
               style: TextStyle(color: XyTheme.muted, fontSize: 11.5)),
         ),
       ];
+
+  IconData _ikonMetode(String kode) {
+    final k = kode.toUpperCase();
+    if (k.contains('QRIS')) return Icons.qr_code_2_rounded;
+    if (k.contains('DANA') || k.contains('OVO') || k.contains('SHOPEE')) return Icons.account_balance_wallet_rounded;
+    if (k.contains('VA')) return Icons.account_balance_rounded;
+    if (k == 'SNAP') return Icons.payments_rounded;
+    return Icons.credit_card_rounded;
+  }
 
   Widget _pilihMetode(String id, String label, IconData ikon) {
     final aktif = metode == id;
@@ -226,6 +261,78 @@ class _SheetTopupState extends State<_SheetTopup> {
   // ---------------- langkah 2: bayar dan unggah bukti ----------------
   List<Widget> _langkahBayar(Map<String, dynamic> rek) {
     final t = dibuat!;
+
+    // jalur otomatis: cukup buka tautan pembayaran
+    if (t.otomatis && (t.bayar['url'] != null || t.bayar['qr'] != null)) {
+      return [
+        Row(children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(color: XyTheme.primarySoft, shape: BoxShape.circle),
+            child: const Icon(Icons.bolt_rounded, color: XyTheme.primary, size: 22),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text('Bayar Sekarang',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+          ),
+        ]),
+        const SizedBox(height: 18),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: XyTheme.gradPrimary,
+            borderRadius: BorderRadius.circular(XyRadius.xl),
+            boxShadow: XyTheme.glow(XyTheme.primary, .22),
+          ),
+          child: Column(children: [
+            const Text('Total pembayaran', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 6),
+            Text(rupiah(t.total),
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
+          ]),
+        ),
+        if (t.bayar['qr'] != null) ...[
+          const SizedBox(height: 16),
+          XyCard(
+            child: Column(children: [
+              const Text('Pindai QRIS di bawah ini',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(XyRadius.md),
+                child: Image.network('${t.bayar['qr']}', height: 250, fit: BoxFit.contain),
+              ),
+            ]),
+          ),
+        ],
+        if (t.bayar['kode'] != null) ...[
+          const SizedBox(height: 14),
+          XyCard(child: _barisRek('Kode pembayaran', '${t.bayar['kode']}', salin: true)),
+        ],
+        const SizedBox(height: 18),
+        if (t.bayar['url'] != null)
+          GradientButton(
+            label: 'Buka Halaman Pembayaran',
+            icon: Icons.open_in_new_rounded,
+            onPressed: () => _bukaTautan('${t.bayar['url']}'),
+          ),
+        const SizedBox(height: 12),
+        const Center(
+          child: Text('Saldo bertambah otomatis setelah pembayaran berhasil.\nHalaman ini boleh ditutup.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.5)),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+        ),
+      ];
+    }
+
     return [
       Row(children: [
         Container(
@@ -350,6 +457,22 @@ class _SheetTopupState extends State<_SheetTopup> {
         ),
       ),
     ];
+  }
+
+  Future<void> _bukaTautan(String url) async {
+    try {
+      await AndroidIntent(
+        action: 'action_view',
+        data: url,
+        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+      ).launch();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak bisa membuka halaman pembayaran.')),
+        );
+      }
+    }
   }
 
   Widget _barisRek(String k, String v, {bool salin = false}) => Row(children: [

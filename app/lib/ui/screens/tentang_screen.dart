@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
-import '../../core/config.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
@@ -80,11 +79,11 @@ class _TentangScreenState extends State<TentangScreen> {
 
           const SizedBox(height: 26),
           Center(
-            child: Column(children: [
-              Text('Server: ${XyConfig.aktif.replaceFirst('https://', '')}',
-                  style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
-              const SizedBox(height: 4),
-              const Text('© 2026 XyCloudStore', style: TextStyle(color: XyTheme.muted, fontSize: 11)),
+            child: Column(children: const [
+              Text('Dibuat dengan sepenuh hati di Indonesia',
+                  style: TextStyle(color: XyTheme.muted, fontSize: 11)),
+              SizedBox(height: 4),
+              Text('© 2026 XyCloudStore', style: TextStyle(color: XyTheme.muted, fontSize: 11)),
             ]),
           ),
         ],

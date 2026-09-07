@@ -616,12 +616,14 @@ function formUnit(){
       const d=await api('/agen',{method:'POST',body:JSON.stringify({
         nama:g('unama'), plan_id:g('uplan')||null, host:g('uhost')||null})});
       tutupModal(); vUnit();
-      setTimeout(()=>alert('Unit dibuat.\n\nKode agen:\n'+d.kode+'\n\nJalankan di PC:\npython xy_agent.py --kode '+d.kode),200);
+      xberitahu('Unit berhasil dibuat',
+        `Kode agen:<br><b class="mono">${esc(d.kode)}</b><br><br>Jalankan perintah ini di PC tersebut:<br>` +
+        `<span class="mono">python xy_agent.py --kode ${esc(d.kode)}</span>`);
     });
 }
 function salinKode(k){ navigator.clipboard.writeText(k); toast('Kode agen disalin') }
 async function hapusUnit(id){
-  if(!confirm('Hapus unit ini? Agen di PC tidak akan bisa terhubung lagi.')) return;
+  if(!await xkonfirmasi('Hapus unit ini?','Agen di PC tersebut tidak akan bisa terhubung lagi.',{tombol:'Hapus',bahaya:true})) return;
   await api('/agen/'+id,{method:'DELETE'}); toast('Unit dihapus'); vUnit();
 }
 
@@ -675,7 +677,7 @@ function formPengumuman(){
 }
 
 async function balasForum(id){
-  const t=prompt('Balasan sebagai Admin XyCloudStore:');
+  const t=await xtanya('Balas diskusi','Balasan sebagai Kirana - XyCloudStore','');
   if(!t) return;
   await api('/forum/'+id+'/balas',{method:'POST',body:JSON.stringify({isi:t})});
   toast('Balasan terkirim'); vForum();
@@ -685,7 +687,7 @@ async function sematForum(id,v){
   toast(v?'Diskusi disematkan':'Sematan dilepas'); vForum();
 }
 async function hapusForum(id){
-  if(!confirm('Hapus diskusi ini beserta balasannya?')) return;
+  if(!await xkonfirmasi('Hapus diskusi?','Semua balasan di dalamnya ikut terhapus.',{tombol:'Hapus',bahaya:true})) return;
   await api('/forum/'+id,{method:'DELETE'});
   toast('Diskusi dihapus'); vForum();
 }
@@ -716,7 +718,7 @@ async function vTopup(){
 }
 async function prosesTopup(id,status){
   let catatan=null;
-  if(status==='ditolak'){ catatan=prompt('Alasan penolakan:','Bukti transfer tidak cocok'); if(catatan===null) return }
+  if(status==='ditolak'){ catatan=await xtanya('Tolak permintaan','Alasan penolakan','Bukti transfer tidak cocok'); if(catatan===null) return }
   await api('/topup/'+id,{method:'PATCH',body:JSON.stringify({status,catatan})});
   toast(status==='disetujui'?'Saldo sudah ditambahkan':'Permintaan ditolak');
   vTopup();
@@ -749,13 +751,13 @@ async function vUlasan(){
       </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada ulasan masuk</div>'}</div>`;
 }
 async function balasUlasan(id,lama){
-  const t=prompt('Balasan untuk pembeli:',lama||'');
+  const t=await xtanya('Balas ulasan','Balasan untuk pembeli',lama||'');
   if(t===null) return;
   await api('/ulasan/'+id,{method:'PATCH',body:JSON.stringify({balasan:t})});
   toast('Balasan tersimpan'); vUlasan();
 }
 async function hapusUlasan(id){
-  if(!confirm('Hapus ulasan ini?')) return;
+  if(!await xkonfirmasi('Hapus ulasan ini?','Ulasan akan hilang dari halaman produk.',{tombol:'Hapus',bahaya:true})) return;
   await api('/ulasan/'+id,{method:'DELETE'});
   toast('Ulasan dihapus'); vUlasan();
 }
@@ -797,6 +799,37 @@ async function ujiPush(){
 }
 
 /* ---------- util ---------- */
+/* Dialog khas XyCloudStore, menggantikan alert/confirm/prompt bawaan peramban. */
+function xdialog({judul,isi,tombol='Lanjutkan',batal='Batal',bahaya=false,input=null,nilai=''}){
+  return new Promise(resolve=>{
+    const bungkus=document.createElement('div');
+    bungkus.className='modal on';
+    bungkus.innerHTML=`<div class="box" style="max-width:440px">
+      <h3>${esc(judul)}</h3>
+      ${isi?`<p style="color:var(--muted);font-size:13.5px;line-height:1.65;margin:0 0 16px">${isi}</p>`:''}
+      ${input!==null?`<div class="field"><label>${esc(input)}</label>
+        <input id="xdlgInput" value="${esc(nilai)}" autofocus></div>`:''}
+      <div class="row" style="justify-content:flex-end;gap:10px;margin-top:18px">
+        <button class="btn ghost" id="xdlgNo">${esc(batal)}</button>
+        <button class="btn ${bahaya?'danger':''}" id="xdlgYes">${esc(tombol)}</button>
+      </div></div>`;
+    document.body.appendChild(bungkus);
+
+    const tutup=(hasil)=>{ bungkus.remove(); resolve(hasil) };
+    bungkus.querySelector('#xdlgNo').onclick=()=>tutup(input!==null?null:false);
+    bungkus.querySelector('#xdlgYes').onclick=()=>{
+      const el=bungkus.querySelector('#xdlgInput');
+      tutup(input!==null?(el?el.value:''):true);
+    };
+    bungkus.onclick=(e)=>{ if(e.target===bungkus) tutup(input!==null?null:false) };
+    const f=bungkus.querySelector('#xdlgInput'); if(f){ f.focus(); f.select();
+      f.onkeydown=(e)=>{ if(e.key==='Enter') bungkus.querySelector('#xdlgYes').click() } }
+  });
+}
+const xkonfirmasi=(judul,isi,opsi={})=>xdialog({judul,isi,...opsi});
+const xtanya=(judul,label,nilai='')=>xdialog({judul,input:label,nilai,tombol:'Simpan'});
+const xberitahu=(judul,isi)=>xdialog({judul,isi,tombol:'Mengerti',batal:''}).then(()=>{});
+
 /* Semua teks dari pengguna harus lewat esc() sebelum masuk innerHTML. */
 function esc(v){
   if(v===null||v===undefined) return '';
@@ -804,7 +837,7 @@ function esc(v){
 }
 
 async function hapus(jenis,id){
-  if(!confirm('Hapus '+id+'?'))return;
+  if(!await xkonfirmasi('Hapus data ini?', 'Kode: <b class="mono">'+esc(id)+'</b>', {tombol:'Hapus', bahaya:true})) return;
   await api('/'+jenis+'/'+id,{method:'DELETE'});toast('Dihapus');
   ({plans:vPlans,produk:vProduk,banners:vBanners}[jenis])();
 }
@@ -813,7 +846,7 @@ function buka(judul,isi,onSimpan){
     `<div style="font-size:19px;font-weight:800;letter-spacing:-.5px;margin-bottom:20px">${judul}</div>${isi}
      <div style="display:flex;gap:10px;margin-top:8px"><button class="btn ghost" style="flex:1;justify-content:center" onclick="tutupModal()">Batal</button>
      <button class="btn" style="flex:1;justify-content:center" id="mSave">Simpan</button></div>`;
-  document.getElementById('mSave').onclick=async()=>{try{await onSimpan()}catch(e){alert(e.message)}};
+  document.getElementById('mSave').onclick=async()=>{try{await onSimpan()}catch(e){toast(e.message)}};
   document.getElementById('modal').classList.add('on');
 }
 const tutupModal=()=>document.getElementById('modal').classList.remove('on');

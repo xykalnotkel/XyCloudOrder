@@ -9,6 +9,7 @@ class Prefs {
   static const _kOnboarding = 'xy_onboarding_selesai';
   static const _kEmail = 'xy_email_terakhir';
   static const _kToken = 'xy_token';
+  static const _kSaldoTampil = 'xy_saldo_tampil';
 
   static const _aman = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -30,6 +31,13 @@ class Prefs {
 
   static Future<void> simpanEmail(String e) async =>
       (await SharedPreferences.getInstance()).setString(_kEmail, e);
+
+  // ---------- tampilan saldo ----------
+  static Future<bool> saldoTampil() async =>
+      (await SharedPreferences.getInstance()).getBool(_kSaldoTampil) ?? true;
+
+  static Future<void> simpanSaldoTampil(bool v) async =>
+      (await SharedPreferences.getInstance()).setBool(_kSaldoTampil, v);
 
   // ---------- sesi login ----------
   static Future<String?> token() async {

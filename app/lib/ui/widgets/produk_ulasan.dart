@@ -39,6 +39,8 @@ class GambarProduk extends StatelessWidget {
         height: tinggi,
         width: double.infinity,
         fit: BoxFit.cover,
+        cacheWidth: (tinggi * 3).round(),
+        filterQuality: FilterQuality.medium,
         loadingBuilder: (_, anak, progres) =>
             progres == null ? anak : Shimmer(height: tinggi, radius: radius),
         errorBuilder: (_, __, ___) => GradientThumb(
@@ -124,7 +126,8 @@ class KartuUlasan extends StatelessWidget {
             const SizedBox(height: 11),
             ClipRRect(
               borderRadius: BorderRadius.circular(XyRadius.sm),
-              child: Image.network(u.gambar!, height: 140, width: double.infinity, fit: BoxFit.cover),
+              child: Image.network(u.gambar!,
+                  height: 140, width: double.infinity, fit: BoxFit.cover, cacheWidth: 900),
             ),
           ],
           if (u.balasan != null) ...[

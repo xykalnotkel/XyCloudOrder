@@ -9,6 +9,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/error_state.dart';
+import '../widgets/lembar.dart';
 
 /// ============================================================
 ///  Forum komunitas XyCloudStore
@@ -48,14 +49,27 @@ class _ForumScreenState extends State<ForumScreen> {
             onPressed: () => s.muatForum(paksa: true),
             icon: const Icon(Icons.refresh_rounded),
           ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
+            child: Pressable(
+              onTap: () => bukaTulisDiskusi(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  gradient: XyTheme.gradPrimary,
+                  borderRadius: BorderRadius.circular(XyRadius.pill),
+                  boxShadow: XyTheme.glow(XyTheme.primary, .25),
+                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.edit_rounded, size: 15, color: Colors.white),
+                  SizedBox(width: 6),
+                  Text('Tulis',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+                ]),
+              ),
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _bukaTulis(context),
-        backgroundColor: XyTheme.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.edit_rounded, size: 19),
-        label: const Text('Tulis', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: Column(children: [
         BilahOffline(tampil: s.offline, onCoba: () => s.muatForum(paksa: true)),
@@ -113,12 +127,84 @@ class _ForumScreenState extends State<ForumScreen> {
                           color: XyTheme.primary,
                           onRefresh: () => s.muatForum(paksa: true),
                           child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(18, 6, 18, 96),
-                            itemCount: daftar.length,
-                            itemBuilder: (_, i) => _KartuPost(post: daftar[i]),
+                            padding: const EdgeInsets.fromLTRB(18, 6, 18, 24),
+                            itemCount: daftar.length + 1,
+                            itemBuilder: (_, i) => i == 0
+                                ? _AjakanTulis(nama: s.user?.nama ?? '')
+                                : _KartuPost(post: daftar[i - 1]),
                           ),
                         ),
         ),
+      ]),
+    );
+  }
+}
+
+/// Kotak ajakan menulis, sekaligus pengganti tombol melayang
+/// yang dulu tertutup menu bawah.
+class _AjakanTulis extends StatelessWidget {
+  const _AjakanTulis({required this.nama});
+  final String nama;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: XyCard(
+        onTap: () => bukaTulisDiskusi(context),
+        padding: const EdgeInsets.all(14),
+        child: Row(children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
+            child: Center(
+              child: Text(nama.isEmpty ? 'X' : nama[0].toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text('Mau tanya atau berbagi tips? Tulis di sini...',
+                style: TextStyle(color: XyTheme.muted, fontSize: 13.2)),
+          ),
+          const Icon(Icons.edit_rounded, size: 18, color: XyTheme.primary),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Lencana keanggotaan yang tampil di samping nama penulis.
+class LencanaTier extends StatelessWidget {
+  const LencanaTier(this.tier, {super.key});
+  final String tier;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = tier.toLowerCase();
+    if (t.isEmpty) return const SizedBox.shrink();
+
+    final (warna, label, ikon) = switch (t) {
+      'admin' => (XyTheme.primary, 'ADMIN', Icons.verified_rounded),
+      'vip' => (const Color(0xFFC08A2E), 'VIP', Icons.workspace_premium_rounded),
+      'pro' => (XyTheme.violet, 'PRO', Icons.bolt_rounded),
+      _ => (XyTheme.muted, 'BASIC', Icons.person_rounded),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: warna.withOpacity(.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: warna.withOpacity(.28)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(ikon, size: 9.5, color: warna),
+        const SizedBox(width: 3),
+        Text(label,
+            style: TextStyle(color: warna, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: .5)),
       ]),
     );
   }
@@ -150,6 +236,7 @@ class _KartuPost extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
                   ),
+                  LencanaTier(post.tier),
                   if (post.disematkan) ...[
                     const SizedBox(width: 6),
                     const Icon(Icons.push_pin_rounded, size: 13, color: XyTheme.primary),
@@ -176,7 +263,8 @@ class _KartuPost extends StatelessWidget {
             const SizedBox(height: 12),
             ClipRRect(
               borderRadius: BorderRadius.circular(XyRadius.md),
-              child: Image.network(post.gambar!, height: 160, width: double.infinity, fit: BoxFit.cover),
+              child: Image.network(post.gambar!,
+                  height: 160, width: double.infinity, fit: BoxFit.cover, cacheWidth: 900),
             ),
           ],
           const SizedBox(height: 12),
@@ -285,21 +373,15 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               tooltip: 'Hapus diskusi',
               icon: const Icon(Icons.delete_outline_rounded),
               onPressed: () async {
-                final yakin = await showDialog<bool>(
-                  context: context,
-                  builder: (d) => AlertDialog(
-                    title: const Text('Hapus diskusi ini?'),
-                    content: const Text('Semua balasan ikut terhapus dan tidak bisa dikembalikan.'),
-                    actions: [
-                      TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Batal')),
-                      TextButton(
-                        onPressed: () => Navigator.pop(d, true),
-                        child: const Text('Hapus', style: TextStyle(color: XyTheme.danger)),
-                      ),
-                    ],
-                  ),
+                final yakin = await konfirmasi(
+                  context,
+                  judul: 'Hapus diskusi ini?',
+                  pesan: 'Semua balasan ikut terhapus dan tidak bisa dikembalikan.',
+                  tombolYa: 'Hapus',
+                  ikon: Icons.delete_outline_rounded,
+                  bahaya: true,
                 );
-                if (yakin != true || !context.mounted) return;
+                if (!yakin || !context.mounted) return;
                 final pesan = await context.read<AppState>().hapusForum(p.id);
                 if (!context.mounted) return;
                 if (pesan == null) {
@@ -323,7 +405,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     const SizedBox(width: 11),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                        Row(children: [
+                          Flexible(
+                            child: Text(p.nama,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                          ),
+                          LencanaTier(p.tier),
+                        ]),
                         Text(tanggal(p.dibuat),
                             style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
                       ]),
@@ -339,7 +428,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     const SizedBox(height: 14),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(XyRadius.md),
-                      child: Image.network(p.gambar!, width: double.infinity, fit: BoxFit.cover),
+                      child: Image.network(p.gambar!,
+                          width: double.infinity, fit: BoxFit.cover, cacheWidth: 1200),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -402,10 +492,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.8)),
                                 ),
-                                if (b.admin) ...[
-                                  const SizedBox(width: 6),
-                                  const Pill('Admin', warna: XyTheme.primary, solid: true),
-                                ],
+                                LencanaTier(b.admin ? 'admin' : b.tier),
                               ]),
                             ),
                             Text(tanggal(b.dibuat),
@@ -466,7 +553,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 }
 
 /// ---------------- tulis diskusi ----------------
-Future<void> _bukaTulis(BuildContext context) => showModalBottomSheet(
+Future<void> bukaTulisDiskusi(BuildContext context) => showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

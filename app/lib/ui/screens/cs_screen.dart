@@ -21,10 +21,12 @@ class _CsScreenState extends State<CsScreen> {
   final scroll = ScrollController();
 
   static const cepat = [
-    'PC saya lag, bagaimana?',
-    'Cara top up saldo?',
-    'Garansi akun berapa lama?',
-    'Minta refund order saya',
+    'Halo Kirana, aku mau tanya',
+    'Cara isi saldo gimana?',
+    'PC-nya lag, tolong dicek',
+    'Akun yang aku beli bermasalah',
+    'Berapa lama garansinya?',
+    'Mau minta refund pesanan',
   ];
 
   @override
@@ -108,8 +110,8 @@ class _CsScreenState extends State<CsScreen> {
           ]),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Admin XyCloudStore', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
-            Text(s.csMengetik ? 'sedang mengetik...' : 'Admin online · balas cepat',
+            const Text('Kirana', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+            Text(s.csMengetik ? 'sedang mengetik...' : 'Admin XyCloudStore · biasanya balas < 2 menit',
                 style: TextStyle(
                     fontSize: 11.5,
                     color: s.csMengetik ? XyTheme.primary : XyTheme.success,
@@ -170,7 +172,7 @@ class _CsScreenState extends State<CsScreen> {
                 onSubmitted: (_) => _kirim(),
                 onChanged: (v) => context.read<AppState>().ketikCs(v.isNotEmpty),
                 decoration: InputDecoration(
-                  hintText: 'Tulis pesan...',
+                  hintText: 'Tulis pesan untuk Kirana...',
                   fillColor: XyTheme.bg,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   border: OutlineInputBorder(
@@ -250,6 +252,7 @@ class _Gelembung extends StatelessWidget {
                       msg.gambar!,
                       width: 210,
                       fit: BoxFit.cover,
+                      cacheWidth: 640,
                       loadingBuilder: (_, anak, p) => p == null
                           ? anak
                           : Container(
