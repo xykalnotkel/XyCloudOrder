@@ -42,20 +42,83 @@ Yang tetap harus terbuka hanyalah port streaming Sunshine.
 
 1. Buka dashboard admin, menu **Unit PC**, klik **Daftarkan Unit**, salin kode agennya.
 2. Salin `xy_agent.py` ke PC tersebut.
-3. Jalankan:
+3. Jalankan sesuai shell. **PowerShell menggunakan `$env:`, bukan `set` milik CMD.**
 
-```bash
-# Windows
-set XY_AGEN_KODE=xya_xxxxxxxxxxxx
-set XY_SUNSHINE_USER=admin
-set XY_SUNSHINE_PASS=passwordwebui
-python xy_agent.py
+### PowerShell (seperti prompt `PS C:\Users\...>`)
 
-# Linux
-XY_AGEN_KODE=xya_xxxxxxxxxxxx XY_SUNSHINE_USER=admin XY_SUNSHINE_PASS=passwordwebui python3 xy_agent.py
+Jalankan pada PC/VM yang juga menjalankan Sunshine. Username/password di bawah adalah
+**akun web UI Sunshine**, bukan login Windows dan bukan kode unit XyCloud.
+
+```powershell
+$env:XY_AGEN_KODE = Read-Host "Kode unit XyCloud"
+$env:XY_SUNSHINE_USER = Read-Host "Username web UI Sunshine"
+$pw = Read-Host "Password web UI Sunshine" -AsSecureString
+$env:XY_SUNSHINE_PASS = [System.Net.NetworkCredential]::new("", $pw).Password
+python .\xy_agent.py --cek
+# Bila hasilnya API_SIAP, jalankan agen:
+python .\xy_agent.py
 ```
 
-Kalau berhasil, dalam 20 detik unit akan tampil hijau di dashboard beserta GPU, RAM, dan IP publiknya.
+Password tidak dicetak dan tidak ditulis ke berkas oleh agen. Variabel hanya berlaku
+pada sesi PowerShell ini; isi lagi bila membuka terminal baru. Setelah agen dihentikan,
+`Remove-Item Env:XY_SUNSHINE_PASS` menghapus nilai dari environment terminal tersebut.
+
+### CMD (bukan PowerShell)
+
+```cmd
+set XY_AGEN_KODE=KODE_UNIT_KAMU
+set XY_SUNSHINE_USER=USERNAME_SUNSHINE
+set XY_SUNSHINE_PASS=PASSWORD_SUNSHINE
+python xy_agent.py --cek
+python xy_agent.py
+```
+
+### Linux
+
+```bash
+export XY_AGEN_KODE=KODE_UNIT_KAMU
+export XY_SUNSHINE_USER=USERNAME_SUNSHINE
+read -rsp "Password Sunshine: " XY_SUNSHINE_PASS; echo
+export XY_SUNSHINE_PASS
+python3 xy_agent.py --cek
+python3 xy_agent.py
+```
+
+## Diagnosis Sunshine (agen 1.0.1)
+
+```powershell
+Test-NetConnection 127.0.0.1 -Port 47990
+python .\xy_agent.py --cek
+```
+
+`--cek` hanya membaca API lokal: **tidak mengirim heartbeat, tidak mengambil perintah,
+tidak pairing, dan tidak menutup/membersihkan aplikasi**. Kode unit tidak diperlukan.
+
+| Hasil | Arti dan tindakan |
+|---|---|
+| `API_SIAP` | Kredensial diterima API Sunshine. Encoder, layar, dan streaming dari HP masih perlu diuji. |
+| `LOGIN_DITOLAK` / HTTP 401–403 | Sunshine merespons, tetapi akses API ditolak. Cocokkan akun web UI dan environment PowerShell. |
+| `PORT_TERTUTUP` | Sunshine/Apollo belum berjalan atau port/alamatnya berbeda. |
+| `WAKTU_HABIS` | Layanan tidak merespons. Periksa proses, port, dan log Sunshine. |
+| `API_TIDAK_DITEMUKAN` / HTTP 404 | Alamat/port atau versi API tidak sesuai. |
+| `API_TIDAK_SESUAI` | Respons berupa halaman HTML/setup atau bukan objek `/api/apps` Sunshine. |
+
+- Agen 1.0.0 menyatukan semua kegagalan di atas sebagai `TIDAK TERHUBUNG`; log itu **tidak membuktikan Sunshine mati**.
+- Jika `TcpTestSucceeded : False`, buka Sunshine/Apollo. Periksa dari PowerShell:
+  `Get-Service *sunshine*,*apollo* -ErrorAction SilentlyContinue` dan
+  `Get-Process *sunshine*,*apollo* -ErrorAction SilentlyContinue`.
+- Buka `https://127.0.0.1:47990` **di browser PC/VM host**, bukan browser HP. Jika baru dipasang, selesaikan setup akun web UI.
+- `127.0.0.1` benar jika agen dan Sunshine berjalan pada PC/VM yang sama. Jangan menggantinya dengan IP publik, dan **jangan membuka port admin 47990 ke internet**.
+- Pada VM tanpa monitor/GPU, kegagalan display/encoder harus dibuktikan dari log Sunshine; tidak dapat disimpulkan dari empat baris startup agen.
+- `Host: ...` hanya informasi alamat publik. Log `HEARTBEAT DITERIMA` pada versi 1.0.1 membuktikan server menerima laporan agen. Unit hijau di dashboard menunjukkan heartbeat, bukan jaminan streaming sudah berfungsi.
+
+## Pengujian agen
+
+```bash
+python -m unittest discover -s agent -p "test_*.py" -v
+```
+
+Tes memakai mock; tidak menjalankan perintah pada PC penyewa atau mengirim heartbeat ke produksi.
 
 ## Menjalankan otomatis saat PC menyala
 
@@ -111,6 +174,7 @@ rem powershell Restore-VMSnapshot -Name "Bersih" -VMName "GameVM" -Confirm:$fals
 | `--user` | `XY_SUNSHINE_USER` | `admin` |
 | `--pass` | `XY_SUNSHINE_PASS` | kosong |
 | `--host` | `XY_HOST_PUBLIK` | terdeteksi otomatis |
+| `--cek` | — | diagnosis lokal saja, lalu keluar |
 
 ## Catatan penting soal anti-cheat
 
