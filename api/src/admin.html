@@ -148,6 +148,28 @@ tr:hover td{background:rgba(255,255,255,.018)}
   .chat .foot{flex-wrap:wrap}
   .chat .foot input{min-width:0;flex:1}
 }
+
+/* v2.4 — tokens et comportements partages */
+:root{--r:18px;--muted:#B3A6CA;--panel2:#25183E;--line:#392750}
+button,input,select,textarea{font:inherit}button:disabled{opacity:.55;cursor:wait;filter:none;transform:none}
+:focus-visible{outline:3px solid var(--violet);outline-offset:3px}
+main{min-width:0;max-width:1700px;width:100%;margin:0 auto}
+aside{height:100dvh;min-height:0}aside .brand,aside>.sp,aside>button{flex-shrink:0}aside>.sp{display:none}
+#menu{overflow-y:auto;min-height:0;flex:1;padding-right:3px}.nav-section{padding:18px 13px 7px;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px}
+.top{gap:10px}.top h1{font-size:24px}.top p{line-height:1.6;max-width:650px}.card{padding:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}.btn{min-height:42px;justify-content:center;border-radius:12px}.btn.sm{min-height:36px}
+.muted{color:var(--muted)}.info-card{line-height:1.7;color:var(--muted);border-left:3px solid var(--violet)}
+.modal{padding:18px;backdrop-filter:blur(5px)}.modal .box{max-height:calc(100dvh - 36px);padding:24px;border-radius:24px;scroll-padding-bottom:90px}
+.modal h2{font-size:20px;line-height:1.4}.form-actions{display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:-24px;background:var(--panel);padding:16px 0;margin-top:16px;border-top:1px solid var(--line);z-index:2}.form-actions.static{position:static;padding:14px 0 0}
+.form-actions .btn{min-width:92px}.form-error{color:#FCA5A5;font-size:13px;line-height:1.6;margin-top:12px}.form-error:empty{display:none}
+.advanced{margin-top:18px;border:1px solid var(--line);border-radius:14px;padding:14px}.advanced summary{cursor:pointer;color:var(--violet);font-weight:700}.advanced[open] summary{margin-bottom:18px}
+.check-row{display:flex;align-items:center;gap:10px;font-size:13px}.check-row input{width:20px;height:20px}
+.promo-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr))}.promo-card{padding:0;overflow:hidden}.promo-card-body{padding:18px}.promo-card-body p{margin-top:8px;font-size:12px;line-height:1.5}.promo-target{overflow-wrap:anywhere}
+.promo-preview{height:214px;background:repeating-conic-gradient(var(--panel2) 0% 25%,var(--panel) 0% 50%) 50%/18px 18px;display:flex;align-items:center;justify-content:center;padding:12px}.promo-preview img{max-width:100%;max-height:100%;object-fit:contain}.form-preview{height:180px;border-radius:14px;margin:12px 0 20px}.form-preview:empty{display:none}
+.upload-zone{position:relative;display:flex;align-items:center;justify-content:center;gap:14px;padding:20px;border:1px dashed var(--violet);border-radius:14px;cursor:pointer;color:var(--ink)}.upload-zone small{color:var(--muted);font-size:11px}.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media(max-width:900px){.modal .box .grid{grid-template-columns:1fr 1fr!important}.top h1{font-size:22px}.modal .box{max-width:620px}.toast{left:16px;right:16px;bottom:18px}.form-actions .btn{flex:1}}
+@media(max-width:440px){.modal{padding:10px}.modal .box{padding:18px;max-height:calc(100dvh - 20px)}.modal .box .grid{grid-template-columns:1fr!important}.form-actions{bottom:-18px}.top>.btn{flex:1}.card{padding:16px}.promo-card{padding:0}}
+
 </style>
 </head>
 <body>
@@ -216,14 +238,17 @@ document.querySelector('aside button[onclick="keluar()"]').innerHTML=ic('logout'
 /* ---------- state ---------- */
 let KEY=localStorage.getItem('xy_admin_key')||'';
 let TAB='dash', ROOM=null, WS=null, DATA={};
+let RENDER_ID=0;
 const rp=n=>'Rp'+(n||0).toLocaleString('id-ID');
 const dt=s=>s?new Date(s.includes('T')?s:s.replace(' ','T')+'Z').toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
 const jm=s=>s?new Date(s.includes('T')?s:s.replace(' ','T')+'Z').toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'';
-function toast(t){const e=document.getElementById('toast');e.innerHTML=ic('refresh',16,'#6EE7A8')+t;e.classList.add('on');
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.setAttribute('role','status');e.classList.add('on');
   clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),2600)}
 async function api(path,opt={}){
+  const stamp=RENDER_ID;
   const r=await fetch('/api/admin'+path,{...opt,headers:{'Content-Type':'application/json','x-admin-key':KEY,...(opt.headers||{})}});
   const j=await r.json().catch(()=>({}));
+  if((!opt.method||opt.method==='GET')&&stamp!==RENDER_ID){const e=new Error('Navigasi berpindah');e.name='NavigationCancelled';throw e;}
   if(!r.ok)throw new Error(j.error||'Gagal');
   return j.data!==undefined?j.data:j;
 }
@@ -263,14 +288,20 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['galat','warn','Galat App'],['analitik','chart','Analitik'],['referral','tag','Referral'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['voucher','tag','Voucher'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem'],['peran','users','Peran Admin']];
-function render(){
-  document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
-    `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran,galat:vGalat,analitik:vAnalitik,referral:vReferral}[TAB])();
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['promosi','image','Floating & Pop-up'],['stiker','star','Stiker & GIPHY'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['galat','warn','Galat App'],['analitik','chart','Analitik'],['referral','tag','Referral'],['unit','desktop','Unit PC'],['forum','users','Komunitas'],['voucher','tag','Voucher'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem'],['peran','users','Peran Admin']];
+async function render(){
+  const stamp=++RENDER_ID;
+  const groups=[['Ringkasan',['dash','statistik','analitik']],['Transaksi & layanan',['orders','topup','plans','unit','produk','voucher']],['Konten & komunitas',['banners','promosi','stiker','forum','moderasi','ulasan']],['Pelanggan',['cs','users','referral']],['Pengelolaan',['alat','galat','sistem','peran']]];
+  document.getElementById('menu').innerHTML=groups.map(([nama,ids])=>`<div class="nav-section">${nama}</div>`+ids.map(id=>{const m=MENU.find(x=>x[0]===id);return m?`<button class="${TAB===id?'on':''}" aria-current="${TAB===id?'page':'false'}" onclick="ke('${id}')">${ic(m[1])}${m[2]}</button>`:''}).join('')).join('');
+  const lama=document.getElementById('main'),baru=document.createElement('main');baru.id='main';lama.replaceWith(baru);
+  const nama=MENU.find(x=>x[0]===TAB)?.[2]||'Dashboard';
+  baru.innerHTML=head(nama,'Memuat data terbaru…')+'<div class="card empty">Menghubungkan ke server…</div>';
+  try{await ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,promosi:vPromosi,stiker:vStiker,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran,galat:vGalat,analitik:vAnalitik,referral:vReferral}[TAB])();}
+  catch(e){if(stamp!==RENDER_ID||e.name==='NavigationCancelled')return;baru.innerHTML=head(nama,'Data belum bisa dimuat')+`<div class="card empty"><p>${esc(e.message)}</p><button class="btn" style="margin-top:18px" onclick="render()">Coba lagi</button></div>`;}
 }
 function bukaTab(t){
   TAB=t;
+  tutupModal();
   render();
   tutupLaci();          // di layar kecil, laci menutup sendiri setelah memilih menu
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1560,12 +1591,73 @@ async function hapus(jenis,id){
 function buka(judul,isi,onSimpan){
   document.getElementById('modalBox').innerHTML=
     `<div style="font-size:19px;font-weight:800;letter-spacing:-.5px;margin-bottom:20px">${judul}</div>${isi}
-     <div style="display:flex;gap:10px;margin-top:8px"><button class="btn ghost" style="flex:1;justify-content:center" onclick="tutupModal()">Batal</button>
+     <div id="mError" class="form-error" role="alert"></div><div class="form-actions"><button class="btn ghost" style="flex:1;justify-content:center" onclick="tutupModal()">Batal</button>
      <button class="btn" style="flex:1;justify-content:center" id="mSave">Simpan</button></div>`;
-  document.getElementById('mSave').onclick=async()=>{try{await onSimpan()}catch(e){toast(e.message)}};
+  document.getElementById('mSave').onclick=async()=>{const btn=document.getElementById('mSave');if(btn.disabled)return;btn.disabled=true;btn.textContent='Menyimpan…';try{await onSimpan()}catch(e){const el=document.getElementById('mError');if(el)el.textContent=e.message;toast(e.message)}finally{btn.disabled=false;btn.textContent='Simpan'}};
   document.getElementById('modal').classList.add('on');
 }
 const tutupModal=()=>document.getElementById('modal').classList.remove('on');
+
+function modal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modal').classList.add('on');}
+/* ---------- promosi gambar: satu sumber untuk aplikasi dan web ---------- */
+async function vPromosi(){
+  const list=await api('/promosi'); DATA.promosi=list;
+  document.getElementById('main').innerHTML=head('Promosi','Promo melayang dan pop-up gambar untuk aplikasi & situs web',
+    `<button class="btn ghost" onclick="formPromosi({jenis:'popup'})">${ic('plus',16)}Pop-up info</button><button class="btn" onclick="formPromosi({jenis:'floating'})">${ic('plus',16)}Promo melayang</button>`)+
+    `<div class="card info-card">Cukup unggah gambar dan isi tujuan klik. Tampilan pelanggan hanya gambar dan tombol tutup. Promo melayang bisa digeser; pop-up tampil sekali per revisi di tiap perangkat. Maksimal dua promo melayang dan satu pop-up per sesi.</div>
+    <div class="grid promo-grid" style="margin-top:18px">${list.length?list.map(p=>`
+      <article class="card promo-card"><div class="promo-preview"><img src="${esc(p.gambar)}" alt="${esc(p.nama)}" loading="lazy"></div>
+      <div class="promo-card-body"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>${esc(p.nama)}</strong><span class="tag" style="background:${p.aktif?'#14532D':'var(--panel2)'}">${p.aktif?'Aktif':'Nonaktif'}</span></div>
+      <p class="muted">${p.jenis==='popup'?'Pop-up info':'Melayang · '+esc(p.posisi)} · ${esc(p.platform)} · revisi ${p.revisi}</p>
+      <p class="mono promo-target">${esc(p.aksi)} → ${esc(p.target||'Halaman utama')}</p>
+      <div class="form-actions static"><button class="btn ghost" onclick="formPromosi(DATA.promosi.find(p=>p.id==='${esc(p.id)}'))">${ic('edit',15)}Edit</button><button class="btn danger" aria-label="Hapus promo" onclick="hapusPromosi('${esc(p.id)}')">${ic('trash',16)}</button></div></div></article>`).join(''):'<div class="card empty">Belum ada promo. Tidak ada pop-up atau gambar contoh yang ditampilkan ke pengguna.</div>'}</div>`;
+}
+function formPromosi(p={}){
+  modal(`<h2>${p.id?'Edit':'Tambah'} ${p.jenis==='popup'?'Pop-up Info':'Promo Melayang'}</h2>
+    <p class="muted" style="margin:8px 0 20px">Unggah gambar, lalu tentukan tujuan saat gambar diketuk.</p>
+    <div class="field"><label for="pr_gambar">Gambar promo</label><input id="pr_gambar" type="url" value="${esc(p.gambar||'')}" placeholder="https://… atau unggah dari perangkat" oninput="previewPromosi()"></div>
+    <label class="upload-zone" for="pr_file">${ic('image',24)}<span>Pilih PNG, JPG, WebP atau GIF<br><small>Maksimal 4 MB · gambar tidak dipotong</small></span><input id="pr_file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="pilihGambarPromosi(event)"></label>
+    <div id="pr_preview" class="promo-preview form-preview"></div>
+    <div class="field"><label for="pr_target">Tujuan klik (HTTPS)</label><input id="pr_target" type="url" value="${esc(p.target||'')}" placeholder="https://xycloud.my.id/sewa"></div>
+    <details class="advanced"><summary>Pengaturan tambahan</summary>
+      <div class="field"><label>Nama internal (opsional)</label><input id="pr_nama" value="${esc(p.nama||'')}" placeholder="Nama untuk dashboard"></div>
+      <div class="grid g2"><div class="field"><label>Jenis</label><select id="pr_jenis"><option value="floating" ${p.jenis!=='popup'?'selected':''}>Promo melayang</option><option value="popup" ${p.jenis==='popup'?'selected':''}>Pop-up info</option></select></div>
+      <div class="field"><label>Posisi awal</label><select id="pr_posisi"><option value="kanan">Kanan</option><option value="kiri" ${p.posisi==='kiri'?'selected':''}>Kiri</option></select></div></div>
+      <div class="grid g2"><div class="field"><label>Tampilkan di</label><select id="pr_platform"><option value="semua">Aplikasi + situs web</option><option value="app" ${p.platform==='app'?'selected':''}>Aplikasi saja</option><option value="web" ${p.platform==='web'?'selected':''}>Situs web saja</option></select></div>
+      <div class="field"><label>Urutan</label><input id="pr_urutan" type="number" min="0" max="999" value="${p.urutan||0}"></div></div>
+      <div class="field"><label>Aksi internal (opsional)</label><select id="pr_aksi">${[['url','Buka URL di atas'],['sewa','Paket sewa PC'],['akun','Produk akun'],['topup','Dompet'],['komunitas','Komunitas'],['unduh','Unduh aplikasi']].map(([v,n])=>`<option value="${v}" ${(p.aksi||'url')===v?'selected':''}>${n}</option>`).join('')}</select></div>
+      <label class="check-row"><input id="pr_aktif" type="checkbox" ${p.aktif!==0?'checked':''}> Promo aktif</label>
+    </details>
+    <p class="muted" style="font-size:12px;margin:14px 0">Menyimpan perubahan membuat revisi baru; pop-up dapat ditampilkan kembali.</p>
+    <div id="pr_error" class="form-error" role="alert"></div>
+    <div class="form-actions"><button class="btn ghost" onclick="tutupModal()">Batal</button><button id="pr_save" class="btn" onclick="simpanFormPromosi('${esc(p.id||'')}')">Simpan promo</button></div>`);
+  previewPromosi();
+}
+function previewPromosi(){const el=document.getElementById('pr_preview'),v=document.getElementById('pr_gambar').value;el.replaceChildren();if(!/^https:\/\//.test(v)&&!/^data:image\/(png|jpeg|webp|gif);base64,/.test(v))return;const im=new Image();im.src=v;im.alt='Pratinjau promo';el.append(im);}
+function pilihGambarPromosi(ev){const file=ev.target.files?.[0];if(!file)return;if(file.size>4*1024*1024||!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)){toast('Pilih gambar PNG/JPG/WebP/GIF maksimal 4 MB.');return;}const r=new FileReader();r.onload=()=>{document.getElementById('pr_gambar').value=r.result;previewPromosi();};r.readAsDataURL(file);}
+async function simpanFormPromosi(id){
+  const b=document.getElementById('pr_save');if(b.disabled)return;b.disabled=true;b.textContent='Menyimpan…';
+  const value=n=>document.getElementById('pr_'+n).value;
+  try{await api('/promosi',{method:'POST',body:JSON.stringify({id:id||undefined,nama:value('nama'),jenis:value('jenis'),gambar:value('gambar'),target:value('target'),aksi:value('aksi'),posisi:value('posisi'),platform:value('platform'),urutan:Number(value('urutan')),aktif:document.getElementById('pr_aktif').checked?1:0})});tutupModal();toast('Promo tersimpan. Aplikasi dan web akan memuat pengaturan baru.');if(TAB==='promosi')await vPromosi();}
+  catch(e){document.getElementById('pr_error').textContent=e.message;}
+  finally{b.disabled=false;b.textContent='Simpan promo';}
+}
+async function hapusPromosi(id){if(!await xkonfirmasi('Hapus promo?','Promo tidak lagi ditampilkan ke pengguna.',{tombol:'Hapus',bahaya:true}))return;await api('/promosi/'+encodeURIComponent(id),{method:'DELETE'});toast('Promo dihapus');await vPromosi();}
+
+/* ---------- pencarian GIPHY ---------- */
+async function vStiker(){
+  const d=await api('/integrasi/giphy');
+  document.getElementById('main').innerHTML=head('Stiker & GIPHY','Kelola integrasi pencarian tanpa mengganti APK')+
+  `<div class="grid g2"><section class="card"><h2 style="font-size:18px">Pencarian GIPHY</h2><p class="muted" style="margin:8px 0 20px">${d.siap?'Terhubung. Pengguna dapat mencari stiker dan GIF.':'Belum terhubung. Galeri dan koleksi lokal tetap berfungsi.'}</p>
+  ${d.dari_env?'<p>Key diatur melalui secret Worker <code>GIPHY_API_KEY</code>. Kelola dari Cloudflare.</p>':`<div class="field"><label for="giphy_key">API key GIPHY</label><input id="giphy_key" type="password" autocomplete="new-password" placeholder="${d.siap?'Isi hanya untuk mengganti key':'Masukkan API key dari GIPHY Developers'}"></div>
+  <div id="giphy_error" class="form-error" role="alert"></div><div class="form-actions static"><button id="giphy_save" class="btn" onclick="simpanGiphy()">${d.siap?'Ganti key':'Simpan & aktifkan'}</button>${d.siap?'<button class="btn danger" onclick="hapusGiphy()">Nonaktifkan</button>':''}</div>`}</section>
+  <section class="card"><h2 style="font-size:18px">Koleksi pribadi di HP</h2><p class="muted" style="margin-top:12px;line-height:1.8">Gambar statis diubah menjadi WebP. GIF dan WebP animasi tetap bergerak. Koleksi dan metadata disimpan dengan AES-256-GCM; kuncinya berada di penyimpanan aman Android. Stiker yang dikirim ke komunitas merupakan konten publik, bukan pesan end-to-end encrypted.</p><p class="muted" style="margin-top:12px">Batas: 2 MB per stiker, 100 stiker per koleksi. Pengguna bisa menyimpan stiker orang lain dan mengirim teks bersama stiker.</p></section></div>`;
+}
+async function simpanGiphy(){const b=document.getElementById('giphy_save'),inp=document.getElementById('giphy_key');b.disabled=true;b.textContent='Memeriksa key…';try{await api('/integrasi/giphy',{method:'POST',body:JSON.stringify({api_key:inp.value.trim()})});inp.value='';toast('GIPHY berhasil diaktifkan');await vStiker();}catch(e){document.getElementById('giphy_error').textContent=e.message;}finally{b.disabled=false;b.textContent='Simpan & aktifkan';}}
+async function hapusGiphy(){if(!await xkonfirmasi('Nonaktifkan GIPHY?','Koleksi lokal dan stiker yang sudah terkirim tetap tersedia.',{tombol:'Nonaktifkan',bahaya:true}))return;await api('/integrasi/giphy',{method:'DELETE'});await vStiker();}
+
+window.addEventListener('unhandledrejection',e=>{if(e.reason?.name==='NavigationCancelled'){e.preventDefault();return;}e.preventDefault();toast(e.reason?.message||'Terjadi kesalahan. Coba lagi.');});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')tutupModal();});
 
 /* ---------- start ---------- */
 if(KEY){document.getElementById('gk').value=KEY;masuk()}

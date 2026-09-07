@@ -1,3 +1,5 @@
+import { infoHapusAkun, bersihkanAkun } from './akun.js';
+import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
 /**
  * ============================================================
  *  XyCloud API — Cloudflare Worker
@@ -83,7 +85,7 @@ async function kirimOtp(env, { email, nama, tipe }) {
     .bind(uid('otp_'), email, kode, tipe, kadaluarsa).run();
   return kirimEmail(env, {
     to: email,
-    template: tipe === 'reset' ? 'resetPassword' : 'verifikasi',
+    template: tipe === 'reset' ? 'resetPassword' : tipe === 'hapus_akun' ? 'hapusAkun' : 'verifikasi',
     data: { nama: nama || 'Sobat Xy', kode },
   });
 }
@@ -658,6 +660,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return err('Endpoint agen tidak dikenal', 404, env);
       }
 
+      if (p === 'promosi' && req.method === 'GET') return json(await daftarPromosi(env), 200, env);
+
       // ---------------- FORUM KOMUNITAS (baca boleh tanpa login) ----------------
       if (p === 'forum' && req.method === 'GET') {
         const kategori = url.searchParams.get('kategori');
@@ -673,7 +677,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           nilai.push(kategori);
         }
         if (cari) {
-          syarat.push('(judul LIKE ? OR isi LIKE ?)');
+          syarat.push('(f.judul LIKE ? OR f.isi LIKE ?)');
           nilai.push(`%${cari}%`, `%${cari}%`);
         }
         if (syarat.length) sql += ' WHERE ' + syarat.join(' AND ');
@@ -684,34 +688,34 @@ ${halaman.map(([u, p2, f]) => `  <url>
         sql = sql.replace(
           'SELECT * FROM forum_post',
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id`
-        ).replace(/\bWHERE (kategori|\()/, 'WHERE f.$1')
+        ).replace('WHERE kategori', 'WHERE f.kategori')
          .replace('ORDER BY disematkan DESC, dibuat DESC', 'ORDER BY f.disematkan DESC, f.dibuat DESC');
 
         const { results } = await env.DB.prepare(sql).bind(...nilai).all();
-        return json(results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'm'), foto: samarkanGambar(env, r.foto, 's') })), 200, env);
+        return json(results.map((r) => ({ ...r, nama: r.nama_terbaru || r.nama, gambar: samarkanGambar(env, r.gambar, 'm'), foto: samarkanGambar(env, r.foto, 's') })), 200, env);
       }
 
       if (p.startsWith('forum/') && p.split('/').length === 2 && req.method === 'GET') {
         const id = p.split('/')[1];
         const post = await env.DB.prepare(
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id WHERE f.id = ?`
         ).bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
 
         const { results } = await env.DB.prepare(
           `SELECT b.*, COALESCE(u.tier, CASE WHEN b.admin = 1 THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.badge AS badge, COALESCE(u.foto, b.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, b.foto) AS foto
            FROM forum_balasan b LEFT JOIN users u ON u.id = b.user_id
-           WHERE b.post_id = ? ORDER BY b.dibuat ASC LIMIT 200`
+           WHERE b.post_id = ? ORDER BY b.dibuat DESC, b.id DESC LIMIT 200`
         ).bind(id).all();
 
         return json({
-          post: { ...post, gambar: samarkanGambar(env, post.gambar, 'l'), foto: samarkanGambar(env, post.foto, 's') },
-          balasan: results.map((r) => ({ ...r, foto: samarkanGambar(env, r.foto, 's') })),
+          post: { ...post, nama: post.nama_terbaru || post.nama, gambar: samarkanGambar(env, post.gambar, 'l'), foto: samarkanGambar(env, post.foto, 's') },
+          balasan: results.reverse().map((r) => ({ ...r, nama: r.nama_terbaru || r.nama, stiker: bacaStiker(r.stiker), foto: samarkanGambar(env, r.foto, 's') })),
         }, 200, env);
       }
 
@@ -1183,6 +1187,33 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a.startsWith('produk/') && req.method === 'DELETE') {
           await env.DB.prepare('DELETE FROM akun_produk WHERE id=?').bind(a.split('/')[1]).run();
           return json({ ok: true }, 200, env);
+        }
+
+        // ---- promo melayang / pop-up dan integrasi stiker ----
+        if (a.startsWith('promosi') || a.startsWith('integrasi/giphy')) {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh mengatur promosi/integrasi', 403, env);
+          if (a === 'promosi' && req.method === 'GET') return json(await daftarPromosi(env, true), 200, env);
+          if (a === 'promosi' && req.method === 'POST') {
+            const hasil = await simpanPromosi(env, await req.json());
+            ctx.waitUntil(push(env, 'katalog', 'promosi.update', {}));
+            ctx.waitUntil(catatAdmin(env, admin, 'simpan promosi', hasil.id));
+            return json(hasil, 201, env);
+          }
+          if (a.startsWith('promosi/') && req.method === 'DELETE') {
+            await env.DB.prepare('DELETE FROM promo_overlay WHERE id = ?').bind(a.split('/')[1]).run();
+            ctx.waitUntil(push(env, 'katalog', 'promosi.update', {}));
+            return json({ ok: true }, 200, env);
+          }
+          if (a === 'integrasi/giphy' && req.method === 'GET') return json({ siap: Boolean(await ambilKunciGiphy(env)), dari_env: Boolean(env.GIPHY_API_KEY) }, 200, env);
+          if (a === 'integrasi/giphy' && req.method === 'POST') {
+            const b = await req.json();
+            return json(await simpanKunciGiphy(env, b.api_key), 200, env);
+          }
+          if (a === 'integrasi/giphy' && req.method === 'DELETE') {
+            if (env.GIPHY_API_KEY) return err('Key berasal dari secret Worker; hapus melalui Cloudflare.', 409, env);
+            await env.DB.prepare("DELETE FROM setelan WHERE kunci = 'integrasi_giphy_terenkripsi'").run();
+            return json({ ok: true, siap: false }, 200, env);
+          }
         }
 
         // ---- banner ----
@@ -1845,7 +1876,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
             const { results } = await env.DB
               .prepare('SELECT DISTINCT user_id FROM forum_balasan WHERE post_id = ? AND user_id != ?')
               .bind(id, 'admin').all();
-            const cuplikan = baris.isi.length > 90 ? `${baris.isi.slice(0, 90)}...` : baris.isi;
+            const cuplikan = (baris.isi || 'Mengirim stiker').slice(0, 90);
             const tujuan = [...new Set([p2?.user_id, ...results.map((r) => r.user_id)].filter(Boolean))];
             for (const uid2 of tujuan) {
               await buatNotif(env, ctx, {
@@ -1930,6 +1961,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       // akun yang diblokir hanya boleh membaca pemberitahuan dan menghubungi admin
       const statusAkun = await env.DB.prepare('SELECT diblokir, alasan_blokir FROM users WHERE id = ?')
         .bind(me.sub).first();
+      if (!statusAkun) return err('Sesi berakhir. Silakan masuk kembali.', 401, env);
       if (statusAkun?.diblokir === 1 && !p.startsWith('cs/') && !p.startsWith('notifikasi') && p !== 'me') {
         return err(
           statusAkun.alasan_blokir
@@ -1937,6 +1969,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
             : 'Akunmu sedang dibekukan. Hubungi admin lewat menu chat.',
           403, env,
         );
+      }
+
+      if (p === 'stiker/giphy' && req.method === 'GET') {
+        if (!(await bolehLanjut(env, `giphy:${me.sub}`, 30, 60))) return err('Terlalu banyak pencarian. Tunggu sebentar.', 429, env);
+        return json(await cariGiphy(env, url.searchParams), 200, env);
+      }
+      if (p === 'stiker/impor' && req.method === 'POST') {
+        if (!(await bolehLanjut(env, `stiker:${me.sub}`, 30, 3600))) return err('Batas impor stiker tercapai. Coba lagi nanti.', 429, env);
+        return json(await terimaStiker(env, await req.json()), 201, env);
       }
 
       // ---- profil pengguna yang sedang login ----
@@ -2234,41 +2275,38 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }, 200, env);
       }
 
-      // ---- hapus akun sendiri ----
+      // ---- hapus akun: tindakan eksplisit + autentikasi ulang, saldo tidak dibuang ----
+      if (p === 'me/hapus/info' && req.method === 'GET') {
+        const u = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(me.sub).first();
+        return json(await infoHapusAkun(env, u), 200, env);
+      }
+      if (p === 'me/hapus/kode' && req.method === 'POST') {
+        if (!(await bolehLanjut(env, `hapus-kode:${me.sub}`, 3, 3600))) return err('Kode sudah diminta beberapa kali. Coba lagi nanti.', 429, env);
+        const u = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(me.sub).first();
+        const info = await infoHapusAkun(env, u);
+        if (!info.boleh_hapus) return err(info.penghalang.join(' '), 409, env);
+        if (!info.perlu_otp) return err('Akun ini menggunakan konfirmasi password.', 400, env);
+        const hasil = await kirimOtp(env, { email: u.email, nama: u.nama, tipe: 'hapus_akun' });
+        if (!hasil.ok) return err('Email konfirmasi belum terkirim. Coba lagi nanti.', 502, env);
+        return json({ ok: true, pesan: 'Kode konfirmasi dikirim ke email akunmu.' }, 200, env);
+      }
       if (p === 'me' && req.method === 'DELETE') {
         const b = await req.json().catch(() => ({}));
-        const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
-        if (!u) return err('Akun tidak ditemukan', 404, env);
-
-        const akunSosial = String(u.password || '').startsWith('sosial:');
-        if (!akunSosial && !(await cocokPw(String(b.password || ''), u.password))) {
-          return err('Password salah, akun tidak jadi dihapus', 401, env);
+        if (b.konfirmasi !== 'HAPUS') return err('Konfirmasi penghapusan diperlukan. Gunakan menu Hapus Akun pada aplikasi terbaru.', 400, env);
+        if (!(await bolehLanjut(env, `hapus-akun:${me.sub}`, 5, 900))) return err('Terlalu banyak percobaan. Tunggu 15 menit.', 429, env);
+        const u = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(me.sub).first();
+        const info = await infoHapusAkun(env, u);
+        if (!info.boleh_hapus) return err(info.penghalang.join(' '), 409, env);
+        if (info.perlu_otp) {
+          const cek = await cekOtp(env, { email: u.email, kode: b.kode || '', tipe: 'hapus_akun' });
+          if (!cek.ok) return err(cek.pesan, 401, env);
+        } else if (!(await cocokPw(String(b.password || ''), u.password))) {
+          return err('Password salah. Akun tidak dihapus.', 401, env);
         }
-        if ((u.saldo || 0) > 0 && !b.paksa) {
-          return err(
-            `Saldomu masih Rp${Number(u.saldo).toLocaleString('id-ID')}. Habiskan dulu atau centang paksa hapus.`,
-            409, env,
-          );
-        }
-
-        await env.DB.batch([
-          env.DB.prepare('DELETE FROM cs_messages WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM notifikasi WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM forum_suka WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM forum_balasan_suka WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM forum_balasan WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM forum_post WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM ulasan WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM topup WHERE user_id = ?').bind(me.sub),
-          env.DB.prepare('DELETE FROM sesi WHERE user_id = ?').bind(me.sub),
-          // riwayat pesanan disamarkan, bukan dihapus, supaya pembukuan tetap utuh
-          env.DB.prepare("UPDATE orders SET user_id = 'dihapus' WHERE user_id = ?").bind(me.sub),
-          env.DB.prepare("UPDATE transaksi SET user_id = 'dihapus' WHERE user_id = ?").bind(me.sub),
-          env.DB.prepare('DELETE FROM users WHERE id = ?').bind(me.sub),
-        ]);
-
-        ctx.waitUntil(catatLog(env, 'akun', `Akun ${u.email} dihapus atas permintaan pemiliknya`));
-        return json({ ok: true, pesan: 'Akun dan datamu sudah dihapus. Terima kasih pernah memakai XyCloudStore.' }, 200, env);
+        await bersihkanAkun(env, u);
+        ctx.waitUntil(catatLog(env, 'akun', 'Penghapusan akun atas permintaan pemilik selesai.'));
+        ctx.waitUntil(push(env, 'forum', 'forum.refresh', {}));
+        return json({ ok: true, pesan: 'Akun dihapus. Data pembukuan disimpan tanpa identitas akun.' }, 200, env);
       }
 
       // ---- daftar pemberitahuan ----
@@ -2385,6 +2423,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         delete u.password;
+        ctx.waitUntil(push(env, 'forum', 'forum.profil', { user_id: u.id, nama: u.nama, foto: samarkanGambar(env, u.foto, 's') }));
         return json(u, 200, env);
       }
 
@@ -2435,27 +2474,32 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json(post, 201, env);
       }
 
-      // ---- forum: balas ----
+      // ---- forum: balas, teks + stiker berada dalam satu pesan ----
       if (p.startsWith('forum/') && p.endsWith('/balas') && req.method === 'POST') {
         const id = p.split('/')[1];
-        const { isi, balas_ke: balasKe } = await req.json().catch(() => ({}));
-        if (String(isi || '').trim().length < 2) return err('Balasan terlalu pendek', 400, env);
-
+        if (!(await bolehLanjut(env, `komentar:${me.sub}`, 40, 3600))) return err('Terlalu banyak komentar. Coba lagi nanti.', 429, env);
+        const b = await req.json().catch(() => ({}));
+        const isi = String(b.isi || '').trim();
+        const balasKe = b.balas_ke ? String(b.balas_ke) : null;
+        if (!isi && !b.stiker) return err('Tulis pesan atau pilih stiker terlebih dahulu.', 400, env);
+        if (isi.length > 4000) return err('Komentar maksimal 4.000 karakter.', 400, env);
         const post = await env.DB.prepare('SELECT id FROM forum_post WHERE id = ?').bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
-
+        if (balasKe && !(await env.DB.prepare('SELECT id FROM forum_balasan WHERE id = ? AND post_id = ?').bind(balasKe, id).first())) {
+          return err('Komentar induk sudah dihapus atau berasal dari diskusi lain.', 400, env);
+        }
+        const stiker = await terimaStiker(env, b.stiker);
         const u = await env.DB.prepare('SELECT nama, foto FROM users WHERE id = ?').bind(me.sub).first();
         const baris = {
-          id: uid('fb_'), post_id: id, user_id: me.sub, nama: u?.nama || 'Pengguna',
-          foto: u?.foto || null, isi: String(isi).trim(), admin: 0, balas_ke: balasKe || null,
+          id: uid('fb_'), post_id: id, user_id: me.sub, nama: u.nama,
+          foto: u.foto || null, isi, stiker, admin: 0, balas_ke: balasKe,
           dibuat: new Date().toISOString(),
         };
         await env.DB.batch([
-          env.DB.prepare('INSERT INTO forum_balasan (id,post_id,user_id,nama,foto,isi,balas_ke,dibuat) VALUES (?,?,?,?,?,?,?,?)')
-            .bind(baris.id, id, me.sub, baris.nama, baris.foto, baris.isi, baris.balas_ke, baris.dibuat),
+          env.DB.prepare('INSERT INTO forum_balasan (id,post_id,user_id,nama,foto,isi,balas_ke,stiker,dibuat) VALUES (?,?,?,?,?,?,?,?,?)')
+            .bind(baris.id, id, me.sub, baris.nama, baris.foto, isi, balasKe, stiker ? JSON.stringify(stiker) : null, baris.dibuat),
           env.DB.prepare('UPDATE forum_post SET balasan = balasan + 1 WHERE id = ?').bind(id),
         ]);
-
         ctx.waitUntil(push(env, 'forum', 'forum.balasan', baris));
 
         // pemberitahuan ke pemilik diskusi, pemilik komentar yang dibalas, dan peserta lain
@@ -2466,7 +2510,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
             .bind(id, me.sub).all();
 
           const judulPendek = (p2?.judul || 'diskusi').slice(0, 50);
-          const cuplikan = baris.isi.length > 90 ? `${baris.isi.slice(0, 90)}...` : baris.isi;
+          const cuplikan = (baris.isi || 'Mengirim stiker').slice(0, 90);
           const sudah = new Set([me.sub]);
 
           // yang komentarnya dibalas langsung
@@ -2600,6 +2644,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (b.user_id !== me.sub) return err('Kamu hanya bisa menghapus balasan sendiri', 403, env);
 
         await env.DB.batch([
+          env.DB.prepare('UPDATE forum_balasan SET balas_ke = ? WHERE balas_ke = ?').bind(b.balas_ke || null, id),
+          env.DB.prepare('DELETE FROM forum_balasan_suka WHERE balasan_id = ?').bind(id),
           env.DB.prepare('DELETE FROM forum_balasan WHERE id = ?').bind(id),
           env.DB.prepare('UPDATE forum_post SET balasan = MAX(0, balasan - 1) WHERE id = ?').bind(b.post_id),
         ]);
@@ -3014,7 +3060,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       return err('Endpoint tidak dikenal', 404, env);
     } catch (e) {
-      return err(`Server error: ${e.message}`, 500, env);
+      return e instanceof KontenError ? err(e.message, e.status, env) : err(`Server error: ${e.message}`, 500, env);
     }
   },
 };
@@ -3080,6 +3126,7 @@ export class RealtimeHub {
       let m;
       try { m = JSON.parse(e.data); } catch { return; }
       if (m.type === 'ping') return server.send(JSON.stringify({ type: 'pong' }));
+      if (url.pathname === '/ws/forum' || url.pathname === '/ws/katalog') return;
       // relay ke peserta lain di room yang sama (mis. user <-> CS)
       this.kirimSemua(JSON.stringify(m), server);
     });

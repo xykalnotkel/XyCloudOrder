@@ -276,6 +276,17 @@
     .varian{padding:12px;gap:10px}
     .varian a{padding:8px 13px;font-size:12px}
   }
+
+.xy-floating{position:fixed;width:112px;height:126px;z-index:65;filter:drop-shadow(0 8px 14px #1a103326)}
+.xy-promo-image{padding:0;margin:0;border:0;background:transparent;cursor:pointer;display:block;line-height:0;color:inherit}
+.xy-floating .xy-promo-image{position:absolute;inset:14px 8px 0 0;touch-action:none;user-select:none}
+.xy-promo-image img{max-width:100%;max-height:100%;object-fit:contain;user-select:none}.xy-floating img{width:100%;height:100%}
+.xy-promo-close{position:absolute;right:0;top:0;width:38px;height:38px;border:1px solid #ded6eb;border-radius:50%;background:#fff;color:#251a3b;cursor:pointer;font:26px/1 system-ui;box-shadow:0 3px 12px #0002;display:grid;place-items:center;z-index:2}
+.xy-popup{position:fixed;inset:0;z-index:120;background:#120c22b8;backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:28px}
+.xy-popup-box{position:relative;width:max-content;max-width:420px;max-height:84dvh;padding:18px 12px 0 0}
+.xy-popup .xy-promo-image{max-height:calc(84dvh - 18px);border-radius:22px;overflow:hidden}.xy-popup img{max-height:calc(84dvh - 18px);display:block}.xy-popup button:focus-visible,.xy-floating button:focus-visible{outline:3px solid #A78BFA;outline-offset:3px}
+.web-thread{position:relative;display:flex;align-items:flex-start;gap:10px;margin:14px 0 0 calc(var(--depth)*18px);padding-bottom:5px}.web-thread .avatar{width:32px;height:32px;flex-shrink:0;font-size:12px;margin-top:5px}.thread-content{min-width:0;flex:1;border:1px solid var(--line);border-radius:17px;padding:12px 14px;background:var(--surface,#fff)}.web-thread.child:before{content:'';position:absolute;left:-15px;top:-15px;width:13px;height:39px;border-left:2px solid var(--line);border-bottom:2px solid var(--line);border-radius:0 0 0 11px}.thread-author{font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}.thread-content time{font-size:10.5px}.thread-content p{margin-top:8px;font-size:13.5px;white-space:normal;overflow-wrap:anywhere}.thread-sticker{display:block;width:156px;height:156px;max-width:100%;object-fit:contain;margin-top:8px}
+
 </style>
 </head>
 <body>
@@ -688,15 +699,7 @@ async function bukaDiskusi(id) {
       ${p.gambar ? `<img src="${esc(p.gambar)}" style="width:100%;border-radius:18px;margin-top:16px" alt="">` : ''}
       <div class="muted" style="font-size:13px;margin-top:14px">${p.suka || 0} suka · ${p.balasan || 0} balasan</div>
       <h3 style="font-size:16px;margin-top:24px">Balasan</h3>
-      ${d.balasan.length ? d.balasan.map((b) => `
-        <div class="kartu" style="padding:14px;margin-top:12px;box-shadow:none">
-          <div style="display:flex;gap:10px;align-items:center">
-            <div class="avatar" style="width:30px;height:30px;font-size:12.5px">${esc((b.nama || 'X')[0].toUpperCase())}</div>
-            <b style="font-size:13px">${esc(b.nama)}</b>${lencana(b.admin ? 'admin' : b.tier)}
-            <span class="muted" style="font-size:11px;margin-left:auto">${(b.dibuat || '').slice(0, 16).replace('T', ' ')}</span>
-          </div>
-          <p style="font-size:13.5px;margin-top:9px">${esc(b.isi)}</p>
-        </div>`).join('') : '<p class="muted" style="font-size:13.5px;margin-top:10px">Belum ada balasan.</p>'}
+      ${d.balasan.length ? renderThreadWeb(d.balasan) : '<p class="muted" style="font-size:13.5px;margin-top:10px">Belum ada komentar.</p>'}
       <a class="btn" style="width:100%;margin-top:20px" href="/unduh" data-rute onclick="tutupModal()">Balas lewat Aplikasi</a>`);
   } catch (e) {
     bukaModal(`<div class="kosongKotak">Gagal memuat diskusi. ${esc(e.message)}</div>`);
@@ -1570,6 +1573,84 @@ document.querySelectorAll('nav a').forEach((a) =>
 // daftarkan pekerja layanan supaya situs bisa dipasang dan tetap terbuka saat sinyal jelek
 if ('serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+
+/* ---------------- promo gambar yang diatur dashboard ---------------- */
+const XY_PROMO = {shown:false, attempted:new Set(), signature:'', items:[]};
+const promoRead=k=>{try{return localStorage.getItem(k)}catch{return null}};
+const promoWrite=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
+function tujuanPromo(p){
+  if(p.aksi==='url'){try{const u=new URL(p.target);return u.protocol==='https:'&&!u.username&&!u.password?u.href:null}catch{return null}}
+  return {sewa:'/sewa',akun:'/akun',topup:'/akun-saya',komunitas:'/komunitas',unduh:'/unduh'}[p.aksi]||'/';
+}
+function pergiPromo(p){const target=tujuanPromo(p);if(target)location.assign(target)}
+function posisiPromo(el,p){
+  const maxX=Math.max(12,innerWidth-124),minY=76,maxY=Math.max(minY,innerHeight-170);
+  let xy;try{xy=JSON.parse(promoRead('xy_promo_pos_'+p.id)||'null')}catch{}
+  const x=xy?12+xy.x*(maxX-12):(p.posisi==='kiri'?12:maxX);
+  const y=xy?minY+xy.y*(maxY-minY):maxY-(p._index||0)*136;
+  el.style.left=Math.max(12,Math.min(maxX,x))+'px';el.style.top=Math.max(minY,Math.min(maxY,y))+'px';
+}
+function buatFloating(p){
+  const key=p.id+'_'+p.revisi;
+  if(promoRead('xy_promo_hide_'+key)==='1')return;
+  const el=document.createElement('div');el.className='xy-floating';el.dataset.promoId=p.id;
+  const button=document.createElement('button');button.className='xy-promo-image';button.ariaLabel=p.nama+' (dapat digeser)';
+  const im=new Image();im.src=p.gambar;im.alt=p.nama;im.draggable=false;im.onerror=()=>el.remove();button.append(im);
+  const close=document.createElement('button');close.className='xy-promo-close';close.textContent='×';close.ariaLabel='Tutup promo';close.onclick=()=>{promoWrite('xy_promo_hide_'+key,'1');el.remove()};
+  el.append(button,close);document.body.append(el);posisiPromo(el,p);
+  let drag=null,moved=false;
+  button.addEventListener('pointerdown',e=>{if(e.button!==0)return;drag={x:e.clientX,y:e.clientY,left:parseFloat(el.style.left),top:parseFloat(el.style.top)};moved=false;button.setPointerCapture(e.pointerId)});
+  button.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>5)moved=true;if(!moved)return;el.style.left=Math.max(12,Math.min(innerWidth-124,drag.left+dx))+'px';el.style.top=Math.max(76,Math.min(innerHeight-170,drag.top+dy))+'px';});
+  const finish=()=>{if(!drag)return;drag=null;if(moved)promoWrite('xy_promo_pos_'+p.id,JSON.stringify({x:(parseFloat(el.style.left)-12)/Math.max(1,innerWidth-136),y:(parseFloat(el.style.top)-76)/Math.max(1,innerHeight-246)}));};
+  button.addEventListener('pointerup',finish);button.addEventListener('pointercancel',finish);
+  button.addEventListener('click',()=>{if(moved){moved=false;return}pergiPromo(p)});
+}
+async function buatPopup(p){
+  const key=p.id+'_'+p.revisi;
+  if(XY_PROMO.shown||XY_PROMO.attempted.has(key)||promoRead('xy_promo_seen_'+key)==='1')return;
+  if(document.querySelector('.modal.on')||location.pathname.startsWith('/akun-saya'))return;
+  XY_PROMO.attempted.add(key);
+  const im=new Image();im.src=p.gambar;im.alt=p.nama;
+  try{await im.decode()}catch{return}
+  if(XY_PROMO.shown)return;XY_PROMO.shown=true;promoWrite('xy_promo_seen_'+key,'1');
+  const overlay=document.createElement('div');overlay.className='xy-popup';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label',p.nama);
+  const box=document.createElement('div');box.className='xy-popup-box';
+  const image=document.createElement('button');image.className='xy-promo-image';image.ariaLabel=p.nama;image.append(im);
+  const close=document.createElement('button');close.className='xy-promo-close';close.ariaLabel='Tutup pop-up';close.textContent='×';
+  const before=document.activeElement;
+  const hide=()=>{overlay.remove();document.removeEventListener('keydown',keyHandler);before?.focus?.()};
+  const keyHandler=e=>{if(e.key==='Escape')hide();if(e.key==='Tab'){e.preventDefault();(document.activeElement===close?image:close).focus()}};
+  close.onclick=hide;image.onclick=()=>{hide();pergiPromo(p)};overlay.onclick=e=>{if(e.target===overlay)hide()};
+  box.append(image,close);overlay.append(box);document.body.append(overlay);document.addEventListener('keydown',keyHandler);close.focus();
+}
+async function muatPromosi(){
+  try{
+    const r=await fetch('/api/promosi',{cache:'no-store'});if(!r.ok)return;
+    const j=await r.json();const items=(j.data||[]).filter(p=>['semua','web'].includes(p.platform));
+    const signature=JSON.stringify(items);
+    XY_PROMO.items=items;
+    if(signature!==XY_PROMO.signature){XY_PROMO.signature=signature;document.querySelectorAll('.xy-floating').forEach(e=>e.remove());if(!location.pathname.startsWith('/akun-saya'))items.filter(p=>p.jenis==='floating').slice(0,2).forEach((p,i)=>buatFloating({...p,_index:i}));}
+    const popup=items.find(p=>p.jenis==='popup'&&promoRead('xy_promo_seen_'+p.id+'_'+p.revisi)!=='1');if(popup)await buatPopup(popup);
+  }catch{/* Situs utama tetap bisa dipakai ketika promo gagal dimuat. */}
+}
+addEventListener('resize',()=>document.querySelectorAll('.xy-floating').forEach(el=>{const p=XY_PROMO.items.find(p=>p.id===el.dataset.promoId);if(p)posisiPromo(el,p)}));
+setInterval(()=>{if(!document.hidden)muatPromosi()},60000);
+muatPromosi();
+
+/* ---------------- komentar bertingkat dan stiker publik ---------------- */
+function renderThreadWeb(list){
+  const ids=new Set(list.map(x=>x.id)),children=new Map(),seen=new Set(),result=[];
+  for(const b of list){const id=ids.has(b.balas_ke)&&b.balas_ke!==b.id?b.balas_ke:null;if(!children.has(id))children.set(id,[]);children.get(id).push(b)}
+  function walk(b,depth){
+    if(seen.has(b.id))return;seen.add(b.id);
+    let sticker=b.stiker;try{if(typeof sticker==='string')sticker=JSON.parse(sticker)}catch{sticker=null}
+    const stickerHtml=sticker&&/^https:\/\//.test(sticker.url)?`<img class="thread-sticker" src="${esc(sticker.url)}" alt="${esc(sticker.nama||'Stiker')}" loading="lazy">${sticker.sumber==='giphy'?'<small class="muted">via GIPHY</small>':''}`:'';
+    result.push(`<article class="web-thread ${depth?'child':''}" style="--depth:${Math.min(depth,3)}"><div class="avatar">${esc((b.nama||'X')[0].toUpperCase())}</div><div class="thread-content"><div class="thread-author"><strong>${esc(b.nama)}</strong>${lencana(b.admin?'admin':b.tier)}</div><time class="muted">${esc((b.dibuat||'').slice(0,16).replace('T',' '))}</time>${b.isi?`<p>${esc(b.isi).replace(/\n/g,'<br>')}</p>`:''}${stickerHtml}</div></article>`);
+    for(const child of children.get(b.id)||[])walk(child,depth+1);
+  }
+  for(const b of children.get(null)||[])walk(b,0);for(const b of list)if(!seen.has(b.id))walk(b,0);
+  return result.join('');
 }
 
 gambarKepala();

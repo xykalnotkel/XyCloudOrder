@@ -82,6 +82,13 @@ export const TEMPLATE = {
       <p style="margin:0;color:${MUTED};font-size:13px">Selamat menikmati layanannya.</p>`,
   }),
 
+  hapusAkun: ({ nama, kode }) => ({
+    subject: 'Konfirmasi penghapusan akun XyCloudStore',
+    isi: `<h2>Konfirmasi penghapusan akun</h2><p>Halo ${nama}, gunakan kode ini hanya jika kamu meminta penghapusan akun.</p>
+      <p style="font-size:30px;font-weight:800;letter-spacing:7px">${kode}</p>
+      <p>Kode berlaku 15 menit. Penghapusan tidak dapat dibatalkan. Jika bukan kamu yang meminta, abaikan email ini dan amankan akunmu.</p>`,
+  }),
+
   resetPassword: ({ nama, kode }) => ({
     subject: `${kode} adalah kode reset password XyCloudStore`,
     isi: `<div style="font-size:22px;font-weight:800;letter-spacing:-.5px">Reset password</div>
