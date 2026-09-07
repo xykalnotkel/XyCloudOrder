@@ -1626,13 +1626,38 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
 
         // ---- mode pemeliharaan ----
+        // Pengaman: setiap kali dinyalakan, waktu mulai dan batas "sampai" ikut
+        // dicatat. Pemeliharaan otomatis (sistem.js) akan mematikannya sendiri
+        // kalau lewat batas itu, supaya layanan tidak terkunci diam-diam saat
+        // operator atau agen AI error setelah menyalakannya.
+        // - b.sampai      : ISO absolut kapan harus mati (opsional)
+        // - b.maks_menit  : berapa menit boleh menyala, bawaan 720 (12 jam);
+        //                   0 = tanpa batas (tidak pernah auto-mati)
         if (a === 'sistem/pemeliharaan' && req.method === 'POST') {
           const b = await req.json().catch(() => ({}));
-          await simpanSetelan(env, 'mode_pemeliharaan', b.aktif ? '1' : '0');
+          const aktif = Boolean(b.aktif);
+          if (aktif) {
+            const kini = Date.now();
+            const maks = Number(b.maks_menit ?? (await setelan(env, 'pemeliharaan_maks_menit', '720')));
+            const menit = Math.max(0, Math.floor(Number.isFinite(maks) ? maks : 720));
+            await simpanSetelan(env, 'mode_pemeliharaan_mulai', new Date(kini).toISOString());
+            await simpanSetelan(env, 'pemeliharaan_maks_menit', String(menit));
+            const sampai = b.sampai
+              ? String(b.sampai)
+              : new Date(kini + (menit > 0 ? menit * 60000 : 0)).toISOString();
+            await simpanSetelan(env, 'mode_pemeliharaan_sampai', menit > 0 ? sampai : '');
+          } else {
+            await simpanSetelan(env, 'mode_pemeliharaan_mulai', '');
+            await simpanSetelan(env, 'mode_pemeliharaan_sampai', '');
+          }
+          await simpanSetelan(env, 'mode_pemeliharaan', aktif ? '1' : '0');
           if (b.pesan) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan));
+          const sampai = aktif ? await setelan(env, 'mode_pemeliharaan_sampai', '') : '';
           ctx.waitUntil(catatLog(env, 'pemeliharaan',
-            b.aktif ? 'Mode pemeliharaan dinyalakan' : 'Mode pemeliharaan dimatikan'));
-          return json({ ok: true, aktif: Boolean(b.aktif) }, 200, env);
+            aktif
+              ? `Mode pemeliharaan dinyalakan${sampai ? ` (auto-mati ${sampai})` : ' (tanpa batas)'}`
+              : 'Mode pemeliharaan dimatikan'));
+          return json({ ok: true, aktif, sampai: aktif ? (sampai || null) : null }, 200, env);
         }
 
         // ---- jalankan pemeliharaan sekarang ----

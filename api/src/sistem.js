@@ -76,6 +76,40 @@ export async function jalankanPemeliharaan(env) {
     const logLama = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
     await env.DB.prepare('DELETE FROM log_sistem WHERE waktu < ?').bind(logLama).run();
 
+    // ---- pengaman mode pemeliharaan ----
+    // Kalau mode pemeliharaan masih menyala melewati batas waktunya, matikan
+    // otomatis. Ini mencegah layanan terkunci diam-diam berjam-jam ketika
+    // operator/agen AI error setelah menyalakannya (kasus 16:40-17:20 UTC).
+    // Batas bawaan 720 menit (12 jam), bisa diubah lewat setelan
+    // `pemeliharaan_maks_menit` (0 = tanpa batas).
+    const modePemeliharaan = await setelan(env, 'mode_pemeliharaan', '0');
+    if (modePemeliharaan === '1') {
+      const kini = Date.now();
+      const sampai = await setelan(env, 'mode_pemeliharaan_sampai', '');
+      const maksMenit = Number(await setelan(env, 'pemeliharaan_maks_menit', '720')) || 0;
+      const mulaiRaw = await setelan(env, 'mode_pemeliharaan_mulai', '');
+      let lewat = false;
+      if (sampai) {
+        const t = Date.parse(sampai);
+        lewat = Number.isFinite(t) && t <= kini;
+      } else if (maksMenit > 0) {
+        if (mulaiRaw) {
+          const t = Date.parse(mulaiRaw);
+          lewat = Number.isFinite(t) && kini - t >= maksMenit * 60000;
+        } else {
+          lewat = true; // menyala tanpa catatan mulai -> aman dimatikan
+        }
+      }
+      if (lewat) {
+        await simpanSetelan(env, 'mode_pemeliharaan', '0');
+        await simpanSetelan(env, 'mode_pemeliharaan_sampai', '');
+        hasil.pemeliharaanAutoMati = true;
+        await catatLog(env, 'pemeliharaan', 'Mode pemeliharaan dimatikan otomatis karena lewat batas waktunya');
+      } else {
+        hasil.pemeliharaanMenyalakan = true;
+      }
+    }
+
     await simpanSetelan(env, 'pemeliharaan_terakhir', sekarang);
     await catatLog(env, 'pemeliharaan', JSON.stringify(hasil));
   } catch (e) {
