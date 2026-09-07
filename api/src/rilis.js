@@ -150,25 +150,50 @@ export function tebakAbi(req) {
   const ua = (req.headers.get('user-agent') || '').toLowerCase();
   const arch = (req.headers.get('sec-ch-ua-arch') || '').toLowerCase().replace(/"/g, '');
   const bit = (req.headers.get('sec-ch-ua-bitness') || '').replace(/"/g, '');
+  const model = (req.headers.get('sec-ch-ua-model') || '').replace(/"/g, '');
 
-  if (!ua.includes('android')) return { abi: null, alasan: 'bukan Android' };
-
-  if (ua.includes('x86_64') || ua.includes('x86-64') || arch.includes('x86')) {
-    return { abi: 'x86_64', alasan: 'petunjuk peramban menunjukkan Intel' };
-  }
-  if (ua.includes('aarch64') || ua.includes('arm64') || arch.includes('arm') && bit === '64') {
-    return { abi: 'arm64-v8a', alasan: 'perangkat ARM 64-bit' };
-  }
-  if (ua.includes('armv7') || ua.includes('armeabi')) {
-    return { abi: 'armeabi-v7a', alasan: 'perangkat ARM 32-bit' };
+  if (!ua.includes('android')) {
+    return { abi: null, pasti: true, bit: null, model, alasan: 'bukan perangkat Android' };
   }
 
-  // Android 8 ke atas hampir pasti 64-bit
-  const versi = ua.match(/android\s([0-9]+)/);
-  if (versi && Number(versi[1]) >= 8) {
-    return { abi: 'arm64-v8a', alasan: `Android ${versi[1]}, umumnya ARM 64-bit` };
+  // 1. petunjuk resmi dari peramban, paling dipercaya
+  if (arch.includes('x86')) {
+    return { abi: 'x86_64', pasti: true, bit: 64, model, alasan: 'petunjuk peramban: Intel' };
   }
-  return { abi: 'universal', alasan: 'perangkat tidak dikenali, dipakai versi universal' };
+  if (arch.includes('arm') && bit === '32') {
+    return { abi: 'armeabi-v7a', pasti: true, bit: 32, model, alasan: 'petunjuk peramban: ARM 32-bit' };
+  }
+  if (arch.includes('arm') && bit === '64') {
+    return { abi: 'arm64-v8a', pasti: true, bit: 64, model, alasan: 'petunjuk peramban: ARM 64-bit' };
+  }
+
+  // 2. petunjuk dari string peramban
+  if (ua.includes('x86_64') || ua.includes('x86-64')) {
+    return { abi: 'x86_64', pasti: true, bit: 64, model, alasan: 'string peramban menyebut Intel 64-bit' };
+  }
+  if (ua.includes('aarch64') || ua.includes('arm64') || ua.includes('armv8')) {
+    return { abi: 'arm64-v8a', pasti: true, bit: 64, model, alasan: 'string peramban menyebut ARM 64-bit' };
+  }
+  if (ua.includes('armv7') || ua.includes('armeabi') || ua.includes('arm_32')) {
+    return { abi: 'armeabi-v7a', pasti: true, bit: 32, model, alasan: 'string peramban menyebut ARM 32-bit' };
+  }
+
+  // 3. Android lawas hampir pasti 32-bit
+  const versi = Number((ua.match(/android\s([0-9]+)/) || [])[1] || 0);
+  if (versi > 0 && versi <= 5) {
+    return { abi: 'armeabi-v7a', pasti: true, bit: 32, model, alasan: `Android ${versi} hanya mendukung 32-bit` };
+  }
+
+  // 4. tidak ada petunjuk pasti: jangan menebak, pakai universal
+  return {
+    abi: 'universal',
+    pasti: false,
+    bit: null,
+    model,
+    alasan: versi
+      ? `Android ${versi} terdeteksi, tetapi arsitekturnya belum bisa dipastikan`
+      : 'Arsitektur perangkat belum bisa dipastikan',
+  };
 }
 
 /** Simpan info rilis ke basis data. Dipanggil alur build setelah rilis terbit. */

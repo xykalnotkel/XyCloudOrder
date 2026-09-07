@@ -95,8 +95,57 @@ tr:hover td{background:rgba(255,255,255,.018)}
 .chat .foot{padding:13px 16px;border-top:1px solid var(--line);display:flex;gap:10px}
 .dotlive{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pl 1.8s infinite}
 @keyframes pl{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
-@media(max-width:820px){.wrap{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;overflow-x:auto}
-  aside .brand{display:none}main{padding:20px 16px 60px}.chatwrap{grid-template-columns:1fr;height:auto}.rooms{max-height:250px}}
+
+/* ---------- tombol menu untuk layar kecil ---------- */
+.tombolMenu{display:none;position:fixed;left:14px;top:14px;z-index:60;width:44px;height:44px;border-radius:14px;
+  background:var(--panel);border:1px solid var(--line);color:var(--ink);align-items:center;justify-content:center;cursor:pointer}
+.tirai{display:none;position:fixed;inset:0;background:rgba(14,7,32,.62);backdrop-filter:blur(3px);z-index:55}
+.tirai.on{display:block}
+
+/* ---------- layar sedang: sidebar lebih ramping ---------- */
+@media(max-width:1180px){
+  .wrap{grid-template-columns:210px 1fr}
+  main{padding:24px 20px 60px}
+  aside button{font-size:13px;padding:10px 11px}
+}
+
+/* ---------- tablet dan ponsel: sidebar jadi laci ---------- */
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  .tombolMenu{display:flex}
+  aside{position:fixed;left:0;top:0;bottom:0;width:250px;z-index:56;height:100vh;overflow-y:auto;
+    transform:translateX(-105%);transition:transform .26s ease;box-shadow:22px 0 50px rgba(0,0,0,.4)}
+  aside.buka{transform:none}
+  main{padding:70px 15px 70px}
+  .top h1{font-size:20px}
+  .top{gap:10px;margin-bottom:18px}
+  .card{padding:15px;border-radius:15px}
+  .g2,.g4{grid-template-columns:1fr}
+  .grid[style*="1fr 1fr"]{grid-template-columns:1fr !important}
+  .chatwrap{grid-template-columns:1fr;height:auto;gap:12px}
+  .rooms{max-height:270px}
+  .chat{min-height:60vh}
+  .modal .box{max-width:100%;padding:20px;border-radius:20px;max-height:90vh}
+  /* tabel lebar digulir mendatar, bukan memaksa halaman melar */
+  .card table{min-width:640px}
+  .card:has(table){overflow-x:auto}
+  table{font-size:12.5px}
+  th,td{padding:9px 10px;white-space:nowrap}
+}
+
+/* ---------- ponsel kecil ---------- */
+@media(max-width:520px){
+  main{padding:66px 12px 70px}
+  .top h1{font-size:18px}
+  .top p{font-size:12px}
+  .btn{padding:10px 14px;font-size:12.5px}
+  .btn.sm{padding:8px 12px;font-size:12px}
+  .card{padding:13px}
+  .field input,.field select,.field textarea{font-size:16px}
+  aside{width:82vw;max-width:280px}
+  .chat .foot{flex-wrap:wrap}
+  .chat .foot input{min-width:0;flex:1}
+}
 </style>
 </head>
 <body>
@@ -112,6 +161,11 @@ tr:hover td{background:rgba(255,255,255,.018)}
   </div>
 </div>
 
+<button class="tombolMenu" id="tombolMenu" onclick="bukaLaci()" aria-label="Menu">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<div class="tirai" id="tirai" onclick="tutupLaci()"></div>
 <div class="wrap" id="wrap">
   <aside>
     <div class="brand">
@@ -210,7 +264,12 @@ function render(){
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
   ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem}[TAB])();
 }
-function ke(t){TAB=t;render()}
+function ke(t){
+  TAB=t;
+  render();
+  tutupLaci();          // di layar kecil, laci menutup sendiri setelah memilih menu
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 const head=(j,s,aksi='')=>`<div class="top"><div><h1>${j}</h1><p>${s}</p></div><div class="sp"></div>${aksi}</div>`;
 
 /* ---------- dashboard ---------- */
@@ -970,6 +1029,16 @@ async function ujiPush(){
       user_id:document.getElementById('u_uid').value.trim(), pesan:document.getElementById('u_pesan').value})});
     el.textContent=JSON.stringify(d); toast('Push terkirim'); }
   catch(e){ el.textContent=e.message }
+}
+
+/* ---------- laci menu untuk layar kecil ---------- */
+function bukaLaci(){
+  document.querySelector('aside').classList.add('buka');
+  document.getElementById('tirai').classList.add('on');
+}
+function tutupLaci(){
+  document.querySelector('aside').classList.remove('buka');
+  document.getElementById('tirai').classList.remove('on');
 }
 
 /* ---------- util ---------- */

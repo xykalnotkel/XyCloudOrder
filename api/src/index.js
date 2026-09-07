@@ -15,6 +15,7 @@ import ADMIN_HTML from './admin.html';
 import WEB_HTML from './web.html';
 import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
+import OG_PNG from './brand-og.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
@@ -278,6 +279,13 @@ export default {
           'Cache-Control': 'public, max-age=300',
           'X-Content-Type-Options': 'nosniff',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
+          // minta peramban mengirim arsitektur dan lebar bit perangkat.
+          // tanpa ini Chrome tidak pernah mengirimkannya, sehingga
+          // halaman unduh salah menebak 32-bit sebagai 64-bit.
+          'Accept-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List',
+          'Critical-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness',
+          'Permissions-Policy': 'ch-ua-arch=(self), ch-ua-bitness=(self), ch-ua-model=(self)',
+          'Vary': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness',
         },
       });
     }
@@ -311,7 +319,47 @@ export default {
       });
     }
 
+    // ---------- berkas mesin pencari ----------
+    if (path === '/robots.txt') {
+      return new Response(
+        `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\n\nSitemap: https://xycloud.my.id/sitemap.xml\n`,
+        { headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' } },
+      );
+    }
+
+    if (path === '/sitemap.xml') {
+      const halaman = [
+        ['/', '1.0', 'daily'],
+        ['/sewa', '0.9', 'daily'],
+        ['/akun', '0.9', 'daily'],
+        ['/komunitas', '0.8', 'hourly'],
+        ['/unduh', '0.9', 'weekly'],
+        ['/bantuan', '0.6', 'monthly'],
+        ['/legal/syarat', '0.3', 'yearly'],
+        ['/legal/privasi', '0.3', 'yearly'],
+      ];
+      const hariIni = new Date().toISOString().slice(0, 10);
+      const isi = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${halaman.map(([u, p2, f]) => `  <url>
+    <loc>https://xycloud.my.id${u}</loc>
+    <lastmod>${hariIni}</lastmod>
+    <changefreq>${f}</changefreq>
+    <priority>${p2}</priority>
+  </url>`).join('\n')}
+</urlset>`;
+      return new Response(isi, {
+        headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
+
     if (path.startsWith('/img/')) return layaniGambar(env, path);
+
+    if (path === '/brand/og.png') {
+      return new Response(OG_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=604800' },
+      });
+    }
 
     if (path === '/brand/logo.png') {
       return new Response(LOGO_PNG, {

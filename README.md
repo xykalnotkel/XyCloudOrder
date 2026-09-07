@@ -197,6 +197,44 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## SEO dan Mesin Pencari
+
+| Berkas | Isi |
+|---|---|
+| `/robots.txt` | mengizinkan semua perayap kecuali `/admin` dan `/api/`, menunjuk ke peta situs |
+| `/sitemap.xml` | delapan alamat: beranda, sewa, akun, komunitas, unduh, bantuan, dan dua halaman legal |
+| `/brand/og.png` | gambar berbagi 1200x630 bergaya ungu dengan wordmark dan tagline |
+
+Setiap halaman memperbarui judul, deskripsi, `canonical`, dan `og:url` secara langsung saat
+berpindah. Data terstruktur JSON-LD memuat Organization, WebSite, MobileApplication, dan FAQPage.
+
+## Deteksi Arsitektur Perangkat
+
+Sebelumnya halaman unduh menebak semua Android modern sebagai ARM 64-bit, sehingga pemilik HP
+32-bit ikut disarankan berkas 64-bit. Penyebabnya: peramban hanya mengirim `Sec-CH-UA-Arch`
+dan `Sec-CH-UA-Bitness` kalau server memintanya lebih dulu.
+
+Sekarang Worker mengirim `Accept-CH` dan `Critical-CH` pada setiap halaman, lalu keputusan
+diambil berjenjang:
+
+1. Petunjuk resmi peramban (`architecture` dan `bitness`)
+2. String peramban (`aarch64`, `armv7`, `x86_64`)
+3. Versi Android (5 ke bawah pasti 32-bit)
+4. Kalau tetap tidak pasti, **tidak menebak**: berkas universal yang disarankan
+
+Pengguna juga bisa menentukan sendiri lewat tombol 32-bit atau 64-bit yang tersimpan di peramban.
+Aturan kecocokan: perangkat 32-bit hanya boleh ARM 32-bit dan universal, perangkat 64-bit boleh
+ketiganya, dan berkas yang tidak cocok dinonaktifkan.
+
+## Memesan Lewat Situs
+
+Situs kini bukan sekadar etalase. Setelah masuk dengan akun yang sama dengan aplikasi,
+pengguna bisa menyewa PC (pilih durasi, bayar dengan saldo), membeli akun digital,
+mengisi saldo, serta melihat halaman **Akun Saya** berisi saldo, pesanan, dan riwayat transaksi.
+Pendaftaran baru di situs juga melewati verifikasi kode email yang sama.
+
+---
+
 ## Pengembang
 
 XyCloudStore dikembangkan oleh **XySpace**. Logo XySpace ada di
