@@ -216,28 +216,6 @@ jobs:
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
         run: |
-          [ -z "$ADMIN_KEY" ] && { echo "ADMIN_KEY belum diatur, lewati"; exit 0; }
-          VERSI="${GITHUB_REF_NAME}"
-          BERKAS=$(cd dist 2>/dev/null && ls *.apk 2>/dev/null || ls XyCloudStore-APK/*.apk 2>/dev/null || true)
-          python3 - "$VERSI" <<'PYEOF'
-          import json, os, subprocess, sys, urllib.request
-          versi = sys.argv[1]
-          berkas = []
-          for akar, _, isi in os.walk('.'):
-              for n in isi:
-                  if n.endswith('.apk') and n.startswith('XyCloudStore-'):
-                      p = os.path.join(akar, n)
-                      berkas.append({'nama': n, 'ukuran': os.path.getsize(p)})
-          unik = {b['nama']: b for b in berkas}
-          data = json.dumps({'versi': versi, 'berkas': list(unik.values())}).encode()
-          req = urllib.request.Request(
-              'https://api.xycloud.my.id/api/admin/rilis',
-              data=data,
-              headers={'Content-Type': 'application/json', 'x-admin-key': os.environ['ADMIN_KEY']},
-          )
-          try:
-              with urllib.request.urlopen(req, timeout=20) as r:
-                  print('Rilis terdaftar:', r.status, len(unik), 'berkas')
-          except Exception as e:
-              print('Gagal mendaftarkan rilis:', e)
-          PYEOF
+          curl -sL -o daftar_rilis.py \
+            "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/tools/daftar_rilis.py"
+          python3 daftar_rilis.py "${GITHUB_REF_NAME}"

@@ -62,10 +62,14 @@ abstract class XyRepository {
   Future<List<ForumPost>> forum();
   Future<List<ForumBalasan>> forumDetail(String id);
   Future<ForumPost> forumBuat({required String judul, required String isi, required String kategori, String? gambar});
-  Future<ForumBalasan> forumBalas(String id, String isi);
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe});
   Future<Map<String, dynamic>> forumSuka(String id);
   Future<List<String>> forumSukaSaya();
   Future<void> forumHapus(String id);
+  Future<ForumPost> forumSunting({required String id, required String judul, required String isi, String? kategori});
+  Future<void> forumHapusBalasan(String id);
+  Future<void> hapusPesan(String id);
+  Future<void> hapusSemuaPesan();
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -243,8 +247,9 @@ class RemoteRepository implements XyRepository {
       })));
 
   @override
-  Future<ForumBalasan> forumBalas(String id, String isi) async =>
-      ForumBalasan.fromJson(Map<String, dynamic>.from(await api.post('/forum/$id/balas', {'isi': isi})));
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe}) async =>
+      ForumBalasan.fromJson(Map<String, dynamic>.from(
+          await api.post('/forum/$id/balas', {'isi': isi, if (balasKe != null) 'balas_ke': balasKe})));
 
   @override
   Future<Map<String, dynamic>> forumSuka(String id) async =>
@@ -256,6 +261,28 @@ class RemoteRepository implements XyRepository {
 
   @override
   Future<void> forumHapus(String id) async => api.delete('/forum/$id');
+
+  @override
+  Future<ForumPost> forumSunting({
+    required String id,
+    required String judul,
+    required String isi,
+    String? kategori,
+  }) async =>
+      ForumPost.fromJson(Map<String, dynamic>.from(await api.patch('/forum/$id', {
+        'judul': judul,
+        'isi': isi,
+        if (kategori != null) 'kategori': kategori,
+      })));
+
+  @override
+  Future<void> forumHapusBalasan(String id) async => api.delete('/forum/balasan/$id');
+
+  @override
+  Future<void> hapusPesan(String id) async => api.delete('/cs/messages/$id');
+
+  @override
+  Future<void> hapusSemuaPesan() async => api.delete('/cs/messages');
 
   @override
   Future<List<PcPlan>> plans() async =>
@@ -435,7 +462,7 @@ class MockRepository implements XyRepository {
       );
 
   @override
-  Future<ForumBalasan> forumBalas(String id, String isi) => _delay(
+  Future<ForumBalasan> forumBalas(String id, String isi, {String? balasKe}) => _delay(
         ForumBalasan(id: 'fb_demo', postId: id, nama: MockData.user.nama, isi: isi, dibuat: DateTime.now()),
         300,
       );
@@ -448,6 +475,30 @@ class MockRepository implements XyRepository {
 
   @override
   Future<void> forumHapus(String id) async {}
+
+  @override
+  Future<ForumPost> forumSunting({
+    required String id,
+    required String judul,
+    required String isi,
+    String? kategori,
+  }) =>
+      _delay(
+        ForumPost(
+          id: id, userId: 'u_demo', nama: MockData.user.nama, kategori: kategori ?? 'Umum',
+          judul: judul, isi: isi, dibuat: DateTime.now(),
+        ),
+        300,
+      );
+
+  @override
+  Future<void> forumHapusBalasan(String id) async {}
+
+  @override
+  Future<void> hapusPesan(String id) async {}
+
+  @override
+  Future<void> hapusSemuaPesan() async {}
 
   @override
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) => _delay(

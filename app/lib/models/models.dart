@@ -639,6 +639,8 @@ class ForumPost {
 class ForumBalasan {
   final String id;
   final String postId;
+  final String userId;
+  final String? balasKe;
   final String nama;
   final String? foto;
   final String isi;
@@ -650,6 +652,8 @@ class ForumBalasan {
     required this.id,
     required this.postId,
     required this.nama,
+    this.userId = '',
+    this.balasKe,
     required this.isi,
     required this.dibuat,
     this.foto,
@@ -660,6 +664,8 @@ class ForumBalasan {
   factory ForumBalasan.fromJson(Map<String, dynamic> j) => ForumBalasan(
         id: '${j['id']}',
         postId: '${j['post_id'] ?? ''}',
+        userId: '${j['user_id'] ?? ''}',
+        balasKe: (j['balas_ke'] as String?)?.isNotEmpty == true ? j['balas_ke'] : null,
         nama: j['nama'] ?? 'Pengguna',
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         isi: j['isi'] ?? '',

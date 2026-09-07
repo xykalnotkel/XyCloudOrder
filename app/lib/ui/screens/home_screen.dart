@@ -427,43 +427,51 @@ class _MiniBtn extends StatelessWidget {
 class _MenuCepat extends StatelessWidget {
   const _MenuCepat();
 
+  static const _menu = [
+    ('sewa', 'Sewa PC', SewaPcScreen()),
+    ('akun', 'Beli Akun', AkunScreen()),
+    ('topup', 'Top Up', WalletScreen()),
+    ('chat', 'Chat Kirana', CsScreen()),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final items = <(IconData, String, Color, Widget)>[
-      (Icons.rocket_launch_rounded, 'Sewa PC', XyTheme.primary, const SewaPcScreen()),
-      (Icons.shopping_bag_rounded, 'Beli Akun', XyTheme.violet, const AkunScreen()),
-      (Icons.credit_card_rounded, 'Top Up', XyTheme.success, const WalletScreen()),
-      (Icons.support_agent_rounded, 'Chat Kirana', XyTheme.warning, const CsScreen()),
-    ];
-
     return Row(
-      children: items.map((it) {
+      children: List.generate(_menu.length, (i) {
+        final (ikon, label, layar) = _menu[i];
         return Expanded(
-          child: Pressable(
-            onTap: () => Navigator.push(context, xyRoute(it.$4)),
-            child: Column(children: [
-              Container(
-                width: 56,
-                height: 56,
+          child: Padding(
+            padding: EdgeInsets.only(right: i == _menu.length - 1 ? 0 : 10),
+            child: Pressable(
+              onTap: () => Navigator.push(context, xyRoute(layar)),
+              scale: .95,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
                   color: XyTheme.surface,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(XyRadius.lg),
                   border: Border.all(color: XyTheme.line),
                   boxShadow: XyTheme.shadowXs,
                 ),
-                child: Icon(it.$1, color: it.$3, size: 23),
+                child: Column(children: [
+                  Image.asset('assets/ikon/$ikon.png', width: 46, height: 46, filterQuality: FilterQuality.medium),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: -.1),
+                  ),
+                ]),
               ),
-              const SizedBox(height: 9),
-              Text(it.$2, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-            ]),
+            ),
           ),
         );
-      }).toList(),
+      }),
     );
   }
 }
 
-// ------------------------------------------------------------------
 class _KartuOrderAktif extends StatelessWidget {
   const _KartuOrderAktif({required this.order});
   final RentOrder order;

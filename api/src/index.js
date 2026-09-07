@@ -19,6 +19,7 @@ import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
+import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog } from './sistem.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
 
@@ -245,6 +246,11 @@ async function kirimBanner(env) {
 //  ROUTER
 // ============================================================
 export default {
+  /** Penjadwal Cloudflare: pemeliharaan otomatis berjalan sendiri. */
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(jalankanPemeliharaan(env));
+  },
+
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const path = url.pathname;
@@ -362,6 +368,18 @@ export default {
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
     const p = path.slice(5);
     const ip = req.headers.get('CF-Connecting-IP') || 'tanpa-ip';
+
+    // saat mode pemeliharaan menyala, hanya admin dan agen yang boleh lewat
+    if (!p.startsWith('admin/') && !p.startsWith('agen/') && p !== 'config') {
+      const mode = await setelan(env, 'mode_pemeliharaan', '0');
+      if (mode === '1') {
+        return err(
+          await setelan(env, 'pesan_pemeliharaan',
+            'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
+          503, env,
+        );
+      }
+    }
 
     try {
       // ---------------- AGEN PC HOST ----------------
@@ -1061,6 +1079,69 @@ export default {
           return json({ ok: true }, 200, env);
         }
 
+        // ---- statistik lengkap ----
+        if (a === 'statistik' && req.method === 'GET') {
+          return json(await statistikLengkap(env), 200, env);
+        }
+
+        // ---- mode pemeliharaan ----
+        if (a === 'sistem/pemeliharaan' && req.method === 'POST') {
+          const b = await req.json().catch(() => ({}));
+          await simpanSetelan(env, 'mode_pemeliharaan', b.aktif ? '1' : '0');
+          if (b.pesan) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan));
+          ctx.waitUntil(catatLog(env, 'pemeliharaan',
+            b.aktif ? 'Mode pemeliharaan dinyalakan' : 'Mode pemeliharaan dimatikan'));
+          return json({ ok: true, aktif: Boolean(b.aktif) }, 200, env);
+        }
+
+        // ---- jalankan pemeliharaan sekarang ----
+        if (a === 'sistem/bersihkan' && req.method === 'POST') {
+          return json(await jalankanPemeliharaan(env), 200, env);
+        }
+
+        // ---- kosongkan singgahan tepi ----
+        if (a === 'sistem/cache' && req.method === 'DELETE') {
+          const cache = caches.default;
+          const dasar = env.PUBLIC_URL || 'https://api.xycloud.my.id';
+          const dibuang = [];
+          for (const jalur of ['/__cache/rilis', '/', '/unduh']) {
+            const ok = await cache.delete(new Request(`https://xycloud.my.id${jalur}`));
+            if (ok) dibuang.push(jalur);
+          }
+          await cache.delete(new Request(`${dasar}/brand/logo.png`));
+          ctx.waitUntil(catatLog(env, 'cache', `Singgahan dikosongkan: ${dibuang.join(', ') || 'tidak ada'}`));
+          return json({ ok: true, dibuang }, 200, env);
+        }
+
+        // ---- kesehatan layanan ----
+        if (a === 'sistem/kesehatan' && req.method === 'GET') {
+          const mulai = Date.now();
+          let dbOk = true;
+          try {
+            await env.DB.prepare('SELECT 1').first();
+          } catch (_) {
+            dbOk = false;
+          }
+          const jedaDb = Date.now() - mulai;
+
+          const ukuran = await env.DB.prepare(
+            `SELECT (SELECT COUNT(*) FROM users) users, (SELECT COUNT(*) FROM orders) orders,
+                    (SELECT COUNT(*) FROM cs_messages) pesan, (SELECT COUNT(*) FROM forum_post) forum,
+                    (SELECT COUNT(*) FROM log_sistem) log`
+          ).first().catch(() => ({}));
+
+          return json({
+            database: { hidup: dbOk, jedaMs: jedaDb, baris: ukuran },
+            email: Boolean(env.RESEND_API_KEY),
+            push: Boolean(env.ONESIGNAL_API_KEY),
+            gambar: Boolean(env.CLOUDINARY_KEY),
+            pembayaran: penyediaBayar(env),
+            loginGoogle: Boolean(env.GOOGLE_CLIENT_ID),
+            wilayah: req.cf?.colo || '-',
+            waktu: new Date().toISOString(),
+          }, 200, env);
+        }
+
         // ---- catat rilis aplikasi baru (dipanggil alur build) ----
         if (a === 'rilis' && req.method === 'POST') {
           const b = await req.json();
@@ -1430,7 +1511,7 @@ export default {
       // ---- forum: balas ----
       if (p.startsWith('forum/') && p.endsWith('/balas') && req.method === 'POST') {
         const id = p.split('/')[1];
-        const { isi } = await req.json().catch(() => ({}));
+        const { isi, balas_ke: balasKe } = await req.json().catch(() => ({}));
         if (String(isi || '').trim().length < 2) return err('Balasan terlalu pendek', 400, env);
 
         const post = await env.DB.prepare('SELECT id FROM forum_post WHERE id = ?').bind(id).first();
@@ -1439,11 +1520,12 @@ export default {
         const u = await env.DB.prepare('SELECT nama, foto FROM users WHERE id = ?').bind(me.sub).first();
         const baris = {
           id: uid('fb_'), post_id: id, user_id: me.sub, nama: u?.nama || 'Pengguna',
-          foto: u?.foto || null, isi: String(isi).trim(), admin: 0, dibuat: new Date().toISOString(),
+          foto: u?.foto || null, isi: String(isi).trim(), admin: 0, balas_ke: balasKe || null,
+          dibuat: new Date().toISOString(),
         };
         await env.DB.batch([
-          env.DB.prepare('INSERT INTO forum_balasan (id,post_id,user_id,nama,foto,isi,dibuat) VALUES (?,?,?,?,?,?,?)')
-            .bind(baris.id, id, me.sub, baris.nama, baris.foto, baris.isi, baris.dibuat),
+          env.DB.prepare('INSERT INTO forum_balasan (id,post_id,user_id,nama,foto,isi,balas_ke,dibuat) VALUES (?,?,?,?,?,?,?,?)')
+            .bind(baris.id, id, me.sub, baris.nama, baris.foto, baris.isi, baris.balas_ke, baris.dibuat),
           env.DB.prepare('UPDATE forum_post SET balasan = balasan + 1 WHERE id = ?').bind(id),
         ]);
 
@@ -1513,6 +1595,42 @@ export default {
         const { results } = await env.DB.prepare('SELECT post_id FROM forum_suka WHERE user_id = ?')
           .bind(me.sub).all();
         return json(results.map((r) => r.post_id), 200, env);
+      }
+
+      // ---- forum: sunting diskusi sendiri ----
+      if (p.startsWith('forum/') && p.split('/').length === 2 && req.method === 'PATCH') {
+        const id = p.split('/')[1];
+        const b = await req.json().catch(() => ({}));
+        const post = await env.DB.prepare('SELECT user_id FROM forum_post WHERE id = ?').bind(id).first();
+        if (!post) return err('Diskusi tidak ditemukan', 404, env);
+        if (post.user_id !== me.sub) return err('Kamu hanya bisa menyunting diskusi sendiri', 403, env);
+
+        const judul = String(b.judul || '').trim();
+        const isi = String(b.isi || '').trim();
+        if (judul.length < 5) return err('Judul minimal 5 karakter', 400, env);
+        if (isi.length < 10) return err('Isi diskusi minimal 10 karakter', 400, env);
+
+        await env.DB.prepare('UPDATE forum_post SET judul=?, isi=?, kategori=COALESCE(?,kategori), diubah=? WHERE id=?')
+          .bind(judul, isi, b.kategori || null, new Date().toISOString(), id).run();
+
+        const baru = await env.DB.prepare('SELECT * FROM forum_post WHERE id = ?').bind(id).first();
+        ctx.waitUntil(push(env, 'forum', 'forum.ubah', baru));
+        return json(baru, 200, env);
+      }
+
+      // ---- forum: hapus balasan sendiri ----
+      if (p.startsWith('forum/balasan/') && req.method === 'DELETE') {
+        const id = p.split('/')[2];
+        const b = await env.DB.prepare('SELECT * FROM forum_balasan WHERE id = ?').bind(id).first();
+        if (!b) return err('Balasan tidak ditemukan', 404, env);
+        if (b.user_id !== me.sub) return err('Kamu hanya bisa menghapus balasan sendiri', 403, env);
+
+        await env.DB.batch([
+          env.DB.prepare('DELETE FROM forum_balasan WHERE id = ?').bind(id),
+          env.DB.prepare('UPDATE forum_post SET balasan = MAX(0, balasan - 1) WHERE id = ?').bind(b.post_id),
+        ]);
+        ctx.waitUntil(push(env, 'forum', 'forum.balasan.hapus', { id, post_id: b.post_id }));
+        return json({ ok: true }, 200, env);
       }
 
       // ---- forum: hapus diskusi sendiri ----
@@ -1820,6 +1938,30 @@ export default {
           push(env, 'cs:inbox', 'chat.message', { ...msg, user_id: me.sub }), // dashboard admin
         ]));
         return json(msg, 201, env);
+      }
+
+      // ---- hapus satu pesan milik sendiri ----
+      if (p.startsWith('cs/messages/') && req.method === 'DELETE') {
+        const id = p.split('/')[2];
+        const m = await env.DB.prepare('SELECT * FROM cs_messages WHERE id = ? AND room = ?')
+          .bind(id, room).first();
+        if (!m) return err('Pesan tidak ditemukan', 404, env);
+        if (m.dari !== 'user') return err('Hanya pesanmu sendiri yang bisa dihapus', 403, env);
+
+        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL WHERE id = ?")
+          .bind(id).run();
+        ctx.waitUntil(Promise.all([
+          push(env, room, 'chat.hapus', { id }),
+          push(env, 'cs:inbox', 'chat.hapus', { id, room }),
+        ]));
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---- bersihkan seluruh percakapan milik sendiri ----
+      if (p === 'cs/messages' && req.method === 'DELETE') {
+        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL WHERE room = ? AND dari = 'user'")
+          .bind(room).run();
+        return json({ ok: true }, 200, env);
       }
 
       // ---- tandai pesan CS sudah dibaca ----

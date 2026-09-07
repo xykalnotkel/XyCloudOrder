@@ -404,9 +404,9 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  Future<String?> balasForum(String id, String isi) async {
+  Future<String?> balasForum(String id, String isi, {String? balasKe}) async {
     try {
-      await _repo.forumBalas(id, isi);
+      await _repo.forumBalas(id, isi, balasKe: balasKe);
       final i = forum.indexWhere((f) => f.id == id);
       if (i >= 0) forum[i].balasan++;
       notifyListeners();
@@ -438,6 +438,58 @@ class AppState extends ChangeNotifier {
       tadinya ? forumDisukai.add(id) : forumDisukai.remove(id);
     }
     notifyListeners();
+  }
+
+  Future<String?> suntingForum({
+    required String id,
+    required String judul,
+    required String isi,
+    String? kategori,
+  }) async {
+    try {
+      final baru = await _repo.forumSunting(id: id, judul: judul, isi: isi, kategori: kategori);
+      final i = forum.indexWhere((f) => f.id == id);
+      if (i >= 0) forum[i] = baru;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<String?> hapusBalasanForum(String id, String postId) async {
+    try {
+      await _repo.forumHapusBalasan(id);
+      final i = forum.indexWhere((f) => f.id == postId);
+      if (i >= 0 && forum[i].balasan > 0) forum[i].balasan--;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  /// Hapus satu pesan chat milik sendiri.
+  Future<String?> hapusPesan(String id) async {
+    try {
+      await _repo.hapusPesan(id);
+      chat.removeWhere((m) => m.id == id);
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  /// Bersihkan seluruh pesan yang pernah kukirim.
+  Future<String?> hapusSemuaPesan() async {
+    try {
+      await _repo.hapusSemuaPesan();
+      await muatChat();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
   }
 
   Future<String?> hapusForum(String id) async {
@@ -721,6 +773,22 @@ class AppState extends ChangeNotifier {
         break;
       case 'sesi.update':
         // status sesi diperbarui oleh agen PC
+        break;
+      case 'chat.hapus':
+        chat.removeWhere((m) => m.id == '${e.payload['id']}');
+        break;
+      case 'forum.ubah':
+        try {
+          final p = ForumPost.fromJson(Map<String, dynamic>.from(e.payload));
+          final i = forum.indexWhere((f) => f.id == p.id);
+          if (i >= 0) forum[i] = p;
+        } catch (_) {}
+        break;
+      case 'forum.balasan.hapus':
+        try {
+          final i = forum.indexWhere((f) => f.id == '${e.payload['post_id']}');
+          if (i >= 0 && forum[i].balasan > 0) forum[i].balasan--;
+        } catch (_) {}
         break;
       case 'forum.baru':
         try {

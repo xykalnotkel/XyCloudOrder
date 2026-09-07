@@ -48,7 +48,7 @@ class _XyShellState extends State<XyShell> {
             BoxShadow(color: XyTheme.ink.withOpacity(.06), blurRadius: 24, offset: const Offset(0, -6)),
           ],
         ),
-        padding: EdgeInsets.only(bottom: pad > 0 ? pad - 4 : 8, top: 8, left: 6, right: 6),
+        padding: EdgeInsets.only(bottom: pad > 0 ? pad - 2 : 11, top: 11, left: 6, right: 6),
         child: Row(
           children: List.generate(_items.length, (i) {
             final on = i == idx;
@@ -65,22 +65,22 @@ class _XyShellState extends State<XyShell> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
-                      height: 32,
-                      width: on ? 56 : 40,
+                      height: 38,
+                      width: on ? 64 : 46,
                       decoration: BoxDecoration(
                         gradient: on ? XyTheme.gradPrimary : null,
                         borderRadius: BorderRadius.circular(XyRadius.pill),
                         boxShadow: on ? XyTheme.glow(XyTheme.primary, .28) : null,
                       ),
                       child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1, size: 19, color: on ? Colors.white : XyTheme.muted),
+                        Icon(on ? it.$2 : it.$1, size: 21, color: on ? Colors.white : XyTheme.muted),
                       ]),
                     ),
                     const SizedBox(height: 5),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
-                        fontSize: 10.4,
+                        fontSize: 11,
                         fontWeight: on ? FontWeight.w800 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.muted,
                       ),
