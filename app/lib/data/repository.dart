@@ -36,6 +36,15 @@ abstract class XyRepository {
   Future<Map<String, dynamic>> cekVoucher({required String kode, required String jenis, required int total});
   Future<void> hapusAkun({String? password, bool paksa});
 
+  // ---------- undang teman, favorit, ulasan paket ----------
+  Future<Map<String, dynamic>> dataReferral();
+  Future<Map<String, dynamic>> pakaiReferral(String kode);
+  Future<List<String>> favorit();
+  Future<bool> ubahFavorit(String produkId);
+  Future<List<Ulasan>> ulasanPaket(String planId);
+  Future<void> kirimUlasanPaket({required String planId, required int rating, String? komentar, String? orderId});
+  Future<Map<String, dynamic>> dataSaya();
+
   /// Dokumen legal: 'syarat' atau 'privasi'.
   Future<Map<String, dynamic>> legal(String jenis);
 
@@ -183,6 +192,43 @@ class RemoteRepository implements XyRepository {
   @override
   Future<void> hapusAkun({String? password, bool paksa = false}) async =>
       api.hapus('/me', {if (password != null) 'password': password, 'paksa': paksa});
+
+  @override
+  Future<Map<String, dynamic>> dataReferral() async =>
+      Map<String, dynamic>.from(await api.get('/referral'));
+
+  @override
+  Future<Map<String, dynamic>> pakaiReferral(String kode) async =>
+      Map<String, dynamic>.from(await api.post('/referral/pakai', {'kode': kode}));
+
+  @override
+  Future<List<String>> favorit() async =>
+      ((await api.get('/favorit')) as List).map((e) => '$e').toList();
+
+  @override
+  Future<bool> ubahFavorit(String produkId) async =>
+      (await api.post('/favorit/$produkId'))['favorit'] == true;
+
+  @override
+  Future<List<Ulasan>> ulasanPaket(String planId) async =>
+      ((await api.get('/pc/plans/$planId/ulasan')) as List).map((e) => Ulasan.fromJson(e)).toList();
+
+  @override
+  Future<void> kirimUlasanPaket({
+    required String planId,
+    required int rating,
+    String? komentar,
+    String? orderId,
+  }) async =>
+      api.post('/pc/ulasan', {
+        'plan_id': planId,
+        'rating': rating,
+        if (komentar != null) 'komentar': komentar,
+        if (orderId != null) 'order_id': orderId,
+      });
+
+  @override
+  Future<Map<String, dynamic>> dataSaya() async => Map<String, dynamic>.from(await api.get('/me/data'));
 
   @override
   Future<UserProfile> profilSaya() async => UserProfile.fromJson(await api.get('/me'));
@@ -446,6 +492,34 @@ class MockRepository implements XyRepository {
 
   @override
   Future<void> hapusAkun({String? password, bool paksa = false}) async {}
+
+  @override
+  Future<Map<String, dynamic>> dataReferral() =>
+      _delay({'kode': 'DEMO1234', 'tautan': '', 'bonusPengundang': 10000,
+              'bonusDiundang': 5000, 'totalBonus': 0, 'daftar': const []}, 300);
+
+  @override
+  Future<Map<String, dynamic>> pakaiReferral(String kode) => _delay({'ok': true, 'bonus': 5000}, 300);
+
+  @override
+  Future<List<String>> favorit() => _delay(<String>[], 200);
+
+  @override
+  Future<bool> ubahFavorit(String produkId) => _delay(true, 200);
+
+  @override
+  Future<List<Ulasan>> ulasanPaket(String planId) => _delay(<Ulasan>[], 200);
+
+  @override
+  Future<void> kirimUlasanPaket({
+    required String planId,
+    required int rating,
+    String? komentar,
+    String? orderId,
+  }) async {}
+
+  @override
+  Future<Map<String, dynamic>> dataSaya() => _delay({'profil': const {}}, 300);
 
   @override
   Future<Map<String, dynamic>> legal(String jenis) => _delay(

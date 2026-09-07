@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/material.dart';
@@ -681,6 +683,50 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
                 'lalu menandai konten sebagai sensitif atau menghapusnya. Kami tidak memblokir gambar secara '
                 'membabi buta supaya diskusi tetap hidup.',
                 style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          XyCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: const [
+                Icon(Icons.download_for_offline_outlined, size: 18, color: XyTheme.primary),
+                SizedBox(width: 9),
+                Text('Unduh dataku', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              ]),
+              const SizedBox(height: 10),
+              const Text(
+                'Ambil seluruh data yang kami simpan tentangmu: profil, pesanan, transaksi, '
+                'percakapan, diskusi, dan ulasan. Hasilnya disalin ke papan klip dalam bentuk JSON.',
+                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                height: 46,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Mengumpulkan datamu...'), duration: Duration(seconds: 1)),
+                    );
+                    final data = await context.read<AppState>().dataSaya();
+                    if (!context.mounted) return;
+                    if (data == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal mengambil data, coba lagi.')),
+                      );
+                      return;
+                    }
+                    final teks = const JsonEncoder.withIndent('  ').convert(data);
+                    await Clipboard.setData(ClipboardData(text: teks));
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Data disalin, ${(teks.length / 1024).ceil()} KB. '
+                          'Tempel ke aplikasi catatan untuk menyimpannya.')),
+                    );
+                  },
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Ambil Data Saya'),
+                ),
               ),
             ]),
           ),

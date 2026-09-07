@@ -11,6 +11,7 @@ import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
 import 'notifikasi_screen.dart';
 import 'pengaturan_screen.dart';
+import 'referral_screen.dart';
 import 'tentang_screen.dart';
 import 'wallet_screen.dart';
 
@@ -241,6 +242,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 judul: 'Dompet dan Riwayat',
                 sub: 'Saldo ${rupiah(u.saldo)}',
                 onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
+              ),
+              _Menu(
+                ikon: Icons.card_giftcard_rounded,
+                judul: 'Undang Teman',
+                sub: 'Bagi kode, kalian berdua dapat saldo',
+                onTap: () => Navigator.push(context, xyRoute(const ReferralScreen())),
               ),
               _Menu(
                 ikon: Icons.receipt_long_outlined,

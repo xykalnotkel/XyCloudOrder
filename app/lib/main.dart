@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
+import 'data/lapor_galat.dart';
 import 'data/push_service.dart';
 import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
@@ -20,7 +21,10 @@ Future<void> main() async {
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
   await PushService.mulai();
-  runApp(const XyCloudStoreApp());
+  await LaporGalat.siapkan();
+
+  // semua galat yang lolos ditangkap dan dilaporkan ke server sendiri
+  LaporGalat.pasang(() => runApp(const XyCloudStoreApp()));
 }
 
 class XyCloudStoreApp extends StatelessWidget {

@@ -20,7 +20,7 @@ import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
-import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog } from './sistem.js';
+import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, laporanHarian, pantauKesehatan } from './sistem.js';
 import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, buatCadangan } from './loyal.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
@@ -324,6 +324,12 @@ export default {
   /** Penjadwal Cloudflare: pemeliharaan otomatis berjalan sendiri. */
   async scheduled(event, env, ctx) {
     ctx.waitUntil(jalankanPemeliharaan(env));
+    // pantau kesehatan tiap jam
+    ctx.waitUntil(pantauKesehatan(env, kirimEmail));
+    // laporan harian pukul 01.00 WIB
+    if (new Date().getUTCHours() === 18) {
+      ctx.waitUntil(laporanHarian(env, kirimEmail));
+    }
     // cadangan otomatis sekali sehari pada jam 19 UTC (dini hari WIB)
     if (new Date().getUTCHours() === 19) {
       ctx.waitUntil((async () => {
@@ -408,6 +414,54 @@ export default {
       );
     }
 
+    if (path === '/manifest.webmanifest') {
+      return new Response(JSON.stringify({
+        name: 'XyCloudStore',
+        short_name: 'XyCloud',
+        description: 'Sewa PC Cloud dan Akun Digital',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        background_color: '#1A1033',
+        theme_color: '#6C2BE2',
+        lang: 'id',
+        icons: [
+          { src: '/brand/logo.png', sizes: '310x96', type: 'image/png' },
+          { src: '/brand/og.png', sizes: '1200x630', type: 'image/png', purpose: 'any' },
+        ],
+      }), {
+        headers: { 'Content-Type': 'application/manifest+json', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+
+    if (path === '/sw.js') {
+      const isi = `const CACHE = 'xycloudstore-v1';
+self.addEventListener('install', (e) => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['/', '/unduh'])));
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((k) => Promise.all(k.filter((x) => x !== CACHE).map((x) => caches.delete(x)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', (e) => {
+  const u = new URL(e.request.url);
+  if (e.request.method !== 'GET' || u.pathname.startsWith('/api/') || u.pathname.startsWith('/unduh/')) return;
+  e.respondWith(
+    fetch(e.request)
+      .then((r) => {
+        const salin = r.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, salin)).catch(() => {});
+        return r;
+      })
+      .catch(() => caches.match(e.request).then((c) => c || caches.match('/')))
+  );
+});`;
+      return new Response(isi, {
+        headers: { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
+
     if (path === '/sitemap.xml') {
       const halaman = [
         ['/', '1.0', 'daily'],
@@ -420,6 +474,18 @@ export default {
         ['/legal/privasi', '0.3', 'yearly'],
       ];
       const hariIni = new Date().toISOString().slice(0, 10);
+
+      // produk dan diskusi ikut masuk peta situs supaya bisa ditemukan mesin pencari
+      try {
+        const { results: produk } = await env.DB
+          .prepare('SELECT id FROM akun_produk LIMIT 200').all();
+        produk.forEach((r) => halaman.push([`/akun/${r.id}`, '0.7', 'weekly']));
+
+        const { results: diskusi } = await env.DB
+          .prepare('SELECT id FROM forum_post ORDER BY dibuat DESC LIMIT 300').all();
+        diskusi.forEach((r) => halaman.push([`/komunitas/${r.id}`, '0.6', 'weekly']));
+      } catch (_) { /* peta situs tetap terbit walau tabel bermasalah */ }
+
       const isi = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${halaman.map(([u, p2, f]) => `  <url>
@@ -637,6 +703,55 @@ ${halaman.map(([u, p2, f]) => `  <url>
           post: { ...post, gambar: samarkanGambar(env, post.gambar, 'l'), foto: samarkanGambar(env, post.foto, 's') },
           balasan: results.map((r) => ({ ...r, foto: samarkanGambar(env, r.foto, 's') })),
         }, 200, env);
+      }
+
+      // ---------------- LAPORAN GALAT APLIKASI ----------------
+      if (p === 'galat' && req.method === 'POST') {
+        if (!(await bolehLanjut(env, `galat:${ip}`, 20, 300))) return json({ ok: true }, 200, env);
+        const b = await req.json().catch(() => ({}));
+        const pesan = String(b.pesan || '').slice(0, 400);
+        if (!pesan) return json({ ok: true }, 200, env);
+
+        // galat yang sama digabung supaya daftarnya tidak banjir
+        const kunci = await crypto.subtle.digest('SHA-1',
+          new TextEncoder().encode(pesan + (b.layar || '')));
+        const id = 'gl_' + [...new Uint8Array(kunci)].map((x) => x.toString(16).padStart(2, '0')).join('').slice(0, 16);
+        const waktu = new Date().toISOString();
+
+        await env.DB.prepare(
+          `INSERT INTO galat (id,user_id,versi,perangkat,android,pesan,jejak,layar,jumlah,terakhir)
+           VALUES (?,?,?,?,?,?,?,?,1,?)
+           ON CONFLICT(id) DO UPDATE SET jumlah = jumlah + 1, terakhir = excluded.terakhir,
+             status = CASE WHEN galat.status = 'selesai' THEN 'baru' ELSE galat.status END`
+        ).bind(id, b.user_id || null, b.versi || null, b.perangkat || null, b.android || null,
+               pesan, String(b.jejak || '').slice(0, 2000), b.layar || null, waktu).run();
+
+        return json({ ok: true }, 201, env);
+      }
+
+      // ---------------- CATATAN KUNJUNGAN SITUS ----------------
+      if (p === 'kunjungan' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        ctx.waitUntil(env.DB.prepare(
+          'INSERT INTO kunjungan (id,jenis,halaman,referer,negara,perangkat) VALUES (?,?,?,?,?,?)'
+        ).bind(
+          uid('kj_'),
+          String(b.jenis || 'halaman').slice(0, 30),
+          String(b.halaman || '/').slice(0, 120),
+          String(b.referer || '').slice(0, 120),
+          req.cf?.country || '-',
+          (req.headers.get('user-agent') || '').toLowerCase().includes('android') ? 'android'
+            : (req.headers.get('user-agent') || '').toLowerCase().includes('iphone') ? 'ios' : 'desktop',
+        ).run().catch(() => {}));
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---------------- ULASAN PAKET PC (baca) ----------------
+      if (p.startsWith('pc/plans/') && p.endsWith('/ulasan') && req.method === 'GET') {
+        const planId = p.split('/')[2];
+        const { results } = await env.DB
+          .prepare('SELECT * FROM ulasan_pc WHERE plan_id = ? ORDER BY waktu DESC LIMIT 60').bind(planId).all();
+        return json(results, 200, env);
       }
 
       // ---------------- LEGAL ----------------
@@ -1326,6 +1441,88 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json({ ok: true }, 200, env);
         }
 
+        // ---- kirim laporan harian sekarang ----
+        if (a === 'sistem/laporan' && req.method === 'POST') {
+          const hasil = await laporanHarian(env, kirimEmail);
+          return json(hasil, hasil.ok ? 200 : 400, env);
+        }
+
+        // ---- laporan galat aplikasi ----
+        if (a === 'galat' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT g.*, u.nama AS nama_pengguna FROM galat g
+             LEFT JOIN users u ON u.id = g.user_id
+             ORDER BY CASE g.status WHEN 'baru' THEN 0 ELSE 1 END, g.terakhir DESC LIMIT 100`
+          ).all();
+          return json(results, 200, env);
+        }
+
+        if (a.startsWith('galat/') && req.method === 'PATCH') {
+          const idG = a.split('/')[1];
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare('UPDATE galat SET status = ? WHERE id = ?')
+            .bind(b.status || 'selesai', idG).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        if (a.startsWith('galat/') && req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM galat WHERE id = ?').bind(a.split('/')[1]).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- ringkasan referral ----
+        if (a === 'referral' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT r.*, p.nama AS nama_pengundang, d.nama AS nama_diundang
+             FROM referral r
+             LEFT JOIN users p ON p.id = r.pengundang
+             LEFT JOIN users d ON d.id = r.diundang
+             ORDER BY r.dibuat DESC LIMIT 100`
+          ).all();
+          const teratas = await env.DB.prepare(
+            `SELECT u.nama, u.kode_referral, COUNT(r.id) jumlah, SUM(r.bonus_pengundang) bonus
+             FROM referral r JOIN users u ON u.id = r.pengundang
+             GROUP BY r.pengundang ORDER BY jumlah DESC LIMIT 10`
+          ).all();
+          return json({ daftar: results, teratas: teratas.results }, 200, env);
+        }
+
+        // ---- analitik kunjungan situs ----
+        if (a === 'analitik' && req.method === 'GET') {
+          const semua = async (sql) => {
+            try {
+              const { results } = await env.DB.prepare(sql).all();
+              return results;
+            } catch (_) {
+              return [];
+            }
+          };
+          return json({
+            harian: await semua(
+              `SELECT substr(waktu,1,10) d, COUNT(*) n FROM kunjungan
+               WHERE waktu > datetime('now','-30 day') GROUP BY d ORDER BY d`),
+            halaman: await semua(
+              `SELECT halaman, COUNT(*) n FROM kunjungan
+               WHERE waktu > datetime('now','-30 day') GROUP BY halaman ORDER BY n DESC LIMIT 10`),
+            perangkat: await semua(
+              `SELECT perangkat, COUNT(*) n FROM kunjungan
+               WHERE waktu > datetime('now','-30 day') GROUP BY perangkat ORDER BY n DESC`),
+            negara: await semua(
+              `SELECT negara, COUNT(*) n FROM kunjungan
+               WHERE waktu > datetime('now','-30 day') GROUP BY negara ORDER BY n DESC LIMIT 8`),
+            total: (await semua("SELECT COUNT(*) n FROM kunjungan WHERE waktu > datetime('now','-30 day')"))[0]?.n ?? 0,
+          }, 200, env);
+        }
+
+        // ---- ulasan paket PC ----
+        if (a === 'ulasan-pc' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT r.*, p.nama AS paket FROM ulasan_pc r
+             LEFT JOIN pc_plans p ON p.id = r.plan_id ORDER BY r.waktu DESC LIMIT 100`
+          ).all();
+          return json(results, 200, env);
+        }
+
         // ---- voucher ----
         if (a === 'voucher' && req.method === 'GET') {
           const { results } = await env.DB.prepare('SELECT * FROM voucher ORDER BY dibuat DESC LIMIT 100').all();
@@ -1790,6 +1987,180 @@ ${halaman.map(([u, p2, f]) => `  <url>
             .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id })),
         ]);
         return json({ ok: true }, 200, env);
+      }
+
+      // ---- kode referral milikku ----
+      if (p === 'referral' && req.method === 'GET') {
+        let u = await env.DB.prepare('SELECT kode_referral, nama FROM users WHERE id = ?').bind(me.sub).first();
+
+        if (!u?.kode_referral) {
+          // buat kode dari nama, ditambah angka acak supaya unik
+          const dasar = (u?.nama || 'XY').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 5) || 'XYUSER';
+          let kode = '';
+          for (let coba = 0; coba < 5; coba++) {
+            const acak = String(crypto.getRandomValues(new Uint32Array(1))[0] % 10000).padStart(4, '0');
+            const calon = `${dasar}${acak}`;
+            const bentrok = await env.DB.prepare('SELECT 1 FROM users WHERE kode_referral = ?').bind(calon).first();
+            if (!bentrok) {
+              kode = calon;
+              break;
+            }
+          }
+          await env.DB.prepare('UPDATE users SET kode_referral = ? WHERE id = ?').bind(kode, me.sub).run();
+          u = { kode_referral: kode };
+        }
+
+        const { results } = await env.DB.prepare(
+          `SELECT r.*, u.nama AS nama_diundang FROM referral r
+           LEFT JOIN users u ON u.id = r.diundang
+           WHERE r.pengundang = ? ORDER BY r.dibuat DESC LIMIT 50`
+        ).bind(me.sub).all();
+
+        const total = results.filter((r) => r.status === 'selesai')
+          .reduce((a, r) => a + (r.bonus_pengundang || 0), 0);
+
+        return json({
+          kode: u.kode_referral,
+          tautan: `${env.WEB_URL || 'https://xycloud.my.id'}/unduh?ref=${u.kode_referral}`,
+          bonusPengundang: Number(env.BONUS_REFERRAL || 10000),
+          bonusDiundang: Number(env.BONUS_DIUNDANG || 5000),
+          totalBonus: total,
+          daftar: results,
+        }, 200, env);
+      }
+
+      // ---- pakai kode referral orang lain ----
+      if (p === 'referral/pakai' && req.method === 'POST') {
+        const { kode } = await req.json().catch(() => ({}));
+        const k = String(kode || '').trim().toUpperCase();
+        if (!k) return err('Kode referral kosong', 400, env);
+
+        const aku = await env.DB.prepare('SELECT diundang_oleh, created_at FROM users WHERE id = ?')
+          .bind(me.sub).first();
+        if (aku?.diundang_oleh) return err('Kamu sudah pernah memakai kode referral', 409, env);
+
+        const pengundang = await env.DB.prepare('SELECT id, nama FROM users WHERE kode_referral = ?')
+          .bind(k).first();
+        if (!pengundang) return err('Kode referral tidak ditemukan', 404, env);
+        if (pengundang.id === me.sub) return err('Tidak bisa memakai kodemu sendiri', 400, env);
+
+        const bonusA = Number(env.BONUS_REFERRAL || 10000);
+        const bonusB = Number(env.BONUS_DIUNDANG || 5000);
+
+        await env.DB.batch([
+          env.DB.prepare('UPDATE users SET diundang_oleh = ? WHERE id = ?').bind(pengundang.id, me.sub),
+          env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(bonusA, pengundang.id),
+          env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(bonusB, me.sub),
+          env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+            .bind(uid('t_'), pengundang.id, 'Bonus mengundang teman', 'topup', bonusA),
+          env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+            .bind(uid('t_'), me.sub, 'Bonus memakai kode referral', 'topup', bonusB),
+          env.DB.prepare(
+            "INSERT INTO referral (id,pengundang,diundang,bonus_pengundang,bonus_diundang,status,selesai) VALUES (?,?,?,?,?,'selesai',?)"
+          ).bind(uid('rf_'), pengundang.id, me.sub, bonusA, bonusB, new Date().toISOString()),
+        ]);
+
+        ctx.waitUntil(buatNotif(env, ctx, {
+          userId: pengundang.id,
+          jenis: 'wallet',
+          judul: 'Bonus referral masuk',
+          pesan: `Temanmu memakai kodemu. Saldo bertambah Rp${bonusA.toLocaleString('id-ID')}.`,
+          aktor: 'XyCloudStore',
+        }));
+
+        const saldoBaru = await env.DB.prepare('SELECT saldo FROM users WHERE id = ?').bind(me.sub).first();
+        ctx.waitUntil(push(env, room, 'wallet.update', { saldo: saldoBaru?.saldo ?? 0 }));
+
+        return json({
+          ok: true,
+          bonus: bonusB,
+          pengundang: pengundang.nama,
+          saldo: saldoBaru?.saldo ?? 0,
+        }, 200, env);
+      }
+
+      // ---- favorit produk ----
+      if (p === 'favorit' && req.method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT produk_id FROM favorit WHERE user_id = ?')
+          .bind(me.sub).all();
+        return json(results.map((r) => r.produk_id), 200, env);
+      }
+
+      if (p.startsWith('favorit/') && req.method === 'POST') {
+        const produkId = p.split('/')[1];
+        const ada = await env.DB.prepare('SELECT 1 FROM favorit WHERE user_id = ? AND produk_id = ?')
+          .bind(me.sub, produkId).first();
+        if (ada) {
+          await env.DB.prepare('DELETE FROM favorit WHERE user_id = ? AND produk_id = ?')
+            .bind(me.sub, produkId).run();
+          return json({ favorit: false }, 200, env);
+        }
+        await env.DB.prepare('INSERT INTO favorit (user_id,produk_id) VALUES (?,?)')
+          .bind(me.sub, produkId).run();
+        return json({ favorit: true }, 200, env);
+      }
+
+      // ---- ulasan paket PC ----
+      if (p === 'pc/ulasan' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const nilai = Math.max(1, Math.min(5, Number(b.rating) || 5));
+        const planId = String(b.plan_id || '');
+
+        const pernah = await env.DB.prepare(
+          "SELECT 1 FROM orders WHERE user_id = ? AND plan_id = ? AND status IN ('aktif','selesai') LIMIT 1"
+        ).bind(me.sub, planId).first();
+        if (!pernah) return err('Kamu bisa menilai paket setelah pernah menyewanya', 403, env);
+
+        const sudah = await env.DB.prepare('SELECT id FROM ulasan_pc WHERE plan_id = ? AND user_id = ?')
+          .bind(planId, me.sub).first();
+        if (sudah) return err('Kamu sudah menilai paket ini', 409, env);
+
+        const u = await env.DB.prepare('SELECT nama FROM users WHERE id = ?').bind(me.sub).first();
+        const baris = {
+          id: uid('rp_'), plan_id: planId, order_id: b.order_id || null, user_id: me.sub,
+          nama: u?.nama || 'Pengguna', rating: nilai, komentar: String(b.komentar || '').slice(0, 500),
+          waktu: new Date().toISOString(),
+        };
+        await env.DB.prepare(
+          'INSERT INTO ulasan_pc (id,plan_id,order_id,user_id,nama,rating,komentar,waktu) VALUES (?,?,?,?,?,?,?,?)'
+        ).bind(baris.id, planId, baris.order_id, me.sub, baris.nama, nilai, baris.komentar, baris.waktu).run();
+
+        const agg = await env.DB
+          .prepare('SELECT ROUND(AVG(rating),1) r, COUNT(*) n FROM ulasan_pc WHERE plan_id = ?')
+          .bind(planId).first();
+        await env.DB.prepare('UPDATE pc_plans SET rating = ?, jumlah_ulasan = ? WHERE id = ?')
+          .bind(agg?.r || nilai, agg?.n || 1, planId).run();
+
+        ctx.waitUntil(push(env, 'katalog', 'plan.ulasan', { plan_id: planId, rating: agg?.r, jumlah: agg?.n }));
+        return json(baris, 201, env);
+      }
+
+      // ---- unduh semua dataku ----
+      if (p === 'me/data' && req.method === 'GET') {
+        const ambil = async (sql) => {
+          try {
+            const { results } = await env.DB.prepare(sql).bind(me.sub).all();
+            return results;
+          } catch (_) {
+            return [];
+          }
+        };
+        const profil = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
+        if (profil) delete profil.password;
+
+        const data = {
+          diambil: new Date().toISOString(),
+          profil,
+          pesanan: await ambil('SELECT * FROM orders WHERE user_id = ?'),
+          transaksi: await ambil('SELECT * FROM transaksi WHERE user_id = ?'),
+          topup: await ambil('SELECT * FROM topup WHERE user_id = ?'),
+          percakapan: await ambil('SELECT dari,teks,waktu FROM cs_messages WHERE user_id = ?'),
+          diskusi: await ambil('SELECT * FROM forum_post WHERE user_id = ?'),
+          balasan: await ambil('SELECT * FROM forum_balasan WHERE user_id = ?'),
+          ulasan: await ambil('SELECT * FROM ulasan WHERE user_id = ?'),
+          pemberitahuan: await ambil('SELECT * FROM notifikasi WHERE user_id = ?'),
+        };
+        return json(data, 200, env);
       }
 
       // ---- periksa voucher sebelum bayar ----

@@ -22,6 +22,8 @@ class UserProfile {
   final String? badge;
   final bool diblokir;
   final int peringatan;
+  final String? kodeReferral;
+  final String? diundangOleh;
 
   UserProfile({
     required this.id,
@@ -36,6 +38,8 @@ class UserProfile {
     this.badge,
     this.diblokir = false,
     this.peringatan = 0,
+    this.kodeReferral,
+    this.diundangOleh,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -51,6 +55,8 @@ class UserProfile {
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         diblokir: (j['diblokir'] ?? 0) == 1,
         peringatan: j['peringatan'] ?? 0,
+        kodeReferral: j['kode_referral'],
+        diundangOleh: j['diundang_oleh'],
       );
 
   Map<String, dynamic> toJson() => {

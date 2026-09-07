@@ -155,3 +155,97 @@ export async function statistikLengkap(env) {
       'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
   };
 }
+
+/**
+ * Laporan harian ke email pemilik, sekaligus pemantauan kesehatan.
+ * Dipanggil penjadwal sekali sehari.
+ */
+export async function laporanHarian(env, kirimEmail) {
+  const tujuan = env.EMAIL_ADMIN;
+  if (!tujuan) return { ok: false, alasan: 'EMAIL_ADMIN belum diatur' };
+
+  const satu = async (sql) => {
+    try {
+      return await env.DB.prepare(sql).first();
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const rp = (n) => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+
+  const [order, topup, pengguna, forum, pesan, galat, unit] = await Promise.all([
+    satu("SELECT COUNT(*) n, SUM(total) v FROM orders WHERE dibuat > datetime('now','-1 day')"),
+    satu("SELECT SUM(CASE WHEN status='disetujui' THEN nominal ELSE 0 END) masuk, SUM(CASE WHEN status IN ('menunggu','diperiksa') THEN 1 ELSE 0 END) tertunda FROM topup WHERE dibuat > datetime('now','-1 day')"),
+    satu("SELECT COUNT(*) n FROM users WHERE created_at > datetime('now','-1 day')"),
+    satu("SELECT COUNT(*) n FROM forum_post WHERE dibuat > datetime('now','-1 day')"),
+    satu("SELECT COUNT(*) n FROM cs_messages WHERE dari='user' AND waktu > datetime('now','-1 day')"),
+    satu("SELECT COUNT(*) n FROM galat WHERE status='baru'"),
+    satu("SELECT COUNT(*) n, SUM(CASE WHEN terakhir > datetime('now','-90 second') THEN 1 ELSE 0 END) hidup FROM agen"),
+  ]);
+
+  const ringkas = [
+    ['Pesanan baru', `${order?.n ?? 0} pesanan, ${rp(order?.v)}`],
+    ['Top up masuk', rp(topup?.masuk)],
+    ['Menunggu diperiksa', `${topup?.tertunda ?? 0} permintaan`],
+    ['Pengguna baru', `${pengguna?.n ?? 0} orang`],
+    ['Diskusi baru', `${forum?.n ?? 0} diskusi`],
+    ['Pesan masuk ke admin', `${pesan?.n ?? 0} pesan`],
+    ['Unit PC hidup', `${unit?.hidup ?? 0} dari ${unit?.n ?? 0}`],
+    ['Galat aplikasi belum ditangani', `${galat?.n ?? 0} laporan`],
+  ];
+
+  const perhatian = [];
+  if ((topup?.tertunda ?? 0) > 0) perhatian.push(`${topup.tertunda} top up menunggu diverifikasi.`);
+  if ((galat?.n ?? 0) > 0) perhatian.push(`${galat.n} laporan galat aplikasi belum ditinjau.`);
+  if ((unit?.n ?? 0) > 0 && (unit?.hidup ?? 0) === 0) perhatian.push('Semua unit PC sedang tidak melapor.');
+  if ((pesan?.n ?? 0) > 0) perhatian.push(`${pesan.n} pesan pelanggan menunggu balasan.`);
+
+  const hasil = await kirimEmail(env, {
+    to: tujuan,
+    template: 'laporanHarian',
+    data: {
+      tanggal: new Date().toISOString().slice(0, 10),
+      ringkas,
+      sorot: perhatian.length
+        ? `<b>Perlu perhatian:</b><br>${perhatian.join('<br>')}`
+        : 'Semua berjalan normal, tidak ada yang perlu ditindak.',
+    },
+  });
+
+  await catatLog(env, 'laporan', `Laporan harian dikirim ke ${tujuan}: ${hasil.ok ? 'berhasil' : hasil.alasan}`);
+  return hasil;
+}
+
+/** Pemantau kesehatan: kirim email kalau ada yang bermasalah. */
+export async function pantauKesehatan(env, kirimEmail) {
+  const masalah = [];
+
+  const mulai = Date.now();
+  try {
+    await env.DB.prepare('SELECT 1').first();
+    const jeda = Date.now() - mulai;
+    if (jeda > 3000) masalah.push(`Basis data lambat merespons, ${jeda} milidetik.`);
+  } catch (e) {
+    masalah.push(`Basis data tidak bisa dihubungi: ${e}`);
+  }
+
+  try {
+    const menggantung = await env.DB.prepare(
+      "SELECT COUNT(*) n FROM sesi WHERE status NOT IN ('selesai','gagal') AND dibuat < datetime('now','-6 hour')"
+    ).first();
+    if ((menggantung?.n ?? 0) > 0) masalah.push(`${menggantung.n} sesi main menggantung lebih dari enam jam.`);
+  } catch (_) { /* diabaikan */ }
+
+  if (!masalah.length) return { ok: true, sehat: true };
+
+  if (env.EMAIL_ADMIN) {
+    await kirimEmail(env, {
+      to: env.EMAIL_ADMIN,
+      template: 'peringatanSistem',
+      data: { judul: 'Ada yang perlu dicek', rincian: masalah.join('<br>') },
+    });
+  }
+  await catatLog(env, 'peringatan', masalah.join(' | '));
+  return { ok: true, sehat: false, masalah };
+}

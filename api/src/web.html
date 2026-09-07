@@ -24,6 +24,7 @@
 <meta name="twitter:description" content="Bayar per jam, kredensial otomatis, pesanan berjalan realtime.">
 <meta name="twitter:image" content="https://xycloud.my.id/brand/og.png">
 <link rel="apple-touch-icon" href="/brand/logo.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
 <script type="application/ld+json">
 {
@@ -507,7 +508,14 @@ async function ambil(jalur) {
   return j.data;
 }
 
-function tutupModal() { document.getElementById('modal').classList.remove('on') }
+function tutupModal() {
+  document.getElementById('modal').classList.remove('on');
+  // kembalikan alamat ke halaman daftar supaya tombol kembali terasa wajar
+  const bagian = location.pathname.replace(/\/+$/, '').split('/');
+  if ((bagian[1] === 'akun' || bagian[1] === 'komunitas') && bagian[2]) {
+    history.replaceState({}, '', '/' + bagian[1]);
+  }
+}
 function bukaModal(isi) {
   document.getElementById('modalBox').innerHTML =
     '<button class="tutup" onclick="tutupModal()">&times;</button>' + isi;
@@ -577,7 +585,7 @@ function gambarProduk(daftar) {
   const el = document.getElementById('daftarProduk');
   if (!daftar.length) { el.innerHTML = '<div class="kosongKotak">Belum ada produk di kategori ini.</div>'; return }
   el.innerHTML = daftar.map((p) => `
-    <div class="kartu produk" onclick="bukaProduk('${esc(p.id)}')">
+    <div class="kartu produk" onclick="keHalaman('/akun/${esc(p.id)}')">
       <div class="gbr">${p.gambar ? `<img src="${esc(p.gambar)}" alt="${esc(p.nama)}" loading="lazy">` : ''}</div>
       <div class="isi">
         <span class="tag">${esc(p.kategori)}</span>
@@ -646,7 +654,7 @@ async function muatForum() {
     const d = await ambil('/forum');
     if (!d.length) { el.innerHTML = '<div class="kosongKotak" style="grid-column:1/-1">Belum ada diskusi. Jadilah yang pertama lewat aplikasi.</div>'; return }
     el.innerHTML = d.slice(0, 6).map((f) => `
-      <div class="kartu diskusi" onclick="bukaDiskusi('${esc(f.id)}')">
+      <div class="kartu diskusi" onclick="keHalaman('/komunitas/${esc(f.id)}')">
         <div style="display:flex;gap:11px;align-items:center">
           <div class="avatar">${esc((f.nama || 'X')[0].toUpperCase())}</div>
           <div style="min-width:0">
@@ -721,7 +729,12 @@ function halamanDariJalur(jalur) {
   const peta = { '/': 'beranda', '/sewa': 'sewa', '/akun': 'akun', '/produk': 'akun',
                  '/komunitas': 'komunitas', '/bantuan': 'bantuan', '/unduh': 'unduh',
                  '/akun-saya': 'akun-saya' };
-  return peta[bersih] || 'beranda';
+  if (peta[bersih]) return peta[bersih];
+
+  // halaman rinci punya alamatnya sendiri
+  if (bersih.startsWith('/akun/')) return 'akun';
+  if (bersih.startsWith('/komunitas/')) return 'komunitas';
+  return 'beranda';
 }
 
 function tampilkan(hal, { gulir = true } = {}) {
@@ -746,6 +759,16 @@ function tampilkan(hal, { gulir = true } = {}) {
   if (hal === 'akun-saya') muatAkunSaya();
   if (gulir) scrollTo({ top: 0, behavior: 'instant' in document.documentElement.style ? 'instant' : 'auto' });
   if (hal === 'unduh') muatUnduh();
+
+  // buka rincian kalau alamatnya menunjuk satu produk atau satu diskusi
+  const bagian = location.pathname.replace(/\/+$/, '').split('/');
+  if (bagian[1] === 'akun' && bagian[2]) {
+    tungguProduk(bagian[2]);
+  } else if (bagian[1] === 'komunitas' && bagian[2]) {
+    bukaDiskusi(bagian[2]);
+  }
+
+  catatKunjungan(location.pathname);
 }
 
 function keHalaman(jalur) {
@@ -1460,6 +1483,29 @@ function sambungChat() {
   } catch (_) { /* diabaikan */ }
 }
 
+/* ---------------- analitik ringan tanpa kuki ---------------- */
+let _halamanTerakhir = '';
+function catatKunjungan(halaman) {
+  if (halaman === _halamanTerakhir) return;
+  _halamanTerakhir = halaman;
+  try {
+    fetch(API + '/kunjungan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jenis: 'halaman', halaman, referer: document.referrer || '' }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch (_) { /* diabaikan */ }
+}
+
+/** Tunggu daftar produk siap sebelum membuka rinciannya. */
+async function tungguProduk(id) {
+  for (let i = 0; i < 20 && !SEMUA_PRODUK.length; i++) {
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  bukaProduk(id);
+}
+
 /* ---------------- kontak ---------------- */
 async function muatKontak() {
   try {
@@ -1475,6 +1521,11 @@ async function muatKontak() {
 /* ---------------- jalankan ---------------- */
 document.querySelectorAll('nav a').forEach((a) =>
   a.addEventListener('click', () => document.getElementById('nav').classList.remove('buka')));
+
+// daftarkan pekerja layanan supaya situs bisa dipasang dan tetap terbuka saat sinyal jelek
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
 
 gambarKepala();
 muatSaya();

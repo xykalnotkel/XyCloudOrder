@@ -22,9 +22,10 @@ class _AkunScreenState extends State<AkunScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final kategoriList = ['Semua', ...{...s.produk.map((e) => e.kategori)}];
+    final kategoriList = ['Semua', 'Favorit', ...{...s.produk.map((e) => e.kategori)}];
     var list = s.produk.where((p) {
-      final okKat = kategori == 'Semua' || p.kategori == kategori;
+      final okKat = kategori == 'Semua' ||
+          (kategori == 'Favorit' ? s.favorit.contains(p.id) : p.kategori == kategori);
       final okCari = cari.isEmpty || p.nama.toLowerCase().contains(cari.toLowerCase());
       return okKat && okCari;
     }).toList();
@@ -108,6 +109,30 @@ class _KartuProduk extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: GambarProduk(produk: produk, tinggi: 92, radius: 14),
+          ),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Builder(builder: (context) {
+              final suka = context.watch<AppState>().favorit.contains(produk.id);
+              return Pressable(
+                onTap: () => context.read<AppState>().ubahFavorit(produk.id),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.92),
+                    shape: BoxShape.circle,
+                    boxShadow: XyTheme.shadowXs,
+                  ),
+                  child: Icon(
+                    suka ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    size: 16,
+                    color: suka ? XyTheme.danger : XyTheme.muted,
+                  ),
+                ),
+              );
+            }),
           ),
           if (diskon > 0)
             Positioned(

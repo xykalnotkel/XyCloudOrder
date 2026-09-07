@@ -7,6 +7,7 @@ import '../core/config.dart';
 import '../core/prefs.dart';
 import '../data/api_client.dart';
 import '../data/mock_data.dart';
+import '../data/lapor_galat.dart';
 import '../data/login_sosial.dart';
 import '../data/push_service.dart';
 import '../data/realtime_service.dart';
@@ -100,6 +101,7 @@ class AppState extends ChangeNotifier {
       _mulaiRealtime();
       _daftarkanPush();
       unawaited(muatNotifikasi());
+      unawaited(muatFavorit());
     } catch (_) {
       // token kedaluwarsa atau tidak valid
       await Prefs.hapusToken();
@@ -162,6 +164,7 @@ class AppState extends ChangeNotifier {
       _mulaiRealtime();
       _daftarkanPush();
       unawaited(muatNotifikasi());
+      unawaited(muatFavorit());
       return true;
     } on PerluVerifikasi catch (e) {
       emailMenungguVerifikasi = e.email;
@@ -490,6 +493,73 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
+  // ================= undang teman =================
+  Future<Map<String, dynamic>> dataReferral() => _repo.dataReferral();
+
+  Future<Map<String, dynamic>?> pakaiReferral(String kode) async {
+    error = null;
+    try {
+      final d = await _repo.pakaiReferral(kode);
+      await muatProfilRingkas();
+      return d;
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    }
+  }
+
+  // ================= favorit produk =================
+  Set<String> favorit = {};
+
+  Future<void> muatFavorit() async {
+    if (user == null) return;
+    try {
+      favorit = (await _repo.favorit()).toSet();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> ubahFavorit(String produkId) async {
+    final tadinya = favorit.contains(produkId);
+    tadinya ? favorit.remove(produkId) : favorit.add(produkId);
+    notifyListeners();
+    try {
+      final hasil = await _repo.ubahFavorit(produkId);
+      hasil ? favorit.add(produkId) : favorit.remove(produkId);
+    } catch (_) {
+      tadinya ? favorit.add(produkId) : favorit.remove(produkId);
+    }
+    notifyListeners();
+  }
+
+  // ================= ulasan paket PC =================
+  Future<List<Ulasan>> ulasanPaket(String planId) => _repo.ulasanPaket(planId);
+
+  Future<String?> nilaiPaket({
+    required String planId,
+    required int rating,
+    String? komentar,
+    String? orderId,
+  }) async {
+    try {
+      await _repo.kirimUlasanPaket(planId: planId, rating: rating, komentar: komentar, orderId: orderId);
+      await muatSemua();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  /// Unduh seluruh data pribadi dalam bentuk JSON.
+  Future<Map<String, dynamic>?> dataSaya() async {
+    try {
+      return await _repo.dataSaya();
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    }
+  }
+
   // ================= voucher =================
   Future<Map<String, dynamic>?> cekVoucher({
     required String kode,
@@ -772,7 +842,10 @@ class AppState extends ChangeNotifier {
   /// Hubungkan akun ini ke OneSignal supaya notifikasi tetap masuk saat aplikasi tertutup.
   void _daftarkanPush() {
     final id = user?.id;
-    if (id != null) PushService.masuk(id);
+    if (id != null) {
+      PushService.masuk(id);
+      LaporGalat.userId = id;
+    }
   }
 
   /// Ubah pesan kesalahan teknis jadi kalimat yang mudah dimengerti.

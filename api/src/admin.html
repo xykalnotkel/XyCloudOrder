@@ -201,6 +201,7 @@ const P={
   refresh:'<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M21 3v5h-5"/>',
   star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/>',
   tag:'<path d="M20.5 13.5 12 22l-9-9V4a1 1 0 0 1 1-1h9l7.5 7.5a2 2 0 0 1 0 3Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+  warn:'<path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5M12 17h.01"/>',
   chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   shield:'<path d="M12 3l7.5 3v6c0 4.5-3.2 7.9-7.5 9-4.3-1.1-7.5-4.5-7.5-9V6L12 3Z"/>',
   wallet:'<rect x="2.5" y="5.5" width="19" height="14" rx="3"/><path d="M17 12.5h.01"/>',
@@ -259,11 +260,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['voucher','tag','Voucher'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem'],['peran','users','Peran Admin']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['galat','warn','Galat App'],['analitik','chart','Analitik'],['referral','tag','Referral'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['voucher','tag','Voucher'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem'],['peran','users','Peran Admin']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran,galat:vGalat,analitik:vAnalitik,referral:vReferral}[TAB])();
 }
 function ke(t){
   TAB=t;
@@ -691,6 +692,107 @@ async function ubahSaldo(id, sekarang){
   await api('/users/saldo',{method:'POST',body:JSON.stringify({
     user_id:id, nominal:n, catatan: n>0?'Penambahan saldo oleh admin':'Pengurangan saldo oleh admin'})});
   toast('Saldo diperbarui'); vUsers();
+}
+
+/* ---------- galat aplikasi ---------- */
+async function vGalat(){
+  const m=document.getElementById('main');
+  const d=await api('/galat');
+  m.innerHTML=head('Galat Aplikasi','Laporan otomatis dari aplikasi pengguna',
+    `<button class="btn ghost" onclick="vGalat()">${ic('refresh',16)}Muat ulang</button>`)+
+    `<div class="grid g2">${d.length?d.map(g=>`
+      <div class="card" style="${g.status==='baru'?'border-color:rgba(239,68,68,.35)':''}">
+        <div class="row" style="gap:8px;flex-wrap:wrap">
+          <span class="tag" style="background:${g.status==='baru'?'rgba(239,68,68,.16)':'rgba(34,197,94,.16)'};
+            color:${g.status==='baru'?'#FCA5A5':'#6EE7A8'}">${esc(g.status)}</span>
+          <span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${g.jumlah}x</span>
+          ${g.layar?`<span class="tag" style="background:var(--panel2);color:var(--muted)">${esc(g.layar)}</span>`:''}
+          <div style="flex:1"></div>
+          <span style="font-size:11px;color:var(--muted)">${String(g.terakhir||'').replace('T',' ').slice(0,16)}</span>
+        </div>
+        <div style="margin-top:12px;font-size:13px;font-weight:700;line-height:1.5">${esc(g.pesan)}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+          Versi ${esc(g.versi||'-')} &middot; ${esc(g.perangkat||'-')} ${esc(g.android||'')}
+          ${g.nama_pengguna?' &middot; '+esc(g.nama_pengguna):''}</div>
+        ${g.jejak?`<pre class="mono" style="margin-top:10px;background:var(--panel2);border-radius:10px;padding:11px;
+          font-size:10.5px;max-height:130px;overflow:auto;white-space:pre-wrap">${esc(g.jejak.slice(0,700))}</pre>`:''}
+        <div class="row" style="margin-top:12px;gap:8px">
+          ${g.status==='baru'?`<button class="btn sm" onclick="tandaiGalat('${g.id}','selesai')">Tandai selesai</button>`
+            :`<button class="btn sm ghost" onclick="tandaiGalat('${g.id}','baru')">Buka lagi</button>`}
+          <div style="flex:1"></div>
+          <button class="btn sm danger" onclick="hapusGalat('${g.id}')">Hapus</button>
+        </div>
+      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada laporan galat. Bagus.</div>'}</div>`;
+}
+async function tandaiGalat(id,status){
+  await api('/galat/'+id,{method:'PATCH',body:JSON.stringify({status})});
+  toast('Status diperbarui'); vGalat();
+}
+async function hapusGalat(id){
+  if(!await xkonfirmasi('Hapus laporan galat ini?','Riwayatnya akan hilang.',{tombol:'Hapus',bahaya:true})) return;
+  await api('/galat/'+id,{method:'DELETE'}); toast('Laporan dihapus'); vGalat();
+}
+
+/* ---------- analitik kunjungan ---------- */
+async function vAnalitik(){
+  const m=document.getElementById('main');
+  const d=await api('/analitik');
+  m.innerHTML=head('Analitik Situs','Kunjungan 30 hari terakhir, tanpa kuki dan tanpa pelacak pihak ketiga',
+    `<button class="btn ghost" onclick="vAnalitik()">${ic('refresh',16)}Muat ulang</button>`)+
+    `<div class="grid g4" style="margin-bottom:18px">
+      <div class="card"><div style="font-size:11.5px;color:var(--muted);text-transform:uppercase">Total kunjungan</div>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-1px;margin-top:6px">${d.total}</div></div>
+      ${d.perangkat.map(p=>`<div class="card">
+        <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase">${esc(p.perangkat)}</div>
+        <div style="font-size:26px;font-weight:800;letter-spacing:-1px;margin-top:6px">${p.n}</div></div>`).join('')}
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <div style="font-weight:800;font-size:15px">Kunjungan harian</div>
+        ${d.harian.length?batang(d.harian,'n','linear-gradient(180deg,#A78BFA,#6C2BE2)')
+          :'<div style="color:var(--muted);padding:40px 0;text-align:center;font-size:13px">Belum ada data</div>'}
+      </div>
+      <div class="card">
+        <div style="font-weight:800;font-size:15px;margin-bottom:12px">Halaman terpopuler</div>
+        ${d.halaman.length?d.halaman.map(h=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <span class="mono" style="flex:1;font-size:12.5px">${esc(h.halaman)}</span><b>${h.n}</b></div>`).join('')
+          :'<div style="color:var(--muted);font-size:13px">Belum ada data</div>'}
+        <div style="font-weight:800;font-size:13.5px;margin:16px 0 8px">Negara</div>
+        ${d.negara.map(n=>`<div class="row" style="padding:6px 0;font-size:12.5px">
+          <span style="flex:1">${esc(n.negara)}</span><b>${n.n}</b></div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ---------- referral ---------- */
+async function vReferral(){
+  const m=document.getElementById('main');
+  const d=await api('/referral');
+  m.innerHTML=head('Referral','Siapa mengundang siapa dan berapa bonusnya',
+    `<button class="btn ghost" onclick="vReferral()">${ic('refresh',16)}Muat ulang</button>`)+
+    `<div class="grid g2">
+      <div class="card">
+        <div style="font-weight:800;font-size:15px;margin-bottom:12px">Pengundang teratas</div>
+        ${d.teratas.length?d.teratas.map((t,i)=>`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
+          <span style="width:22px;color:var(--muted);font-weight:800">${i+1}</span>
+          <div style="flex:1"><b style="font-size:13.5px">${esc(t.nama||'-')}</b>
+            <div class="mono" style="font-size:11px;color:var(--muted)">${esc(t.kode_referral||'-')}</div></div>
+          <div style="text-align:right"><b>${t.jumlah} orang</b>
+            <div style="font-size:11px;color:#6EE7A8">${rp(t.bonus||0)}</div></div>
+        </div>`).join(''):'<div style="color:var(--muted);font-size:13px">Belum ada yang mengundang</div>'}
+      </div>
+      <div class="card">
+        <div style="font-weight:800;font-size:15px;margin-bottom:12px">Undangan terbaru</div>
+        <div style="max-height:420px;overflow:auto">
+        ${d.daftar.length?d.daftar.map(r=>`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1;font-size:12.5px">
+            <b>${esc(r.nama_pengundang||'-')}</b> mengundang <b>${esc(r.nama_diundang||'-')}</b>
+            <div style="font-size:11px;color:var(--muted)">${String(r.dibuat||'').replace('T',' ').slice(0,16)}</div></div>
+          <span class="tag" style="background:rgba(34,197,94,.16);color:#6EE7A8">${rp(r.bonus_pengundang)}</span>
+        </div>`).join(''):'<div style="color:var(--muted);font-size:13px">Belum ada undangan</div>'}
+        </div>
+      </div>
+    </div>`;
 }
 
 /* ---------- voucher ---------- */
