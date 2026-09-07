@@ -8,6 +8,12 @@ Desain: modern, clean, quick. Tanpa satu pun emoji — seluruh ikon memakai sist
 
 ---
 
+## Pembaruan v2.4.0
+
+Tema gelap menyeluruh, perbaikan keluar/hapus akun, banner lebih tinggi, komentar bertingkat dengan stiker terenkripsi di koleksi lokal, sinkronisasi nama, serta floating promo/pop-up untuk aplikasi dan web. Email laporan harian sudah dihapus.
+
+Panduan penggunaan, batas stiker, dan aktivasi GIPHY: **[docs/rilis-2.4.0.md](docs/rilis-2.4.0.md)**. Pencarian GIPHY membutuhkan API key di menu **Stiker & GIPHY**; galeri/koleksi tetap berjalan tanpanya.
+
 ## Isi Repository
 
 ```
