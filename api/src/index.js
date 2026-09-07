@@ -369,10 +369,10 @@ export default {
         bitness: baca('sec-ch-ua-bitness'),
         model: baca('sec-ch-ua-model'),
         platform: baca('sec-ch-ua-platform'),
-      });
-      const WEB = WEB_HTML.includes('/*__XY_CH__*/')
-        ? WEB_HTML.replace('/*__XY_CH__*/', hintArsitektur)
-        : WEB_HTML;
+      }).replace(/</g, '\\u003c');
+      // Ganti penanda beserta nilai fallback agar tidak menghasilkan "{...} null".
+      // Callback menjaga teks header seperti "$&" tetap menjadi data biasa.
+      const WEB = WEB_HTML.replace(/\/\*__XY_CH__\*\/\s*null/, () => hintArsitektur);
       return new Response(WEB, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
