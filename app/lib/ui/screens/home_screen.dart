@@ -289,8 +289,9 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                   duration: const Duration(milliseconds: 220),
                   child: tampil
                       ? AnimatedRupiah(
+                          u.saldo,
                           key: const ValueKey('tampil'),
-                          nilai: u.saldo,
+                          format: rupiah,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 31,
