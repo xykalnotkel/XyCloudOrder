@@ -13,18 +13,13 @@ CREATE INDEX IF NOT EXISTS idx_sesi_order_status ON sesi(order_id,status);
 -- Charge, stock and physical-host reservation are one SQLite transaction.
 CREATE TRIGGER IF NOT EXISTS order_saldo_baru AFTER INSERT ON orders
 WHEN NEW.metode='saldo' BEGIN
- SELECT CASE WHEN NEW.total<0 OR NEW.durasi_jam<1 OR NEW.durasi_jam>24
-   THEN RAISE(ABORT,'ORDER_INVALID') END;
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM users WHERE id=NEW.user_id AND saldo>=NEW.total)
-   THEN RAISE(ABORT,'SALDO_TIDAK_CUKUP') END;
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM pc_plans WHERE id=NEW.plan_id AND unit_tersedia>0)
-   THEN RAISE(ABORT,'UNIT_PENUH') END;
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM agen WHERE id=NEW.agen_id AND (sesi_aktif IS NULL OR sesi_aktif=''))
-   THEN RAISE(ABORT,'UNIT_PENUH') END;
- SELECT CASE WHEN NEW.voucher IS NOT NULL AND (
+ SELECT RAISE(ABORT,'ORDER_INVALID') WHERE NEW.total<0 OR NEW.durasi_jam<1 OR NEW.durasi_jam>24;
+ SELECT RAISE(ABORT,'SALDO_TIDAK_CUKUP') WHERE NOT EXISTS(SELECT 1 FROM users WHERE id=NEW.user_id AND saldo>=NEW.total);
+ SELECT RAISE(ABORT,'UNIT_PENUH') WHERE NOT EXISTS(SELECT 1 FROM pc_plans WHERE id=NEW.plan_id AND unit_tersedia>0);
+ SELECT RAISE(ABORT,'UNIT_PENUH') WHERE NOT EXISTS(SELECT 1 FROM agen WHERE id=NEW.agen_id AND (sesi_aktif IS NULL OR sesi_aktif=''));
+ SELECT RAISE(ABORT,'VOUCHER_TIDAK_TERSEDIA') WHERE NEW.voucher IS NOT NULL AND (
    NOT EXISTS(SELECT 1 FROM voucher WHERE kode=NEW.voucher AND aktif=1 AND (kuota=0 OR terpakai<kuota))
-   OR EXISTS(SELECT 1 FROM voucher_pakai WHERE kode=NEW.voucher AND user_id=NEW.user_id))
-   THEN RAISE(ABORT,'VOUCHER_TIDAK_TERSEDIA') END;
+   OR EXISTS(SELECT 1 FROM voucher_pakai WHERE kode=NEW.voucher AND user_id=NEW.user_id));
  UPDATE users SET saldo=saldo-NEW.total,total_belanja=total_belanja+NEW.total WHERE id=NEW.user_id;
  UPDATE pc_plans SET unit_tersedia=unit_tersedia-1 WHERE id=NEW.plan_id;
  UPDATE agen SET sesi_aktif='order:'||NEW.id WHERE id=NEW.agen_id;
