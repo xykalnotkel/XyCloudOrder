@@ -9,6 +9,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
+import 'notifikasi_screen.dart';
 import 'pengaturan_screen.dart';
 import 'tentang_screen.dart';
 import 'wallet_screen.dart';
@@ -115,20 +116,40 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 12.5)),
                     const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(.16),
-                        borderRadius: BorderRadius.circular(XyRadius.pill),
+                    Wrap(spacing: 7, runSpacing: 6, children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(.16),
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                        ),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.workspace_premium_rounded, size: 13, color: Color(0xFFE8C07A)),
+                          const SizedBox(width: 5),
+                          Text('Member ${u.tier.toUpperCase()}',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: .4)),
+                        ]),
                       ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.workspace_premium_rounded, size: 13, color: Color(0xFFE8C07A)),
-                        const SizedBox(width: 5),
-                        Text('Member ${u.tier.toUpperCase()}',
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: .4)),
-                      ]),
-                    ),
+                      if (u.badge != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(XyRadius.pill),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.verified_rounded, size: 13, color: XyTheme.primary),
+                            const SizedBox(width: 5),
+                            Text(u.badge!.toUpperCase(),
+                                style: const TextStyle(
+                                    color: XyTheme.primary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: .4)),
+                          ]),
+                        ),
+                    ]),
                   ]),
                 ),
               ]),
@@ -146,7 +167,63 @@ class _ProfilScreenState extends State<ProfilScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
             child: Column(children: [
-              const SectionHeader('Akun', top: 22),
+              const SectionHeader('Aktivitas', top: 22),
+              Builder(builder: (context) {
+                final belum = context.watch<AppState>().notifBelum;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: XyCard(
+                    padding: const EdgeInsets.all(15),
+                    onTap: () => Navigator.push(context, xyRoute(const NotifikasiScreen())),
+                    child: Row(children: [
+                      Stack(children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                              color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                          child: const Icon(Icons.notifications_none_rounded, size: 20, color: XyTheme.primary),
+                        ),
+                        if (belum > 0)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
+                              constraints: const BoxConstraints(minWidth: 17),
+                              height: 17,
+                              decoration: BoxDecoration(
+                                color: XyTheme.danger,
+                                borderRadius: BorderRadius.circular(9),
+                                border: Border.all(color: XyTheme.surface, width: 1.6),
+                              ),
+                              child: Center(
+                                child: Text('$belum',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                              ),
+                            ),
+                          ),
+                      ]),
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Text('Pemberitahuan',
+                              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          const SizedBox(height: 3),
+                          Text(
+                            belum > 0 ? '$belum kabar baru menunggu' : 'Suka, balasan, pesanan, dan saldo',
+                            style: const TextStyle(color: XyTheme.muted, fontSize: 11.5),
+                          ),
+                        ]),
+                      ),
+                      const Icon(Icons.chevron_right_rounded, color: XyTheme.muted),
+                    ]),
+                  ),
+                );
+              }),
+
+              const SectionHeader('Akun'),
               _Menu(
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',

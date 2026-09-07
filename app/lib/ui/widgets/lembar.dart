@@ -185,3 +185,49 @@ class _Bingkai extends StatelessWidget {
         ]),
       );
 }
+
+/// Pilihan alasan saat melaporkan konten.
+Future<String?> pilihAlasanLaporan(BuildContext context) async {
+  const alasan = [
+    'Konten dewasa atau vulgar',
+    'Penipuan atau penjualan ilegal',
+    'Kata kasar atau melecehkan',
+    'Spam atau iklan berulang',
+    'Alasan lain',
+  ];
+
+  return showModalBottomSheet<String>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (d) => _Bingkai(
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Laporkan konten',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
+        const SizedBox(height: 6),
+        const Text('Pilih alasannya. Admin akan meninjau dalam waktu singkat.',
+            style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.5)),
+        const SizedBox(height: 14),
+        ...alasan.map((a) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Pressable(
+                onTap: () => Navigator.pop(d, a),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: XyTheme.surface,
+                    borderRadius: BorderRadius.circular(XyRadius.md),
+                    border: Border.all(color: XyTheme.line),
+                  ),
+                  child: Row(children: [
+                    Expanded(child: Text(a, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600))),
+                    const Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.muted),
+                  ]),
+                ),
+              ),
+            )),
+      ]),
+    ),
+  );
+}

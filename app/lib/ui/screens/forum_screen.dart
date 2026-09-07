@@ -210,6 +210,29 @@ class LencanaTier extends StatelessWidget {
   }
 }
 
+/// Lencana khusus pemberian admin, contohnya XySpace atau Staff.
+class LencanaKhusus extends StatelessWidget {
+  const LencanaKhusus(this.teks, {super.key});
+  final String teks;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(left: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          gradient: XyTheme.gradPrimary,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.verified_rounded, size: 9.5, color: Colors.white),
+          const SizedBox(width: 3),
+          Text(teks.toUpperCase(),
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: .5)),
+        ]),
+      );
+}
+
 class _KartuPost extends StatelessWidget {
   const _KartuPost({required this.post});
   final ForumPost post;
@@ -237,6 +260,7 @@ class _KartuPost extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
                   ),
                   LencanaTier(post.tier),
+                  if (post.badge != null) LencanaKhusus(post.badge!),
                   if (post.disematkan) ...[
                     const SizedBox(width: 6),
                     const Icon(Icons.push_pin_rounded, size: 13, color: XyTheme.primary),
@@ -327,11 +351,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     super.dispose();
   }
 
+  /// Laporkan konten yang tidak pantas ke admin.
+  Future<void> _lapor(BuildContext context, String jenis, String refId) async {
+    final alasan = await pilihAlasanLaporan(context);
+    if (alasan == null || !context.mounted) return;
+    final galatLapor = await context.read<AppState>().laporkan(jenis: jenis, refId: refId, alasan: alasan);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(galatLapor ?? 'Terima kasih, laporanmu kami tinjau.')),
+    );
+  }
+
   Future<void> _muat() async {
     setState(() {
       memuat = true;
       galat = null;
     });
+    context.read<AppState>().muatSukaBalasan();
     try {
       final d = await context.read<AppState>().detailForum(widget.post.id);
       if (mounted) setState(() => balasan = d);
@@ -372,6 +408,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       appBar: AppBar(
         title: const Text('Diskusi'),
         actions: [
+          if (!punyaSaya)
+            IconButton(
+              tooltip: 'Laporkan diskusi',
+              icon: const Icon(Icons.flag_outlined),
+              onPressed: () => _lapor(context, 'forum', p.id),
+            ),
           if (punyaSaya)
             IconButton(
               tooltip: 'Sunting diskusi',
@@ -422,6 +464,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
                           ),
                           LencanaTier(p.tier),
+                          if (p.badge != null) LencanaKhusus(p.badge!),
                         ]),
                         Text(tanggal(p.dibuat),
                             style: const TextStyle(color: XyTheme.muted, fontSize: 11)),
@@ -515,6 +558,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                     style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.8)),
                               ),
                               LencanaTier(b.admin ? 'admin' : b.tier),
+                              if (b.badge != null) LencanaKhusus(b.badge!),
                             ]),
                           ),
                           Text(tanggal(b.dibuat),
@@ -542,6 +586,31 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                         const SizedBox(height: 8),
                         Row(children: [
                           Pressable(
+                            onTap: () async {
+                              final baru = await context.read<AppState>().sukaBalasan(b.id);
+                              if (baru != null && mounted) setState(() => b.suka = baru);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Icon(
+                                  s.balasanDisukai.contains(b.id)
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 15,
+                                  color: s.balasanDisukai.contains(b.id) ? XyTheme.danger : XyTheme.muted,
+                                ),
+                                const SizedBox(width: 5),
+                                Text('${b.suka}',
+                                    style: TextStyle(
+                                        fontSize: 11.8,
+                                        fontWeight: FontWeight.w700,
+                                        color: s.balasanDisukai.contains(b.id) ? XyTheme.danger : XyTheme.muted)),
+                              ]),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Pressable(
                             onTap: () {
                               setState(() => sedangDibalas = b);
                               FocusScope.of(context).requestFocus(FocusNode());
@@ -553,6 +622,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                       fontSize: 11.8, fontWeight: FontWeight.w800, color: XyTheme.primary)),
                             ),
                           ),
+                          if (!milikku) ...[
+                            const SizedBox(width: 16),
+                            Pressable(
+                              onTap: () => _lapor(context, 'balasan', b.id),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+                                child: Text('Laporkan',
+                                    style: TextStyle(
+                                        fontSize: 11.8, fontWeight: FontWeight.w700, color: XyTheme.muted)),
+                              ),
+                            ),
+                          ],
                           if (milikku) ...[
                             const SizedBox(width: 16),
                             Pressable(

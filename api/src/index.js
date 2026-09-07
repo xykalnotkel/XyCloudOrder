@@ -142,6 +142,32 @@ async function pushForum(env, idPengguna, { judul, pesan, data }) {
   );
 }
 
+/**
+ * Simpan pemberitahuan untuk pengguna lalu dorong lewat WebSocket dan push.
+ * Dipakai untuk suka, balasan, peringatan admin, dan kabar pesanan.
+ */
+async function buatNotif(env, ctx, { userId, jenis, judul, pesan, aktor, refJenis, refId, kirimPushJuga = true }) {
+  if (!userId) return;
+  try {
+    const id = uid('n_');
+    const waktu = new Date().toISOString();
+    await env.DB.prepare(
+      'INSERT INTO notifikasi (id,user_id,jenis,judul,pesan,aktor,ref_jenis,ref_id,dibuat) VALUES (?,?,?,?,?,?,?,?,?)'
+    ).bind(id, userId, jenis, judul, pesan || '', aktor || null, refJenis || null, refId || null, waktu).run();
+
+    const isi = { id, jenis, judul, pesan, aktor, ref_jenis: refJenis, ref_id: refId, dibaca: 0, dibuat: waktu };
+    ctx.waitUntil(push(env, `user:${userId}`, 'notif.baru', isi));
+
+    if (kirimPushJuga) {
+      const u = await env.DB.prepare('SELECT notif_forum FROM users WHERE id = ?').bind(userId).first();
+      const forumJenis = ['suka', 'balasan', 'sebut', 'komunitas'];
+      if (!forumJenis.includes(jenis) || (u?.notif_forum ?? 1) === 1) {
+        ctx.waitUntil(kirimPush(env, { userId, judul, pesan: pesan || '', data: { tipe: jenis, id: refId } }));
+      }
+    }
+  } catch (_) { /* jangan sampai menggagalkan permintaan utama */ }
+}
+
 /// Masa berlaku token: 30 hari.
 const MASA_TOKEN = 30 * 24 * 60 * 60 * 1000;
 
@@ -353,7 +379,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       });
     }
 
-    if (path.startsWith('/img/')) return layaniGambar(env, path);
+    if (path.startsWith('/img/')) return layaniGambar(env, path, req);
 
     if (path === '/brand/og.png') {
       return new Response(OG_PNG, {
@@ -527,7 +553,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
         sql = sql.replace(
           'SELECT * FROM forum_post',
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  COALESCE(u.foto, f.foto) AS foto
+                  u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id`
         ).replace(/\bWHERE (kategori|\()/, 'WHERE f.$1')
          .replace('ORDER BY disematkan DESC, dibuat DESC', 'ORDER BY f.disematkan DESC, f.dibuat DESC');
@@ -540,14 +566,14 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const id = p.split('/')[1];
         const post = await env.DB.prepare(
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  COALESCE(u.foto, f.foto) AS foto
+                  u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id WHERE f.id = ?`
         ).bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
 
         const { results } = await env.DB.prepare(
           `SELECT b.*, COALESCE(u.tier, CASE WHEN b.admin = 1 THEN 'admin' ELSE 'basic' END) AS tier,
-                  COALESCE(u.foto, b.foto) AS foto
+                  u.badge AS badge, COALESCE(u.foto, b.foto) AS foto
            FROM forum_balasan b LEFT JOIN users u ON u.id = b.user_id
            WHERE b.post_id = ? ORDER BY b.dibuat ASC LIMIT 200`
         ).bind(id).all();
@@ -1022,7 +1048,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
         // ---- pengguna ----
         if (a === 'users' && req.method === 'GET') {
           const { results } = await env.DB
-            .prepare('SELECT id,nama,email,phone,saldo,tier,created_at FROM users ORDER BY created_at DESC LIMIT 100').all();
+            .prepare(`SELECT id,nama,email,phone,saldo,tier,badge,diblokir,alasan_blokir,peringatan,
+                             foto,email_verified,created_at
+                      FROM users ORDER BY created_at DESC LIMIT 200`).all();
           return json(results, 200, env);
         }
         if (a === 'users/saldo' && req.method === 'POST') {
@@ -1124,6 +1152,110 @@ ${halaman.map(([u, p2, f]) => `  <url>
             await env.DB.prepare('UPDATE akun_produk SET rating = ?, jumlah_ulasan = ? WHERE id = ?')
               .bind(agg.r || 5, agg.n || 0, r.produk_id).run();
           }
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- kelola pengguna: lencana, blokir, tier ----
+        if (a.startsWith('users/') && a.endsWith('/kelola') && req.method === 'PATCH') {
+          const idU = a.split('/')[1];
+          const b = await req.json().catch(() => ({}));
+          const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idU).first();
+          if (!u) return err('Pengguna tidak ditemukan', 404, env);
+
+          await env.DB.prepare(
+            `UPDATE users SET badge = ?, tier = COALESCE(NULLIF(?,''), tier),
+                              diblokir = COALESCE(?, diblokir), alasan_blokir = ?
+             WHERE id = ?`
+          ).bind(
+            b.badge === '' ? null : (b.badge ?? u.badge),
+            b.tier || '',
+            b.diblokir == null ? null : (b.diblokir ? 1 : 0),
+            b.diblokir ? (b.alasan || 'Melanggar ketentuan komunitas') : null,
+            idU,
+          ).run();
+
+          if (b.diblokir != null) {
+            ctx.waitUntil(buatNotif(env, ctx, {
+              userId: idU,
+              jenis: 'sistem',
+              judul: b.diblokir ? 'Akunmu dibekukan' : 'Akunmu diaktifkan kembali',
+              pesan: b.diblokir
+                ? `Alasan: ${b.alasan || 'Melanggar ketentuan komunitas'}. Hubungi admin lewat chat untuk banding.`
+                : 'Terima kasih sudah bekerja sama. Selamat memakai layanan lagi.',
+              aktor: 'Admin',
+            }));
+          }
+          if (b.badge !== undefined) {
+            ctx.waitUntil(buatNotif(env, ctx, {
+              userId: idU,
+              jenis: 'sistem',
+              judul: b.badge ? `Kamu mendapat lencana ${b.badge}` : 'Lencanamu dilepas',
+              pesan: b.badge ? 'Lencana ini tampil di samping namamu pada komunitas.' : '',
+              aktor: 'Admin',
+            }));
+          }
+
+          const baru = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idU).first();
+          delete baru.password;
+          return json(baru, 200, env);
+        }
+
+        // ---- kirim peringatan ke pengguna ----
+        if (a.startsWith('users/') && a.endsWith('/peringatan') && req.method === 'POST') {
+          const idU = a.split('/')[1];
+          const { pesan } = await req.json().catch(() => ({}));
+          const u = await env.DB.prepare('SELECT id, nama, email, peringatan FROM users WHERE id = ?')
+            .bind(idU).first();
+          if (!u) return err('Pengguna tidak ditemukan', 404, env);
+
+          await env.DB.prepare('UPDATE users SET peringatan = peringatan + 1 WHERE id = ?').bind(idU).run();
+
+          const isi = pesan || 'Mohon jaga sikap di komunitas XyCloudStore.';
+          ctx.waitUntil(buatNotif(env, ctx, {
+            userId: idU,
+            jenis: 'peringatan',
+            judul: `Peringatan dari admin (${(u.peringatan || 0) + 1})`,
+            pesan: isi,
+            aktor: 'Admin',
+          }));
+
+          // sekalian kirim sebagai pesan chat supaya pasti terbaca
+          const waktu = new Date().toISOString();
+          ctx.waitUntil(env.DB.prepare(
+            'INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)'
+          ).bind(uid('m_'), `user:${idU}`, idU, 'cs', `Peringatan: ${isi}`, waktu).run());
+          ctx.waitUntil(push(env, `user:${idU}`, 'chat.message', {
+            id: uid('m_'), room: `user:${idU}`, dari: 'cs', teks: `Peringatan: ${isi}`, waktu,
+          }));
+
+          return json({ ok: true, peringatan: (u.peringatan || 0) + 1 }, 200, env);
+        }
+
+        // ---- daftar laporan konten ----
+        if (a === 'laporan' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT l.*, u.nama AS pelapor_nama FROM laporan l
+             LEFT JOIN users u ON u.id = l.pelapor
+             ORDER BY CASE l.status WHEN 'baru' THEN 0 ELSE 1 END, l.dibuat DESC LIMIT 100`
+          ).all();
+          return json(results, 200, env);
+        }
+
+        if (a.startsWith('laporan/') && req.method === 'PATCH') {
+          const idL = a.split('/')[1];
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare('UPDATE laporan SET status = ? WHERE id = ?')
+            .bind(b.status || 'selesai', idL).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- tandai konten sensitif ----
+        if (a.startsWith('konten/') && req.method === 'PATCH') {
+          const [, jenis, idK] = a.split('/');
+          const tabel = jenis === 'ulasan' ? 'ulasan' : 'forum_post';
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare(`UPDATE ${tabel} SET sensitif = ? WHERE id = ?`)
+            .bind(b.sensitif ? 1 : 0, idK).run();
           return json({ ok: true }, 200, env);
         }
 
@@ -1298,13 +1430,19 @@ ${halaman.map(([u, p2, f]) => `  <url>
             const { results } = await env.DB
               .prepare('SELECT DISTINCT user_id FROM forum_balasan WHERE post_id = ? AND user_id != ?')
               .bind(id, 'admin').all();
-            const tujuan = [p2?.user_id, ...results.map((r) => r.user_id)];
-            const cuplikan = baris.isi.length > 80 ? `${baris.isi.slice(0, 80)}...` : baris.isi;
-            await pushForum(env, tujuan, {
-              judul: 'Kirana membalas diskusimu',
-              pesan: cuplikan,
-              data: { tipe: 'forum', id },
-            });
+            const cuplikan = baris.isi.length > 90 ? `${baris.isi.slice(0, 90)}...` : baris.isi;
+            const tujuan = [...new Set([p2?.user_id, ...results.map((r) => r.user_id)].filter(Boolean))];
+            for (const uid2 of tujuan) {
+              await buatNotif(env, ctx, {
+                userId: uid2,
+                jenis: 'balasan',
+                judul: 'Kirana membalas diskusi',
+                pesan: `"${(p2?.judul || '').slice(0, 50)}": ${cuplikan}`,
+                aktor: 'Kirana',
+                refJenis: 'forum',
+                refId: id,
+              });
+            }
           })());
 
           return json(baris, 201, env);
@@ -1373,6 +1511,18 @@ ${halaman.map(([u, p2, f]) => `  <url>
       const me = await auth(req, env);
       if (!me) return err('Unauthorized', 401, env);
       const room = `user:${me.sub}`;
+
+      // akun yang diblokir hanya boleh membaca pemberitahuan dan menghubungi admin
+      const statusAkun = await env.DB.prepare('SELECT diblokir, alasan_blokir FROM users WHERE id = ?')
+        .bind(me.sub).first();
+      if (statusAkun?.diblokir === 1 && !p.startsWith('cs/') && !p.startsWith('notifikasi') && p !== 'me') {
+        return err(
+          statusAkun.alasan_blokir
+            ? `Akunmu sedang dibekukan. Alasan: ${statusAkun.alasan_blokir}`
+            : 'Akunmu sedang dibekukan. Hubungi admin lewat menu chat.',
+          403, env,
+        );
+      }
 
       // ---- profil pengguna yang sedang login ----
       if (p === 'me' && req.method === 'GET') {
@@ -1478,6 +1628,92 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json({ ok: true }, 200, env);
       }
 
+      // ---- daftar pemberitahuan ----
+      if (p === 'notifikasi' && req.method === 'GET') {
+        const { results } = await env.DB
+          .prepare('SELECT * FROM notifikasi WHERE user_id = ? ORDER BY dibuat DESC LIMIT 80')
+          .bind(me.sub).all();
+        const belum = await env.DB
+          .prepare('SELECT COUNT(*) n FROM notifikasi WHERE user_id = ? AND dibaca = 0').bind(me.sub).first();
+        return json({ daftar: results, belumDibaca: belum?.n ?? 0 }, 200, env);
+      }
+
+      // ---- tandai sudah dibaca ----
+      if (p === 'notifikasi/baca' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        if (b.id) {
+          await env.DB.prepare('UPDATE notifikasi SET dibaca = 1 WHERE id = ? AND user_id = ?')
+            .bind(b.id, me.sub).run();
+        } else {
+          await env.DB.prepare('UPDATE notifikasi SET dibaca = 1 WHERE user_id = ?').bind(me.sub).run();
+        }
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---- hapus semua pemberitahuan ----
+      if (p === 'notifikasi' && req.method === 'DELETE') {
+        await env.DB.prepare('DELETE FROM notifikasi WHERE user_id = ?').bind(me.sub).run();
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---- suka pada balasan ----
+      if (p.startsWith('forum/balasan/') && p.endsWith('/suka') && req.method === 'POST') {
+        const id = p.split('/')[2];
+        const b = await env.DB.prepare('SELECT * FROM forum_balasan WHERE id = ?').bind(id).first();
+        if (!b) return err('Balasan tidak ditemukan', 404, env);
+
+        const ada = await env.DB.prepare('SELECT 1 FROM forum_balasan_suka WHERE balasan_id = ? AND user_id = ?')
+          .bind(id, me.sub).first();
+
+        if (ada) {
+          await env.DB.batch([
+            env.DB.prepare('DELETE FROM forum_balasan_suka WHERE balasan_id = ? AND user_id = ?').bind(id, me.sub),
+            env.DB.prepare('UPDATE forum_balasan SET suka = MAX(0, suka - 1) WHERE id = ?').bind(id),
+          ]);
+        } else {
+          await env.DB.batch([
+            env.DB.prepare('INSERT INTO forum_balasan_suka (balasan_id,user_id) VALUES (?,?)').bind(id, me.sub),
+            env.DB.prepare('UPDATE forum_balasan SET suka = suka + 1 WHERE id = ?').bind(id),
+          ]);
+
+          if (b.user_id !== me.sub) {
+            const aku = await env.DB.prepare('SELECT nama FROM users WHERE id = ?').bind(me.sub).first();
+            const post = await env.DB.prepare('SELECT judul FROM forum_post WHERE id = ?').bind(b.post_id).first();
+            ctx.waitUntil(buatNotif(env, ctx, {
+              userId: b.user_id,
+              jenis: 'suka',
+              judul: `${aku?.nama || 'Seseorang'} menyukai komentarmu`,
+              pesan: `Pada diskusi "${(post?.judul || '').slice(0, 60)}"`,
+              aktor: aku?.nama || 'Pengguna',
+              refJenis: 'forum',
+              refId: b.post_id,
+            }));
+          }
+        }
+
+        const baru = await env.DB.prepare('SELECT suka FROM forum_balasan WHERE id = ?').bind(id).first();
+        ctx.waitUntil(push(env, 'forum', 'forum.balasan.suka', { id, suka: baru?.suka ?? 0 }));
+        return json({ suka: baru?.suka ?? 0, disukai: !ada }, 200, env);
+      }
+
+      // ---- daftar balasan yang kusukai ----
+      if (p === 'forum/balasan/suka/saya' && req.method === 'GET') {
+        const { results } = await env.DB.prepare('SELECT balasan_id FROM forum_balasan_suka WHERE user_id = ?')
+          .bind(me.sub).all();
+        return json(results.map((r) => r.balasan_id), 200, env);
+      }
+
+      // ---- laporkan konten ----
+      if (p === 'laporan' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        if (!b.ref_id) return err('Konten yang dilaporkan tidak jelas', 400, env);
+        await env.DB.prepare(
+          'INSERT INTO laporan (id,jenis,ref_id,url,pelapor,alasan) VALUES (?,?,?,?,?,?)'
+        ).bind(uid('lp_'), b.jenis || 'forum', String(b.ref_id), b.url || null, me.sub, b.alasan || 'Tidak pantas').run();
+        ctx.waitUntil(push(env, 'cs:inbox', 'laporan.baru', { ref: b.ref_id, jenis: b.jenis }));
+        return json({ ok: true, pesan: 'Terima kasih, laporanmu kami tinjau.' }, 201, env);
+      }
+
       // ---- perbarui profil ----
       if (p === 'me' && req.method === 'PATCH') {
         const b = await req.json().catch(() => ({}));
@@ -1579,22 +1815,64 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
         ctx.waitUntil(push(env, 'forum', 'forum.balasan', baris));
 
-        // pemberitahuan ke pemilik diskusi dan peserta lain
+        // pemberitahuan ke pemilik diskusi, pemilik komentar yang dibalas, dan peserta lain
         ctx.waitUntil((async () => {
           const p2 = await env.DB.prepare('SELECT user_id, judul FROM forum_post WHERE id = ?').bind(id).first();
           const { results } = await env.DB
             .prepare('SELECT DISTINCT user_id FROM forum_balasan WHERE post_id = ? AND user_id != ?')
             .bind(id, me.sub).all();
 
-          const tujuan = [p2?.user_id, ...results.map((r) => r.user_id)].filter((x) => x && x !== me.sub);
-          const judulPendek = (p2?.judul || 'diskusi').slice(0, 40);
-          const cuplikan = baris.isi.length > 80 ? `${baris.isi.slice(0, 80)}...` : baris.isi;
+          const judulPendek = (p2?.judul || 'diskusi').slice(0, 50);
+          const cuplikan = baris.isi.length > 90 ? `${baris.isi.slice(0, 90)}...` : baris.isi;
+          const sudah = new Set([me.sub]);
 
-          await pushForum(env, tujuan, {
-            judul: `${baris.nama} membalas "${judulPendek}"`,
-            pesan: cuplikan,
-            data: { tipe: 'forum', id },
-          });
+          // yang komentarnya dibalas langsung
+          if (balasKe) {
+            const induk = await env.DB.prepare('SELECT user_id FROM forum_balasan WHERE id = ?')
+              .bind(balasKe).first();
+            if (induk?.user_id && induk.user_id !== me.sub) {
+              sudah.add(induk.user_id);
+              await buatNotif(env, ctx, {
+                userId: induk.user_id,
+                jenis: 'balasan',
+                judul: `${baris.nama} membalas komentarmu`,
+                pesan: `Di diskusi "${judulPendek}": ${cuplikan}`,
+                aktor: baris.nama,
+                refJenis: 'forum',
+                refId: id,
+              });
+            }
+          }
+
+          // pemilik diskusi
+          if (p2?.user_id && !sudah.has(p2.user_id)) {
+            sudah.add(p2.user_id);
+            await buatNotif(env, ctx, {
+              userId: p2.user_id,
+              jenis: 'balasan',
+              judul: `${baris.nama} membalas diskusimu`,
+              pesan: `"${judulPendek}": ${cuplikan}`,
+              aktor: baris.nama,
+              refJenis: 'forum',
+              refId: id,
+            });
+          }
+
+          // peserta lain cukup diberi tahu sekali
+          for (const r of results) {
+            if (!r.user_id || sudah.has(r.user_id)) continue;
+            sudah.add(r.user_id);
+            await buatNotif(env, ctx, {
+              userId: r.user_id,
+              jenis: 'komunitas',
+              judul: `Balasan baru di diskusi yang kamu ikuti`,
+              pesan: `${baris.nama} pada "${judulPendek}"`,
+              aktor: baris.nama,
+              refJenis: 'forum',
+              refId: id,
+              kirimPushJuga: false,
+            });
+          }
         })());
 
         return json(baris, 201, env);
@@ -1621,16 +1899,21 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const post = await env.DB.prepare('SELECT suka FROM forum_post WHERE id = ?').bind(id).first();
         ctx.waitUntil(push(env, 'forum', 'forum.suka', { id, suka: post?.suka ?? 0 }));
 
-        // beri tahu pemilik maksimal sekali per 30 menit per diskusi
         if (!ada) {
           ctx.waitUntil((async () => {
-            if (!(await bolehLanjut(env, `sukaforum:${id}`, 1, 1800))) return;
             const p2 = await env.DB.prepare('SELECT user_id, judul FROM forum_post WHERE id = ?').bind(id).first();
             if (!p2 || p2.user_id === me.sub) return;
-            await pushForum(env, [p2.user_id], {
-              judul: 'Diskusimu disukai',
-              pesan: `"${(p2.judul || '').slice(0, 50)}" mendapat ${post?.suka ?? 1} suka.`,
-              data: { tipe: 'forum', id },
+            const aku = await env.DB.prepare('SELECT nama FROM users WHERE id = ?').bind(me.sub).first();
+            await buatNotif(env, ctx, {
+              userId: p2.user_id,
+              jenis: 'suka',
+              judul: `${aku?.nama || 'Seseorang'} menyukai diskusimu`,
+              pesan: `"${(p2.judul || '').slice(0, 60)}" kini punya ${post?.suka ?? 1} suka`,
+              aktor: aku?.nama || 'Pengguna',
+              refJenis: 'forum',
+              refId: id,
+              // push hanya sesekali supaya tidak berisik
+              kirimPushJuga: await bolehLanjut(env, `sukaforum:${id}`, 1, 1800),
             });
           })());
         }

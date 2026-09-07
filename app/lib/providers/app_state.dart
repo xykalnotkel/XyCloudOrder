@@ -49,6 +49,7 @@ class AppState extends ChangeNotifier {
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
+      unawaited(muatNotifikasi());
     } catch (_) {
       // token kedaluwarsa atau tidak valid
       await Prefs.hapusToken();
@@ -110,6 +111,7 @@ class AppState extends ChangeNotifier {
       await muatSemua();
       _mulaiRealtime();
       _daftarkanPush();
+      unawaited(muatNotifikasi());
       return true;
     } on PerluVerifikasi catch (e) {
       emailMenungguVerifikasi = e.email;
@@ -326,6 +328,108 @@ class AppState extends ChangeNotifier {
     try {
       await _repo.sesiAkhiri(id);
     } catch (_) {}
+  }
+
+  // ================= pemberitahuan =================
+  List<Notifikasi> notifikasi = [];
+  int notifBelum = 0;
+  bool notifMemuat = false;
+
+  Future<void> muatNotifikasi() async {
+    if (user == null) return;
+    notifMemuat = true;
+    notifyListeners();
+    try {
+      final d = await _repo.notifikasi();
+      notifikasi = ((d['daftar'] as List?) ?? const [])
+          .map((e) => Notifikasi.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+      notifBelum = d['belumDibaca'] ?? 0;
+    } catch (_) {
+      // biarkan daftar lama tetap tampil
+    } finally {
+      notifMemuat = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> bacaNotifikasi({String? id}) async {
+    try {
+      await _repo.bacaNotifikasi(id: id);
+      if (id == null) {
+        notifikasi = notifikasi
+            .map((n) => Notifikasi(
+                  id: n.id, jenis: n.jenis, judul: n.judul, pesan: n.pesan, aktor: n.aktor,
+                  refJenis: n.refJenis, refId: n.refId, dibaca: true, dibuat: n.dibuat,
+                ))
+            .toList();
+        notifBelum = 0;
+      } else {
+        final i = notifikasi.indexWhere((n) => n.id == id);
+        if (i >= 0) {
+          final n = notifikasi[i];
+          notifikasi[i] = Notifikasi(
+            id: n.id, jenis: n.jenis, judul: n.judul, pesan: n.pesan, aktor: n.aktor,
+            refJenis: n.refJenis, refId: n.refId, dibaca: true, dibuat: n.dibuat,
+          );
+          if (notifBelum > 0) notifBelum--;
+        }
+      }
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> hapusNotifikasi() async {
+    try {
+      await _repo.hapusNotifikasi();
+      notifikasi = [];
+      notifBelum = 0;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  // ================= suka komentar dan laporan =================
+  Set<String> balasanDisukai = {};
+
+  Future<void> muatSukaBalasan() async {
+    try {
+      balasanDisukai = (await _repo.balasanDisukai()).toSet();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<int?> sukaBalasan(String id) async {
+    final tadinya = balasanDisukai.contains(id);
+    tadinya ? balasanDisukai.remove(id) : balasanDisukai.add(id);
+    notifyListeners();
+    try {
+      final d = await _repo.sukaBalasan(id);
+      if (d['disukai'] == true) {
+        balasanDisukai.add(id);
+      } else {
+        balasanDisukai.remove(id);
+      }
+      notifyListeners();
+      return d['suka'] as int?;
+    } catch (_) {
+      tadinya ? balasanDisukai.add(id) : balasanDisukai.remove(id);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<String?> laporkan({
+    required String jenis,
+    required String refId,
+    String? url,
+    String? alasan,
+  }) async {
+    try {
+      await _repo.laporkan(jenis: jenis, refId: refId, url: url, alasan: alasan);
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
   }
 
   // ================= profil =================
@@ -773,6 +877,14 @@ class AppState extends ChangeNotifier {
         break;
       case 'sesi.update':
         // status sesi diperbarui oleh agen PC
+        break;
+      case 'notif.baru':
+        try {
+          notifikasi.insert(0, Notifikasi.fromJson(Map<String, dynamic>.from(e.payload)));
+          notifBelum++;
+        } catch (_) {}
+        break;
+      case 'forum.balasan.suka':
         break;
       case 'chat.hapus':
         chat.removeWhere((m) => m.id == '${e.payload['id']}');

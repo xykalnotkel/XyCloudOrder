@@ -1,3 +1,5 @@
+import 'dart:ui' show FontFeature;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
@@ -214,167 +216,227 @@ class _KartuSaldoState extends State<_KartuSaldo> {
     await Prefs.simpanSaldoTampil(tampil);
   }
 
+  /// Empat kelompok angka seperti kartu sungguhan, diambil dari id akun.
+  String _nomorKartu(String id) {
+    final angka = id.replaceAll(RegExp(r'[^0-9]'), '').padRight(8, '4');
+    final b = angka.substring(angka.length - 4);
+    return '5 3 2 8   ${b.substring(0, 2)} • •   • • • •   ${b.substring(2)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final u = widget.user;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: XyTheme.gradDeep,
-        boxShadow: [
-          BoxShadow(color: XyTheme.primaryDark.withOpacity(.35), blurRadius: 30, offset: const Offset(0, 14)),
-        ],
-      ),
-      child: Stack(children: [
-        // guratan cahaya khas kartu premium
-        Positioned(
-          right: -50,
-          top: -60,
-          child: Container(
-            width: 190,
-            height: 190,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [Colors.white.withOpacity(.16), Colors.transparent]),
-            ),
+    return AspectRatio(
+      aspectRatio: 1.62, // perbandingan kartu asli
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF3B0F8F), Color(0xFF6C2BE2), Color(0xFF4A12B8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: [0, .55, 1],
           ),
+          boxShadow: [
+            BoxShadow(color: XyTheme.primaryDark.withOpacity(.42), blurRadius: 26, offset: const Offset(0, 14)),
+          ],
         ),
-        Positioned(
-          left: -40,
-          bottom: -70,
-          child: Container(
-            width: 170,
-            height: 170,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [XyTheme.violet.withOpacity(.28), Colors.transparent]),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(painter: _GarisKartu()),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.fromLTRB(22, 20, 22, 20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(children: [
+            // kilau melintang khas kartu
+            Positioned(
+              right: -70,
+              top: -90,
+              child: Container(
+                width: 250,
+                height: 250,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(.14),
-                  borderRadius: BorderRadius.circular(XyRadius.pill),
-                  border: Border.all(color: Colors.white.withOpacity(.16)),
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [Colors.white.withOpacity(.16), Colors.transparent]),
                 ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.workspace_premium_rounded, size: 13, color: Color(0xFFE8C07A)),
-                  const SizedBox(width: 5),
-                  Text(u.tier.toUpperCase(),
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+              ),
+            ),
+            Positioned.fill(child: CustomPaint(painter: _GarisKartu())),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // ---- baris atas: cip, nirsentuh, logo ----
+                Row(children: [
+                  // cip emas
+                  Container(
+                    width: 42,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(7),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF0D28A), Color(0xFFC9A227), Color(0xFFEBD08C)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: CustomPaint(painter: _CipPainter()),
+                  ),
+                  const SizedBox(width: 12),
+                  // lambang nirsentuh
+                  SizedBox(
+                    width: 20,
+                    height: 22,
+                    child: CustomPaint(painter: _NirsentuhPainter()),
+                  ),
+                  const Spacer(),
+                  Image.asset('assets/brand/logo_icon_putih.png', width: 30, height: 30),
                 ]),
-              ),
-              const Spacer(),
-              Image.asset('assets/brand/logo_icon_putih.png', width: 26, height: 26),
-            ]),
 
-            const SizedBox(height: 20),
-            Text('Saldo XyCloudStore',
-                style: TextStyle(color: Colors.white.withOpacity(.60), fontSize: 12, letterSpacing: .3)),
-            const SizedBox(height: 7),
-            Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: tampil
-                      ? AnimatedRupiah(
-                          u.saldo,
-                          key: const ValueKey('tampil'),
-                          format: rupiah,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 31,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -1.2,
-                          ),
-                        )
-                      : const Text('Rp • • • • • • •',
-                          key: ValueKey('sembunyi'),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 27,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -.5,
-                          )),
-                ),
-              ),
-              Pressable(
-                onTap: _ubah,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.14),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withOpacity(.16)),
-                  ),
-                  child: Icon(
-                    tampil ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ]),
+                const Spacer(),
 
-            const SizedBox(height: 18),
-            Row(children: [
-              Expanded(
-                child: Pressable(
-                  onTap: () => bukaTopup(context),
-                  child: Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(XyRadius.pill),
+                // ---- saldo ----
+                Text('Saldo',
+                    style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 11, letterSpacing: .6)),
+                const SizedBox(height: 3),
+                Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: tampil
+                          ? AnimatedRupiah(
+                              u.saldo,
+                              key: const ValueKey('tampil'),
+                              format: rupiah,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 27,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1,
+                              ),
+                            )
+                          : const Text('Rp • • • • • • •',
+                              key: ValueKey('sembunyi'),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 23,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -.4,
+                              )),
                     ),
-                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.add_rounded, size: 18, color: XyTheme.primaryDeep),
-                      SizedBox(width: 7),
-                      Text('Isi Saldo',
+                  ),
+                  Pressable(
+                    onTap: _ubah,
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(.14),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withOpacity(.18)),
+                      ),
+                      child: Icon(
+                        tampil ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ]),
+
+                const SizedBox(height: 10),
+
+                // ---- nomor kartu ----
+                Text(
+                  _nomorKartu(u.id),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.80),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.4,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+
+                const Spacer(),
+
+                // ---- baris bawah: pemilik dan tier ----
+                Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('PEMILIK KARTU',
                           style: TextStyle(
-                              color: XyTheme.primaryDeep, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                              color: Colors.white.withOpacity(.45), fontSize: 8, letterSpacing: 1.2)),
+                      const SizedBox(height: 3),
+                      Text(
+                        u.nama.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                        ),
+                      ),
                     ]),
                   ),
-                ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Pressable(
-                  onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
-                  child: Container(
-                    height: 44,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.13),
+                      gradient: XyTheme.gradGold,
                       borderRadius: BorderRadius.circular(XyRadius.pill),
-                      border: Border.all(color: Colors.white.withOpacity(.18)),
                     ),
-                    child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(Icons.receipt_long_rounded, size: 17, color: Colors.white),
-                      SizedBox(width: 7),
-                      Text('Riwayat',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
-                    ]),
+                    child: Text(u.tier.toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 1)),
                   ),
-                ),
-              ),
-            ]),
+                ]),
+              ]),
+            ),
           ]),
         ),
-      ]),
+      ),
     );
   }
+}
+
+/// Garis tipis pada cip supaya terlihat seperti kartu sungguhan.
+class _CipPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cat = Paint()
+      ..color = const Color(0xFF8A6A12).withOpacity(.55)
+      ..strokeWidth = .9;
+    canvas.drawLine(Offset(0, size.height * .34), Offset(size.width, size.height * .34), cat);
+    canvas.drawLine(Offset(0, size.height * .66), Offset(size.width, size.height * .66), cat);
+    canvas.drawLine(Offset(size.width * .33, 0), Offset(size.width * .33, size.height), cat);
+    canvas.drawLine(Offset(size.width * .67, 0), Offset(size.width * .67, size.height), cat);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+/// Lambang pembayaran nirsentuh.
+class _NirsentuhPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cat = Paint()
+      ..color = Colors.white.withOpacity(.55)
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.6;
+    for (var i = 1; i <= 3; i++) {
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(-2, size.height / 2), radius: i * 6.0),
+        -0.7,
+        1.4,
+        false,
+        cat,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 /// Garis halus diagonal supaya kartu terasa seperti kartu member.

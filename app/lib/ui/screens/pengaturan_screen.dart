@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/cache.dart';
+import '../../core/prefs.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
@@ -50,7 +51,19 @@ class PengaturanScreen extends StatelessWidget {
             sub: 'Mode hemat data dan data tersimpan',
             tujuan: const DataScreen(),
           ),
+          _Baris(
+            ikon: Icons.shield_moon_outlined,
+            judul: 'Privasi dan Konten',
+            sub: 'Saringan konten dewasa dan laporan',
+            tujuan: const PrivasiScreen(),
+          ),
           const _Judul('Lainnya'),
+          _Baris(
+            ikon: Icons.help_outline_rounded,
+            judul: 'Pusat Bantuan',
+            sub: 'Pertanyaan yang sering ditanyakan',
+            tujuan: const BantuanScreen(),
+          ),
           _Baris(
             ikon: Icons.info_outline_rounded,
             judul: 'Tentang Aplikasi',
@@ -522,6 +535,165 @@ class _DataScreenState extends State<DataScreen> {
               ),
             ]),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  Privasi dan konten
+// ============================================================
+class PrivasiScreen extends StatefulWidget {
+  const PrivasiScreen({super.key});
+
+  @override
+  State<PrivasiScreen> createState() => _PrivasiScreenState();
+}
+
+class _PrivasiScreenState extends State<PrivasiScreen> {
+  bool saringan = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.saringKonten().then((v) => mounted ? setState(() => saringan = v) : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Privasi dan Konten')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+        children: [
+          XyCard(
+            padding: const EdgeInsets.fromLTRB(15, 6, 8, 6),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: XyTheme.primarySoft, borderRadius: BorderRadius.circular(13)),
+                child: const Icon(Icons.shield_moon_outlined, size: 20, color: XyTheme.primary),
+              ),
+              const SizedBox(width: 13),
+              const Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Saringan Konten Dewasa', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  SizedBox(height: 3),
+                  Text('Gambar yang ditandai sensitif ditutup dulu, ketuk untuk melihat',
+                      style: TextStyle(color: XyTheme.muted, fontSize: 11.5, height: 1.4)),
+                ]),
+              ),
+              Switch(
+                value: saringan,
+                activeColor: XyTheme.primary,
+                onChanged: (v) async {
+                  setState(() => saringan = v);
+                  await Prefs.simpanSaringKonten(v);
+                },
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          XyCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+              Row(children: [
+                Icon(Icons.flag_outlined, size: 18, color: XyTheme.primary),
+                SizedBox(width: 9),
+                Text('Melaporkan konten', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              ]),
+              SizedBox(height: 10),
+              Text(
+                'Setiap diskusi dan komentar punya tombol Laporkan. Pilih alasannya, admin akan meninjau '
+                'lalu menandai konten sebagai sensitif atau menghapusnya. Kami tidak memblokir gambar secara '
+                'membabi buta supaya diskusi tetap hidup.',
+                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          XyCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+              Row(children: [
+                Icon(Icons.privacy_tip_outlined, size: 18, color: XyTheme.primary),
+                SizedBox(width: 9),
+                Text('Data yang kami simpan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              ]),
+              SizedBox(height: 10),
+              Text(
+                'Nama, email, nomor WhatsApp, riwayat pesanan, dan percakapan dengan admin. '
+                'Kami tidak pernah menjual data dan tidak memasang pelacak pihak ketiga.',
+                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+              ),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  Pusat bantuan
+// ============================================================
+class BantuanScreen extends StatelessWidget {
+  const BantuanScreen({super.key});
+
+  static const _tanya = [
+    ('Bagaimana cara mengisi saldo?',
+      'Buka Dompet lalu Isi Saldo, pilih nominal, transfer sesuai instruksi, dan unggah bukti. '
+      'Kalau pembayaran otomatis aktif, saldo masuk sendiri dalam hitungan detik.'),
+    ('Berapa lama pesanan sewa PC diproses?',
+      'Unit disiapkan otomatis begitu pembayaran masuk, biasanya kurang dari satu menit. '
+      'Kamu akan menerima pemberitahuan saat PC siap.'),
+    ('Akun digital saya bermasalah, bagaimana?',
+      'Buka Chat Kirana dan sebutkan kode pesanannya. Selama masih dalam masa garansi, akun diganti gratis.'),
+    ('Kenapa kode verifikasi tidak masuk?',
+      'Cek folder spam atau promosi. Kalau masih belum ada, tekan Kirim ulang kode setelah 60 detik.'),
+    ('Bisakah saya menghapus akun?',
+      'Bisa. Hubungi admin lewat Chat Kirana, akun dan datanya kami hapus paling lambat tujuh hari kerja.'),
+    ('Apakah aman menyimpan saldo di sini?',
+      'Saldo tersimpan di server kami dan setiap perubahan tercatat di riwayat transaksi. '
+      'Password disimpan terenkripsi dan sesi kedaluwarsa otomatis.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pusat Bantuan')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+        children: [
+          const Center(child: XyIlustrasi('cs', tinggi: 150)),
+          const SizedBox(height: 8),
+          const Text('Pertanyaan yang sering ditanyakan',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -.3)),
+          const SizedBox(height: 14),
+          ..._tanya.map((t) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: XyCard(
+                  padding: EdgeInsets.zero,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                      iconColor: XyTheme.primary,
+                      collapsedIconColor: XyTheme.muted,
+                      title: Text(t.$1,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8, height: 1.4)),
+                      children: [
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(t.$2,
+                              style: const TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.65)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
         ],
       ),
     );

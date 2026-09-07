@@ -66,15 +66,17 @@ export function samarkanGambar(env, url, ukuran = 'm') {
 
 /** Transformasi untuk tiap ukuran: tajam tapi ringan. */
 export const UKURAN_GAMBAR = {
-  s: 'f_auto,q_auto:good,c_limit,w_240,dpr_2.0',
-  t: 'f_auto,q_auto:good,c_limit,w_420,dpr_2.0',
-  m: 'f_auto,q_auto:good,c_limit,w_720,dpr_2.0',
-  l: 'f_auto,q_auto:good,c_limit,w_1280',
+  s: 'f_auto,q_auto:good,c_limit,w_320,dpr_2.0',
+  t: 'f_auto,q_auto:good,c_limit,w_560,dpr_2.0',
+  m: 'f_auto,q_auto:good,c_limit,w_900,dpr_2.0',
+  l: 'f_auto,q_auto:good,c_limit,w_1440',
   o: 'f_auto,q_auto:best',
+  // versi buram untuk konten yang ditandai sensitif
+  blur: 'f_auto,q_auto:low,c_limit,w_420,e_blur:1600',
 };
 
 /** Ambil gambar dari Cloudinary lewat Worker sendiri, lalu simpan di singgahan tepi. */
-export async function layaniGambar(env, jalur) {
+export async function layaniGambar(env, jalur, req) {
   const potong = jalur.replace(/^\/img\//, '');
   const pisah = potong.split('/');
   const ukuran = UKURAN_GAMBAR[pisah[0]] ? pisah.shift() : 'm';
@@ -84,12 +86,18 @@ export async function layaniGambar(env, jalur) {
 
   const asal = `https://res.cloudinary.com/${env.CLOUDINARY_CLOUD}/image/upload/${UKURAN_GAMBAR[ukuran]}/${publicId}`;
 
-  const jawab = await fetch(asal, { cf: { cacheTtl: 86400, cacheEverything: true } });
+  // teruskan Accept supaya Cloudinary memilih WebP atau AVIF sesuai kemampuan peramban
+  const terima = req?.headers.get('accept') || 'image/avif,image/webp,image/*,*/*';
+  const jawab = await fetch(asal, {
+    headers: { Accept: terima },
+    cf: { cacheTtl: 604800, cacheEverything: true },
+  });
   if (!jawab.ok) return new Response('Not found', { status: 404 });
 
   const kepala = new Headers(jawab.headers);
   kepala.set('Cache-Control', 'public, max-age=604800, immutable');
   kepala.set('X-Content-Type-Options', 'nosniff');
+  kepala.set('Vary', 'Accept');
   kepala.delete('set-cookie');
   return new Response(jawab.body, { status: 200, headers: kepala });
 }

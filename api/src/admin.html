@@ -258,11 +258,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi}[TAB])();
 }
 function ke(t){
   TAB=t;
@@ -599,330 +599,149 @@ async function balas(){
 async function vUsers(){
   const m=document.getElementById('main');
   const d=await api('/users');
-  m.innerHTML=head('Pengguna','Daftar akun terdaftar dan saldo',
+  m.innerHTML=head('Pengguna','Kelola lencana, tier, peringatan, dan status akun',
     `<button class="btn ghost" onclick="vUsers()">${ic('refresh',16)}Muat ulang</button>`)+
-    `<div class="card" style="padding:18px 6px"><table><thead><tr>
-      <th>ID</th><th>Nama</th><th>Email</th><th>Telepon</th><th>Tier</th><th>Saldo</th><th>Daftar</th><th></th></tr></thead>
-      <tbody>${d.map(u=>`<tr>
-        <td class="mono" style="color:var(--muted)">${u.id}</td><td><b>${u.nama}</b></td><td>${u.email}</td>
-        <td style="color:var(--muted)">${u.phone||'-'}</td>
-        <td><span class="tag" style="background:rgba(224,163,59,.16);color:#EBC988">${(u.tier||'').toUpperCase()}</span></td>
-        <td><b>${rp(u.saldo)}</b></td><td style="color:var(--muted);font-size:12px">${dt(u.created_at)}</td>
-        <td><button class="btn sm ok" onclick="formSaldo('${u.id}','${u.nama}')">${ic('wallet',14)}Saldo</button></td>
-      </tr>`).join('')}</tbody></table></div>`;
-}
-function formSaldo(id,nama){
-  buka('Sesuaikan Saldo — '+nama,`
-    <div class="field"><label>Nominal (boleh minus untuk mengurangi)</label><input id="f_n" type="number" value="50000"></div>
-    <div class="field"><label>Catatan transaksi</label><input id="f_c" value="Bonus dari admin"></div>`,
-    async()=>{await api('/users/saldo',{method:'POST',body:JSON.stringify({
-        user_id:id,nominal:+document.getElementById('f_n').value,catatan:document.getElementById('f_c').value})});
-      toast('Saldo diperbarui, push realtime terkirim');tutupModal();vUsers()});
-}
-
-/* ---------- statistik ---------- */
-function batang(data, kunciNilai, warna){
-  const maks = Math.max(1, ...data.map(d => Number(d[kunciNilai]||0)));
-  return `<div style="display:flex;align-items:flex-end;gap:4px;height:150px;margin-top:16px">
-    ${data.map(d => `<div title="${esc(d.d)}: ${d[kunciNilai]}" style="flex:1;display:flex;flex-direction:column;
-      justify-content:flex-end;height:100%">
-      <div style="height:${Math.max(3,(Number(d[kunciNilai]||0)/maks)*100)}%;background:${warna};
-        border-radius:6px 6px 3px 3px;transition:.3s"></div></div>`).join('')}
-  </div>
-  <div class="row" style="justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--muted)">
-    <span>${esc((data[0]||{}).d||'')}</span><span>${esc((data[data.length-1]||{}).d||'')}</span></div>`;
-}
-
-async function vStatistik(){
-  const m=document.getElementById('main');
-  m.innerHTML=head('Statistik','Ringkasan menyeluruh dari basis data')+'<div class="card">Memuat...</div>';
-  const d=await api('/statistik');
-
-  const kartu=(judul,nilai,ket,warna)=>`<div class="card">
-    <div style="font-size:11.5px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase">${esc(judul)}</div>
-    <div style="font-size:26px;font-weight:800;letter-spacing:-1px;margin-top:6px;color:${warna||'var(--ink)'}">${nilai}</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">${esc(ket)}</div></div>`;
-
-  m.innerHTML=head('Statistik','Ringkasan menyeluruh dari basis data',
-    `<button class="btn ghost" onclick="vStatistik()">${ic('refresh',16)}Muat ulang</button>`)+
-    `<div class="grid g4" style="margin-bottom:18px">
-      ${kartu('Pengguna', d.pengguna.total, `${d.pengguna.baru7Hari} baru 7 hari terakhir`)}
-      ${kartu('Omzet', rp(d.order.omzet), `${d.order.total} pesanan, ${d.order.aktif} aktif`,'#6EE7A8')}
-      ${kartu('Saldo beredar', rp(d.saldoBeredar), 'Total saldo di semua dompet','#C4B5FD')}
-      ${kartu('Top up masuk', rp(d.topup.masuk), `${d.topup.tertunda} menunggu diperiksa`,'#EBC988')}
-      ${kartu('Produk akun', d.produk.total, `${d.produk.stok} stok, ${d.produk.terjual} terjual`)}
-      ${kartu('Unit PC', `${d.unit.hidup}/${d.unit.total}`, 'Unit hidup saat ini')}
-      ${kartu('Sesi berjalan', d.sesiAktif, 'Penyewa sedang bermain')}
-      ${kartu('Komunitas', d.forum.post, `${d.forum.balasan} balasan`)}
-    </div>
-
-    <div class="grid g2" style="margin-bottom:18px">
-      <div class="card">
-        <div style="font-weight:800;font-size:15px">Pesanan 30 hari</div>
-        <div style="font-size:12px;color:var(--muted)">Jumlah pesanan per hari</div>
-        ${d.harian.length?batang(d.harian,'n','linear-gradient(180deg,#A78BFA,#6C2BE2)')
-          :'<div style="color:var(--muted);padding:40px 0;text-align:center;font-size:13px">Belum ada pesanan</div>'}
-      </div>
-      <div class="card">
-        <div style="font-weight:800;font-size:15px">Pengguna baru 30 hari</div>
-        <div style="font-size:12px;color:var(--muted)">Pendaftaran per hari</div>
-        ${d.penggunaHarian.length?batang(d.penggunaHarian,'n','linear-gradient(180deg,#6EE7A8,#16A34A)')
-          :'<div style="color:var(--muted);padding:40px 0;text-align:center;font-size:13px">Belum ada pendaftaran baru</div>'}
-      </div>
-    </div>
-
-    <div class="grid g2">
-      <div class="card"><div style="font-weight:800;font-size:15px;margin-bottom:12px">Produk terlaris</div>
-        ${d.produkTeratas.length?d.produkTeratas.map(p=>`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-          <div style="flex:1"><b style="font-size:13.5px">${esc(p.nama)}</b>
-            <div style="font-size:11px;color:var(--muted)">rating ${p.rating} dari ${p.jumlah_ulasan} ulasan</div></div>
-          <b>${p.terjual}x</b></div>`).join(''):'<div style="color:var(--muted);font-size:13px">Belum ada penjualan</div>'}
-      </div>
-      <div class="card"><div style="font-weight:800;font-size:15px;margin-bottom:12px">Paket PC terlaris</div>
-        ${d.paketTeratas.length?d.paketTeratas.map(p=>`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
-          <div style="flex:1"><b style="font-size:13.5px">${esc(p.nama||'-')}</b>
-            <div style="font-size:11px;color:var(--muted)">${rp(p.v||0)}</div></div>
-          <b>${p.n}x</b></div>`).join(''):'<div style="color:var(--muted);font-size:13px">Belum ada sewa</div>'}
-      </div>
-    </div>`;
-}
-
-/* ---------- sistem ---------- */
-async function vSistem(){
-  const m=document.getElementById('main');
-  m.innerHTML=head('Sistem','Kesehatan layanan, pemeliharaan, dan singgahan')+'<div class="card">Memuat...</div>';
-  const [k,st]=await Promise.all([api('/sistem/kesehatan'),api('/statistik')]);
-
-  const lampu=(ok)=>`<span style="display:inline-block;width:9px;height:9px;border-radius:50%;
-    background:${ok?'#22C55E':'#EF4444'};box-shadow:0 0 0 4px ${ok?'rgba(34,197,94,.16)':'rgba(239,68,68,.16)'}"></span>`;
-  const baris=(nama,ok,ket)=>`<div class="row" style="padding:11px 0;border-bottom:1px solid var(--line)">
-    ${lampu(ok)}<div style="flex:1"><b style="font-size:13.5px">${esc(nama)}</b>
-    <div style="font-size:11.5px;color:var(--muted)">${esc(ket)}</div></div>
-    <span class="tag" style="background:${ok?'rgba(34,197,94,.16)':'rgba(239,68,68,.16)'};
-      color:${ok?'#6EE7A8':'#FCA5A5'}">${ok?'normal':'perlu dicek'}</span></div>`;
-
-  m.innerHTML=head('Sistem','Kesehatan layanan, pemeliharaan, dan singgahan',
-    `<button class="btn ghost" onclick="vSistem()">${ic('refresh',16)}Muat ulang</button>`)+
-    `<div class="grid g2" style="margin-bottom:18px">
-      <div class="card">
-        <div style="font-weight:800;font-size:15px;margin-bottom:6px">Kesehatan layanan</div>
-        ${baris('Basis data D1', k.database.hidup, `Waktu tanggap ${k.database.jedaMs} ms, wilayah ${esc(k.wilayah)}`)}
-        ${baris('Pengiriman email', k.email, k.email?'Resend aktif':'Kunci Resend belum diisi')}
-        ${baris('Notifikasi push', k.push, k.push?'OneSignal aktif':'Kunci OneSignal belum diisi')}
-        ${baris('Penyimpanan gambar', k.gambar, k.gambar?'Cloudinary aktif':'Kunci Cloudinary belum diisi')}
-        ${baris('Login Google', k.loginGoogle, k.loginGoogle?'OAuth aktif':'Belum dikonfigurasi')}
-        ${baris('Pembayaran otomatis', k.pembayaran!=='manual', k.pembayaran==='manual'?'Masih mode manual, isi kunci Tripay atau Midtrans':'Penyedia: '+esc(k.pembayaran))}
-      </div>
-
-      <div class="card">
-        <div style="font-weight:800;font-size:15px;margin-bottom:12px">Isi basis data</div>
-        <div class="grid" style="grid-template-columns:1fr 1fr;gap:12px">
-          ${Object.entries(k.database.baris||{}).map(([nama,n])=>`<div style="background:var(--panel2);
-            border-radius:12px;padding:12px 14px">
-            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">${esc(nama)}</div>
-            <b style="font-size:19px;letter-spacing:-.5px">${n}</b></div>`).join('')}
-        </div>
-        <div style="margin-top:16px;font-size:11.5px;color:var(--muted)">
-          Pemeliharaan otomatis terakhir: ${esc((st.pemeliharaanTerakhir||'belum pernah').replace('T',' ').slice(0,19))}</div>
-      </div>
-    </div>
-
-    <div class="grid g2">
-      <div class="card">
-        <div style="font-weight:800;font-size:15px">Mode pemeliharaan</div>
-        <p style="color:var(--muted);font-size:12.5px;margin:6px 0 16px">
-          Saat menyala, aplikasi menampilkan pesan perawatan dan semua permintaan pengguna ditolak sementara.
-          Dashboard dan agen PC tetap bisa dipakai.</p>
-        <div class="row" style="gap:10px;flex-wrap:wrap">
-          <span class="tag" style="background:${st.modePemeliharaan?'rgba(217,136,15,.2)':'rgba(34,197,94,.16)'};
-            color:${st.modePemeliharaan?'#EBC988':'#6EE7A8'}">${st.modePemeliharaan?'sedang menyala':'layanan normal'}</span>
-          <div style="flex:1"></div>
-          <button class="btn sm ${st.modePemeliharaan?'':'danger'}" onclick="ubahPemeliharaan(${st.modePemeliharaan?0:1})">
-            ${st.modePemeliharaan?'Matikan mode':'Nyalakan mode'}</button>
-        </div>
-        <div class="field" style="margin-top:16px"><label>Pesan untuk pengguna</label>
-          <input id="f_pesanPemeliharaan" value="${esc(st.pesanPemeliharaan||'')}"></div>
-        <button class="btn ghost sm" onclick="simpanPesanPemeliharaan()">Simpan pesan</button>
-      </div>
-
-      <div class="card">
-        <div style="font-weight:800;font-size:15px">Perawatan dan singgahan</div>
-        <p style="color:var(--muted);font-size:12.5px;margin:6px 0 16px">
-          Pemeliharaan otomatis berjalan tiap jam: membersihkan kode kedaluwarsa, menutup sesi menggantung,
-          menandai unit mati, dan membatalkan top up yang tidak dibayar.</p>
-        <div class="row" style="gap:10px;flex-wrap:wrap">
-          <button class="btn sm" onclick="jalankanPemeliharaan()">${ic('refresh',15)}Jalankan sekarang</button>
-          <button class="btn sm ghost" onclick="kosongkanCache()">Kosongkan singgahan</button>
-        </div>
-        <div id="hasilSistem" class="mono" style="margin-top:14px;font-size:11.5px;color:var(--muted)"></div>
-        <div style="margin-top:18px;font-weight:800;font-size:13.5px">Catatan sistem terakhir</div>
-        <div style="max-height:190px;overflow:auto;margin-top:8px">
-          ${(st.log||[]).length?st.log.map(l=>`<div style="padding:7px 0;border-bottom:1px solid var(--line);font-size:11.5px">
-            <span class="tag" style="background:rgba(124,58,237,.16);color:#C4B5FD">${esc(l.jenis)}</span>
-            <span style="color:var(--muted);margin-left:8px">${esc((l.waktu||'').replace('T',' ').slice(0,19))}</span>
-            <div style="color:var(--ink);margin-top:3px">${esc((l.pesan||'').slice(0,160))}</div></div>`).join('')
-            :'<div style="color:var(--muted);font-size:12.5px">Belum ada catatan</div>'}
-        </div>
-      </div>
-    </div>`;
-}
-
-async function ubahPemeliharaan(aktif){
-  if(aktif && !await xkonfirmasi('Nyalakan mode pemeliharaan?',
-    'Semua pengguna aplikasi tidak akan bisa memakai layanan sampai mode ini dimatikan.',
-    {tombol:'Nyalakan',bahaya:true})) return;
-  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:Boolean(aktif)})});
-  toast(aktif?'Mode pemeliharaan menyala':'Layanan kembali normal'); vSistem();
-}
-async function simpanPesanPemeliharaan(){
-  const pesan=document.getElementById('f_pesanPemeliharaan').value;
-  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:false,pesan})});
-  toast('Pesan pemeliharaan disimpan'); vSistem();
-}
-async function jalankanPemeliharaan(){
-  const el=document.getElementById('hasilSistem'); el.textContent='Menjalankan...';
-  const d=await api('/sistem/bersihkan',{method:'POST'});
-  el.textContent=`Selesai: OTP ${d.otpDibersihkan}, batas ${d.batasDibersihkan}, sesi ${d.sesiDitutup}, unit ${d.unitOffline}, top up ${d.topupKedaluwarsa}`;
-  toast('Pemeliharaan selesai');
-}
-async function kosongkanCache(){
-  const el=document.getElementById('hasilSistem'); el.textContent='Mengosongkan singgahan...';
-  const d=await api('/sistem/cache',{method:'DELETE'});
-  el.textContent='Singgahan dikosongkan: '+((d.dibuang||[]).join(', ')||'tidak ada yang tersimpan');
-  toast('Singgahan dikosongkan');
-}
-
-/* ---------- unit PC host ---------- */
-async function vUnit(){
-  const m=document.getElementById('main');
-  const [ag,ss]=await Promise.all([api('/agen'),api('/sesi')]);
-  m.innerHTML=head('Unit PC Host','Mesin yang menjalankan agen XyCloudStore',
-    `<button class="btn" onclick="formUnit()">${ic('plus',16)}Daftarkan Unit</button>`)+
-    `<div class="grid g2" style="margin-bottom:22px">${ag.length?ag.map(a=>`
-      <div class="card">
-        <div class="row">
-          <span class="dotlive" style="background:${a.hidup?'#22C55E':'#EF4444'};box-shadow:0 0 0 4px ${a.hidup?'rgba(34,197,94,.18)':'rgba(239,68,68,.18)'}"></span>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:800;font-size:15px">${esc(a.nama)}</div>
-            <div style="font-size:11.5px;color:var(--muted)">${a.hidup?'online':'tidak melapor'} &middot; ${esc(a.host||'IP belum diketahui')}</div>
-          </div>
-          <span class="tag" style="background:${a.sesi_aktif?'rgba(217,164,65,.18)':'rgba(124,58,237,.18)'};
-            color:${a.sesi_aktif?'#EBC988':'#C4B5FD'}">${a.sesi_aktif?'dipakai':'menganggur'}</span>
-        </div>
-        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;font-size:12px">
-          <div><span style="color:var(--muted)">GPU</span><br><b>${esc(a.spec.gpu||'-')}</b></div>
-          <div><span style="color:var(--muted)">RAM</span><br><b>${a.spec.ram_total_gb?a.spec.ram_total_gb+' GB':'-'}</b></div>
-          <div><span style="color:var(--muted)">Paket</span><br><b>${esc(a.plan_id||'semua paket')}</b></div>
-          <div><span style="color:var(--muted)">Versi agen</span><br><b>${esc(a.versi||'-')}</b></div>
-        </div>
-        <div class="mono" style="margin-top:12px;font-size:11px;color:var(--muted);word-break:break-all">
-          kode: ${esc(a.kode)}</div>
-        <div class="row" style="margin-top:12px;gap:8px">
-          <button class="btn sm ghost" onclick="salinKode('${esc(a.kode)}')">Salin kode</button>
-          <div style="flex:1"></div>
-          <button class="btn sm danger" onclick="hapusUnit('${a.id}')">Hapus</button>
-        </div>
-      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada unit terdaftar</div>'}</div>
-
-    <div class="sec" style="font-weight:800;font-size:15px;margin-bottom:12px">Riwayat Sesi</div>
-    <div class="card" style="padding:18px 6px"><table><thead><tr>
-      <th>Waktu</th><th>Penyewa</th><th>Unit</th><th>Status</th><th>Durasi</th></tr></thead>
-      <tbody>${ss.length?ss.map(x=>`<tr>
-        <td style="font-size:12px;color:var(--muted)">${(x.dibuat||'').replace('T',' ').slice(0,16)}</td>
-        <td><b>${esc(x.nama||'-')}</b><div style="font-size:11px;color:var(--muted)">${esc(x.email||'')}</div></td>
-        <td>${esc(x.unit||'-')}</td>
-        <td><span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(x.status)}</span></td>
-        <td>${x.durasi_menit} menit</td>
-      </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Belum ada sesi</td></tr>'}
-      </tbody></table></div>`;
-}
-function formUnit(){
-  buka('Daftarkan Unit PC',`
-    <div class="field"><label>Nama unit</label><input id="f_unama" placeholder="Contoh: Cloud RTX 4090 - Jakarta"></div>
-    <div class="field"><label>Paket yang dilayani (kosongkan untuk semua)</label><input id="f_uplan" placeholder="pc-gaming"></div>
-    <div class="field"><label>Alamat host / IP publik (opsional, agen bisa mengisi sendiri)</label><input id="f_uhost" placeholder="103.10.20.30"></div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.7">
-      Setelah disimpan, salin kodenya lalu jalankan di PC:<br>
-      <span class="mono">python xy_agent.py --kode KODE_UNIT</span></div>`,
-    async()=>{
-      const g=k=>document.getElementById('f_'+k).value;
-      const d=await api('/agen',{method:'POST',body:JSON.stringify({
-        nama:g('unama'), plan_id:g('uplan')||null, host:g('uhost')||null})});
-      tutupModal(); vUnit();
-      xberitahu('Unit berhasil dibuat',
-        `Kode agen:<br><b class="mono">${esc(d.kode)}</b><br><br>Jalankan perintah ini di PC tersebut:<br>` +
-        `<span class="mono">python xy_agent.py --kode ${esc(d.kode)}</span>`);
-    });
-}
-function salinKode(k){ navigator.clipboard.writeText(k); toast('Kode agen disalin') }
-async function hapusUnit(id){
-  if(!await xkonfirmasi('Hapus unit ini?','Agen di PC tersebut tidak akan bisa terhubung lagi.',{tombol:'Hapus',bahaya:true})) return;
-  await api('/agen/'+id,{method:'DELETE'}); toast('Unit dihapus'); vUnit();
-}
-
-/* ---------- forum komunitas ---------- */
-async function vForum(){
-  const m=document.getElementById('main');
-  const d=await api('/forum');
-  m.innerHTML=head('Forum Komunitas','Pantau diskusi pengguna, balas sebagai admin, sematkan yang penting',
-    `<button class="btn" onclick="formPengumuman()">${ic('send',16)}Buat Pengumuman</button>`)+
-    `<div class="grid g2">${d.length?d.map(f=>`
-      <div class="card">
+    `<div class="grid g2">${d.map(u=>`
+      <div class="card" style="${u.diblokir?'border-color:rgba(239,68,68,.4)':''}">
         <div class="row" style="align-items:flex-start">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4A12B8);
-            display:flex;align-items:center;justify-content:center;font-weight:800">${esc((f.nama||'X')[0].toUpperCase())}</div>
+          ${u.foto?`<img src="${esc(u.foto)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover">`
+            :`<div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4A12B8);
+              display:flex;align-items:center;justify-content:center;font-weight:800">${esc((u.nama||'X')[0].toUpperCase())}</div>`}
           <div style="flex:1;min-width:0">
-            <div style="font-weight:800;font-size:13.5px">${esc(f.nama)}</div>
-            <div style="font-size:11px;color:var(--muted)">${(f.dibuat||'').replace('T',' ').slice(0,16)} &middot; ${esc(f.kategori)}</div>
+            <div class="row" style="gap:6px;flex-wrap:wrap">
+              <b style="font-size:14.5px">${esc(u.nama)}</b>
+              <span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(u.tier)}</span>
+              ${u.badge?`<span class="tag" style="background:linear-gradient(135deg,#7C3AED,#5B16CC);color:#fff">
+                ${esc(u.badge)}</span>`:''}
+              ${u.diblokir?'<span class="tag" style="background:rgba(239,68,68,.2);color:#FCA5A5">dibekukan</span>':''}
+              ${u.peringatan>0?`<span class="tag" style="background:rgba(217,136,15,.2);color:#EBC988">
+                ${u.peringatan} peringatan</span>`:''}
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:3px">${esc(u.email)}</div>
+            ${u.phone?`<a href="https://wa.me/${String(u.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}"
+              target="_blank" style="font-size:11.5px;color:#6EE7A8;text-decoration:none">WhatsApp ${esc(u.phone)}</a>`:''}
           </div>
-          ${f.disematkan?'<span class="tag" style="background:rgba(124,58,237,.2);color:#C4B5FD">disematkan</span>':''}
+          <div style="text-align:right">
+            <b style="font-size:15px">${rp(u.saldo)}</b>
+            <div style="font-size:10.5px;color:var(--muted)">${(u.created_at||'').slice(0,10)}</div>
+          </div>
         </div>
-        <div style="font-weight:800;font-size:15px;margin:12px 0 6px;letter-spacing:-.2px">${esc(f.judul)}</div>
-        <p style="margin:0;font-size:13px;line-height:1.6;color:var(--muted)">${esc((f.isi||'').slice(0,220))}${(f.isi||'').length>220?'...':''}</p>
-        ${f.gambar?`<img src="${f.gambar}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:12px">`:''}
-        <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
-          <span style="font-size:12px;color:var(--muted)">${f.suka||0} suka &middot; ${f.balasan||0} balasan</span>
+        ${u.diblokir&&u.alasan_blokir?`<div style="margin-top:11px;background:rgba(239,68,68,.1);
+          border-radius:10px;padding:9px 12px;font-size:11.5px;color:#FCA5A5">
+          Alasan: ${esc(u.alasan_blokir)}</div>`:''}
+        <div class="row" style="margin-top:13px;gap:7px;flex-wrap:wrap">
+          <button class="btn sm ghost" onclick="formLencana('${u.id}',${JSON.stringify(u.badge||'').replace(/"/g,'&quot;')},'${esc(u.tier)}')">Lencana &amp; Tier</button>
+          <button class="btn sm ghost" onclick="beriPeringatan('${u.id}','${esc(u.nama)}')">Peringatan</button>
+          <button class="btn sm ghost" onclick="ubahSaldo('${u.id}',${u.saldo})">Saldo</button>
           <div style="flex:1"></div>
-          <button class="btn sm" onclick="balasForum('${f.id}')">Balas</button>
-          <button class="btn sm ghost" onclick="sematForum('${f.id}',${f.disematkan?0:1})">${f.disematkan?'Lepas':'Sematkan'}</button>
-          <button class="btn sm danger" onclick="hapusForum('${f.id}')">Hapus</button>
+          ${u.diblokir
+            ? `<button class="btn sm" onclick="blokirAkun('${u.id}',0)">Aktifkan</button>`
+            : `<button class="btn sm danger" onclick="blokirAkun('${u.id}',1)">Bekukan</button>`}
         </div>
-      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada diskusi</div>'}</div>`;
+      </div>`).join('')}</div>`;
 }
-function formPengumuman(){
-  buka('Buat Pengumuman',`
-    <div class="field"><label>Judul</label><input id="f_pjudul" placeholder="Contoh: Promo akhir pekan RTX 4090"></div>
-    <div class="field"><label>Isi pengumuman</label><textarea id="f_pisi" rows="5"
-      placeholder="Tulis informasi yang ingin disampaikan ke semua pengguna"></textarea></div>
-    <div class="grid" style="grid-template-columns:1fr 1fr">
-      <div class="field"><label>Sematkan di atas</label><select id="f_psemat">
-        <option value="1" selected>Ya</option><option value="0">Tidak</option></select></div>
-      <div class="field"><label>Kirim notifikasi push</label><select id="f_ppush">
-        <option value="1" selected>Ya, ke semua pengguna</option><option value="0">Tidak</option></select></div>
-    </div>`,
+
+function formLencana(id, badgeLama, tierLama){
+  buka('Lencana dan Tier',`
+    <div class="field"><label>Lencana khusus (kosongkan untuk melepas)</label>
+      <input id="f_badge" value="${esc(badgeLama||'')}" placeholder="XySpace, Staff, Moderator, Legend"></div>
+    <div class="row" style="gap:8px;flex-wrap:wrap;margin:-4px 0 14px">
+      ${['XySpace','Staff','Moderator','Legend','Early'].map(b=>
+        `<button class="btn sm ghost" onclick="document.getElementById('f_badge').value='${b}'">${b}</button>`).join('')}
+    </div>
+    <div class="field"><label>Tier keanggotaan</label><select id="f_tier">
+      ${['basic','pro','vip'].map(t=>`<option value="${t}" ${t===tierLama?'selected':''}>${t.toUpperCase()}</option>`).join('')}
+    </select></div>`,
     async()=>{
-      const g=k=>document.getElementById('f_'+k).value;
-      await api('/forum',{method:'POST',body:JSON.stringify({
-        judul:g('pjudul'), isi:g('pisi'), kategori:'Pengumuman',
-        sematkan:g('psemat')==='1', kirimPush:g('ppush')==='1'})});
-      toast('Pengumuman diterbitkan'); tutupModal(); vForum();
+      await api('/users/'+id+'/kelola',{method:'PATCH',body:JSON.stringify({
+        badge:document.getElementById('f_badge').value.trim(),
+        tier:document.getElementById('f_tier').value})});
+      toast('Lencana dan tier disimpan'); tutupModal(); vUsers();
     });
 }
 
-async function balasForum(id){
-  const t=await xtanya('Balas diskusi','Balasan sebagai Kirana - XyCloudStore','');
-  if(!t) return;
-  await api('/forum/'+id+'/balas',{method:'POST',body:JSON.stringify({isi:t})});
-  toast('Balasan terkirim'); vForum();
+async function beriPeringatan(id,nama){
+  const pesan=await xtanya('Peringatan untuk '+nama,'Isi peringatan',
+    'Mohon jaga bahasa dan hormati sesama pengguna di komunitas.');
+  if(pesan===null) return;
+  await api('/users/'+id+'/peringatan',{method:'POST',body:JSON.stringify({pesan})});
+  toast('Peringatan terkirim ke aplikasi dan chat'); vUsers();
 }
-async function sematForum(id,v){
-  await api('/forum/'+id+'/sematkan',{method:'PATCH',body:JSON.stringify({disematkan:v})});
-  toast(v?'Diskusi disematkan':'Sematan dilepas'); vForum();
+
+async function blokirAkun(id,aktif){
+  if(aktif){
+    const alasan=await xtanya('Bekukan akun','Alasan pembekuan','Melanggar ketentuan komunitas');
+    if(alasan===null) return;
+    await api('/users/'+id+'/kelola',{method:'PATCH',body:JSON.stringify({diblokir:true,alasan})});
+    toast('Akun dibekukan');
+  } else {
+    await api('/users/'+id+'/kelola',{method:'PATCH',body:JSON.stringify({diblokir:false})});
+    toast('Akun diaktifkan kembali');
+  }
+  vUsers();
 }
-async function hapusForum(id){
-  if(!await xkonfirmasi('Hapus diskusi?','Semua balasan di dalamnya ikut terhapus.',{tombol:'Hapus',bahaya:true})) return;
-  await api('/forum/'+id,{method:'DELETE'});
-  toast('Diskusi dihapus'); vForum();
+
+async function ubahSaldo(id, sekarang){
+  const nilai = await xtanya('Sesuaikan saldo',
+    'Nominal penambahan, boleh minus untuk pengurangan. Saldo sekarang ' + rp(sekarang), '0');
+  if(nilai===null) return;
+  const n = Number(nilai) || 0;
+  if(!n) return;
+  await api('/users/saldo',{method:'POST',body:JSON.stringify({
+    user_id:id, nominal:n, catatan: n>0?'Penambahan saldo oleh admin':'Pengurangan saldo oleh admin'})});
+  toast('Saldo diperbarui'); vUsers();
+}
+
+/* ---------- moderasi konten ---------- */
+async function vModerasi(){
+  const m=document.getElementById('main');
+  const d=await api('/laporan');
+  m.innerHTML=head('Moderasi Konten','Laporan pengguna, tandai sensitif atau hapus kontennya',
+    `<button class="btn ghost" onclick="vModerasi()">${ic('refresh',16)}Muat ulang</button>`)+
+    `<div class="grid g2">${d.length?d.map(l=>`
+      <div class="card" style="${l.status==='baru'?'border-color:rgba(217,136,15,.4)':''}">
+        <div class="row">
+          <span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(l.jenis)}</span>
+          <span class="tag" style="background:${l.status==='baru'?'rgba(217,136,15,.2)':'rgba(34,197,94,.16)'};
+            color:${l.status==='baru'?'#EBC988':'#6EE7A8'}">${esc(l.status)}</span>
+          <div style="flex:1"></div>
+          <span style="font-size:11px;color:var(--muted)">${(l.dibuat||'').replace('T',' ').slice(0,16)}</span>
+        </div>
+        <div style="margin-top:12px;font-size:13.5px"><b>Alasan:</b> ${esc(l.alasan||'-')}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:4px">
+          Dilaporkan oleh ${esc(l.pelapor_nama||l.pelapor)} &middot; konten <span class="mono">${esc(l.ref_id)}</span></div>
+        ${l.url?`<img src="${esc(l.url)}" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:12px">`:''}
+        <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
+          <button class="btn sm ghost" onclick="tandaiSensitif('${esc(l.jenis)}','${esc(l.ref_id)}',1,'${l.id}')">Tandai sensitif</button>
+          <button class="btn sm ghost" onclick="tandaiSensitif('${esc(l.jenis)}','${esc(l.ref_id)}',0,'${l.id}')">Aman</button>
+          <div style="flex:1"></div>
+          <button class="btn sm danger" onclick="hapusKonten('${esc(l.jenis)}','${esc(l.ref_id)}','${l.id}')">Hapus konten</button>
+          <button class="btn sm" onclick="selesaikanLaporan('${l.id}')">Selesai</button>
+        </div>
+      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada laporan masuk</div>'}</div>`;
+}
+
+async function tandaiSensitif(jenis,refId,nilai,idLaporan){
+  const tabel = jenis==='ulasan' ? 'ulasan' : 'forum';
+  await api('/konten/'+tabel+'/'+refId,{method:'PATCH',body:JSON.stringify({sensitif:Boolean(nilai)})});
+  await api('/laporan/'+idLaporan,{method:'PATCH',body:JSON.stringify({status:'selesai'})});
+  toast(nilai?'Konten ditandai sensitif':'Konten ditandai aman'); vModerasi();
+}
+
+async function hapusKonten(jenis,refId,idLaporan){
+  if(!await xkonfirmasi('Hapus konten ini?','Konten dan balasannya akan hilang permanen.',
+    {tombol:'Hapus',bahaya:true})) return;
+  try{
+    if(jenis==='balasan') await api('/forum/balasan/'+refId,{method:'DELETE'});
+    else await api('/forum/'+refId,{method:'DELETE'});
+  }catch(e){ toast(e.message) }
+  await api('/laporan/'+idLaporan,{method:'PATCH',body:JSON.stringify({status:'selesai'})});
+  toast('Konten dihapus'); vModerasi();
+}
+
+async function selesaikanLaporan(id){
+  await api('/laporan/'+id,{method:'PATCH',body:JSON.stringify({status:'selesai'})});
+  toast('Laporan ditutup'); vModerasi();
 }
 
 /* ---------- konfirmasi top up ---------- */

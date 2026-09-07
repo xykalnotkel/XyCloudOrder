@@ -70,6 +70,16 @@ abstract class XyRepository {
   Future<void> forumHapusBalasan(String id);
   Future<void> hapusPesan(String id);
   Future<void> hapusSemuaPesan();
+
+  // ---------- pemberitahuan ----------
+  Future<Map<String, dynamic>> notifikasi();
+  Future<void> bacaNotifikasi({String? id});
+  Future<void> hapusNotifikasi();
+
+  // ---------- komunitas lanjutan ----------
+  Future<Map<String, dynamic>> sukaBalasan(String id);
+  Future<List<String>> balasanDisukai();
+  Future<void> laporkan({required String jenis, required String refId, String? url, String? alasan});
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -283,6 +293,29 @@ class RemoteRepository implements XyRepository {
 
   @override
   Future<void> hapusSemuaPesan() async => api.delete('/cs/messages');
+
+  @override
+  Future<Map<String, dynamic>> notifikasi() async =>
+      Map<String, dynamic>.from(await api.get('/notifikasi'));
+
+  @override
+  Future<void> bacaNotifikasi({String? id}) async =>
+      api.post('/notifikasi/baca', {if (id != null) 'id': id});
+
+  @override
+  Future<void> hapusNotifikasi() async => api.delete('/notifikasi');
+
+  @override
+  Future<Map<String, dynamic>> sukaBalasan(String id) async =>
+      Map<String, dynamic>.from(await api.post('/forum/balasan/$id/suka'));
+
+  @override
+  Future<List<String>> balasanDisukai() async =>
+      ((await api.get('/forum/balasan/suka/saya')) as List).map((e) => '$e').toList();
+
+  @override
+  Future<void> laporkan({required String jenis, required String refId, String? url, String? alasan}) async =>
+      api.post('/laporan', {'jenis': jenis, 'ref_id': refId, if (url != null) 'url': url, 'alasan': alasan ?? ''});
 
   @override
   Future<List<PcPlan>> plans() async =>
@@ -499,6 +532,24 @@ class MockRepository implements XyRepository {
 
   @override
   Future<void> hapusSemuaPesan() async {}
+
+  @override
+  Future<Map<String, dynamic>> notifikasi() => _delay({'daftar': const [], 'belumDibaca': 0}, 200);
+
+  @override
+  Future<void> bacaNotifikasi({String? id}) async {}
+
+  @override
+  Future<void> hapusNotifikasi() async {}
+
+  @override
+  Future<Map<String, dynamic>> sukaBalasan(String id) => _delay({'suka': 1, 'disukai': true}, 200);
+
+  @override
+  Future<List<String>> balasanDisukai() => _delay(<String>[], 200);
+
+  @override
+  Future<void> laporkan({required String jenis, required String refId, String? url, String? alasan}) async {}
 
   @override
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) => _delay(

@@ -18,6 +18,11 @@ class UserProfile {
   /// Terima pemberitahuan kegiatan forum komunitas.
   final bool notifForum;
 
+  /// Lencana khusus dari admin, contohnya XySpace.
+  final String? badge;
+  final bool diblokir;
+  final int peringatan;
+
   UserProfile({
     required this.id,
     required this.nama,
@@ -28,6 +33,9 @@ class UserProfile {
     this.avatar,
     this.foto,
     this.notifForum = true,
+    this.badge,
+    this.diblokir = false,
+    this.peringatan = 0,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -40,6 +48,9 @@ class UserProfile {
         avatar: j['avatar'],
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         notifForum: (j['notif_forum'] ?? 1) == 1,
+        badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
+        diblokir: (j['diblokir'] ?? 0) == 1,
+        peringatan: j['peringatan'] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -52,6 +63,7 @@ class UserProfile {
         'avatar': avatar,
         'foto': foto,
         'notif_forum': notifForum ? 1 : 0,
+        'badge': badge,
       };
 
   UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto}) => UserProfile(
@@ -64,6 +76,9 @@ class UserProfile {
         foto: foto ?? this.foto,
         avatar: avatar,
         notifForum: notifForum,
+        badge: badge,
+        diblokir: diblokir,
+        peringatan: peringatan,
       );
 }
 
@@ -581,6 +596,8 @@ class ForumPost {
   final String isi;
   final String? gambar;
   final String tier;
+  final String? badge;
+  final bool sensitif;
   int suka;
   int balasan;
   final bool disematkan;
@@ -597,6 +614,8 @@ class ForumPost {
     this.foto,
     this.gambar,
     this.tier = 'basic',
+    this.badge,
+    this.sensitif = false,
     this.suka = 0,
     this.balasan = 0,
     this.disematkan = false,
@@ -612,6 +631,8 @@ class ForumPost {
         isi: j['isi'] ?? '',
         gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
         tier: j['tier'] ?? 'basic',
+        badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
+        sensitif: (j['sensitif'] ?? 0) == 1,
         suka: j['suka'] ?? 0,
         balasan: j['balasan'] ?? 0,
         disematkan: (j['disematkan'] ?? 0) == 1,
@@ -646,6 +667,8 @@ class ForumBalasan {
   final String isi;
   final bool admin;
   final String tier;
+  final String? badge;
+  int suka;
   final DateTime dibuat;
 
   ForumBalasan({
@@ -659,6 +682,8 @@ class ForumBalasan {
     this.foto,
     this.admin = false,
     this.tier = 'basic',
+    this.badge,
+    this.suka = 0,
   });
 
   factory ForumBalasan.fromJson(Map<String, dynamic> j) => ForumBalasan(
@@ -671,6 +696,8 @@ class ForumBalasan {
         isi: j['isi'] ?? '',
         admin: (j['admin'] ?? 0) == 1,
         tier: j['tier'] ?? 'basic',
+        badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
+        suka: j['suka'] ?? 0,
         dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
       );
 }
@@ -709,5 +736,42 @@ class SesiMain {
         durasiMenit: j['durasi_menit'] ?? 60,
         mulai: DateTime.tryParse('${j['mulai']}'.replaceFirst(' ', 'T')),
         berakhir: DateTime.tryParse('${j['berakhir']}'.replaceFirst(' ', 'T')),
+      );
+}
+
+/// Satu baris pemberitahuan di pusat notifikasi.
+class Notifikasi {
+  final String id;
+  final String jenis; // suka | balasan | komunitas | peringatan | sistem | order | wallet
+  final String judul;
+  final String pesan;
+  final String? aktor;
+  final String? refJenis;
+  final String? refId;
+  final bool dibaca;
+  final DateTime dibuat;
+
+  Notifikasi({
+    required this.id,
+    required this.jenis,
+    required this.judul,
+    required this.pesan,
+    required this.dibuat,
+    this.aktor,
+    this.refJenis,
+    this.refId,
+    this.dibaca = false,
+  });
+
+  factory Notifikasi.fromJson(Map<String, dynamic> j) => Notifikasi(
+        id: '${j['id']}',
+        jenis: j['jenis'] ?? 'sistem',
+        judul: j['judul'] ?? '',
+        pesan: j['pesan'] ?? '',
+        aktor: j['aktor'],
+        refJenis: j['ref_jenis'],
+        refId: j['ref_id'],
+        dibaca: (j['dibaca'] ?? 0) == 1,
+        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
       );
 }
