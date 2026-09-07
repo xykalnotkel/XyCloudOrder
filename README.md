@@ -197,6 +197,32 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## Sesi Main (remote PC untuk game)
+
+Sewa PC tidak lagi berhenti di kredensial RDP. Sekarang ada siklus sesi penuh:
+
+| Tahap | Yang terjadi |
+|---|---|
+| `menyiapkan` | Server memilih unit menganggur, mengirim perintah ke agen di PC, mesin dibersihkan |
+| `siap` | Sunshine siap menerima sambungan, aplikasi menampilkan alamat host |
+| `pairing` | Penyewa mengetik PIN dari aplikasi streaming, server meneruskannya ke agen, agen memasukkannya ke Sunshine |
+| `berjalan` | Perangkat terpasang, penyewa main. Timer berjalan di agen dan di aplikasi |
+| `selesai` / `gagal` | Sesi ditutup, perangkat dilepas, mesin dibersihkan, unit kembali menganggur |
+
+Endpoint pengguna: `POST /api/sesi/mulai`, `GET /api/sesi/:id`, `POST /api/sesi/:id/pin`,
+`POST /api/sesi/:id/akhiri`.
+Endpoint agen (pakai header `x-agen-kode`): `POST /api/agen/heartbeat`, `POST /api/agen/perintah/:id`.
+Admin: `GET/POST /api/admin/agen`, `DELETE /api/admin/agen/:id`, `GET /api/admin/sesi`.
+
+Program agennya ada di folder `agent/`, lengkap dengan panduan pemasangan Sunshine,
+daftar port, layanan otomatis, dan skrip pembersihan antar penyewa.
+
+Teknologi streaming yang dipakai: **Sunshine** (host) dan **Moonlight/Artemis** (klien),
+protokol GameStream dengan encoder NVENC/AMF/QuickSync. RDP tidak dipakai karena tidak
+mampu melayani game.
+
+---
+
 ## Notifikasi Push
 
 | Kejadian | Siapa yang menerima |

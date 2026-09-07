@@ -644,3 +644,40 @@ class ForumBalasan {
         dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
       );
 }
+
+/// Sesi bermain di PC sewaan.
+class SesiMain {
+  final String id;
+  final String orderId;
+  final String? agenId;
+  final String status; // menyiapkan | siap | pairing | berjalan | selesai | gagal
+  final String? host;
+  final String? catatan;
+  final int durasiMenit;
+  final DateTime? mulai;
+  final DateTime? berakhir;
+
+  SesiMain({
+    required this.id,
+    required this.orderId,
+    required this.status,
+    this.agenId,
+    this.host,
+    this.catatan,
+    this.durasiMenit = 60,
+    this.mulai,
+    this.berakhir,
+  });
+
+  factory SesiMain.fromJson(Map<String, dynamic> j) => SesiMain(
+        id: '${j['id']}',
+        orderId: '${j['order_id'] ?? ''}',
+        agenId: j['agen_id'],
+        status: j['status'] ?? 'menyiapkan',
+        host: (j['host'] as String?)?.isNotEmpty == true ? j['host'] : null,
+        catatan: (j['catatan'] as String?)?.isNotEmpty == true ? j['catatan'] : null,
+        durasiMenit: j['durasi_menit'] ?? 60,
+        mulai: DateTime.tryParse('${j['mulai']}'.replaceFirst(' ', 'T')),
+        berakhir: DateTime.tryParse('${j['berakhir']}'.replaceFirst(' ', 'T')),
+      );
+}

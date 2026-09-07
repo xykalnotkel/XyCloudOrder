@@ -289,6 +289,77 @@ export default {
     const ip = req.headers.get('CF-Connecting-IP') || 'tanpa-ip';
 
     try {
+      // ---------------- AGEN PC HOST ----------------
+      // Agen memakai kode rahasianya sendiri, bukan token pengguna.
+      if (p.startsWith('agen/')) {
+        const kode = req.headers.get('x-agen-kode') || '';
+        if (!kode) return err('Kode agen tidak dikirim', 401, env);
+        const agen = await env.DB.prepare('SELECT * FROM agen WHERE kode = ?').bind(kode).first();
+        if (!agen) return err('Agen tidak dikenal', 401, env);
+
+        // ---- laporan hidup + spesifikasi ----
+        if (p === 'agen/heartbeat' && req.method === 'POST') {
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare(
+            "UPDATE agen SET status = ?, spec = COALESCE(?, spec), versi = COALESCE(?, versi), host = COALESCE(?, host), terakhir = ? WHERE id = ?"
+          ).bind(
+            b.status || 'online',
+            b.spec ? JSON.stringify(b.spec) : null,
+            b.versi || null,
+            b.host || null,
+            new Date().toISOString(),
+            agen.id
+          ).run();
+
+          const { results } = await env.DB
+            .prepare("SELECT * FROM perintah WHERE agen_id = ? AND status = 'antre' ORDER BY dibuat ASC LIMIT 5")
+            .bind(agen.id).all();
+
+          if (results.length) {
+            await env.DB.prepare(
+              `UPDATE perintah SET status = 'diambil' WHERE id IN (${results.map(() => '?').join(',')})`
+            ).bind(...results.map((r) => r.id)).run();
+          }
+
+          return json({
+            ok: true,
+            perintah: results.map((r) => ({ ...r, muatan: r.muatan ? JSON.parse(r.muatan) : {} })),
+          }, 200, env);
+        }
+
+        // ---- agen melaporkan hasil sebuah perintah ----
+        if (p.startsWith('agen/perintah/') && req.method === 'POST') {
+          const id = p.split('/')[2];
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare("UPDATE perintah SET status = ?, hasil = ?, diproses = ? WHERE id = ? AND agen_id = ?")
+            .bind(b.ok === false ? 'gagal' : 'selesai', JSON.stringify(b), new Date().toISOString(), id, agen.id)
+            .run();
+
+          // perbarui sesi yang terkait
+          if (b.sesi_id) {
+            const status = b.status || (b.ok === false ? 'gagal' : 'siap');
+            await env.DB.prepare('UPDATE sesi SET status = ?, host = COALESCE(?, host), catatan = ? WHERE id = ?')
+              .bind(status, b.host || null, b.catatan || null, b.sesi_id).run();
+
+            const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ?').bind(b.sesi_id).first();
+            if (sesi) {
+              ctx.waitUntil(push(env, `user:${sesi.user_id}`, 'sesi.update', sesi));
+              if (status === 'siap') {
+                ctx.waitUntil(kirimPush(env, {
+                  userId: sesi.user_id,
+                  judul: 'PC kamu siap dimainkan',
+                  pesan: 'Buka aplikasi lalu tekan Mulai Main untuk menyambung.',
+                  data: { tipe: 'sesi', id: sesi.id },
+                }));
+              }
+            }
+          }
+          return json({ ok: true }, 200, env);
+        }
+
+        return err('Endpoint agen tidak dikenal', 404, env);
+      }
+
       // ---------------- FORUM KOMUNITAS (baca boleh tanpa login) ----------------
       if (p === 'forum' && req.method === 'GET') {
         const kategori = url.searchParams.get('kategori');
@@ -888,6 +959,43 @@ export default {
           return json({ ok: true }, 200, env);
         }
 
+        // ---- unit / agen PC host ----
+        if (a === 'agen' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM agen ORDER BY dibuat DESC').all();
+          const sekarang = Date.now();
+          return json(results.map((r) => ({
+            ...r,
+            spec: r.spec ? JSON.parse(r.spec) : {},
+            // dianggap mati kalau tidak melapor lebih dari 90 detik
+            hidup: r.terakhir ? sekarang - new Date(r.terakhir).getTime() < 90000 : false,
+          })), 200, env);
+        }
+
+        if (a === 'agen' && req.method === 'POST') {
+          const b = await req.json();
+          const id = b.id || uid('ag_');
+          const kode = b.kode || `xya_${crypto.randomUUID().replace(/-/g, '')}`;
+          await env.DB.prepare(
+            'INSERT OR REPLACE INTO agen (id,nama,kode,plan_id,host,status,dibuat) VALUES (?,?,?,?,?,?,COALESCE((SELECT dibuat FROM agen WHERE id=?),datetime(\'now\')))'
+          ).bind(id, b.nama || 'Unit baru', kode, b.plan_id || null, b.host || null, 'offline', id).run();
+          return json({ id, kode }, 201, env);
+        }
+
+        if (a.startsWith('agen/') && req.method === 'DELETE') {
+          await env.DB.prepare('DELETE FROM agen WHERE id = ?').bind(a.split('/')[1]).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        if (a === 'sesi' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT s.*, u.nama, u.email, a.nama AS unit FROM sesi s
+             LEFT JOIN users u ON u.id = s.user_id
+             LEFT JOIN agen a ON a.id = s.agen_id
+             ORDER BY s.dibuat DESC LIMIT 100`
+          ).all();
+          return json(results, 200, env);
+        }
+
         // ---- forum: moderasi ----
         // buat pengumuman resmi dari admin
         if (a === 'forum' && req.method === 'POST') {
@@ -1025,6 +1133,102 @@ export default {
         if (!u) return err('Akun tidak ditemukan', 404, env);
         delete u.password;
         return json(u, 200, env);
+      }
+
+      // ---- mulai sesi main ----
+      if (p === 'sesi/mulai' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const orderId = String(b.order_id || '');
+
+        const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ? AND user_id = ?')
+          .bind(orderId, me.sub).first();
+        if (!order) return err('Order tidak ditemukan', 404, env);
+        if (!['dibayar', 'provisioning', 'aktif'].includes(order.status)) {
+          return err('Order ini belum siap dimainkan', 409, env);
+        }
+
+        // sesi yang masih hidup dipakai ulang
+        const lama = await env.DB
+          .prepare("SELECT * FROM sesi WHERE order_id = ? AND status NOT IN ('selesai','gagal') ORDER BY dibuat DESC LIMIT 1")
+          .bind(orderId).first();
+        if (lama) return json(lama, 200, env);
+
+        // cari unit yang menganggur untuk paket ini.
+        // "hidup" dinilai dari laporan terakhir, bukan label status,
+        // supaya unit yang baru selesai dipakai langsung bisa dipilih lagi.
+        const ambang = new Date(Date.now() - 90000).toISOString();
+        const agen = await env.DB.prepare(
+          `SELECT * FROM agen
+           WHERE (sesi_aktif IS NULL OR sesi_aktif = '')
+             AND terakhir IS NOT NULL AND terakhir > ?
+             AND (plan_id IS NULL OR plan_id = ?)
+           ORDER BY terakhir DESC LIMIT 1`
+        ).bind(ambang, order.plan_id).first();
+
+        if (!agen) {
+          return err('Semua unit sedang dipakai. Coba beberapa menit lagi atau hubungi admin.', 503, env);
+        }
+
+        const id = uid('s_');
+        const durasi = (order.durasi_jam || 1) * 60;
+        await env.DB.batch([
+          env.DB.prepare(
+            "INSERT INTO sesi (id,order_id,user_id,agen_id,status,durasi_menit,host) VALUES (?,?,?,?,'menyiapkan',?,?)"
+          ).bind(id, orderId, me.sub, agen.id, durasi, agen.host || null),
+          env.DB.prepare('UPDATE agen SET sesi_aktif = ? WHERE id = ?').bind(id, agen.id),
+          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'mulai_sesi',?)")
+            .bind(uid('c_'), agen.id, JSON.stringify({
+              sesi_id: id,
+              order_id: orderId,
+              user_id: me.sub,
+              durasi_menit: durasi,
+              plan: order.plan_nama,
+            })),
+        ]);
+
+        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ?').bind(id).first();
+        return json(sesi, 201, env);
+      }
+
+      // ---- pantau sesi ----
+      if (p.startsWith('sesi/') && p.split('/').length === 2 && req.method === 'GET') {
+        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?')
+          .bind(p.split('/')[1], me.sub).first();
+        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
+        return json(sesi, 200, env);
+      }
+
+      // ---- kirim PIN dari aplikasi streaming ke host ----
+      if (p.startsWith('sesi/') && p.endsWith('/pin') && req.method === 'POST') {
+        const id = p.split('/')[1];
+        const { pin } = await req.json().catch(() => ({}));
+        if (!/^[0-9]{4}$/.test(String(pin || ''))) return err('PIN harus 4 angka', 400, env);
+
+        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?').bind(id, me.sub).first();
+        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
+
+        await env.DB.batch([
+          env.DB.prepare("UPDATE sesi SET pin = ?, status = 'pairing' WHERE id = ?").bind(String(pin), id),
+          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'pasangkan',?)")
+            .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id, pin: String(pin) })),
+        ]);
+        return json({ ok: true, pesan: 'PIN dikirim ke PC, tunggu beberapa detik.' }, 200, env);
+      }
+
+      // ---- akhiri sesi ----
+      if (p.startsWith('sesi/') && p.endsWith('/akhiri') && req.method === 'POST') {
+        const id = p.split('/')[1];
+        const sesi = await env.DB.prepare('SELECT * FROM sesi WHERE id = ? AND user_id = ?').bind(id, me.sub).first();
+        if (!sesi) return err('Sesi tidak ditemukan', 404, env);
+
+        await env.DB.batch([
+          env.DB.prepare("UPDATE sesi SET status = 'selesai', berakhir = ? WHERE id = ?")
+            .bind(new Date().toISOString(), id),
+          env.DB.prepare("UPDATE agen SET sesi_aktif = NULL WHERE id = ?").bind(sesi.agen_id),
+          env.DB.prepare("INSERT INTO perintah (id,agen_id,jenis,muatan) VALUES (?,?,'akhiri_sesi',?)")
+            .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id })),
+        ]);
+        return json({ ok: true }, 200, env);
       }
 
       // ---- perbarui profil ----

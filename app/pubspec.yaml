@@ -1,7 +1,7 @@
 name: xycloud_order
 description: "XyCloudStore - Sewa PC Cloud, Beli Akun Digital, dan Customer Service realtime."
 publish_to: "none"
-version: 1.6.1+9
+version: 1.7.0+10
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -22,6 +22,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   google_sign_in: ^6.2.2
   package_info_plus: ^8.1.1
+  android_intent_plus: ^5.2.0
 
 dev_dependencies:
   flutter_test:

@@ -294,6 +294,40 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ================= sesi main di PC sewaan =================
+  Future<SesiMain?> mulaiSesi(String orderId) async {
+    error = null;
+    try {
+      return await _repo.sesiMulai(orderId);
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    }
+  }
+
+  Future<SesiMain?> statusSesi(String id) async {
+    try {
+      return await _repo.sesiStatus(id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<String?> kirimPinSesi(String id, String pin) async {
+    try {
+      await _repo.sesiPin(id, pin);
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<void> akhiriSesi(String id) async {
+    try {
+      await _repo.sesiAkhiri(id);
+    } catch (_) {}
+  }
+
   // ================= profil =================
   Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async {
     try {
@@ -684,6 +718,9 @@ class AppState extends ChangeNotifier {
           final list = (e.payload['banners'] as List?) ?? const [];
           banners = list.map((x) => PromoBanner.fromJson(Map<String, dynamic>.from(x))).toList();
         } catch (_) {}
+        break;
+      case 'sesi.update':
+        // status sesi diperbarui oleh agen PC
         break;
       case 'forum.baru':
         try {

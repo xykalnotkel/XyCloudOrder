@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import 'sesi_screen.dart';
 import 'cs_screen.dart';
 
 /// Halaman inti realtime: status order berubah sendiri mengikuti event server.
@@ -154,11 +155,10 @@ class _KartuStatus extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: GradientButton(
-                label: 'Connect',
-                icon: Icons.desktop_windows_rounded,
+                label: 'Mulai Main',
+                icon: Icons.sports_esports_rounded,
                 height: 50,
-                onPressed: () => ScaffoldMessenger.of(context)
-                    .showSnackBar(const SnackBar(content: Text('Membuka sesi Remote Desktop...'))),
+                onPressed: () => Navigator.push(context, xyRoute(SesiScreen(order: order))),
               ),
             ),
           ]),

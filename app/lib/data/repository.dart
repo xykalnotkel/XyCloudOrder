@@ -52,6 +52,12 @@ abstract class XyRepository {
   Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum});
   Future<void> gantiPassword(String lama, String baru);
 
+  // ---------- sesi main ----------
+  Future<SesiMain> sesiMulai(String orderId);
+  Future<SesiMain> sesiStatus(String id);
+  Future<void> sesiPin(String id, String pin);
+  Future<void> sesiAkhiri(String id);
+
   // ---------- forum ----------
   Future<List<ForumPost>> forum();
   Future<List<ForumBalasan>> forumDetail(String id);
@@ -197,6 +203,20 @@ class RemoteRepository implements XyRepository {
   @override
   Future<void> gantiPassword(String lama, String baru) async =>
       api.post('/me/password', {'lama': lama, 'baru': baru});
+
+  @override
+  Future<SesiMain> sesiMulai(String orderId) async =>
+      SesiMain.fromJson(Map<String, dynamic>.from(await api.post('/sesi/mulai', {'order_id': orderId})));
+
+  @override
+  Future<SesiMain> sesiStatus(String id) async =>
+      SesiMain.fromJson(Map<String, dynamic>.from(await api.get('/sesi/$id')));
+
+  @override
+  Future<void> sesiPin(String id, String pin) async => api.post('/sesi/$id/pin', {'pin': pin});
+
+  @override
+  Future<void> sesiAkhiri(String id) async => api.post('/sesi/$id/akhiri');
 
   @override
   Future<List<ForumPost>> forum() async =>
@@ -374,6 +394,24 @@ class MockRepository implements XyRepository {
 
   @override
   Future<void> gantiPassword(String lama, String baru) async {}
+
+  @override
+  Future<SesiMain> sesiMulai(String orderId) => _delay(
+        SesiMain(id: 's_demo', orderId: orderId, status: 'siap', host: '103.10.20.30', durasiMenit: 60),
+        700,
+      );
+
+  @override
+  Future<SesiMain> sesiStatus(String id) => _delay(
+        SesiMain(id: id, orderId: 'o_demo', status: 'siap', host: '103.10.20.30'),
+        300,
+      );
+
+  @override
+  Future<void> sesiPin(String id, String pin) async {}
+
+  @override
+  Future<void> sesiAkhiri(String id) async {}
 
   @override
   Future<List<ForumPost>> forum() => _delay(<ForumPost>[], 300);

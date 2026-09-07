@@ -202,11 +202,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit}[TAB])();
 }
 function ke(t){TAB=t;render()}
 const head=(j,s,aksi='')=>`<div class="top"><div><h1>${j}</h1><p>${s}</p></div><div class="sp"></div>${aksi}</div>`;
@@ -557,6 +557,72 @@ function formSaldo(id,nama){
     async()=>{await api('/users/saldo',{method:'POST',body:JSON.stringify({
         user_id:id,nominal:+document.getElementById('f_n').value,catatan:document.getElementById('f_c').value})});
       toast('Saldo diperbarui, push realtime terkirim');tutupModal();vUsers()});
+}
+
+/* ---------- unit PC host ---------- */
+async function vUnit(){
+  const m=document.getElementById('main');
+  const [ag,ss]=await Promise.all([api('/agen'),api('/sesi')]);
+  m.innerHTML=head('Unit PC Host','Mesin yang menjalankan agen XyCloudStore',
+    `<button class="btn" onclick="formUnit()">${ic('plus',16)}Daftarkan Unit</button>`)+
+    `<div class="grid g2" style="margin-bottom:22px">${ag.length?ag.map(a=>`
+      <div class="card">
+        <div class="row">
+          <span class="dotlive" style="background:${a.hidup?'#22C55E':'#EF4444'};box-shadow:0 0 0 4px ${a.hidup?'rgba(34,197,94,.18)':'rgba(239,68,68,.18)'}"></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:15px">${esc(a.nama)}</div>
+            <div style="font-size:11.5px;color:var(--muted)">${a.hidup?'online':'tidak melapor'} &middot; ${esc(a.host||'IP belum diketahui')}</div>
+          </div>
+          <span class="tag" style="background:${a.sesi_aktif?'rgba(217,164,65,.18)':'rgba(124,58,237,.18)'};
+            color:${a.sesi_aktif?'#EBC988':'#C4B5FD'}">${a.sesi_aktif?'dipakai':'menganggur'}</span>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;font-size:12px">
+          <div><span style="color:var(--muted)">GPU</span><br><b>${esc(a.spec.gpu||'-')}</b></div>
+          <div><span style="color:var(--muted)">RAM</span><br><b>${a.spec.ram_total_gb?a.spec.ram_total_gb+' GB':'-'}</b></div>
+          <div><span style="color:var(--muted)">Paket</span><br><b>${esc(a.plan_id||'semua paket')}</b></div>
+          <div><span style="color:var(--muted)">Versi agen</span><br><b>${esc(a.versi||'-')}</b></div>
+        </div>
+        <div class="mono" style="margin-top:12px;font-size:11px;color:var(--muted);word-break:break-all">
+          kode: ${esc(a.kode)}</div>
+        <div class="row" style="margin-top:12px;gap:8px">
+          <button class="btn sm ghost" onclick="salinKode('${esc(a.kode)}')">Salin kode</button>
+          <div style="flex:1"></div>
+          <button class="btn sm danger" onclick="hapusUnit('${a.id}')">Hapus</button>
+        </div>
+      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada unit terdaftar</div>'}</div>
+
+    <div class="sec" style="font-weight:800;font-size:15px;margin-bottom:12px">Riwayat Sesi</div>
+    <div class="card" style="padding:18px 6px"><table><thead><tr>
+      <th>Waktu</th><th>Penyewa</th><th>Unit</th><th>Status</th><th>Durasi</th></tr></thead>
+      <tbody>${ss.length?ss.map(x=>`<tr>
+        <td style="font-size:12px;color:var(--muted)">${(x.dibuat||'').replace('T',' ').slice(0,16)}</td>
+        <td><b>${esc(x.nama||'-')}</b><div style="font-size:11px;color:var(--muted)">${esc(x.email||'')}</div></td>
+        <td>${esc(x.unit||'-')}</td>
+        <td><span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(x.status)}</span></td>
+        <td>${x.durasi_menit} menit</td>
+      </tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Belum ada sesi</td></tr>'}
+      </tbody></table></div>`;
+}
+function formUnit(){
+  buka('Daftarkan Unit PC',`
+    <div class="field"><label>Nama unit</label><input id="f_unama" placeholder="Contoh: Cloud RTX 4090 - Jakarta"></div>
+    <div class="field"><label>Paket yang dilayani (kosongkan untuk semua)</label><input id="f_uplan" placeholder="pc-gaming"></div>
+    <div class="field"><label>Alamat host / IP publik (opsional, agen bisa mengisi sendiri)</label><input id="f_uhost" placeholder="103.10.20.30"></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7">
+      Setelah disimpan, salin kodenya lalu jalankan di PC:<br>
+      <span class="mono">python xy_agent.py --kode KODE_UNIT</span></div>`,
+    async()=>{
+      const g=k=>document.getElementById('f_'+k).value;
+      const d=await api('/agen',{method:'POST',body:JSON.stringify({
+        nama:g('unama'), plan_id:g('uplan')||null, host:g('uhost')||null})});
+      tutupModal(); vUnit();
+      setTimeout(()=>alert('Unit dibuat.\n\nKode agen:\n'+d.kode+'\n\nJalankan di PC:\npython xy_agent.py --kode '+d.kode),200);
+    });
+}
+function salinKode(k){ navigator.clipboard.writeText(k); toast('Kode agen disalin') }
+async function hapusUnit(id){
+  if(!confirm('Hapus unit ini? Agen di PC tidak akan bisa terhubung lagi.')) return;
+  await api('/agen/'+id,{method:'DELETE'}); toast('Unit dihapus'); vUnit();
 }
 
 /* ---------- forum komunitas ---------- */

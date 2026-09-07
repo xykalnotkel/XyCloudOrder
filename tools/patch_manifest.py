@@ -39,6 +39,8 @@ QUERIES = """    <queries>
         </intent>
         <package android:name="com.whatsapp"/>
         <package android:name="com.whatsapp.w4b"/>
+        <package android:name="com.limelight"/>
+        <package android:name="com.limelight.noir"/>
     </queries>
 </manifest>"""
 
