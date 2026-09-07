@@ -202,11 +202,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum}[TAB])();
 }
 function ke(t){TAB=t;render()}
 const head=(j,s,aksi='')=>`<div class="top"><div><h1>${j}</h1><p>${s}</p></div><div class="sp"></div>${aksi}</div>`;
@@ -557,6 +557,50 @@ function formSaldo(id,nama){
     async()=>{await api('/users/saldo',{method:'POST',body:JSON.stringify({
         user_id:id,nominal:+document.getElementById('f_n').value,catatan:document.getElementById('f_c').value})});
       toast('Saldo diperbarui, push realtime terkirim');tutupModal();vUsers()});
+}
+
+/* ---------- forum komunitas ---------- */
+async function vForum(){
+  const m=document.getElementById('main');
+  const d=await api('/forum');
+  m.innerHTML=head('Forum Komunitas','Pantau diskusi pengguna, balas sebagai admin, sematkan yang penting')+
+    `<div class="grid g2">${d.length?d.map(f=>`
+      <div class="card">
+        <div class="row" style="align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4A12B8);
+            display:flex;align-items:center;justify-content:center;font-weight:800">${esc((f.nama||'X')[0].toUpperCase())}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:800;font-size:13.5px">${esc(f.nama)}</div>
+            <div style="font-size:11px;color:var(--muted)">${(f.dibuat||'').replace('T',' ').slice(0,16)} &middot; ${esc(f.kategori)}</div>
+          </div>
+          ${f.disematkan?'<span class="tag" style="background:rgba(124,58,237,.2);color:#C4B5FD">disematkan</span>':''}
+        </div>
+        <div style="font-weight:800;font-size:15px;margin:12px 0 6px;letter-spacing:-.2px">${esc(f.judul)}</div>
+        <p style="margin:0;font-size:13px;line-height:1.6;color:var(--muted)">${esc((f.isi||'').slice(0,220))}${(f.isi||'').length>220?'...':''}</p>
+        ${f.gambar?`<img src="${f.gambar}" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-top:12px">`:''}
+        <div class="row" style="margin-top:14px;gap:8px;flex-wrap:wrap">
+          <span style="font-size:12px;color:var(--muted)">${f.suka||0} suka &middot; ${f.balasan||0} balasan</span>
+          <div style="flex:1"></div>
+          <button class="btn sm" onclick="balasForum('${f.id}')">Balas</button>
+          <button class="btn sm ghost" onclick="sematForum('${f.id}',${f.disematkan?0:1})">${f.disematkan?'Lepas':'Sematkan'}</button>
+          <button class="btn sm danger" onclick="hapusForum('${f.id}')">Hapus</button>
+        </div>
+      </div>`).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada diskusi</div>'}</div>`;
+}
+async function balasForum(id){
+  const t=prompt('Balasan sebagai Admin XyCloudStore:');
+  if(!t) return;
+  await api('/forum/'+id+'/balas',{method:'POST',body:JSON.stringify({isi:t})});
+  toast('Balasan terkirim'); vForum();
+}
+async function sematForum(id,v){
+  await api('/forum/'+id+'/sematkan',{method:'PATCH',body:JSON.stringify({disematkan:v})});
+  toast(v?'Diskusi disematkan':'Sematan dilepas'); vForum();
+}
+async function hapusForum(id){
+  if(!confirm('Hapus diskusi ini beserta balasannya?')) return;
+  await api('/forum/'+id,{method:'DELETE'});
+  toast('Diskusi dihapus'); vForum();
 }
 
 /* ---------- konfirmasi top up ---------- */

@@ -33,10 +33,14 @@ class _CsScreenState extends State<CsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _keBawah());
   }
 
-  void _keBawah() {
+  void _keBawah({bool animasi = true}) {
     if (!scroll.hasClients) return;
-    scroll.animateTo(scroll.position.maxScrollExtent + 120,
-        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    final tujuan = scroll.position.maxScrollExtent;
+    if (animasi) {
+      scroll.animateTo(tujuan, duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+    } else {
+      scroll.jumpTo(tujuan);
+    }
   }
 
   /// Ambil gambar dari galeri lalu kirim sebagai lampiran chat.
@@ -66,10 +70,17 @@ class _CsScreenState extends State<CsScreen> {
     super.dispose();
   }
 
+  int _jumlahTerakhir = 0;
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _keBawah());
+
+    // hanya gulir ketika ada pesan baru, supaya layar tidak berkedut
+    if (s.chat.length != _jumlahTerakhir) {
+      _jumlahTerakhir = s.chat.length;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _keBawah());
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -266,9 +277,17 @@ class _Gelembung extends StatelessWidget {
             if (saya) ...[
               const SizedBox(width: 4),
               Icon(
-                msg.terkirim ? Icons.done_all_rounded : Icons.schedule_rounded,
+                msg.gagal
+                    ? Icons.error_outline_rounded
+                    : msg.terkirim
+                        ? Icons.done_all_rounded
+                        : Icons.schedule_rounded,
                 size: 13,
-                color: msg.dibaca ? const Color(0xFF7DD3FC) : Colors.white70,
+                color: msg.gagal
+                    ? const Color(0xFFFCA5A5)
+                    : msg.dibaca
+                        ? const Color(0xFF7DD3FC)
+                        : Colors.white70,
               ),
             ],
           ]),

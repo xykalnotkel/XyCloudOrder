@@ -7,6 +7,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/banner_slider.dart';
 import '../widgets/common.dart';
+import '../widgets/error_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
 import 'order_detail_screen.dart';
@@ -26,7 +27,10 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: XyTheme.bg,
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
+        child: Column(children: [
+          BilahOffline(tampil: s.offline, onCoba: s.refresh),
+          Expanded(
+            child: RefreshIndicator(
           color: XyTheme.primary,
           onRefresh: s.refresh,
           child: ListView(
@@ -86,7 +90,9 @@ class HomeScreen extends StatelessWidget {
                   ),
             ],
           ),
-        ),
+            ),
+          ),
+        ]),
       ),
     );
   }
