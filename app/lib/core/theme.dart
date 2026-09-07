@@ -101,6 +101,13 @@ class XyTheme {
         BoxShadow(color: c.withOpacity(o), blurRadius: 26, offset: const Offset(0, 12)),
       ];
 
+  // ---------- palet gelap ----------
+  static const Color bgGelap = Color(0xFF120C22);
+  static const Color surfaceGelap = Color(0xFF1B1233);
+  static const Color lineGelap = Color(0xFF2C1F4D);
+  static const Color inkGelap = Color(0xFFECE6FA);
+  static const Color mutedGelap = Color(0xFF9C92B8);
+
   // ---------- tema ----------
   static ThemeData light() {
     final base = ThemeData(
@@ -219,6 +226,121 @@ class XyTheme {
       ),
       dialogTheme: DialogTheme(
         backgroundColor: surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.xl)),
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      }),
+    );
+  }
+
+  /// Tema gelap: ungu tetap jadi warna utama, latar dibuat teduh
+  /// supaya nyaman dipakai malam hari tanpa kehilangan identitas merek.
+  static ThemeData gelap() {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        primary: violet,
+        surface: surfaceGelap,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: bgGelap,
+      splashFactory: InkSparkle.splashFactory,
+    );
+
+    final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+      bodyColor: inkGelap,
+      displayColor: inkGelap,
+    );
+
+    return base.copyWith(
+      textTheme: text.copyWith(
+        headlineMedium: text.headlineMedium?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+        titleLarge: text.titleLarge?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -.5),
+        titleMedium: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        bodyMedium: text.bodyMedium?.copyWith(height: 1.55),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bgGelap,
+        foregroundColor: inkGelap,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          color: inkGelap,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -.4,
+        ),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: violet,
+          foregroundColor: Colors.white,
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.tombol)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: inkGelap,
+          backgroundColor: surfaceGelap,
+          minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: lineGelap),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.tombol)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: lavender,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surfaceGelap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+        prefixIconColor: mutedGelap,
+        suffixIconColor: mutedGelap,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: lineGelap),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: lineGelap),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(XyRadius.md),
+          borderSide: const BorderSide(color: violet, width: 1.6),
+        ),
+        hintStyle: const TextStyle(color: mutedGelap, fontWeight: FontWeight.w500),
+      ),
+      dividerTheme: const DividerThemeData(color: lineGelap, space: 1, thickness: 1),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: surfaceGelap,
+        contentTextStyle: const TextStyle(color: inkGelap, fontWeight: FontWeight.w600, fontSize: 13),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.sm)),
+        insetPadding: const EdgeInsets.all(16),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+      ),
+      dialogTheme: DialogTheme(
+        backgroundColor: surfaceGelap,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(XyRadius.xl)),
       ),

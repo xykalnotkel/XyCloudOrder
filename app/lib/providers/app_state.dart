@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../core/cache.dart';
 import '../core/config.dart';
 import '../core/prefs.dart';
@@ -18,6 +19,8 @@ class AppState extends ChangeNotifier {
     _api = ApiClient();
     _repo = XyRepository.create(_api);
     unawaited(muatKonfigurasi());
+    unawaited(muatTema());
+    unawaited(periksaPembaruan());
     unawaited(pulihkanSesi());
   }
 
@@ -32,6 +35,53 @@ class AppState extends ChangeNotifier {
 
   /// Hemat kuota: gambar produk dan banner tidak diunduh.
   bool hematData = false;
+
+  /// Tema tampilan: sistem, terang, atau gelap.
+  ThemeMode modeTema = ThemeMode.system;
+
+  Future<void> muatTema() async {
+    final t = await Prefs.tema();
+    modeTema = switch (t) {
+      'terang' => ThemeMode.light,
+      'gelap' => ThemeMode.dark,
+      _ => ThemeMode.system,
+    };
+    notifyListeners();
+  }
+
+  Future<void> setTema(String pilihan) async {
+    await Prefs.simpanTema(pilihan);
+    await muatTema();
+  }
+
+  /// Info rilis terbaru untuk pengecek pembaruan.
+  Map<String, dynamic>? rilisTerbaru;
+  String versiSekarang = '';
+
+  Future<void> periksaPembaruan() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      versiSekarang = info.version;
+      final d = await _repo.rilis();
+      rilisTerbaru = d;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  /// True kalau versi di server lebih baru daripada yang terpasang.
+  bool get adaPembaruan {
+    final v = '${rilisTerbaru?['versi'] ?? ''}'.replaceAll('v', '').trim();
+    if (v.isEmpty || versiSekarang.isEmpty) return false;
+    int nilai(String x) {
+      final b = x.split('.').map((e) => int.tryParse(e.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0).toList();
+      while (b.length < 3) {
+        b.add(0);
+      }
+      return b[0] * 1000000 + b[1] * 1000 + b[2];
+    }
+
+    return nilai(v) > nilai(versiSekarang);
+  }
 
   Future<void> setHematData(bool v) async {
     hematData = v;
@@ -426,6 +476,43 @@ class AppState extends ChangeNotifier {
   }) async {
     try {
       await _repo.laporkan(jenis: jenis, refId: refId, url: url, alasan: alasan);
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  /// Segarkan profil saja, dipakai setelah transaksi supaya tier ikut terbarui.
+  Future<void> muatProfilRingkas() async {
+    try {
+      user = await _repo.profilSaya();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  // ================= voucher =================
+  Future<Map<String, dynamic>?> cekVoucher({
+    required String kode,
+    required String jenis,
+    required int total,
+  }) async {
+    error = null;
+    try {
+      return await _repo.cekVoucher(kode: kode, jenis: jenis, total: total);
+    } catch (e) {
+      error = _pesan(e);
+      return null;
+    }
+  }
+
+  // ================= hapus akun =================
+  Future<String?> hapusAkun({String? password, bool paksa = false}) async {
+    try {
+      await _repo.hapusAkun(password: password, paksa: paksa);
+      await Prefs.hapusToken();
+      _api.setToken(null);
+      user = null;
+      notifyListeners();
       return null;
     } catch (e) {
       return _pesan(e);
@@ -987,14 +1074,16 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------- aksi ----------------
-  Future<RentOrder?> sewaPc(PcPlan plan, int jam, String metode) async {
+  Future<RentOrder?> sewaPc(PcPlan plan, int jam, String metode, {String? voucher}) async {
     try {
-      final o = await _repo.buatOrderSewa(plan: plan, jam: jam, metode: metode);
+      final o = await _repo.buatOrderSewa(plan: plan, jam: jam, metode: metode, voucher: voucher);
       if (!orders.any((x) => x.id == o.id)) orders.insert(0, o);
       if (metode == 'saldo' && user != null) {
         user = user!.copyWith(saldo: (user!.saldo - o.total).clamp(0, 1 << 31));
       }
       transaksi = await _repo.transaksi();
+      // tier bisa naik setelah belanja
+      unawaited(muatProfilRingkas());
       notifyListeners();
       return o;
     } catch (e) {

@@ -57,6 +57,11 @@ class ApiClient {
   Future<dynamic> delete(String path) =>
       _coba(() => _http.delete(_uri(path), headers: _headers).timeout(const Duration(seconds: 20)));
 
+  /// Hapus dengan badan permintaan, dipakai saat menghapus akun.
+  Future<dynamic> hapus(String path, [Map<String, dynamic>? body]) => _coba(() => _http
+      .delete(_uri(path), headers: _headers, body: jsonEncode(body ?? {}))
+      .timeout(const Duration(seconds: 20)));
+
   dynamic _parse(http.Response r) {
     final body = r.body.isEmpty ? {} : jsonDecode(r.body);
     if (r.statusCode >= 200 && r.statusCode < 300) {

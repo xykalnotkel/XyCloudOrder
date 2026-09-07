@@ -31,6 +31,11 @@ abstract class XyRepository {
   /// Konfigurasi server: penyedia login aktif, nomor WhatsApp, rekening top up.
   Future<KonfigurasiApp> konfigurasi();
 
+  /// Info rilis terbaru untuk pengecek pembaruan di dalam aplikasi.
+  Future<Map<String, dynamic>> rilis();
+  Future<Map<String, dynamic>> cekVoucher({required String kode, required String jenis, required int total});
+  Future<void> hapusAkun({String? password, bool paksa});
+
   /// Dokumen legal: 'syarat' atau 'privasi'.
   Future<Map<String, dynamic>> legal(String jenis);
 
@@ -84,7 +89,7 @@ abstract class XyRepository {
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
   Future<List<RentOrder>> orders();
-  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode});
+  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher});
   Future<RentOrder> orderDetail(String id);
   Future<Map<String, dynamic>> beliAkun({required AkunProduk produk, required String metode});
   Future<List<Transaksi>> transaksi();
@@ -159,6 +164,25 @@ class RemoteRepository implements XyRepository {
   @override
   Future<Map<String, dynamic>> legal(String jenis) async =>
       Map<String, dynamic>.from(await api.get('/legal/$jenis'));
+
+  @override
+  Future<Map<String, dynamic>> rilis() async => Map<String, dynamic>.from(await api.get('/rilis'));
+
+  @override
+  Future<Map<String, dynamic>> cekVoucher({
+    required String kode,
+    required String jenis,
+    required int total,
+  }) async =>
+      Map<String, dynamic>.from(await api.post('/voucher/cek', {
+        'kode': kode,
+        'jenis': jenis,
+        'total': total,
+      }));
+
+  @override
+  Future<void> hapusAkun({String? password, bool paksa = false}) async =>
+      api.hapus('/me', {if (password != null) 'password': password, 'paksa': paksa});
 
   @override
   Future<UserProfile> profilSaya() async => UserProfile.fromJson(await api.get('/me'));
@@ -334,8 +358,18 @@ class RemoteRepository implements XyRepository {
       ((await api.get('/orders')) as List).map((e) => RentOrder.fromJson(e)).toList();
 
   @override
-  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode}) async =>
-      RentOrder.fromJson(await api.post('/orders', {'plan_id': plan.id, 'durasi_jam': jam, 'metode': metode}));
+  Future<RentOrder> buatOrderSewa({
+    required PcPlan plan,
+    required int jam,
+    required String metode,
+    String? voucher,
+  }) async =>
+      RentOrder.fromJson(Map<String, dynamic>.from(await api.post('/orders', {
+        'plan_id': plan.id,
+        'durasi_jam': jam,
+        'metode': metode,
+        if (voucher != null && voucher.isNotEmpty) 'voucher': voucher,
+      })));
 
   @override
   Future<RentOrder> orderDetail(String id) async => RentOrder.fromJson(await api.get('/orders/$id'));
@@ -402,6 +436,16 @@ class MockRepository implements XyRepository {
   @override
   Future<KonfigurasiApp> konfigurasi() =>
       _delay(const KonfigurasiApp(googleAktif: false, facebookAktif: false, whatsapp: '', minTopup: 10000), 200);
+
+  @override
+  Future<Map<String, dynamic>> rilis() => _delay({'versi': 'v0.0.0', 'berkas': const []}, 200);
+
+  @override
+  Future<Map<String, dynamic>> cekVoucher({required String kode, required String jenis, required int total}) =>
+      _delay({'potongan': 0, 'kode': kode}, 200);
+
+  @override
+  Future<void> hapusAkun({String? password, bool paksa = false}) async {}
 
   @override
   Future<Map<String, dynamic>> legal(String jenis) => _delay(
@@ -573,7 +617,7 @@ class MockRepository implements XyRepository {
   Future<List<RentOrder>> orders() => _delay(_orders);
 
   @override
-  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode}) async {
+  Future<RentOrder> buatOrderSewa({required PcPlan plan, required int jam, required String metode, String? voucher}) async {
     final kode = 'XY-${9000 + Random().nextInt(999)}';
     final o = RentOrder(
       id: 'o_${DateTime.now().millisecondsSinceEpoch}',

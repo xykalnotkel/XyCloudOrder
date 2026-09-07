@@ -11,6 +11,7 @@ class Prefs {
   static const _kToken = 'xy_token';
   static const _kSaldoTampil = 'xy_saldo_tampil';
   static const _kSaringKonten = 'xy_saring_konten';
+  static const _kTema = 'xy_tema';
 
   static const _aman = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -46,6 +47,14 @@ class Prefs {
 
   static Future<void> simpanSaringKonten(bool v) async =>
       (await SharedPreferences.getInstance()).setBool(_kSaringKonten, v);
+
+  // ---------- tema tampilan ----------
+  /// sistem | terang | gelap
+  static Future<String> tema() async =>
+      (await SharedPreferences.getInstance()).getString(_kTema) ?? 'sistem';
+
+  static Future<void> simpanTema(String v) async =>
+      (await SharedPreferences.getInstance()).setString(_kTema, v);
 
   // ---------- sesi login ----------
   static Future<String?> token() async {

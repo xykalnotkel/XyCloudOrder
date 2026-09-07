@@ -200,6 +200,7 @@ const P={
   edit:'<path d="M4 20h4L19 9a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5 4 20Z"/>',
   refresh:'<path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M21 3v5h-5"/>',
   star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9L12 3.5Z"/>',
+  tag:'<path d="M20.5 13.5 12 22l-9-9V4a1 1 0 0 1 1-1h9l7.5 7.5a2 2 0 0 1 0 3Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
   chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   shield:'<path d="M12 3l7.5 3v6c0 4.5-3.2 7.9-7.5 9-4.3-1.1-7.5-4.5-7.5-9V6L12 3Z"/>',
   wallet:'<rect x="2.5" y="5.5" width="19" height="14" rx="3"/><path d="M17 12.5h.01"/>',
@@ -258,11 +259,11 @@ function konek(){
 
 /* ---------- menu ---------- */
 const MENU=[['dash','dash','Dashboard'],['orders','cart','Order'],['plans','desktop','Paket PC'],
-  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem']];
+  ['produk','key','Produk Akun'],['banners','image','Banner Slider'],['cs','chat','Inbox CS'],['statistik','chart','Statistik'],['moderasi','shield','Moderasi'],['unit','gpu','Unit PC'],['forum','users','Komunitas'],['voucher','tag','Voucher'],['topup','wallet','Top Up'],['ulasan','star','Ulasan'],['users','users','Pengguna'],['alat','send','Email & Push'],['sistem','shield','Sistem'],['peran','users','Peran Admin']];
 function render(){
   document.getElementById('menu').innerHTML=MENU.map(([id,i,l])=>
     `<button class="${TAB===id?'on':''}" onclick="ke('${id}')">${ic(i)}${l}</button>`).join('');
-  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi}[TAB])();
+  ({dash:vDash,orders:vOrders,plans:vPlans,produk:vProduk,banners:vBanners,cs:vCs,users:vUsers,alat:vAlat,topup:vTopup,ulasan:vUlasan,forum:vForum,unit:vUnit,statistik:vStatistik,sistem:vSistem,moderasi:vModerasi,voucher:vVoucher,peran:vPeran}[TAB])();
 }
 function ke(t){
   TAB=t;
@@ -690,6 +691,195 @@ async function ubahSaldo(id, sekarang){
   await api('/users/saldo',{method:'POST',body:JSON.stringify({
     user_id:id, nominal:n, catatan: n>0?'Penambahan saldo oleh admin':'Pengurangan saldo oleh admin'})});
   toast('Saldo diperbarui'); vUsers();
+}
+
+/* ---------- voucher ---------- */
+async function vVoucher(){
+  const m=document.getElementById('main');
+  const d=await api('/voucher');
+  m.innerHTML=head('Voucher dan Promo','Buat kode potongan untuk sewa PC, akun digital, atau isi saldo',
+    `<button class="btn" onclick="formVoucher()">${ic('plus',16)}Buat Voucher</button>`)+
+    `<div class="grid g2">${d.length?d.map(v=>{
+      const habis = v.kuota>0 && v.terpakai>=v.kuota;
+      const lewat = v.berlaku_sampai && new Date(v.berlaku_sampai) < new Date();
+      return `<div class="card" style="${(!v.aktif||habis||lewat)?'opacity:.6':''}">
+        <div class="row">
+          <div class="mono" style="font-size:19px;font-weight:800;letter-spacing:1px;color:#C4B5FD">${esc(v.kode)}</div>
+          <div style="flex:1"></div>
+          <span class="tag" style="background:rgba(124,58,237,.18);color:#C4B5FD">${esc(v.untuk)}</span>
+          ${!v.aktif?'<span class="tag" style="background:rgba(239,68,68,.16);color:#FCA5A5">nonaktif</span>':''}
+          ${habis?'<span class="tag" style="background:rgba(217,136,15,.2);color:#EBC988">kuota habis</span>':''}
+          ${lewat?'<span class="tag" style="background:rgba(239,68,68,.16);color:#FCA5A5">kedaluwarsa</span>':''}
+        </div>
+        <div style="font-size:24px;font-weight:800;letter-spacing:-1px;margin-top:10px">
+          ${v.jenis==='persen'?v.nilai+'%':rp(v.nilai)}
+          <span style="font-size:12.5px;color:var(--muted);font-weight:600">potongan</span></div>
+        ${v.keterangan?`<div style="font-size:12.5px;color:var(--muted);margin-top:4px">${esc(v.keterangan)}</div>`:''}
+        <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;font-size:12px">
+          <div><span style="color:var(--muted)">Minimal belanja</span><br><b>${rp(v.min_belanja)}</b></div>
+          <div><span style="color:var(--muted)">Maks potongan</span><br><b>${v.maks_potongan?rp(v.maks_potongan):'tanpa batas'}</b></div>
+          <div><span style="color:var(--muted)">Terpakai</span><br><b>${v.terpakai}${v.kuota?' / '+v.kuota:''}</b></div>
+          <div><span style="color:var(--muted)">Berlaku sampai</span><br><b>${v.berlaku_sampai?String(v.berlaku_sampai).slice(0,10):'tanpa batas'}</b></div>
+        </div>
+        <div class="row" style="margin-top:14px;gap:8px">
+          <button class="btn sm ghost" onclick='formVoucher(${JSON.stringify(v).replace(/'/g,"&#39;")})'>Ubah</button>
+          <button class="btn sm ghost" onclick="salinKode('${esc(v.kode)}')">Salin kode</button>
+          <div style="flex:1"></div>
+          <button class="btn sm danger" onclick="hapusVoucher('${esc(v.kode)}')">Hapus</button>
+        </div>
+      </div>`}).join(''):'<div class="card" style="text-align:center;color:var(--muted);padding:30px">Belum ada voucher</div>'}</div>`;
+}
+
+function formVoucher(v={}){
+  buka(v.kode?'Ubah Voucher':'Buat Voucher',`
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Kode voucher</label>
+        <input id="f_vkode" value="${esc(v.kode||'')}" placeholder="HEMAT20" ${v.kode?'readonly':''}></div>
+      <div class="field"><label>Berlaku untuk</label><select id="f_vuntuk">
+        ${['semua','sewa','akun','topup'].map(x=>`<option value="${x}" ${x===(v.untuk||'semua')?'selected':''}>${x}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Jenis potongan</label><select id="f_vjenis">
+        <option value="persen" ${v.jenis!=='nominal'?'selected':''}>Persen</option>
+        <option value="nominal" ${v.jenis==='nominal'?'selected':''}>Nominal rupiah</option>
+      </select></div>
+      <div class="field"><label>Nilai</label><input id="f_vnilai" type="number" value="${v.nilai||10}"></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Minimal belanja</label><input id="f_vmin" type="number" value="${v.min_belanja||0}"></div>
+      <div class="field"><label>Maksimal potongan (0 = bebas)</label>
+        <input id="f_vmaks" type="number" value="${v.maks_potongan||0}"></div>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label>Kuota pemakaian (0 = tanpa batas)</label>
+        <input id="f_vkuota" type="number" value="${v.kuota||0}"></div>
+      <div class="field"><label>Berlaku sampai</label>
+        <input id="f_vsampai" type="date" value="${v.berlaku_sampai?String(v.berlaku_sampai).slice(0,10):''}"></div>
+    </div>
+    <div class="field"><label>Keterangan singkat</label>
+      <input id="f_vket" value="${esc(v.keterangan||'')}" placeholder="Promo pembukaan"></div>
+    <div class="field"><label>Status</label><select id="f_vaktif">
+      <option value="1" ${v.aktif!==0?'selected':''}>Aktif</option>
+      <option value="0" ${v.aktif===0?'selected':''}>Nonaktif</option></select></div>`,
+    async()=>{
+      const g=k=>document.getElementById('f_'+k).value;
+      await api('/voucher',{method:'POST',body:JSON.stringify({
+        kode:g('vkode'), jenis:g('vjenis'), nilai:+g('vnilai'), min_belanja:+g('vmin'),
+        maks_potongan:+g('vmaks'), untuk:g('vuntuk'), kuota:+g('vkuota'),
+        berlaku_sampai:g('vsampai')||null, keterangan:g('vket'), aktif:g('vaktif')==='1'})});
+      toast('Voucher disimpan'); tutupModal(); vVoucher();
+    });
+}
+
+async function hapusVoucher(kode){
+  if(!await xkonfirmasi('Hapus voucher '+kode+'?','Kode ini tidak bisa dipakai lagi setelah dihapus.',
+    {tombol:'Hapus',bahaya:true})) return;
+  await api('/voucher/'+encodeURIComponent(kode),{method:'DELETE'});
+  toast('Voucher dihapus'); vVoucher();
+}
+
+/* ---------- peran admin, log, dan cadangan ---------- */
+async function vPeran(){
+  const m=document.getElementById('main');
+  let daftar=[], log=[], cadangan=[];
+  try{ [daftar,log,cadangan]=await Promise.all([api('/peran'),api('/log'),api('/cadangan')]) }
+  catch(e){
+    m.innerHTML=head('Peran Admin','')+`<div class="card" style="text-align:center;padding:30px;color:var(--muted)">
+      ${esc(e.message)}</div>`;
+    return;
+  }
+
+  const warnaPeran={pemilik:'#EBC988',cs:'#6EE7A8',moderator:'#C4B5FD'};
+  m.innerHTML=head('Peran Admin dan Keamanan','Kunci akses terpisah, catatan aktivitas, dan cadangan basis data',
+    `<button class="btn" onclick="formPeran()">${ic('plus',16)}Tambah Admin</button>`)+
+    `<div class="grid g2" style="margin-bottom:18px">
+      <div class="card">
+        <div style="font-weight:800;font-size:15px;margin-bottom:12px">Kunci admin</div>
+        <div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1"><b style="font-size:13.5px">Pemilik</b>
+            <div style="font-size:11.5px;color:var(--muted)">Kunci utama, akses penuh ke semua menu</div></div>
+          <span class="tag" style="background:rgba(235,201,136,.18);color:#EBC988">pemilik</span>
+        </div>
+        ${daftar.length?daftar.map(a=>`<div class="row" style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1;min-width:0"><b style="font-size:13.5px">${esc(a.nama)}</b>
+            <div style="font-size:11px;color:var(--muted)">
+              ${a.terakhir?'aktif '+String(a.terakhir).replace('T',' ').slice(0,16):'belum pernah dipakai'}</div>
+            <div class="mono" style="font-size:10.5px;color:var(--muted);word-break:break-all">${esc(a.kunci)}</div></div>
+          <span class="tag" style="background:${warnaPeran[a.peran]}22;color:${warnaPeran[a.peran]}">${esc(a.peran)}</span>
+          <button class="btn sm ghost" onclick="salinKode('${esc(a.kunci)}')">Salin</button>
+          <button class="btn sm danger" onclick="hapusPeran('${a.id}')">Hapus</button>
+        </div>`).join(''):'<div style="color:var(--muted);font-size:12.5px;padding:12px 0">Belum ada admin tambahan</div>'}
+        <div style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.6">
+          <b>CS</b> boleh membuka inbox, pengguna, order, top up, sesi, dan statistik.<br>
+          <b>Moderator</b> boleh membuka komunitas, ulasan, laporan, dan pengguna.<br>
+          Hanya pemilik yang bisa membuka menu Sistem, Voucher, dan Peran.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row"><div style="font-weight:800;font-size:15px">Cadangan basis data</div>
+          <div style="flex:1"></div>
+          <button class="btn sm" onclick="buatCadanganSekarang()">Cadangkan sekarang</button></div>
+        <div style="font-size:12px;color:var(--muted);margin:8px 0 12px">
+          Cadangan otomatis dibuat tiap hari, tujuh salinan terakhir disimpan.</div>
+        ${cadangan.length?cadangan.map(c=>`<div class="row" style="padding:9px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1"><b class="mono" style="font-size:12.5px">${esc(c.id)}</b>
+            <div style="font-size:11px;color:var(--muted)">${c.jumlah_baris} baris &middot;
+              ${Math.round(c.ukuran/1024)} KB &middot; ${String(c.dibuat).replace('T',' ').slice(0,16)}</div></div>
+          <a class="btn sm ghost" href="/api/admin/cadangan/${esc(c.id)}?key=${encodeURIComponent(KEY)}"
+            target="_blank" style="text-decoration:none">Unduh</a>
+        </div>`).join(''):'<div style="color:var(--muted);font-size:12.5px">Belum ada cadangan</div>'}
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800;font-size:15px;margin-bottom:12px">Catatan aktivitas admin</div>
+      <div style="max-height:420px;overflow:auto">
+        ${log.length?log.map(l=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px">
+          <span class="tag" style="background:${warnaPeran[l.peran]||'#7C7391'}22;color:${warnaPeran[l.peran]||'#9A8CBF'}">
+            ${esc(l.admin)}</span>
+          <div style="flex:1;margin-left:10px">${esc(l.aksi)}${l.target?' &middot; <b>'+esc(l.target)+'</b>':''}</div>
+          <span style="color:var(--muted);font-size:11px">${String(l.waktu).replace('T',' ').slice(0,19)}</span>
+        </div>`).join(''):'<div style="color:var(--muted);font-size:12.5px">Belum ada aktivitas tercatat</div>'}
+      </div>
+    </div>`;
+}
+
+function formPeran(){
+  buka('Tambah Admin',`
+    <div class="field"><label>Nama admin</label><input id="f_pnama" placeholder="Contoh: Kirana CS"></div>
+    <div class="field"><label>Peran</label><select id="f_pperan">
+      <option value="cs">CS - inbox, pengguna, order, top up</option>
+      <option value="moderator">Moderator - komunitas, ulasan, laporan</option>
+    </select></div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.6">
+      Kunci akan dibuat otomatis. Berikan kunci itu ke orangnya, dan dia memakainya
+      untuk masuk ke dashboard ini.</div>`,
+    async()=>{
+      const d=await api('/peran',{method:'POST',body:JSON.stringify({
+        nama:document.getElementById('f_pnama').value, peran:document.getElementById('f_pperan').value})});
+      tutupModal();
+      xberitahu('Admin ditambahkan',
+        `Kunci untuk <b>${esc(document.getElementById('f_pnama')?.value||'admin baru')}</b>:<br>` +
+        `<span class="mono" style="word-break:break-all">${esc(d.kunci)}</span><br><br>` +
+        'Salin sekarang, kunci ini juga tetap terlihat di daftar.');
+      vPeran();
+    });
+}
+
+async function hapusPeran(id){
+  if(!await xkonfirmasi('Cabut akses admin ini?','Kuncinya langsung tidak berlaku.',
+    {tombol:'Cabut',bahaya:true})) return;
+  await api('/peran/'+id,{method:'DELETE'});
+  toast('Akses dicabut'); vPeran();
+}
+
+async function buatCadanganSekarang(){
+  toast('Membuat cadangan...');
+  const d=await api('/cadangan',{method:'POST'});
+  toast(`Cadangan ${d.id} dibuat, ${d.baris} baris`);
+  vPeran();
 }
 
 /* ---------- moderasi konten ---------- */

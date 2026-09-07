@@ -30,13 +30,15 @@ class XyCloudStoreApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => AppState(),
-      child: MaterialApp(
+      child: Builder(builder: (context) => MaterialApp(
         title: 'XyCloudStore',
         debugShowCheckedModeBanner: false,
         theme: XyTheme.light(),
+        darkTheme: XyTheme.gelap(),
+        themeMode: context.watch<AppState>().modeTema,
         builder: (context, child) => MediaQuery.withNoTextScaling(child: child!),
         home: const _Root(),
-      ),
+      )),
     );
   }
 }

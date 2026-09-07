@@ -1,3 +1,5 @@
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +40,13 @@ class PengaturanScreen extends StatelessWidget {
             sub: 'Ganti password dan info sesi',
             tujuan: const KeamananScreen(),
           ),
+          const _Judul('Tampilan'),
+          _Baris(
+            ikon: Icons.dark_mode_outlined,
+            judul: 'Tema Aplikasi',
+            sub: 'Terang, gelap, atau ikut sistem',
+            tujuan: const TemaScreen(),
+          ),
           const _Judul('Aplikasi'),
           _Baris(
             ikon: Icons.notifications_none_rounded,
@@ -56,6 +65,12 @@ class PengaturanScreen extends StatelessWidget {
             judul: 'Privasi dan Konten',
             sub: 'Saringan konten dewasa dan laporan',
             tujuan: const PrivasiScreen(),
+          ),
+          _Baris(
+            ikon: Icons.system_update_alt_rounded,
+            judul: 'Cek Pembaruan',
+            sub: 'Pastikan aplikasimu versi terbaru',
+            tujuan: const PembaruanScreen(),
           ),
           const _Judul('Lainnya'),
           _Baris(
@@ -360,8 +375,65 @@ class _KeamananScreenState extends State<KeamananScreen> {
           ],
           const SizedBox(height: 24),
           GradientButton(label: 'Simpan Password', icon: Icons.check_rounded, loading: proses, onPressed: _simpan),
+
+          const SizedBox(height: 34),
+          const Text('Zona Berbahaya',
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: XyTheme.danger)),
+          const SizedBox(height: 10),
+          XyCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text(
+                'Menghapus akun akan menghilangkan profil, riwayat chat, diskusi, ulasan, dan pemberitahuanmu '
+                'secara permanen. Riwayat pembayaran disamarkan untuk keperluan pembukuan. '
+                'Pastikan saldomu sudah habis sebelum menghapus.',
+                style: TextStyle(color: XyTheme.muted, fontSize: 12.5, height: 1.6),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () => _hapusAkun(context),
+                  style: OutlinedButton.styleFrom(side: const BorderSide(color: XyTheme.danger)),
+                  icon: const Icon(Icons.delete_forever_rounded, size: 18, color: XyTheme.danger),
+                  label: const Text('Hapus Akun Saya',
+                      style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ]),
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _hapusAkun(BuildContext context) async {
+    final yakin = await konfirmasi(
+      context,
+      judul: 'Hapus akun selamanya?',
+      pesan: 'Tindakan ini tidak bisa dibatalkan. Semua data pribadimu akan dihapus dari server kami.',
+      tombolYa: 'Lanjut Hapus',
+      ikon: Icons.delete_forever_rounded,
+      bahaya: true,
+    );
+    if (!yakin || !context.mounted) return;
+
+    final sandi = await tanyaTeks(
+      context,
+      judul: 'Konfirmasi password',
+      keterangan: 'Ketik password akunmu. Kosongkan kalau kamu mendaftar lewat Google.',
+      petunjuk: 'Password',
+    );
+    if (sandi == null || !context.mounted) return;
+
+    final galat = await context.read<AppState>().hapusAkun(password: sandi, paksa: true);
+    if (!context.mounted) return;
+    if (galat != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(galat)));
+      return;
+    }
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Akunmu sudah dihapus. Terima kasih pernah memakai XyCloudStore.')),
     );
   }
 }
@@ -694,6 +766,186 @@ class BantuanScreen extends StatelessWidget {
                   ),
                 ),
               )),
+        ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  Tema tampilan
+// ============================================================
+class TemaScreen extends StatefulWidget {
+  const TemaScreen({super.key});
+
+  @override
+  State<TemaScreen> createState() => _TemaScreenState();
+}
+
+class _TemaScreenState extends State<TemaScreen> {
+  String pilihan = 'sistem';
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.tema().then((v) => mounted ? setState(() => pilihan = v) : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const opsi = [
+      ('sistem', 'Ikut Sistem', 'Mengikuti pengaturan gelap atau terang di HP', Icons.brightness_auto_rounded),
+      ('terang', 'Terang', 'Latar putih keunguan, nyaman di siang hari', Icons.light_mode_rounded),
+      ('gelap', 'Gelap', 'Latar ungu tua, enak dipakai malam hari', Icons.dark_mode_rounded),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tema Aplikasi')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+        children: opsi.map((o) {
+          final aktif = o.$1 == pilihan;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: XyCard(
+              padding: const EdgeInsets.all(16),
+              onTap: () async {
+                setState(() => pilihan = o.$1);
+                await context.read<AppState>().setTema(o.$1);
+              },
+              child: Row(children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: aktif ? XyTheme.primary : XyTheme.primarySoft,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(o.$4, size: 21, color: aktif ? Colors.white : XyTheme.primary),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(o.$2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                    const SizedBox(height: 3),
+                    Text(o.$3, style: const TextStyle(color: XyTheme.muted, fontSize: 11.8, height: 1.4)),
+                  ]),
+                ),
+                Icon(aktif ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                    color: aktif ? XyTheme.primary : XyTheme.line),
+              ]),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ============================================================
+//  Cek pembaruan aplikasi
+// ============================================================
+class PembaruanScreen extends StatefulWidget {
+  const PembaruanScreen({super.key});
+
+  @override
+  State<PembaruanScreen> createState() => _PembaruanScreenState();
+}
+
+class _PembaruanScreenState extends State<PembaruanScreen> {
+  bool memeriksa = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _periksa();
+  }
+
+  Future<void> _periksa() async {
+    setState(() => memeriksa = true);
+    await context.read<AppState>().periksaPembaruan();
+    if (mounted) setState(() => memeriksa = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final ada = s.adaPembaruan;
+    final rilis = s.rilisTerbaru;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Cek Pembaruan')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+        children: [
+          Center(
+            child: Column(children: [
+              const XyLogo(size: 84, radius: 26),
+              const SizedBox(height: 16),
+              Text('Versi terpasang ${s.versiSekarang.isEmpty ? '-' : s.versiSekarang}',
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              const SizedBox(height: 6),
+              if (memeriksa)
+                const Text('Memeriksa versi terbaru...',
+                    style: TextStyle(color: XyTheme.muted, fontSize: 12.5))
+              else
+                Text(
+                  ada
+                      ? 'Versi baru ${rilis?['versi'] ?? ''} sudah tersedia'
+                      : 'Aplikasimu sudah versi terbaru',
+                  style: TextStyle(
+                    color: ada ? XyTheme.primary : XyTheme.success,
+                    fontSize: 12.8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ]),
+          ),
+          const SizedBox(height: 24),
+          if (ada && rilis != null) ...[
+            XyCard(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Icon(Icons.new_releases_rounded, size: 19, color: XyTheme.primary),
+                  const SizedBox(width: 9),
+                  Text('Pembaruan ${rilis['versi']}',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                ]),
+                const SizedBox(height: 10),
+                const Text(
+                  'Unduh berkas terbaru lalu pasang menimpa aplikasi yang sekarang. '
+                  'Datamu tetap aman karena ditandatangani kunci yang sama.',
+                  style: TextStyle(color: XyTheme.muted, fontSize: 12.8, height: 1.6),
+                ),
+                const SizedBox(height: 16),
+                GradientButton(
+                  label: 'Unduh Versi Terbaru',
+                  icon: Icons.download_rounded,
+                  onPressed: () async {
+                    try {
+                      await AndroidIntent(
+                        action: 'action_view',
+                        data: 'https://xycloud.my.id/unduh',
+                        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+                      ).launch();
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Buka xycloud.my.id/unduh lewat peramban.')),
+                        );
+                      }
+                    }
+                  },
+                ),
+              ]),
+            ),
+          ],
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: memeriksa ? null : _periksa,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Periksa Lagi'),
+          ),
         ],
       ),
     );

@@ -24,6 +24,14 @@ class ForumScreen extends StatefulWidget {
 class _ForumScreenState extends State<ForumScreen> {
   static const kategori = ['Semua', 'Umum', 'Tanya Jawab', 'Tips', 'Jual Beli', 'Keluhan'];
   String pilih = 'Semua';
+  String cari = '';
+  final _cari = TextEditingController();
+
+  @override
+  void dispose() {
+    _cari.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -36,9 +44,15 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
-    final daftar = pilih == 'Semua'
-        ? s.forum
-        : s.forum.where((f) => f.kategori == pilih).toList();
+    final kunci = cari.trim().toLowerCase();
+    final daftar = s.forum.where((f) {
+      final cocokKategori = pilih == 'Semua' || f.kategori == pilih;
+      final cocokCari = kunci.isEmpty ||
+          f.judul.toLowerCase().contains(kunci) ||
+          f.isi.toLowerCase().contains(kunci) ||
+          f.nama.toLowerCase().contains(kunci);
+      return cocokKategori && cocokCari;
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -73,6 +87,29 @@ class _ForumScreenState extends State<ForumScreen> {
       ),
       body: Column(children: [
         BilahOffline(tampil: s.offline, onCoba: () => s.muatForum(paksa: true)),
+
+        // ---- kolom pencarian ----
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+          child: TextField(
+            controller: _cari,
+            onChanged: (v) => setState(() => cari = v),
+            decoration: InputDecoration(
+              hintText: 'Cari diskusi, isi, atau nama penulis',
+              prefixIcon: const Icon(Icons.search_rounded, size: 20),
+              suffixIcon: cari.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 18),
+                      onPressed: () {
+                        _cari.clear();
+                        setState(() => cari = '');
+                      },
+                    ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            ),
+          ),
+        ),
 
         // ---- pilihan kategori ----
         SizedBox(
@@ -117,11 +154,13 @@ class _ForumScreenState extends State<ForumScreen> {
               : s.forumMemuat && s.forum.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : daftar.isEmpty
-                      ? const Kosong(
+                      ? Kosong(
                           icon: Icons.forum_outlined,
-                          judul: 'Belum ada diskusi di sini',
-                          sub: 'Jadi yang pertama bertanya atau berbagi tips.',
-                          ilustrasi: 'forum',
+                          judul: kunci.isEmpty ? 'Belum ada diskusi di sini' : 'Tidak ada yang cocok',
+                          sub: kunci.isEmpty
+                              ? 'Jadi yang pertama bertanya atau berbagi tips.'
+                              : 'Coba kata kunci lain atau ganti kategorinya.',
+                          ilustrasi: kunci.isEmpty ? 'forum' : 'kosong',
                         )
                       : RefreshIndicator(
                           color: XyTheme.primary,

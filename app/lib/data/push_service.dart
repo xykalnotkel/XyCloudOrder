@@ -20,12 +20,30 @@ class PushService {
 
   static bool _siap = false;
 
+  /// Dipanggil saat pengguna mengetuk notifikasi. Diisi oleh aplikasi
+  /// supaya bisa membuka halaman yang sesuai.
+  static void Function(Map<String, dynamic> data)? saatDiketuk;
+
+  /// Notifikasi yang diketuk sebelum aplikasi siap menampilkan halaman.
+  static Map<String, dynamic>? tertunda;
+
   /// Dipanggil sekali saat aplikasi mulai.
   static Future<void> mulai() async {
     if (_siap || appId.isEmpty) return;
     try {
       OneSignal.Debug.setLogLevel(OSLogLevel.none);
       OneSignal.initialize(appId);
+
+      OneSignal.Notifications.addClickListener((peristiwa) {
+        final tambahan = peristiwa.notification.additionalData ?? const {};
+        final data = Map<String, dynamic>.from(tambahan);
+        if (saatDiketuk != null) {
+          saatDiketuk!(data);
+        } else {
+          tertunda = data;
+        }
+      });
+
       _siap = true;
     } catch (e) {
       debugPrint('OneSignal gagal dimulai: $e');

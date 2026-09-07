@@ -20,12 +20,59 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
   String metode = 'saldo';
   bool proses = false;
 
+  final _voucher = TextEditingController();
+  String? kodeVoucher;
+  int potonganVoucher = 0;
+  String? galatVoucher;
+  bool cekJalan = false;
+
+  @override
+  void dispose() {
+    _voucher.dispose();
+    super.dispose();
+  }
+
+  /// Potongan keanggotaan mengikuti tier pengguna.
+  int diskonTier(BuildContext context) {
+    final tier = (context.read<AppState>().user?.tier ?? 'basic').toLowerCase();
+    final persen = switch (tier) { 'vip' => 7, 'pro' => 3, _ => 0 };
+    return (subtotal * persen / 100).round();
+  }
+
+  Future<void> _pakaiVoucher() async {
+    final kode = _voucher.text.trim().toUpperCase();
+    if (kode.isEmpty) return;
+
+    setState(() {
+      cekJalan = true;
+      galatVoucher = null;
+    });
+    final s = context.read<AppState>();
+    final hasil = await s.cekVoucher(kode: kode, jenis: 'sewa', total: subtotal);
+    if (!mounted) return;
+
+    setState(() {
+      cekJalan = false;
+      if (hasil == null) {
+        galatVoucher = s.error ?? 'Voucher tidak bisa dipakai';
+        kodeVoucher = null;
+        potonganVoucher = 0;
+      } else {
+        kodeVoucher = '${hasil['kode']}';
+        potonganVoucher = hasil['potongan'] ?? 0;
+      }
+    });
+  }
+
   static const opsiJam = [1, 2, 3, 5, 8, 12, 24];
 
   int get subtotal => widget.plan.hargaPerJam * jam;
   int get diskon => jam >= 8 ? (subtotal * .1).round() : 0;
   int get biayaLayanan => 1000;
-  int get total => subtotal - diskon + biayaLayanan;
+  int get total => (subtotal - diskon - potonganVoucher - _diskonTierNilai + biayaLayanan)
+      .clamp(0, 1 << 31);
+
+  int _diskonTierNilai = 0;
 
   Future<void> _bayar() async {
     final s = context.read<AppState>();
@@ -36,7 +83,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
       return;
     }
     setState(() => proses = true);
-    final order = await s.sewaPc(widget.plan, jam, metode);
+    final order = await s.sewaPc(widget.plan, jam, metode, voucher: kodeVoucher);
     if (!mounted) return;
     setState(() => proses = false);
     if (order == null) {
@@ -51,6 +98,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _diskonTierNilai = diskonTier(context);
     final p = widget.plan;
     final saldo = context.select<AppState, int>((s) => s.user?.saldo ?? 0);
 
@@ -133,11 +181,79 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
             sub: 'BCA, BRI, Mandiri, BNI',
             onTap: () => setState(() => metode = 'va'),
           ),
+          const SectionHeader('Kode Voucher'),
+          XyCard(
+            child: Column(children: [
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _voucher,
+                    textCapitalization: TextCapitalization.characters,
+                    enabled: kodeVoucher == null,
+                    decoration: const InputDecoration(
+                      hintText: 'Punya kode promo?',
+                      prefixIcon: Icon(Icons.local_activity_outlined),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 104,
+                  child: kodeVoucher == null
+                      ? GradientButton(
+                          label: 'Pakai',
+                          height: 48,
+                          loading: cekJalan,
+                          onPressed: cekJalan ? null : _pakaiVoucher,
+                        )
+                      : SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () => setState(() {
+                              kodeVoucher = null;
+                              potonganVoucher = 0;
+                              _voucher.clear();
+                            }),
+                            child: const Text('Lepas'),
+                          ),
+                        ),
+                ),
+              ]),
+              if (galatVoucher != null) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  const Icon(Icons.error_outline_rounded, size: 16, color: XyTheme.danger),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(galatVoucher!,
+                        style: const TextStyle(color: XyTheme.danger, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+              ],
+              if (kodeVoucher != null) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  const Icon(Icons.check_circle_rounded, size: 16, color: XyTheme.success),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('Voucher $kodeVoucher dipakai, hemat ${rupiah(potonganVoucher)}',
+                        style: const TextStyle(color: XyTheme.success, fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+              ],
+            ]),
+          ),
           const SectionHeader('Ringkasan'),
           XyCard(
             child: Column(children: [
               _Baris('Sewa ${p.nama} × $jam jam', rupiah(subtotal)),
               if (diskon > 0) _Baris('Diskon durasi', '- ${rupiah(diskon)}', warna: XyTheme.success),
+              if (_diskonTierNilai > 0)
+                _Baris('Potongan member ${(context.watch<AppState>().user?.tier ?? '').toUpperCase()}',
+                    '- ${rupiah(_diskonTierNilai)}', warna: XyTheme.success),
+              if (potonganVoucher > 0)
+                _Baris('Voucher $kodeVoucher', '- ${rupiah(potonganVoucher)}', warna: XyTheme.success),
               _Baris('Biaya layanan', rupiah(biayaLayanan)),
               const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Divider()),
               _Baris('Total', rupiah(total), tebal: true),

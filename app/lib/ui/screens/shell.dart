@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
+import '../../core/motion.dart';
+import '../../data/push_service.dart';
 import 'akun_screen.dart';
+import 'notifikasi_screen.dart';
+import 'order_list_screen.dart';
+import 'wallet_screen.dart';
 import 'home_screen.dart';
 import 'forum_screen.dart';
 import 'profil_screen.dart';
@@ -16,6 +21,56 @@ class XyShell extends StatefulWidget {
 
 class _XyShellState extends State<XyShell> {
   int idx = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // buka halaman yang sesuai ketika notifikasi diketuk
+    PushService.saatDiketuk = _tanganiNotif;
+    final tertunda = PushService.tertunda;
+    if (tertunda != null) {
+      PushService.tertunda = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _tanganiNotif(tertunda));
+    }
+  }
+
+  @override
+  void dispose() {
+    PushService.saatDiketuk = null;
+    super.dispose();
+  }
+
+  void _tanganiNotif(Map<String, dynamic> data) {
+    if (!mounted) return;
+    final tipe = '${data['tipe'] ?? ''}';
+
+    switch (tipe) {
+      case 'cs':
+        Navigator.push(context, xyRoute(const CsScreen()));
+        break;
+      case 'forum':
+      case 'suka':
+      case 'balasan':
+      case 'komunitas':
+        setState(() => idx = 3);
+        context.read<AppState>().muatForum(paksa: true);
+        break;
+      case 'order':
+      case 'sesi':
+        Navigator.push(context, xyRoute(const OrderListScreen()));
+        break;
+      case 'wallet':
+        Navigator.push(context, xyRoute(const WalletScreen()));
+        break;
+      case 'peringatan':
+      case 'sistem':
+        Navigator.push(context, xyRoute(const NotifikasiScreen()));
+        break;
+      default:
+        setState(() => idx = 4);
+    }
+    context.read<AppState>().muatNotifikasi();
+  }
 
   static const _pages = [
     HomeScreen(),

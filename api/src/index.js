@@ -21,6 +21,7 @@ import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
 import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog } from './sistem.js';
+import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, buatCadangan } from './loyal.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
 
@@ -253,6 +254,53 @@ function isAdmin(req, env) {
   return !!env.ADMIN_KEY && k === env.ADMIN_KEY;
 }
 
+/**
+ * Kenali admin beserta perannya.
+ * Kunci utama pada secret berperan sebagai pemilik, kunci tambahan
+ * disimpan di tabel admin_kunci dengan peran cs atau moderator.
+ */
+async function kenaliAdmin(req, env) {
+  const url = new URL(req.url);
+  const k = req.headers.get('x-admin-key') || url.searchParams.get('key');
+  if (!k) return null;
+
+  if (env.ADMIN_KEY && k === env.ADMIN_KEY) {
+    return { nama: 'Pemilik', peran: 'pemilik' };
+  }
+
+  try {
+    const baris = await env.DB.prepare('SELECT * FROM admin_kunci WHERE kunci = ? AND aktif = 1').bind(k).first();
+    if (!baris) return null;
+    await env.DB.prepare('UPDATE admin_kunci SET terakhir = ? WHERE id = ?')
+      .bind(new Date().toISOString(), baris.id).run();
+    return { id: baris.id, nama: baris.nama, peran: baris.peran };
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Hak akses tiap peran. Pemilik boleh semua. */
+const HAK_PERAN = {
+  cs: ['cs/', 'users', 'orders', 'topup', 'sesi', 'statistik', 'laporan', 'forum'],
+  moderator: ['forum', 'ulasan', 'laporan', 'konten/', 'users', 'statistik'],
+};
+
+function bolehAkses(peran, jalur) {
+  if (peran === 'pemilik') return true;
+  const izin = HAK_PERAN[peran] || [];
+  return izin.some((i) => jalur === i || jalur.startsWith(i));
+}
+
+/** Catat tindakan admin supaya bisa ditelusuri. */
+async function catatAdmin(env, admin, aksi, target) {
+  try {
+    await env.DB.prepare('INSERT INTO log_admin (id,admin,peran,aksi,target,waktu) VALUES (?,?,?,?,?,?)')
+      .bind('la_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12),
+            admin?.nama || 'tidak dikenal', admin?.peran || '-', aksi, target || null,
+            new Date().toISOString()).run();
+  } catch (_) { /* diabaikan */ }
+}
+
 /** Kirim event realtime ke room user lewat Durable Object. */
 async function push(env, room, type, payload) {
   const id = env.HUB.idFromName(room);
@@ -276,6 +324,13 @@ export default {
   /** Penjadwal Cloudflare: pemeliharaan otomatis berjalan sendiri. */
   async scheduled(event, env, ctx) {
     ctx.waitUntil(jalankanPemeliharaan(env));
+    // cadangan otomatis sekali sehari pada jam 19 UTC (dini hari WIB)
+    if (new Date().getUTCHours() === 19) {
+      ctx.waitUntil((async () => {
+        const hasil = await buatCadangan(env);
+        await catatLog(env, 'cadangan', `Cadangan otomatis ${hasil.id}, ${hasil.baris} baris`);
+      })());
+    }
   },
 
   async fetch(req, env, ctx) {
@@ -605,6 +660,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
             penyedia: penyediaBayar(env),
             metode: metodeTersedia(env),
           },
+          tier: TIER,
+          versiMinimal: await setelan(env, 'versi_minimal', ''),
         }, 200, env);
       }
 
@@ -844,8 +901,18 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (!(await bolehLanjut(env, `admin:${ip}`, 240, 60))) {
           return err('Terlalu banyak permintaan admin.', 429, env);
         }
-        if (!isAdmin(req, env)) return err('Admin key salah', 401, env);
-        const a = p.slice(6);
+
+        const admin = await kenaliAdmin(req, env);
+        if (!admin) return err('Forbidden', 403, env);
+
+        const jalurAdmin = p.slice(6);
+        if (!bolehAkses(admin.peran, jalurAdmin)) {
+          return err(`Peran ${admin.peran} tidak punya akses ke bagian ini`, 403, env);
+        }
+        if (req.method !== 'GET') {
+          ctx.waitUntil(catatAdmin(env, admin, `${req.method} ${jalurAdmin}`, null));
+        }
+        const a = jalurAdmin;
 
         if (a === 'stats' && req.method === 'GET') {
           const q = (sql) => env.DB.prepare(sql).first();
@@ -1259,6 +1326,103 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json({ ok: true }, 200, env);
         }
 
+        // ---- voucher ----
+        if (a === 'voucher' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM voucher ORDER BY dibuat DESC LIMIT 100').all();
+          return json(results, 200, env);
+        }
+
+        if (a === 'voucher' && req.method === 'POST') {
+          const b = await req.json();
+          const kode = String(b.kode || '').trim().toUpperCase();
+          if (kode.length < 3) return err('Kode voucher minimal 3 huruf', 400, env);
+
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO voucher
+             (kode,jenis,nilai,min_belanja,maks_potongan,untuk,kuota,terpakai,berlaku_sampai,aktif,keterangan)
+             VALUES (?,?,?,?,?,?,?,COALESCE((SELECT terpakai FROM voucher WHERE kode=?),0),?,?,?)`
+          ).bind(
+            kode, b.jenis || 'persen', Number(b.nilai) || 0, Number(b.min_belanja) || 0,
+            Number(b.maks_potongan) || 0, b.untuk || 'semua', Number(b.kuota) || 0, kode,
+            b.berlaku_sampai || null, b.aktif === false ? 0 : 1, b.keterangan || '',
+          ).run();
+
+          ctx.waitUntil(catatAdmin(env, admin, 'buat voucher', kode));
+          return json({ ok: true, kode }, 201, env);
+        }
+
+        if (a.startsWith('voucher/') && req.method === 'DELETE') {
+          const kode = decodeURIComponent(a.split('/')[1]);
+          await env.DB.prepare('DELETE FROM voucher WHERE kode = ?').bind(kode).run();
+          ctx.waitUntil(catatAdmin(env, admin, 'hapus voucher', kode));
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- kunci admin dan peran ----
+        if (a === 'peran' && req.method === 'GET') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh membuka bagian ini', 403, env);
+          const { results } = await env.DB.prepare('SELECT * FROM admin_kunci ORDER BY dibuat DESC').all();
+          return json(results, 200, env);
+        }
+
+        if (a === 'peran' && req.method === 'POST') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh menambah admin', 403, env);
+          const b = await req.json();
+          const kunci = `xya_${crypto.randomUUID().replace(/-/g, '')}`;
+          const id = uid('ak_');
+          await env.DB.prepare('INSERT INTO admin_kunci (id,nama,kunci,peran) VALUES (?,?,?,?)')
+            .bind(id, b.nama || 'Admin baru', kunci, b.peran || 'cs').run();
+          ctx.waitUntil(catatAdmin(env, admin, 'tambah admin', `${b.nama} (${b.peran})`));
+          return json({ id, kunci, peran: b.peran || 'cs' }, 201, env);
+        }
+
+        if (a.startsWith('peran/') && req.method === 'DELETE') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh menghapus admin', 403, env);
+          const idA = a.split('/')[1];
+          await env.DB.prepare('DELETE FROM admin_kunci WHERE id = ?').bind(idA).run();
+          ctx.waitUntil(catatAdmin(env, admin, 'hapus admin', idA));
+          return json({ ok: true }, 200, env);
+        }
+
+        if (a === 'log' && req.method === 'GET') {
+          const { results } = await env.DB
+            .prepare('SELECT * FROM log_admin ORDER BY waktu DESC LIMIT 120').all();
+          return json(results, 200, env);
+        }
+
+        // ---- cadangan basis data ----
+        if (a === 'cadangan' && req.method === 'GET') {
+          const { results } = await env.DB
+            .prepare('SELECT id, ukuran, jumlah_baris, dibuat FROM cadangan ORDER BY dibuat DESC').all();
+          return json(results, 200, env);
+        }
+
+        if (a === 'cadangan' && req.method === 'POST') {
+          const hasil = await buatCadangan(env);
+          ctx.waitUntil(catatAdmin(env, admin, 'buat cadangan', hasil.id));
+          return json(hasil, 201, env);
+        }
+
+        if (a.startsWith('cadangan/') && req.method === 'GET') {
+          const idB = a.split('/')[1];
+          const baris = await env.DB.prepare('SELECT isi FROM cadangan WHERE id = ?').bind(idB).first();
+          if (!baris) return err('Cadangan tidak ditemukan', 404, env);
+          return new Response(baris.isi, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Content-Disposition': `attachment; filename="xycloudstore-${idB}.json"`,
+            },
+          });
+        }
+
+        // ---- atur versi minimal aplikasi ----
+        if (a === 'sistem/versi' && req.method === 'POST') {
+          const b = await req.json().catch(() => ({}));
+          await simpanSetelan(env, 'versi_minimal', String(b.versi || ''));
+          ctx.waitUntil(catatAdmin(env, admin, 'atur versi minimal', b.versi));
+          return json({ ok: true, versi: b.versi }, 200, env);
+        }
+
         // ---- statistik lengkap ----
         if (a === 'statistik' && req.method === 'GET') {
           return json(await statistikLengkap(env), 200, env);
@@ -1626,6 +1790,60 @@ ${halaman.map(([u, p2, f]) => `  <url>
             .bind(uid('c_'), sesi.agen_id, JSON.stringify({ sesi_id: id })),
         ]);
         return json({ ok: true }, 200, env);
+      }
+
+      // ---- periksa voucher sebelum bayar ----
+      if (p === 'voucher/cek' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const hasil = await cekVoucher(env, {
+          kode: b.kode,
+          userId: me.sub,
+          jenis: b.jenis || 'semua',
+          total: Number(b.total) || 0,
+        });
+        if (!hasil.ok) return err(hasil.alasan, 400, env);
+        return json({
+          potongan: hasil.potongan,
+          kode: hasil.voucher.kode,
+          keterangan: hasil.voucher.keterangan || '',
+        }, 200, env);
+      }
+
+      // ---- hapus akun sendiri ----
+      if (p === 'me' && req.method === 'DELETE') {
+        const b = await req.json().catch(() => ({}));
+        const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
+        if (!u) return err('Akun tidak ditemukan', 404, env);
+
+        const akunSosial = String(u.password || '').startsWith('sosial:');
+        if (!akunSosial && !(await cocokPw(String(b.password || ''), u.password))) {
+          return err('Password salah, akun tidak jadi dihapus', 401, env);
+        }
+        if ((u.saldo || 0) > 0 && !b.paksa) {
+          return err(
+            `Saldomu masih Rp${Number(u.saldo).toLocaleString('id-ID')}. Habiskan dulu atau centang paksa hapus.`,
+            409, env,
+          );
+        }
+
+        await env.DB.batch([
+          env.DB.prepare('DELETE FROM cs_messages WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM notifikasi WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM forum_suka WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM forum_balasan_suka WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM forum_balasan WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM forum_post WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM ulasan WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM topup WHERE user_id = ?').bind(me.sub),
+          env.DB.prepare('DELETE FROM sesi WHERE user_id = ?').bind(me.sub),
+          // riwayat pesanan disamarkan, bukan dihapus, supaya pembukuan tetap utuh
+          env.DB.prepare("UPDATE orders SET user_id = 'dihapus' WHERE user_id = ?").bind(me.sub),
+          env.DB.prepare("UPDATE transaksi SET user_id = 'dihapus' WHERE user_id = ?").bind(me.sub),
+          env.DB.prepare('DELETE FROM users WHERE id = ?').bind(me.sub),
+        ]);
+
+        ctx.waitUntil(catatLog(env, 'akun', `Akun ${u.email} dihapus atas permintaan pemiliknya`));
+        return json({ ok: true, pesan: 'Akun dan datamu sudah dihapus. Terima kasih pernah memakai XyCloudStore.' }, 200, env);
       }
 
       // ---- daftar pemberitahuan ----
@@ -2050,44 +2268,70 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---- buat order sewa PC ----
       if (p === 'orders' && req.method === 'POST') {
-        const { plan_id, durasi_jam, metode } = await req.json();
+        const { plan_id, durasi_jam, metode, voucher } = await req.json();
         const plan = await env.DB.prepare('SELECT * FROM pc_plans WHERE id = ?').bind(plan_id).first();
         if (!plan) return err('Paket tidak ditemukan', 404, env);
         if (plan.unit_tersedia <= 0) return err('Unit sedang penuh', 409, env);
 
-        const total = plan.harga_per_jam * durasi_jam;
-        const user = await env.DB.prepare('SELECT saldo FROM users WHERE id = ?').bind(me.sub).first();
-        if (metode === 'saldo' && user.saldo < total) return err('Saldo tidak cukup', 402, env);
+        const kotor = plan.harga_per_jam * durasi_jam;
+        const pembeli = await env.DB.prepare('SELECT saldo, tier FROM users WHERE id = ?').bind(me.sub).first();
+
+        // potongan tier keanggotaan
+        const persenTier = diskonTier(pembeli?.tier);
+        const potonganTier = Math.floor((kotor * persenTier) / 100);
+
+        // potongan voucher
+        let potonganVoucher = 0;
+        let kodeVoucher = null;
+        if (voucher) {
+          const cek = await cekVoucher(env, { kode: voucher, userId: me.sub, jenis: 'sewa', total: kotor });
+          if (!cek.ok) return err(cek.alasan, 400, env);
+          potonganVoucher = cek.potongan;
+          kodeVoucher = cek.voucher.kode;
+        }
+
+        const total = Math.max(0, kotor - potonganTier - potonganVoucher);
+        if (metode === 'saldo' && (pembeli?.saldo ?? 0) < total) return err('Saldo tidak cukup', 402, env);
 
         const id = uid('o_');
         const kode = 'XY-' + Math.floor(1000 + Math.random() * 8999);
 
         await env.DB.batch([
           env.DB.prepare(
-            `INSERT INTO orders (id,kode,user_id,plan_id,plan_nama,durasi_jam,total,status)
-             VALUES (?,?,?,?,?,?,?,?)`
-          ).bind(id, kode, me.sub, plan.id, plan.nama, durasi_jam, total,
-                 metode === 'saldo' ? 'dibayar' : 'pending'),
-          env.DB.prepare('UPDATE pc_plans SET unit_tersedia = unit_tersedia - 1 WHERE id = ?').bind(plan.id),
+            `INSERT INTO orders (id,kode,user_id,plan_id,plan_nama,durasi_jam,total,status,progress,voucher,potongan)
+             VALUES (?,?,?,?,?,?,?,'dibayar',0,?,?)`
+          ).bind(id, kode, me.sub, plan_id, plan.nama, durasi_jam, total, kodeVoucher,
+                 potonganTier + potonganVoucher),
+          env.DB.prepare('UPDATE pc_plans SET unit_tersedia = unit_tersedia - 1 WHERE id = ?').bind(plan_id),
           env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
             .bind(uid('t_'), me.sub, `Sewa ${plan.nama} ${durasi_jam} jam`, 'sewa', -total),
           ...(metode === 'saldo'
-            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ? WHERE id = ?').bind(total, me.sub)]
-            : []),
+            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ?, total_belanja = total_belanja + ? WHERE id = ?')
+                .bind(total, total, me.sub)]
+            : [env.DB.prepare('UPDATE users SET total_belanja = total_belanja + ? WHERE id = ?')
+                .bind(total, me.sub)]),
         ]);
 
+        if (kodeVoucher) {
+          ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: id, potongan: potonganVoucher }));
+        }
+        ctx.waitUntil((async () => {
+          const tierBaru = await segarkanTier(env, me.sub);
+          if (tierBaru) {
+            await buatNotif(env, ctx, {
+              userId: me.sub,
+              jenis: 'sistem',
+              judul: `Selamat, kamu naik ke tier ${tierBaru.toUpperCase()}`,
+              pesan: `Mulai sekarang kamu dapat diskon ${diskonTier(tierBaru)} persen tiap transaksi.`,
+              aktor: 'XyCloudStore',
+            });
+          }
+        })());
+
         const order = await env.DB.prepare('SELECT * FROM orders WHERE id = ?').bind(id).first();
-
-        // broadcast stok baru + order baru
-        ctx.waitUntil(Promise.all([
-          push(env, room, 'order.update', order),
-          push(env, 'katalog', 'stock.update',
-            { id: plan.id, unitTersedia: plan.unit_tersedia - 1 }),
-        ]));
-
-        // simulasi provisioning otomatis (di produksi: panggil API hypervisor)
-        ctx.waitUntil(provision(env, room, id));
-
+        ctx.waitUntil(push(env, room, 'order.update', order));
+        ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: plan_id, unitTersedia: plan.unit_tersedia - 1 }));
+        ctx.waitUntil(push(env, 'cs:inbox', 'order.baru', { ...order, user_id: me.sub }));
         return json(order, 201, env);
       }
 
@@ -2100,7 +2344,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---- beli akun ----
       if (p === 'akun/beli' && req.method === 'POST') {
-        const { produk_id, metode } = await req.json();
+        const { produk_id, metode, voucher } = await req.json();
         const prod = await env.DB.prepare('SELECT * FROM akun_produk WHERE id = ?').bind(produk_id).first();
         if (!prod) return err('Produk tidak ditemukan', 404, env);
         if (prod.stok <= 0) return err('Stok habis', 409, env);
@@ -2109,18 +2353,39 @@ ${halaman.map(([u, p2, f]) => `  <url>
           .prepare('SELECT * FROM akun_stok WHERE produk_id = ? AND terpakai = 0 LIMIT 1')
           .bind(produk_id).first();
 
-        const user = await env.DB.prepare('SELECT saldo FROM users WHERE id = ?').bind(me.sub).first();
-        if (metode === 'saldo' && user.saldo < prod.harga) return err('Saldo tidak cukup', 402, env);
+        const user = await env.DB.prepare('SELECT saldo, tier FROM users WHERE id = ?').bind(me.sub).first();
+
+        const persenTier = diskonTier(user?.tier);
+        const potonganTier = Math.floor((prod.harga * persenTier) / 100);
+
+        let potonganVoucher = 0;
+        let kodeVoucher = null;
+        if (voucher) {
+          const cek = await cekVoucher(env, { kode: voucher, userId: me.sub, jenis: 'akun', total: prod.harga });
+          if (!cek.ok) return err(cek.alasan, 400, env);
+          potonganVoucher = cek.potongan;
+          kodeVoucher = cek.voucher.kode;
+        }
+
+        const bayar = Math.max(0, prod.harga - potonganTier - potonganVoucher);
+        if (metode === 'saldo' && user.saldo < bayar) return err('Saldo tidak cukup', 402, env);
 
         await env.DB.batch([
           env.DB.prepare('UPDATE akun_produk SET stok = stok - 1, terjual = terjual + 1 WHERE id = ?').bind(produk_id),
           ...(stok ? [env.DB.prepare('UPDATE akun_stok SET terpakai = 1, user_id = ? WHERE id = ?').bind(me.sub, stok.id)] : []),
           env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-            .bind(uid('t_'), me.sub, `Beli ${prod.nama}`, 'akun', -prod.harga),
+            .bind(uid('t_'), me.sub, `Beli ${prod.nama}`, 'akun', -bayar),
           ...(metode === 'saldo'
-            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ? WHERE id = ?').bind(prod.harga, me.sub)]
-            : []),
+            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ?, total_belanja = total_belanja + ? WHERE id = ?')
+                .bind(bayar, bayar, me.sub)]
+            : [env.DB.prepare('UPDATE users SET total_belanja = total_belanja + ? WHERE id = ?')
+                .bind(bayar, me.sub)]),
         ]);
+
+        if (kodeVoucher) {
+          ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: produk_id, potongan: potonganVoucher }));
+        }
+        ctx.waitUntil(segarkanTier(env, me.sub));
 
         ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: produk_id, stok: prod.stok - 1 }));
 
@@ -2139,7 +2404,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           ctx.waitUntil(kirimEmail(env, {
             to: pembeli.email,
             template: 'struk',
-            data: { nama: pembeli.nama, kode: kodeAkun, judul: prod.nama, total: prod.harga, metode },
+            data: { nama: pembeli.nama, kode: kodeAkun, judul: prod.nama, total: bayar, metode },
           }));
         }
         ctx.waitUntil(kirimPush(env, {
