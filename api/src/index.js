@@ -12,6 +12,8 @@
  */
 
 import ADMIN_HTML from './admin.html';
+import WEB_HTML from './web.html';
+import { infoRilis, unduhApk, tebakAbi } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
@@ -257,6 +259,32 @@ export default {
     }
 
     // ---------- dashboard admin ----------
+    const host = (req.headers.get('host') || '').toLowerCase();
+    const domainWeb = !host.startsWith('api.') && !host.startsWith('admin.');
+
+    // ---------- situs publik ----------
+    if (domainWeb && (path === '/' || !path.includes('.')) && !path.startsWith('/api/')
+        && !path.startsWith('/img/') && !path.startsWith('/unduh/') && !path.startsWith('/legal/')
+        && !path.startsWith('/brand/') && !path.startsWith('/bayar/')) {
+      return new Response(WEB_HTML, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+        },
+      });
+    }
+
+    // ---------- rilis dan unduhan APK lewat domain sendiri ----------
+    if (path === '/api/rilis' && req.method === 'GET') {
+      const info = await infoRilis(env, ctx);
+      return json({ ...info, saran: tebakAbi(req) }, 200, env);
+    }
+    if (path.startsWith('/unduh/') && path.length > 7) {
+      return unduhApk(env, ctx, decodeURIComponent(path.slice(7)));
+    }
+
     if (path === '/' || path === '/admin' || path === '/admin/') {
       return new Response(ADMIN_HTML, {
         headers: {

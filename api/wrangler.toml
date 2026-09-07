@@ -7,6 +7,8 @@ workers_dev = true
 routes = [
   { pattern = "api.xycloud.my.id", custom_domain = true },
   { pattern = "admin.xycloud.my.id", custom_domain = true },
+  { pattern = "xycloud.my.id", custom_domain = true },
+  { pattern = "www.xycloud.my.id", custom_domain = true },
 ]
 compatibility_date = "2025-01-01"
 
@@ -37,6 +39,8 @@ globs = ["**/*.png"]
 [vars]
 ALLOW_ORIGIN = "*"
 PUBLIC_URL = "https://api.xycloud.my.id"
+WEB_URL = "https://xycloud.my.id"
+REPO_RILIS = "xykalnotkel/XyCloudOrder"
 MAIL_FROM = "XyCloudStore <noreply@xyc.my.id>"
 ONESIGNAL_APP_ID = "f4843c35-cc1d-4772-9f70-1c4349397ffb"
 CLOUDINARY_CLOUD = "jxjvz3qi"

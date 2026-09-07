@@ -197,6 +197,47 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## Situs Web Publik
+
+Worker yang sama juga melayani situs `xycloud.my.id` dan `www.xycloud.my.id`.
+Rutenya dipilih berdasarkan host:
+
+| Host | Isi |
+|---|---|
+| `xycloud.my.id`, `www.xycloud.my.id` | situs publik (`api/src/web.html`) |
+| `admin.xycloud.my.id` | dashboard admin dan CS |
+| `api.xycloud.my.id` | API, gambar, unduhan, halaman legal |
+
+Seluruh isi situs ditarik langsung dari D1 lewat API yang sama dengan aplikasi:
+paket PC, produk akun beserta ulasan, diskusi komunitas beserta balasan dan lencana member,
+nomor WhatsApp, serta daftar rilis aplikasi. Tidak ada data yang ditulis dua kali.
+
+### Unduhan aplikasi
+
+Berkas APK tidak pernah ditautkan langsung ke GitHub. Semua lewat domain sendiri:
+
+```
+https://xycloud.my.id/unduh/XyCloudStore-arm64-v8a.apk
+```
+
+Worker mengambil berkas dari rilis, menyimpannya di singgahan tepi Cloudflare, lalu
+mengirimkannya dengan `Content-Disposition` yang benar. Daftar berkas dan ukurannya
+tersedia di `GET /api/rilis`, disegarkan tiap sepuluh menit.
+
+### Deteksi perangkat
+
+Pemilihan berkas dilakukan dua lapis:
+
+1. **Sisi server** membaca `User-Agent` dan `Sec-CH-UA-Arch`, hasilnya ikut di `GET /api/rilis`.
+2. **Sisi peramban** memakai `navigator.userAgentData.getHighEntropyValues` untuk memastikan
+   arsitektur dan lebar bit, lalu memilih berkas yang paling pas.
+
+Aturannya: petunjuk Intel memilih `x86_64`, petunjuk `armv7` memilih `armeabi-v7a`,
+Android 6 ke atas dianggap `arm64-v8a`, sisanya memakai berkas universal.
+Pengguna tetap bisa memilih sendiri dari daftar semua versi.
+
+---
+
 ## Sesi Main (remote PC untuk game)
 
 Sewa PC tidak lagi berhenti di kredensial RDP. Sekarang ada siklus sesi penuh:
