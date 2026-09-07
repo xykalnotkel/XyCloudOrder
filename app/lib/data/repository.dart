@@ -47,6 +47,19 @@ abstract class XyRepository {
   Future<PermintaanTopup> buatTopup(int nominal, String metode);
   Future<List<PermintaanTopup>> daftarTopup();
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri);
+
+  // ---------- profil ----------
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum});
+  Future<void> gantiPassword(String lama, String baru);
+
+  // ---------- forum ----------
+  Future<List<ForumPost>> forum();
+  Future<List<ForumBalasan>> forumDetail(String id);
+  Future<ForumPost> forumBuat({required String judul, required String isi, required String kategori, String? gambar});
+  Future<ForumBalasan> forumBalas(String id, String isi);
+  Future<Map<String, dynamic>> forumSuka(String id);
+  Future<List<String>> forumSukaSaya();
+  Future<void> forumHapus(String id);
   Future<List<PcPlan>> plans();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
@@ -171,6 +184,58 @@ class RemoteRepository implements XyRepository {
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) async =>
       PermintaanTopup.fromJson(Map<String, dynamic>.from(
           await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
+
+  @override
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async =>
+      UserProfile.fromJson(await api.patch('/me', {
+        if (nama != null) 'nama': nama,
+        if (phone != null) 'phone': phone,
+        if (foto != null) 'foto': foto,
+        if (notifForum != null) 'notif_forum': notifForum ? 1 : 0,
+      }));
+
+  @override
+  Future<void> gantiPassword(String lama, String baru) async =>
+      api.post('/me/password', {'lama': lama, 'baru': baru});
+
+  @override
+  Future<List<ForumPost>> forum() async =>
+      ((await api.get('/forum')) as List).map((e) => ForumPost.fromJson(e)).toList();
+
+  @override
+  Future<List<ForumBalasan>> forumDetail(String id) async {
+    final d = await api.get('/forum/$id');
+    return ((d['balasan'] as List?) ?? const []).map((e) => ForumBalasan.fromJson(e)).toList();
+  }
+
+  @override
+  Future<ForumPost> forumBuat({
+    required String judul,
+    required String isi,
+    required String kategori,
+    String? gambar,
+  }) async =>
+      ForumPost.fromJson(Map<String, dynamic>.from(await api.post('/forum', {
+        'judul': judul,
+        'isi': isi,
+        'kategori': kategori,
+        if (gambar != null) 'gambar': gambar,
+      })));
+
+  @override
+  Future<ForumBalasan> forumBalas(String id, String isi) async =>
+      ForumBalasan.fromJson(Map<String, dynamic>.from(await api.post('/forum/$id/balas', {'isi': isi})));
+
+  @override
+  Future<Map<String, dynamic>> forumSuka(String id) async =>
+      Map<String, dynamic>.from(await api.post('/forum/$id/suka'));
+
+  @override
+  Future<List<String>> forumSukaSaya() async =>
+      ((await api.get('/forum/suka/saya')) as List).map((e) => '$e').toList();
+
+  @override
+  Future<void> forumHapus(String id) async => api.delete('/forum/$id');
 
   @override
   Future<List<PcPlan>> plans() async =>
@@ -302,6 +367,49 @@ class MockRepository implements XyRepository {
 
   @override
   Future<List<PermintaanTopup>> daftarTopup() => _delay(<PermintaanTopup>[], 300);
+
+  @override
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) =>
+      _delay(MockData.user, 400);
+
+  @override
+  Future<void> gantiPassword(String lama, String baru) async {}
+
+  @override
+  Future<List<ForumPost>> forum() => _delay(<ForumPost>[], 300);
+
+  @override
+  Future<List<ForumBalasan>> forumDetail(String id) => _delay(<ForumBalasan>[], 300);
+
+  @override
+  Future<ForumPost> forumBuat({
+    required String judul,
+    required String isi,
+    required String kategori,
+    String? gambar,
+  }) =>
+      _delay(
+        ForumPost(
+          id: 'f_demo', userId: 'u_demo', nama: MockData.user.nama, kategori: kategori,
+          judul: judul, isi: isi, dibuat: DateTime.now(),
+        ),
+        400,
+      );
+
+  @override
+  Future<ForumBalasan> forumBalas(String id, String isi) => _delay(
+        ForumBalasan(id: 'fb_demo', postId: id, nama: MockData.user.nama, isi: isi, dibuat: DateTime.now()),
+        300,
+      );
+
+  @override
+  Future<Map<String, dynamic>> forumSuka(String id) => _delay({'suka': 1, 'disukai': true}, 200);
+
+  @override
+  Future<List<String>> forumSukaSaya() => _delay(<String>[], 200);
+
+  @override
+  Future<void> forumHapus(String id) async {}
 
   @override
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) => _delay(

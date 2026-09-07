@@ -197,6 +197,24 @@ daftar pengguna, dan daftar top up.
 
 ---
 
+## Notifikasi Push
+
+| Kejadian | Siapa yang menerima |
+|---|---|
+| Status order berubah | pemilik order |
+| Balasan customer service | pemilik percakapan |
+| Top up disetujui atau ditolak | pemilik permintaan |
+| Balasan diskusi forum | pemilik diskusi dan semua yang pernah membalas |
+| Balasan admin di forum | pemilik diskusi dan peserta diskusi |
+| Diskusi disukai | pemilik diskusi, maksimal sekali per 30 menit per diskusi |
+| Pengumuman admin | semua pengguna yang memasang aplikasi |
+| Banner promo baru | semua pengguna, kalau opsi kirim push dicentang |
+
+Pengguna bisa mematikan pemberitahuan komunitas lewat Profil (kolom `users.notif_forum`).
+Pemberitahuan pesanan, chat, dan saldo selalu aktif karena bersifat transaksional.
+
+---
+
 ## Keamanan
 
 | Lapisan | Penerapan |

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import '../core/cache.dart';
 import '../core/config.dart';
 import '../core/prefs.dart';
 import '../data/api_client.dart';
@@ -22,6 +23,21 @@ class AppState extends ChangeNotifier {
 
   /// True selama aplikasi masih memeriksa token tersimpan.
   bool memeriksaSesi = true;
+
+  /// True kalau permintaan terakhir ke server gagal karena jaringan.
+  bool offline = false;
+
+  /// Data yang tampil sekarang berasal dari singgahan, bukan server.
+  bool dariCache = false;
+
+  /// Hemat kuota: gambar produk dan banner tidak diunduh.
+  bool hematData = false;
+
+  Future<void> setHematData(bool v) async {
+    hematData = v;
+    await Cache.setHematData(v);
+    notifyListeners();
+  }
 
   /// Coba masuk otomatis memakai token yang tersimpan di perangkat.
   Future<void> pulihkanSesi() async {
@@ -48,6 +64,7 @@ class AppState extends ChangeNotifier {
   late final XyRepository _repo;
   RealtimeService? _rt;
   RealtimeService? _rtKatalog;
+  RealtimeService? _rtForum;
   StreamSubscription? _rtSub;
   StreamSubscription? _rtState;
   Timer? _mockTicker;
@@ -277,6 +294,129 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  // ================= profil =================
+  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async {
+    try {
+      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum);
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<String?> gantiPassword(String lama, String baru) async {
+    try {
+      await _repo.gantiPassword(lama, baru);
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  // ================= forum komunitas =================
+  List<ForumPost> forum = [];
+  Set<String> forumDisukai = {};
+  bool forumMemuat = false;
+  String? forumGalat;
+
+  Future<void> muatForum({bool paksa = false}) async {
+    if (forumMemuat) return;
+    forumMemuat = true;
+    forumGalat = null;
+    notifyListeners();
+
+    if (!paksa && forum.isEmpty) {
+      final simpanan = await Cache.daftar('forum');
+      if (simpanan.isNotEmpty) {
+        forum = simpanan.map((e) => ForumPost.fromJson(Map<String, dynamic>.from(e))).toList();
+        notifyListeners();
+      }
+    }
+
+    try {
+      forum = await _repo.forum();
+      offline = false;
+      unawaited(Cache.simpan('forum', forum.map((e) => e.toJson()).toList()));
+      if (user != null) {
+        try {
+          forumDisukai = (await _repo.forumSukaSaya()).toSet();
+        } catch (_) {}
+      }
+    } catch (e) {
+      offline = _masalahJaringan(e);
+      forumGalat = _pesan(e);
+    } finally {
+      forumMemuat = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<ForumBalasan>> detailForum(String id) => _repo.forumDetail(id);
+
+  Future<String?> buatForum({
+    required String judul,
+    required String isi,
+    required String kategori,
+    String? gambar,
+  }) async {
+    try {
+      final post = await _repo.forumBuat(judul: judul, isi: isi, kategori: kategori, gambar: gambar);
+      forum.insert(0, post);
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<String?> balasForum(String id, String isi) async {
+    try {
+      await _repo.forumBalas(id, isi);
+      final i = forum.indexWhere((f) => f.id == id);
+      if (i >= 0) forum[i].balasan++;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<void> sukaForum(String id) async {
+    // tampilkan perubahan lebih dulu supaya terasa cepat
+    final i = forum.indexWhere((f) => f.id == id);
+    final tadinya = forumDisukai.contains(id);
+    if (i >= 0) forum[i].suka += tadinya ? -1 : 1;
+    tadinya ? forumDisukai.remove(id) : forumDisukai.add(id);
+    notifyListeners();
+
+    try {
+      final d = await _repo.forumSuka(id);
+      if (i >= 0) forum[i].suka = d['suka'] ?? forum[i].suka;
+      if (d['disukai'] == true) {
+        forumDisukai.add(id);
+      } else {
+        forumDisukai.remove(id);
+      }
+    } catch (_) {
+      // kembalikan seperti semula kalau gagal
+      if (i >= 0) forum[i].suka += tadinya ? 1 : -1;
+      tadinya ? forumDisukai.add(id) : forumDisukai.remove(id);
+    }
+    notifyListeners();
+  }
+
+  Future<String?> hapusForum(String id) async {
+    try {
+      await _repo.forumHapus(id);
+      forum.removeWhere((f) => f.id == id);
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
   // ================= ulasan produk =================
   final Map<String, List<Ulasan>> _ulasan = {};
 
@@ -379,31 +519,89 @@ class AppState extends ChangeNotifier {
     _rt?.dispose();
     _rt = null;
     _rtKatalog?.dispose();
+    _rtForum?.dispose();
     _rtKatalog = null;
+    _rtForum?.dispose();
+    _rtForum = null;
     _mockTicker?.cancel();
     _clock?.cancel();
     notifyListeners();
   }
 
   // ---------------- data ----------------
-  Future<void> muatSemua() async {
-    final hasil = await Future.wait([
-      _repo.plans(),
-      _repo.produkAkun(),
-      _repo.banners(),
-      _repo.orders(),
-      _repo.transaksi(),
-      _repo.riwayatChat(),
-    ]);
-    plans = hasil[0] as List<PcPlan>;
-    produk = hasil[1] as List<AkunProduk>;
-    banners = hasil[2] as List<PromoBanner>;
-    orders = hasil[3] as List<RentOrder>;
-    transaksi = hasil[4] as List<Transaksi>;
-    chat = hasil[5] as List<ChatMessage>;
+  /// Ambil semua data. Singgahan ditampilkan lebih dulu supaya layar
+  /// langsung terisi, lalu diperbarui begitu server menjawab.
+  Future<void> muatSemua({bool paksa = false}) async {
+    hematData = await Cache.hematData();
+    if (!paksa) await _muatDariCache();
+
+    try {
+      final hasil = await Future.wait([
+        _repo.plans(),
+        _repo.produkAkun(),
+        _repo.banners(),
+        _repo.orders(),
+        _repo.transaksi(),
+        _repo.riwayatChat(),
+      ]);
+      plans = hasil[0] as List<PcPlan>;
+      produk = hasil[1] as List<AkunProduk>;
+      banners = hasil[2] as List<PromoBanner>;
+      orders = hasil[3] as List<RentOrder>;
+      transaksi = hasil[4] as List<Transaksi>;
+      chat = hasil[5] as List<ChatMessage>;
+
+      offline = false;
+      dariCache = false;
+      error = null;
+      unawaited(_simpanCache());
+      unawaited(muatTopup());
+    } catch (e) {
+      offline = _masalahJaringan(e);
+      error = _pesan(e);
+      // kalau belum ada isi sama sekali, coba singgahan sebagai penyelamat
+      if (plans.isEmpty && produk.isEmpty) await _muatDariCache();
+    }
     notifyListeners();
-    // data pelengkap, tidak perlu ditunggu
-    unawaited(muatTopup());
+  }
+
+  bool _masalahJaringan(Object e) {
+    final t = e.toString().toLowerCase();
+    return t.contains('socket') ||
+        t.contains('failed host') ||
+        t.contains('timeout') ||
+        t.contains('connection') ||
+        t.contains('jaringan') ||
+        t.contains('koneksi');
+  }
+
+  Future<void> _muatDariCache() async {
+    try {
+      final p = await Cache.daftar('plans');
+      final pr = await Cache.daftar('produk');
+      final bn = await Cache.daftar('banners');
+      final od = await Cache.daftar('orders');
+      final tr = await Cache.daftar('transaksi');
+      if (p.isEmpty && pr.isEmpty) return;
+
+      plans = p.map((e) => PcPlan.fromJson(Map<String, dynamic>.from(e))).toList();
+      produk = pr.map((e) => AkunProduk.fromJson(Map<String, dynamic>.from(e))).toList();
+      banners = bn.map((e) => PromoBanner.fromJson(Map<String, dynamic>.from(e))).toList();
+      orders = od.map((e) => RentOrder.fromJson(Map<String, dynamic>.from(e))).toList();
+      transaksi = tr.map((e) => Transaksi.fromJson(Map<String, dynamic>.from(e))).toList();
+      dariCache = true;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _simpanCache() async {
+    try {
+      await Cache.simpan('plans', plans.map((e) => e.toJson()).toList());
+      await Cache.simpan('produk', produk.map((e) => e.toJson()).toList());
+      await Cache.simpan('banners', banners.map((e) => e.toJson()).toList());
+      await Cache.simpan('orders', orders.map((e) => e.toJson()).toList());
+      await Cache.simpan('transaksi', transaksi.map((e) => e.toJson()).toList());
+    } catch (_) {}
   }
 
   /// Muat ulang daftar produk saja (dipakai setelah menulis ulasan).
@@ -422,7 +620,7 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> refresh() => muatSemua();
+  Future<void> refresh() => muatSemua(paksa: true);
 
   // ---------------- realtime ----------------
   void _mulaiRealtime() {
@@ -451,6 +649,10 @@ class AppState extends ChangeNotifier {
     _rtKatalog = RealtimeService();
     _rtKatalog!.events.listen(_handleEvent);
     _rtKatalog!.connect(room: 'katalog', token: _api.token ?? '');
+
+    _rtForum = RealtimeService();
+    _rtForum!.events.listen(_handleEvent);
+    _rtForum!.connect(room: 'forum', token: _api.token ?? '');
   }
 
   void _handleEvent(RealtimeEvent e) {
@@ -472,9 +674,7 @@ class AppState extends ChangeNotifier {
         if (p != null && n is int) p.unitTersedia = n;
         break;
       case 'chat.message':
-        chat.add(ChatMessage.fromJson(e.payload));
-        csMengetik = false;
-        notifBelumDibaca++;
+        _terimaPesan(ChatMessage.fromJson(e.payload));
         break;
       case 'cs.typing':
         csMengetik = e.payload['typing'] == true;
@@ -484,6 +684,28 @@ class AppState extends ChangeNotifier {
           final list = (e.payload['banners'] as List?) ?? const [];
           banners = list.map((x) => PromoBanner.fromJson(Map<String, dynamic>.from(x))).toList();
         } catch (_) {}
+        break;
+      case 'forum.baru':
+        try {
+          final p = ForumPost.fromJson(Map<String, dynamic>.from(e.payload));
+          if (!forum.any((f) => f.id == p.id)) forum.insert(0, p);
+        } catch (_) {}
+        break;
+      case 'forum.balasan':
+        try {
+          final id = '${e.payload['post_id']}';
+          final i = forum.indexWhere((f) => f.id == id);
+          if (i >= 0) forum[i].balasan++;
+        } catch (_) {}
+        break;
+      case 'forum.suka':
+        try {
+          final i = forum.indexWhere((f) => f.id == '${e.payload['id']}');
+          if (i >= 0) forum[i].suka = e.payload['suka'] ?? forum[i].suka;
+        } catch (_) {}
+        break;
+      case 'forum.hapus':
+        forum.removeWhere((f) => f.id == '${e.payload['id']}');
         break;
       case 'wallet.update':
         user = user?.copyWith(saldo: e.payload['saldo'] as int);
@@ -614,14 +836,43 @@ class AppState extends ChangeNotifier {
       return;
     }
 
-    if (gambar == null) _rt?.send('chat.message', {'teks': teks});
+    // hanya lewat REST; server yang menyiarkan ke WebSocket,
+    // jadi pesan tidak akan tampil dua kali
     try {
       await _repo.kirimChat(teks, gambar: gambar);
       msg.terkirim = true;
       if (gambar != null) await muatChat();
     } catch (e) {
       error = _pesan(e);
+      msg.gagal = true;
     }
+    notifyListeners();
+  }
+
+  /// Masukkan pesan dari server sambil mencegah pesan kembar.
+  ///
+  /// Pesan yang baru saja kita kirim sudah tampil duluan sebagai pesan
+  /// sementara, jadi versi dari server dipakai untuk menggantikannya,
+  /// bukan ditambahkan lagi.
+  void _terimaPesan(ChatMessage baru) {
+    // sudah ada dengan id yang sama
+    if (chat.any((m) => m.id == baru.id)) return;
+
+    if (baru.milikSaya) {
+      final i = chat.lastIndexWhere(
+        (m) => m.id.startsWith('local_') && m.dari == 'user' && m.teks == baru.teks,
+      );
+      if (i >= 0) {
+        chat[i] = baru;
+        csMengetik = false;
+        notifyListeners();
+        return;
+      }
+    }
+
+    chat.add(baru);
+    csMengetik = false;
+    if (!baru.milikSaya) notifBelumDibaca++;
     notifyListeners();
   }
 
@@ -638,6 +889,7 @@ class AppState extends ChangeNotifier {
     _rtState?.cancel();
     _rt?.dispose();
     _rtKatalog?.dispose();
+    _rtForum?.dispose();
     _mockTicker?.cancel();
     _clock?.cancel();
     _api.dispose();

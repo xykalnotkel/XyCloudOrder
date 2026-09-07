@@ -12,6 +12,12 @@ class UserProfile {
   final String tier; // basic | pro | vip
   final String? avatar;
 
+  /// Foto profil dari server (Cloudinary atau Google).
+  final String? foto;
+
+  /// Terima pemberitahuan kegiatan forum komunitas.
+  final bool notifForum;
+
   UserProfile({
     required this.id,
     required this.nama,
@@ -20,6 +26,8 @@ class UserProfile {
     this.saldo = 0,
     this.tier = 'basic',
     this.avatar,
+    this.foto,
+    this.notifForum = true,
   });
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -30,6 +38,8 @@ class UserProfile {
         saldo: (j['saldo'] ?? 0) as int,
         tier: j['tier'] ?? 'basic',
         avatar: j['avatar'],
+        foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
+        notifForum: (j['notif_forum'] ?? 1) == 1,
       );
 
   Map<String, dynamic> toJson() => {
@@ -40,16 +50,20 @@ class UserProfile {
         'saldo': saldo,
         'tier': tier,
         'avatar': avatar,
+        'foto': foto,
+        'notif_forum': notifForum ? 1 : 0,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
         phone: phone ?? this.phone,
         saldo: saldo ?? this.saldo,
         tier: tier,
+        foto: foto ?? this.foto,
         avatar: avatar,
+        notifForum: notifForum,
       );
 }
 
@@ -102,6 +116,22 @@ class PcPlan {
         unitTersedia: j['unit_tersedia'] ?? j['unitTersedia'] ?? 0,
         gambar: j['gambar'] ?? '',
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nama': nama,
+        'gpu': gpu,
+        'cpu': cpu,
+        'ram_gb': ramGb,
+        'storage_gb': storageGb,
+        'harga_per_jam': hargaPerJam,
+        'harga_per_hari': hargaPerHari,
+        'region': region,
+        'tag': tag,
+        'total_unit': totalUnit,
+        'unit_tersedia': unitTersedia,
+        'gambar': gambar,
+      };
 }
 
 enum OrderStatus { pending, dibayar, provisioning, aktif, selesai, batal }
@@ -180,6 +210,23 @@ class RentOrder {
         password: j['password'],
         progress: j['progress'] ?? 0,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'kode': kode,
+        'plan_id': planId,
+        'plan_nama': planNama,
+        'durasi_jam': durasiJam,
+        'total': total,
+        'status': status.name,
+        'dibuat': dibuat.toIso8601String(),
+        'mulai': mulai?.toIso8601String(),
+        'berakhir': berakhir?.toIso8601String(),
+        'host': host,
+        'username': username,
+        'password': password,
+        'progress': progress,
+      };
 }
 
 /// Produk akun digital yang dijual (Steam, Netflix, Game Pass, dsb).
@@ -244,6 +291,23 @@ class AkunProduk {
         jumlahUlasan: j['jumlah_ulasan'] ?? 0,
         detail: _petaAman(j['detail']),
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nama': nama,
+        'kategori': kategori,
+        'deskripsi': deskripsi,
+        'harga': harga,
+        'harga_coret': hargaCoret,
+        'stok': stok,
+        'rating': rating,
+        'terjual': terjual,
+        'gambar': gambar,
+        'fitur': fitur,
+        'garansi': garansi,
+        'jumlah_ulasan': jumlahUlasan,
+        'detail': detail,
+      };
 }
 
 class ChatMessage {
@@ -255,6 +319,7 @@ class ChatMessage {
   final DateTime waktu;
   bool terkirim;
   bool dibaca;
+  bool gagal;
 
   ChatMessage({
     required this.id,
@@ -265,6 +330,7 @@ class ChatMessage {
     this.gambar,
     this.terkirim = true,
     this.dibaca = false,
+    this.gagal = false,
   });
 
   bool get milikSaya => dari == 'user';
@@ -314,6 +380,15 @@ class Transaksi {
         waktu: DateTime.parse(j['waktu']),
         status: j['status'] ?? 'sukses',
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'judul': judul,
+        'tipe': tipe,
+        'nominal': nominal,
+        'waktu': waktu.toIso8601String(),
+        'status': status,
+      };
 }
 
 /// Banner promo yang tampil sebagai slider di beranda.
@@ -358,6 +433,20 @@ class PromoBanner {
         ikon: j['ikon'] ?? 'bolt',
         urutan: (j['urutan'] ?? 1) is int ? (j['urutan'] ?? 1) as int : 1,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'judul': judul,
+        'subjudul': subjudul,
+        'label': label,
+        'cta': cta,
+        'aksi': aksi,
+        'target': target,
+        'warna1': warna1,
+        'warna2': warna2,
+        'ikon': ikon,
+        'urutan': urutan,
+      };
 }
 
 /// Ulasan pembeli untuk sebuah produk akun.
@@ -462,4 +551,96 @@ class KonfigurasiApp {
       minTopup: j['minTopup'] ?? 10000,
     );
   }
+}
+
+/// Satu diskusi di forum komunitas.
+class ForumPost {
+  final String id;
+  final String userId;
+  final String nama;
+  final String? foto;
+  final String kategori;
+  final String judul;
+  final String isi;
+  final String? gambar;
+  int suka;
+  int balasan;
+  final bool disematkan;
+  final DateTime dibuat;
+
+  ForumPost({
+    required this.id,
+    required this.userId,
+    required this.nama,
+    required this.kategori,
+    required this.judul,
+    required this.isi,
+    required this.dibuat,
+    this.foto,
+    this.gambar,
+    this.suka = 0,
+    this.balasan = 0,
+    this.disematkan = false,
+  });
+
+  factory ForumPost.fromJson(Map<String, dynamic> j) => ForumPost(
+        id: '${j['id']}',
+        userId: '${j['user_id'] ?? ''}',
+        nama: j['nama'] ?? 'Pengguna',
+        foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
+        kategori: j['kategori'] ?? 'Umum',
+        judul: j['judul'] ?? '',
+        isi: j['isi'] ?? '',
+        gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
+        suka: j['suka'] ?? 0,
+        balasan: j['balasan'] ?? 0,
+        disematkan: (j['disematkan'] ?? 0) == 1,
+        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'user_id': userId,
+        'nama': nama,
+        'foto': foto,
+        'kategori': kategori,
+        'judul': judul,
+        'isi': isi,
+        'gambar': gambar,
+        'suka': suka,
+        'balasan': balasan,
+        'disematkan': disematkan ? 1 : 0,
+        'dibuat': dibuat.toIso8601String(),
+      };
+}
+
+/// Balasan pada sebuah diskusi.
+class ForumBalasan {
+  final String id;
+  final String postId;
+  final String nama;
+  final String? foto;
+  final String isi;
+  final bool admin;
+  final DateTime dibuat;
+
+  ForumBalasan({
+    required this.id,
+    required this.postId,
+    required this.nama,
+    required this.isi,
+    required this.dibuat,
+    this.foto,
+    this.admin = false,
+  });
+
+  factory ForumBalasan.fromJson(Map<String, dynamic> j) => ForumBalasan(
+        id: '${j['id']}',
+        postId: '${j['post_id'] ?? ''}',
+        nama: j['nama'] ?? 'Pengguna',
+        foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
+        isi: j['isi'] ?? '',
+        admin: (j['admin'] ?? 0) == 1,
+        dibuat: DateTime.tryParse('${j['dibuat']}'.replaceFirst(' ', 'T')) ?? DateTime.now(),
+      );
 }

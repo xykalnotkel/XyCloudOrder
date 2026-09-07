@@ -23,7 +23,8 @@ class GambarProduk extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (produk.gambar.isEmpty) {
+    final hemat = context.select<AppState, bool>((s) => s.hematData);
+    if (produk.gambar.isEmpty || hemat) {
       return GradientThumb(
         seed: produk.id,
         icon: Icons.vpn_key_rounded,

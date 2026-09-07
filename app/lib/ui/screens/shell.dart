@@ -5,7 +5,8 @@ import '../../providers/app_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
 import 'home_screen.dart';
-import 'order_list_screen.dart';
+import 'forum_screen.dart';
+import 'profil_screen.dart';
 import 'sewa_pc_screen.dart';
 
 class XyShell extends StatefulWidget {
@@ -21,16 +22,18 @@ class _XyShellState extends State<XyShell> {
     HomeScreen(),
     SewaPcScreen(),
     AkunScreen(),
-    OrderListScreen(),
+    ForumScreen(),
     CsScreen(),
+    ProfilScreen(),
   ];
 
   static const _items = [
     (Icons.grid_view_rounded, Icons.grid_view_rounded, 'Beranda'),
     (Icons.desktop_windows_outlined, Icons.desktop_windows_rounded, 'Sewa PC'),
     (Icons.storefront_outlined, Icons.storefront_rounded, 'Akun'),
-    (Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Order'),
-    (Icons.forum_outlined, Icons.forum_rounded, 'Chat Admin'),
+    (Icons.groups_2_outlined, Icons.groups_2_rounded, 'Komunitas'),
+    (Icons.forum_outlined, Icons.forum_rounded, 'Chat'),
+    (Icons.person_outline_rounded, Icons.person_rounded, 'Profil'),
   ];
 
   @override
@@ -68,14 +71,14 @@ class _XyShellState extends State<XyShell> {
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
                       height: 32,
-                      width: on ? 58 : 40,
+                      width: on ? 50 : 36,
                       decoration: BoxDecoration(
                         gradient: on ? XyTheme.gradPrimary : null,
                         borderRadius: BorderRadius.circular(XyRadius.pill),
                         boxShadow: on ? XyTheme.glow(XyTheme.primary, .28) : null,
                       ),
                       child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1, size: 20, color: on ? Colors.white : XyTheme.muted),
+                        Icon(on ? it.$2 : it.$1, size: 19, color: on ? Colors.white : XyTheme.muted),
                         if (i == 4 && belum > 0)
                           Positioned(
                             right: on ? 9 : 4,
@@ -102,7 +105,7 @@ class _XyShellState extends State<XyShell> {
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 9.8,
                         fontWeight: on ? FontWeight.w800 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.muted,
                       ),
