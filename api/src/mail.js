@@ -122,18 +122,6 @@ export const TEMPLATE = {
       Perpanjang lewat aplikasi kalau masih butuh.</p>`,
   }),
 
-  laporanHarian: ({ tanggal, ringkas, sorot }) => ({
-    subject: `Laporan harian XyCloudStore ${tanggal}`,
-    isi: `<div style="font-size:22px;font-weight:800;letter-spacing:-.5px">Laporan ${tanggal}</div>
-      <p style="margin:10px 0 18px;color:${MUTED};font-size:13.5px">Ringkasan kegiatan 24 jam terakhir.</p>
-      <div style="background:#FAF8FF;border:1px solid #EAE3F7;border-radius:14px;padding:16px 18px">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          ${ringkas.map(([k, v]) => baris(k, v)).join('')}
-        </table>
-      </div>
-      ${sorot ? `<p style="margin:18px 0 0;font-size:13.5px;line-height:1.7">${sorot}</p>` : ''}`,
-  }),
-
   peringatanSistem: ({ judul, rincian }) => ({
     subject: `Peringatan sistem XyCloudStore: ${judul}`,
     isi: `<div style="font-size:21px;font-weight:800;letter-spacing:-.5px;color:#DC2626">${judul}</div>

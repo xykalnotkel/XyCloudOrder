@@ -20,7 +20,7 @@ import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
-import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, laporanHarian, pantauKesehatan } from './sistem.js';
+import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, pantauKesehatan } from './sistem.js';
 import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, buatCadangan } from './loyal.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
@@ -326,10 +326,6 @@ export default {
     ctx.waitUntil(jalankanPemeliharaan(env));
     // pantau kesehatan tiap jam
     ctx.waitUntil(pantauKesehatan(env, kirimEmail));
-    // laporan harian pukul 01.00 WIB
-    if (new Date().getUTCHours() === 18) {
-      ctx.waitUntil(laporanHarian(env, kirimEmail));
-    }
     // cadangan otomatis sekali sehari pada jam 19 UTC (dini hari WIB)
     if (new Date().getUTCHours() === 19) {
       ctx.waitUntil((async () => {
@@ -1478,12 +1474,6 @@ ${halaman.map(([u, p2, f]) => `  <url>
           await env.DB.prepare(`UPDATE ${tabel} SET sensitif = ? WHERE id = ?`)
             .bind(b.sensitif ? 1 : 0, idK).run();
           return json({ ok: true }, 200, env);
-        }
-
-        // ---- kirim laporan harian sekarang ----
-        if (a === 'sistem/laporan' && req.method === 'POST') {
-          const hasil = await laporanHarian(env, kirimEmail);
-          return json(hasil, hasil.ok ? 200 : 400, env);
         }
 
         // ---- laporan galat aplikasi ----
