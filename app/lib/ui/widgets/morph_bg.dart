@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 
 /// ============================================================
-///  XyMorphBg — latar "morphing" dengan gumpalan kabur melayang
+///  XyMorphBg — latar "morphing" violet-indigo glossy v3.2
 /// ============================================================
-///  Elemen elips/lingkaran blur yang bergerak perlahan (tanpa henti)
+///  Elemen elips/lingkaran blur yang bergerak perlahan
 ///  untuk kesan elemen "melayang seperti bergerak" — dipakai di layar
-///  pembaruan & popup rilis. Ringan: hanya beberapa lingkaran + blur,
-///  dihentikan otomatis bila tab tidak terlihat (via TickerMode).
+///  pembaruan & popup rilis. Palet disesuaikan ke referensi popup:
+///  #100030 (indigo tua) + #8B5CF6 / #A855F7 / #7C3AED
 class XyMorphBg extends StatefulWidget {
   const XyMorphBg({super.key, this.jumlah = 6, this.saturasi = 1.0});
   final int jumlah;
@@ -31,11 +31,17 @@ class _XyMorphBgState extends State<XyMorphBg>
   void initState() {
     super.initState();
     final rnd = math.Random(7);
-    const pal = [Color(0xFFB492DF), Color(0xFFE0C9EF), Color(0xFFD9A6E8)];
+    // Palet baru: violet-indigo glossy (sesuai PopupUpdate.md)
+    const pal = [
+      Color(0xFF8B5CF6), // violet terang #8B5CF6
+      Color(0xFFA855F7), // plum/magenta-violet #A855F7
+      Color(0xFF7C3AED), // primary #7C3AED
+      Color(0xFFC4B5FD), // lavender lembut
+    ];
     _b = List.generate(widget.jumlah, (i) {
       return _Gumpal(
         warna: pal[i % pal.length],
-        r: 60 + rnd.nextInt(70),
+        r: 60 + rnd.nextInt(90),
         dx: rnd.nextDouble() * 1.2,
         dy: rnd.nextDouble() * 1.2,
         base: (i * 0.37 + rnd.nextDouble() * .3),
@@ -59,7 +65,6 @@ class _XyMorphBgState extends State<XyMorphBg>
         return Stack(
           clipBehavior: Clip.none,
           children: _b.map((b) {
-            // lintasan lingkar perlahan + naik/turun, agar "melayang".
             final x = ((b.dx + math.sin(t * 2 * math.pi + b.base)) / 2) * 1;
             final y = ((b.dy + math.cos(t * 2 * math.pi + b.base * 2)) / 2);
             return Positioned(
@@ -73,14 +78,14 @@ class _XyMorphBgState extends State<XyMorphBg>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(colors: [
-                      b.warna.withOpacity(.38 * widget.saturasi),
-                      b.warna.withOpacity(.06),
+                      b.warna.withOpacity(.42 * widget.saturasi),
+                      b.warna.withOpacity(.08),
                       Colors.transparent,
                     ]),
                     boxShadow: [
                       BoxShadow(
-                          color: b.warna.withOpacity(.25),
-                          blurRadius: 40),
+                          color: b.warna.withOpacity(.30),
+                          blurRadius: 44),
                     ],
                   ),
                 ),
@@ -104,7 +109,7 @@ class _Gumpal {
       required this.base});
 }
 
-/// Sedikit overlay noise agar terasa "elemen banyak melayang" tanpa berat.
+/// Dot glow kecil untuk aksen.
 class XyGlowDot extends StatelessWidget {
   const XyGlowDot({super.key, this.size = 6, this.color = XyTheme.lavender});
   final double size;
@@ -115,7 +120,7 @@ class XyGlowDot extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-          color: color.withOpacity(.5), shape: BoxShape.circle),
+          color: color.withOpacity(.55), shape: BoxShape.circle),
     );
   }
 }

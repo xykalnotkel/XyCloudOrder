@@ -3,9 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// ============================================================
-///  XyCloud Design System — Premium Edition
+///  XyCloud Design System — Violet-Indigo Glossy v3.2
 ///  Token spasi, radius, elevasi, gradien, dan tema Material 3.
 /// ============================================================
+/// Referensi warna dari popup contoh XyCloudStore_rental_pc_morphing.jpg:
+/// - BG indigo tua: #100030 / #200050 / #100040
+/// - Aksen violet glossy: #7830C0 / #8B5CF6 / #A855F7
+/// Tema ini diterapkan ke SELURUH UI/UX (app + web + console).
 class XySpace {
   static const double xs = 4;
   static const double sm = 8;
@@ -31,22 +35,22 @@ class XyTheme {
   static XyPalette of(BuildContext context) =>
       XyPalette(Theme.of(context).brightness == Brightness.dark);
 
-  // ---------- palet ungu XyCloudStore ----------
-  // Diambil langsung dari logo resmi: aksen ungu tenang pada permukaan netral.
-  static const Color primary = Color(0xFF6254A8); // ungu utama
-  static const Color primaryDeep = Color(0xFF51448C); // ungu pekat
-  static const Color primaryDark = Color(0xFF3C345E); // ungu paling gelap
-  static const Color primarySoft = Color(0xFFF0EEF7); // latar lembut
-  static const Color violet = Color(0xFF8275BE); // ungu terang
-  static const Color lavender = Color(0xFFB9B0DC); // aksen lembut
-  static const Color plum = Color(0xFF806A9C); // aksen tua
+  // ---------- palet ungu XyCloudStore — VIOLET-INDIGO GLOSSY v3.2 ----------
+  // Diterapkan ke seluruh UI/UX sesuai permintaan: "warnanya pakai ke ui ux semua"
+  static const Color primary = Color(0xFF7C3AED); // violet utama glossy (7830C0 / 7C3AED)
+  static const Color primaryDeep = Color(0xFF5B21B6); // violet pekat
+  static const Color primaryDark = Color(0xFF2E1065); // indigo tua untuk hero/midnight
+  static const Color primarySoft = Color(0xFFF5F3FF); // latar lembut lavender tint
+  static const Color violet = Color(0xFF8B5CF6); // ungu terang glossy (dari referensi)
+  static const Color lavender = Color(0xFFC4B5FD); // aksen lembut
+  static const Color plum = Color(0xFFA855F7); // magenta-violet accent
 
-  static const Color ink = Color(0xFF24313B); // teks utama (ungu kehitaman)
-  static const Color inkSoft = Color(0xFF4F5E6B);
-  static const Color muted = Color(0xFF74818B);
-  static const Color line = Color(0xFFE1E6EC);
-  static const Color lineSoft = Color(0xFFF0F2F5);
-  static const Color bg = Color(0xFFF6F7F9);
+  static const Color ink = Color(0xFF1E1B2E); // teks utama indigo kehitaman
+  static const Color inkSoft = Color(0xFF4B445F);
+  static const Color muted = Color(0xFF7C738F);
+  static const Color line = Color(0xFFE9E3F5);
+  static const Color lineSoft = Color(0xFFF3F0FF);
+  static const Color bg = Color(0xFFF5F3FF); // bg app light lavender
   static const Color surface = Color(0xFFFFFFFF);
 
   static const Color success = Color(0xFF2D7357);
@@ -54,31 +58,34 @@ class XyTheme {
   static const Color danger = Color(0xFFB54450);
   static const Color gold = Color(0xFFD9A441);
 
-  // ---------- gradien (ungu glossy — ORCHID lembut, tipis & hangat) ----------
-  // Nuansa glossy "purple-camel/orchid": puncak rose-ungu terang seperti kaca,
-  // dasar orchid sedang. Gradien TIPIS (2 stop, kontras kecil), bukan ungu tua.
+  // ---------- gradien (VIOLET-INDIGO GLOSSY) ----------
+  // Glossy vertikal: terang di atas (efek kaca) → pekat di bawah.
+  // - gradPrimary: tombol & kartu saldo (paling sering dipakai)
+  // - gradDeep: header / CTA penting
+  // - gradMidnight: latar indigo tua #2E1065 → #100030 (persis BG referensi popup)
+  // - gradAurora: aksen lembut / shimmer
   static const LinearGradient gradPrimary = LinearGradient(
-    colors: [Color(0xFFE0C9EF), Color(0xFFB492DF)],
+    colors: [Color(0xFFA78BFA), Color(0xFF7C3AED)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradDeep = LinearGradient(
-    colors: [Color(0xFFD6BCE9), Color(0xFFA87BD4)],
+    colors: [Color(0xFF8B5CF6), Color(0xFF4C1D95)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradMidnight = LinearGradient(
-    colors: [Color(0xFF3E4E5E), Color(0xFF2D3A48)],
+    colors: [Color(0xFF2E1065), Color(0xFF100030)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradAurora = LinearGradient(
-    colors: [Color(0xFFE8D6F4), Color(0xFFB492DF)],
+    colors: [Color(0xFFC4B5FD), Color(0xFF8B5CF6)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
   static const LinearGradient gradSoft = LinearGradient(
-    colors: [Color(0xFFF6F1FB), Color(0xFFF6F1FB)],
+    colors: [Color(0xFFF5F3FF), Color(0xFFEEE8FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -89,7 +96,7 @@ class XyTheme {
   );
 
   // ---------- elevasi ----------
-  /// Alias lama supaya kode lain tetap jalan (tidak ada warna neon lagi).
+  /// Alias lama supaya kode lain tetap jalan.
   static const Color cyan = violet;
 
   static List<BoxShadow> get shadowXs => [
@@ -115,20 +122,26 @@ class XyTheme {
             offset: const Offset(0, 1)),
       ];
 
-  /// Kilau lembut ungu (bukan neon): tipis & halus.
-  static List<BoxShadow> glow(Color c, [double o = .22]) => [
+  /// Kilau glossy violet-indigo (lebih terasa dari orchid sebelumnya)
+  /// Dipakai di kartu saldo, tombol hero, popup.
+  static List<BoxShadow> glow(Color c, [double o = .28]) => [
         BoxShadow(
-            color: c.withOpacity((o.clamp(0.0, .32)).toDouble()),
-            blurRadius: 22,
-            offset: const Offset(0, 8)),
+            color: c.withOpacity((o.clamp(0.0, .40)).toDouble()),
+            blurRadius: 26,
+            offset: const Offset(0, 10)),
+        BoxShadow(
+            color: c.withOpacity((o * .45).clamp(0.0, .18).toDouble()),
+            blurRadius: 40,
+            offset: const Offset(0, 18)),
       ];
 
-  // ---------- palet gelap ----------
-  static const Color bgGelap = Color(0xFF12171C);
-  static const Color surfaceGelap = Color(0xFF1C242C);
-  static const Color lineGelap = Color(0xFF303C47);
-  static const Color inkGelap = Color(0xFFF0F3F5);
-  static const Color mutedGelap = Color(0xFFA6B3BE);
+  // ---------- palet gelap — INDIGO TUA dari referensi ----------
+  static const Color bgGelap = Color(0xFF100030); // #100030 persis referensi popup
+  static const Color surfaceGelap = Color(0xFF1A0B2E); // #200050-ish
+  static const Color surfaceGelap2 = Color(0xFF25183E);
+  static const Color lineGelap = Color(0xFF2E1A4E);
+  static const Color inkGelap = Color(0xFFF0EBFF);
+  static const Color mutedGelap = Color(0xFFB3A6CA);
 
   // ---------- tema ----------
   static ThemeData light() {
@@ -273,8 +286,7 @@ class XyTheme {
     );
   }
 
-  /// Tema gelap: ungu tetap jadi warna utama, latar dibuat teduh
-  /// supaya nyaman dipakai malam hari tanpa kehilangan identitas merek.
+  /// Tema gelap: indigo tua #100030 + violet glossy, nyaman malam.
   static ThemeData gelap() {
     final base = ThemeData(
       useMaterial3: true,
@@ -409,13 +421,13 @@ class XyPalette {
   Color get bg => dark ? XyTheme.bgGelap : XyTheme.bg;
   Color get surface => dark ? XyTheme.surfaceGelap : XyTheme.surface;
   Color get ink => dark ? XyTheme.inkGelap : XyTheme.ink;
-  Color get inkSoft => dark ? const Color(0xFFC4CFD8) : XyTheme.inkSoft;
-  Color get muted => dark ? const Color(0xFFA6B3BE) : XyTheme.muted;
+  Color get inkSoft => dark ? const Color(0xFFC4B8D8) : XyTheme.inkSoft;
+  Color get muted => dark ? const Color(0xFFB3A6CA) : XyTheme.muted;
   Color get line => dark ? XyTheme.lineGelap : XyTheme.line;
-  Color get lineSoft => dark ? const Color(0xFF252F39) : XyTheme.lineSoft;
-  Color get primarySoft => dark ? const Color(0xFF302E44) : XyTheme.primarySoft;
+  Color get lineSoft => dark ? const Color(0xFF25183E) : XyTheme.lineSoft;
+  Color get primarySoft => dark ? const Color(0xFF25183E) : XyTheme.primarySoft;
   Color get accent => dark ? XyTheme.lavender : XyTheme.primary;
   LinearGradient get gradSoft => dark
-      ? const LinearGradient(colors: [Color(0xFF252F39), Color(0xFF252F39)])
+      ? const LinearGradient(colors: [Color(0xFF25183E), Color(0xFF1A0B2E)])
       : XyTheme.gradSoft;
 }
