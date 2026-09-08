@@ -259,7 +259,7 @@ CREATE TABLE referral (id TEXT PRIMARY KEY, pengundang TEXT NOT NULL, diundang T
 --  rilis
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS rilis;
-CREATE TABLE rilis (id INTEGER PRIMARY KEY CHECK (id = 1), versi TEXT NOT NULL, tanggal TEXT, catatan TEXT, berkas TEXT NOT NULL, diperbarui TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE rilis (id INTEGER PRIMARY KEY CHECK (id = 1), versi TEXT NOT NULL, tanggal TEXT, catatan TEXT, berkas TEXT NOT NULL, diperbarui TEXT NOT NULL DEFAULT (datetime('now')), gambar TEXT);
 
 -- ------------------------------------------------------------
 --  sesi

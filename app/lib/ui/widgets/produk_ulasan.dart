@@ -32,24 +32,13 @@ class GambarProduk extends StatelessWidget {
         radius: radius,
       );
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: Image.network(
-        produk.gambar,
-        height: tinggi,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        cacheWidth: (tinggi * 3).round(),
-        filterQuality: FilterQuality.medium,
-        loadingBuilder: (_, anak, progres) =>
-            progres == null ? anak : Shimmer(height: tinggi, radius: radius),
-        errorBuilder: (_, __, ___) => GradientThumb(
-          seed: produk.id,
-          icon: Icons.vpn_key_rounded,
-          size: tinggi,
-          radius: radius,
-        ),
-      ),
+    return AppImage(
+      produk.gambar,
+      tinggi: tinggi,
+      lebar: double.infinity,
+      fit: BoxFit.cover,
+      radius: radius,
+      placeholderKet: true,
     );
   }
 }

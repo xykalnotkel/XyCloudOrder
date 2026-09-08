@@ -56,6 +56,7 @@ export async function infoRilis(env, ctx) {
         nama: baris.versi,
         tanggal: baris.tanggal,
         catatan: baris.catatan || '',
+        gambar: baris.gambar || '',
         berkas: JSON.parse(baris.berkas || '[]'),
       };
     }
@@ -82,6 +83,7 @@ export async function infoRilis(env, ctx) {
     nama: j.name,
     tanggal: j.published_at,
     catatan: j.body || '',
+    gambar: '',
     berkas: (j.assets || [])
       .filter((a) => a.name.endsWith('.apk'))
       .map((a) => {
@@ -214,16 +216,17 @@ export async function simpanRilis(env, data) {
   }).sort((a, b) => Number(b.utama) - Number(a.utama));
 
   await env.DB.prepare(
-    `INSERT INTO rilis (id,versi,tanggal,catatan,berkas,diperbarui) VALUES (1,?,?,?,?,?)
+    `INSERT INTO rilis (id,versi,tanggal,catatan,berkas,gambar,diperbarui) VALUES (1,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET versi=excluded.versi, tanggal=excluded.tanggal,
-       catatan=excluded.catatan, berkas=excluded.berkas, diperbarui=excluded.diperbarui`
+       catatan=excluded.catatan, berkas=excluded.berkas, gambar=excluded.gambar, diperbarui=excluded.diperbarui`
   ).bind(
     data.versi,
     data.tanggal || new Date().toISOString(),
     data.catatan || '',
     JSON.stringify(berkas),
+    data.gambar || '',
     new Date().toISOString(),
   ).run();
 
-  return { versi: data.versi, berkas };
+  return { versi: data.versi, berkas, gambar: data.gambar || '' };
 }

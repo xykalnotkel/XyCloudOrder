@@ -85,6 +85,21 @@ class AppState extends ChangeNotifier {
   /// Info rilis terbaru untuk pengecek pembaruan.
   Map<String, dynamic>? rilisTerbaru;
   String versiSekarang = '';
+  bool _bannerRilisDitampilkan = false;
+
+  /// Benar kalau ada versi baru dan popup rilis belum ditampilkan sesi ini.
+  bool get tampilkanBannerRilis =>
+      adaPembaruan && !_bannerRilisDitampilkan;
+
+  void tandaiBannerRilis() {
+    _bannerRilisDitampilkan = true;
+    notifyListeners();
+  }
+
+  void resetBannerRilis() {
+    _bannerRilisDitampilkan = false;
+    notifyListeners();
+  }
 
   Future<void> periksaPembaruan() async {
     try {

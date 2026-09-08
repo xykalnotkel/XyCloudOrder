@@ -189,3 +189,18 @@ Prioritas dari pemilik: menyeluruh, terutama di aplikasi.
   kurangi bayangan besar pada item feed, aktifkan `cacheExtent` sedang, dan pastikan layar
   komunitas (thread panjang) & chat CS tidak membangun semua pesan sekaligus (pakai lazy +
   binarisasi tanggal), plus hentikan animasi list saat tab tidak aktif.
+
+### Pembaruan aplikasi (popup rilis + unduh native) — kerangka Flutter SELESAI, native butuh build
+- `rilis` kini punya kolom `gambar` (banner kustom per rilis; migrasi 0004). `/api/rilis`
+  mengembalikannya.
+- Warna glossy diubah ke **Orchid lembut** (swatch #3) & gradien tipis: gradPrimary
+  `#E0C9EF→#B492DF` (bukan ungu tua), glow dikurangi.
+- Kerangka Flutter: `pembaruan_channel.dart` (xycloud/updater), `morph_bg.dart`,
+  `rilis_popup.dart`, `pembaruan_screen.dart`. Auto-popup di shell (sekali/sesi), X →
+  PembaruanScreen. Pengaturan → buka PembaruanScreen.
+- Media: tambah `cached_network_image` (disk cache perangkat); `GambarProduk` memakai
+  `AppImage`. Produk/banner CDN tetap dioptimasi `/img`.
+- Native Android (DownloadManager + notif progress, jalan saat app ditutup) **belum** bisa
+  kubuild — lihat `docs/rilis-3.0-pembaruan-app.md` (kode Kotlin + permission + cara uji).
+  WAJIB di-build & diuji di perangkat sebelum rilis.
+- Preview: `preview/app-glossy-preview.html`, `preview/warna-glossy.html`.

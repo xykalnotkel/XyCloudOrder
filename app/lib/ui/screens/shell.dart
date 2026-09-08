@@ -1,4 +1,5 @@
 import '../widgets/promo_overlay.dart';
+import '../widgets/rilis_popup.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme.dart';
@@ -33,6 +34,30 @@ class _XyShellState extends State<XyShell> {
     if (tertunda != null) {
       PushService.tertunda = null;
       WidgetsBinding.instance.addPostFrameCallback((_) => _tanganiNotif(tertunda));
+    }
+    // popup rilis (muncul otomatis bila ada versi baru; aman tampil sekali)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) _mungkinTampilkanRilis();
+      });
+    });
+  }
+
+  int _cobaRilis = 0;
+  Future<void> _mungkinTampilkanRilis() async {
+    if (!mounted) return;
+    final s = context.read<AppState>();
+    // tunggu data versi selesai dimuat (periksaPembaruan jalan di latar)
+    if ((s.rilisTerbaru == null || s.versiSekarang.isEmpty) && _cobaRilis < 6) {
+      _cobaRilis++;
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) _mungkinTampilkanRilis();
+      });
+      return;
+    }
+    if (s.tampilkanBannerRilis && mounted) {
+      s.tandaiBannerRilis();
+      await tampilkanRilisPopup(context, s);
     }
   }
 

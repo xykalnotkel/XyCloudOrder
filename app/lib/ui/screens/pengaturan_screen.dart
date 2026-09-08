@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
+import 'pembaruan_screen.dart';
 import 'tentang_screen.dart';
 import 'opsi_screen.dart';
 import 'hapus_akun_screen.dart';
@@ -951,23 +952,10 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                 ),
                 const SizedBox(height: 16),
                 GradientButton(
-                  label: 'Unduh Versi Terbaru',
-                  icon: Icons.download_rounded,
-                  onPressed: () async {
-                    try {
-                      await AndroidIntent(
-                        action: 'action_view',
-                        data: 'https://xycloud.my.id/unduh',
-                        flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
-                      ).launch();
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Buka xycloud.my.id/unduh lewat peramban.')),
-                        );
-                      }
-                    }
-                  },
+                  label: 'Lihat & Perbarui Sekarang',
+                  icon: Icons.system_update_alt_rounded,
+                  onPressed: () => Navigator.push(
+                      context, xyRoute(const PembaruanScreen())),
                 ),
               ]),
             ),

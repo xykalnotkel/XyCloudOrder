@@ -54,31 +54,31 @@ class XyTheme {
   static const Color danger = Color(0xFFB54450);
   static const Color gold = Color(0xFFD9A441);
 
-  // ---------- gradien (kilau glossy ungu) ----------
-  // Gradien vertikal berlapis: puncak lebih terang seperti pantulan kaca,
-  // dasar lebih pekat. Memberi kesan glossy/berkilau tanpa kembali ke neon.
+  // ---------- gradien (ungu glossy — ORCHID lembut, tipis & hangat) ----------
+  // Nuansa glossy "purple-camel/orchid": puncak rose-ungu terang seperti kaca,
+  // dasar orchid sedang. Gradien TIPIS (2 stop, kontras kecil), bukan ungu tua.
   static const LinearGradient gradPrimary = LinearGradient(
-    colors: [Color(0xFF9C90E2), Color(0xFF6E60C2), Color(0xFF51448F)],
+    colors: [Color(0xFFE0C9EF), Color(0xFFB492DF)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradDeep = LinearGradient(
-    colors: [Color(0xFF8A7DD6), Color(0xFF5B4E9F), Color(0xFF3E3372)],
+    colors: [Color(0xFFD6BCE9), Color(0xFFA87BD4)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradMidnight = LinearGradient(
-    colors: [Color(0xFF2D3A48), Color(0xFF222C38), Color(0xFF1A222C)],
+    colors: [Color(0xFF3E4E5E), Color(0xFF2D3A48)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
   static const LinearGradient gradAurora = LinearGradient(
-    colors: [Color(0xFFB6ACE9), Color(0xFF8275BE), Color(0xFF5F52A0)],
+    colors: [Color(0xFFE8D6F4), Color(0xFFB492DF)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
   static const LinearGradient gradSoft = LinearGradient(
-    colors: [Color(0xFFF0F2F5), Color(0xFFF0F2F5)],
+    colors: [Color(0xFFF6F1FB), Color(0xFFF6F1FB)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -115,16 +115,12 @@ class XyTheme {
             offset: const Offset(0, 1)),
       ];
 
-  /// Kilau lembut ungu (bukan neon): bayangan berwarna transparan untuk kartu/hero.
-  static List<BoxShadow> glow(Color c, [double o = .30]) => [
+  /// Kilau lembut ungu (bukan neon): tipis & halus.
+  static List<BoxShadow> glow(Color c, [double o = .22]) => [
         BoxShadow(
-            color: c.withOpacity((o.clamp(0.0, .45)).toDouble()),
-            blurRadius: 24,
-            offset: const Offset(0, 10)),
-        BoxShadow(
-            color: c.withOpacity(.06),
-            blurRadius: 6,
-            offset: const Offset(0, 2)),
+            color: c.withOpacity((o.clamp(0.0, .32)).toDouble()),
+            blurRadius: 22,
+            offset: const Offset(0, 8)),
       ];
 
   // ---------- palet gelap ----------

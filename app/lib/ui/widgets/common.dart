@@ -1,7 +1,52 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme.dart';
 import '../../data/realtime_service.dart';
+
+// ============================================================
+//  Gambar jaringan dengan cache disk di perangkat
+// ============================================================
+/// Muat gambar dari CDN lalu SIMPAN di penyimpanan lokal (disk cache)
+/// supaya membuka ulang instan dan tidak mengunduh tiap kali.
+/// Tetap tampil utuh di tengah loading & saat error.
+class AppImage extends StatelessWidget {
+  const AppImage(this.url,
+      {super.key,
+      this.tinggi,
+      this.lebar,
+      this.fit = BoxFit.cover,
+      this.radius,
+      this.placeholderKet = false});
+  final String url;
+  final double? tinggi, lebar;
+  final BoxFit fit;
+  final double? radius;
+  final bool placeholderKet;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget isi() => CachedNetworkImage(
+          imageUrl: url,
+          height: tinggi,
+          width: lebar,
+          fit: fit,
+          memCacheWidth: (tinggi ?? 200).toInt() * 3,
+          fadeInDuration: const Duration(milliseconds: 150),
+          placeholder: (_, __) => placeholderKet
+              ? const Shimmer()
+              : const SizedBox.shrink(),
+          errorWidget: (_, __, ___) => Container(
+            color: XyTheme.of(context).primarySoft,
+            child: const Icon(Icons.broken_image_outlined,
+                color: XyTheme.muted),
+          ),
+        );
+    if (radius == null) return isi();
+    return ClipRRect(
+        borderRadius: BorderRadius.circular(radius!), child: isi());
+  }
+}
 
 // ============================================================
 //  Kartu & permukaan
