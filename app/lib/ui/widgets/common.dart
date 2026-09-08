@@ -298,33 +298,12 @@ class GradientThumb extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) {
-    final h = seed.codeUnits.fold<int>(0, (a, b) => a + b * 7);
-    final hue = (h * 23 % 360).toDouble();
-    final c1 = HSLColor.fromAHSL(1, hue, .68, .60).toColor();
-    final c2 = HSLColor.fromAHSL(1, (hue + 38) % 360, .70, .44).toColor();
-    final tinggi = height ?? size;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: SizedBox(
-        width: size,
-        height: tinggi,
-        child: Stack(fit: StackFit.expand, children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [c1, c2], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            ),
-          ),
-          CustomPaint(painter: _MeshPainter(hue)),
-          Center(
-            child: Icon(icon ?? Icons.memory_rounded,
-                color: Colors.white.withOpacity(.95), size: tinggi * .40),
-          ),
-        ]),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    width:size,height:height??size,
+    decoration:BoxDecoration(color:XyTheme.of(context).primarySoft,borderRadius:BorderRadius.circular(radius)),
+    alignment:Alignment.center,
+    child:Icon(icon??Icons.memory_rounded,color:XyTheme.of(context).accent,size:(height??size)*.40),
+  );
 }
 
 class _MeshPainter extends CustomPainter {
@@ -534,89 +513,14 @@ class XyIlustrasi extends StatelessWidget {
 
 /// Blob gradien lembut untuk latar layar onboarding / welcome.
 class AuroraBackground extends StatelessWidget {
-  const AuroraBackground({super.key, this.child, this.dark = false});
-  final Widget? child;
-  final bool dark;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(children: [
-      Positioned.fill(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: dark ? XyTheme.gradMidnight : const LinearGradient(
-              colors: [Color(0xFFFDFBFF), Color(0xFFF4EEFF)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-        ),
-      ),
-      Positioned(
-        top: -110,
-        right: -80,
-        child: _Blob(color: XyTheme.primary.withOpacity(dark ? .38 : .16), size: 300),
-      ),
-      Positioned(
-        top: 140,
-        left: -120,
-        child: _Blob(color: XyTheme.violet.withOpacity(dark ? .30 : .13), size: 280),
-      ),
-      Positioned(
-        bottom: -90,
-        right: -60,
-        child: _Blob(color: XyTheme.cyan.withOpacity(dark ? .26 : .12), size: 260),
-      ),
-      if (child != null) Positioned.fill(child: child!),
-    ]);
-  }
+  const AuroraBackground({super.key,this.child,this.dark=false});
+  final Widget? child;final bool dark;
+  @override Widget build(BuildContext context)=>SizedBox.expand(child:ColoredBox(color:dark?XyTheme.ink:XyTheme.of(context).bg,child:child));
 }
-
-class _Blob extends StatelessWidget {
-  const _Blob({required this.color, required this.size});
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(colors: [color, color.withOpacity(0)]),
-      ),
-    );
-  }
-}
-
-/// Grid titik halus ala dashboard premium.
 class DotGrid extends StatelessWidget {
-  const DotGrid({super.key, this.color = const Color(0x14FFFFFF), this.gap = 22});
-  final Color color;
-  final double gap;
-
-  @override
-  Widget build(BuildContext context) => CustomPaint(painter: _DotPainter(color, gap), size: Size.infinite);
-}
-
-class _DotPainter extends CustomPainter {
-  _DotPainter(this.color, this.gap);
-  final Color color;
-  final double gap;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = color;
-    for (double y = 0; y < size.height; y += gap) {
-      for (double x = 0; x < size.width; x += gap) {
-        canvas.drawCircle(Offset(x, y), 1.1, p);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DotPainter old) => false;
+  const DotGrid({super.key,this.color=const Color(0x14FFFFFF),this.gap=22});
+  final Color color;final double gap;
+  @override Widget build(BuildContext context)=>const SizedBox.shrink();
 }
 
 /// Animasi masuk berurutan untuk daftar item.

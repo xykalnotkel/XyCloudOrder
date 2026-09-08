@@ -31,6 +31,21 @@ public final class NotificationSettings {
     }
     @SuppressWarnings("unchecked") public Object handle(String method,Object arguments){
         Map<String,Object> args=arguments instanceof Map?(Map<String,Object>)arguments:new HashMap<>();
+        if(method.equals("deviceIdentity")){
+            try {
+                String raw=Settings.Secure.getString(activity.getContentResolver(),Settings.Secure.ANDROID_ID);
+                String kind="android";
+                if(raw==null||raw.isEmpty()||raw.equals("9774d56d682e549c")){
+                    kind="install";
+                    android.content.SharedPreferences sp=activity.getSharedPreferences("xy_device",0);
+                    raw=sp.getString("identity",null);
+                    if(raw==null){raw=java.util.UUID.randomUUID().toString();sp.edit().putString("identity",raw).apply();}
+                }
+                byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest((activity.getPackageName()+":"+raw).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                StringBuilder id=new StringBuilder();for(byte b:hash)id.append(String.format(java.util.Locale.ROOT,"%02x",b&255));
+                Map<String,Object> result=new HashMap<>();result.put("id",id.toString());result.put("kind",kind);result.put("model",Build.MANUFACTURER+" "+Build.MODEL);return result;
+            }catch(Exception e){throw new IllegalStateException("Identitas perangkat belum tersedia");}
+        }
         if(method.equals("notificationStatus")){
             ensureChannels();List<Map<String,Object>> out=new ArrayList<>();
             NotificationManager manager=(NotificationManager)activity.getSystemService(Activity.NOTIFICATION_SERVICE);

@@ -1,3 +1,5 @@
+import '../../core/pengaturan.dart';
+import '../../data/stiker_store.dart';
 import '../widgets/waktu_relatif.dart';
 import 'dart:async';
 import '../../models/stiker.dart';
@@ -495,6 +497,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Future<void> _kirim() async {
     final text = _balas.text.trim();
+    final stickerUntukDisimpan=_stiker;
+    final pemilik=context.read<AppState>().user?.id;
     if (_mengirim || (text.isEmpty && _stiker == null)) return;
     setState(() => _mengirim = true);
     final pesan = await context.read<AppState>().balasForum(
@@ -506,6 +510,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(pesan)));
       return;
+    }
+    if(stickerUntukDisimpan!=null&&pemilik!=null&&PengaturanLokal.nilai['stickerAutoSave']!=false){
+      unawaited(StikerStore.untuk(pemilik).simpan(stickerUntukDisimpan.stiker,bytes:stickerUntukDisimpan.bytes).then((_){}).catchError((e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Komentar terkirim, tetapi stiker belum tersimpan lokal. Periksa kapasitas koleksi.')));}));
     }
     _balas.clear();
     setState(() {

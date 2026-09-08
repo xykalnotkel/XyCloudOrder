@@ -12,7 +12,7 @@ void main() {
   });
 
   test('Token tema memakai identitas ungu XyCloudStore', () {
-    expect(XyTheme.primary, const Color(0xFF6C2BE2));
+    expect(XyTheme.primary, const Color(0xFF6254A8));
     expect(XyTheme.light().useMaterial3, isTrue);
   });
 

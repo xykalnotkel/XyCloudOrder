@@ -1,3 +1,4 @@
+import 'device_identity.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -6,10 +7,11 @@ import '../core/config.dart';
 class ApiException implements Exception {
   final int status;
   final String pesan;
-  ApiException(this.status, this.pesan);
+  final String? code;
+  ApiException(this.status, this.pesan, {this.code});
 
   /// Benar kalau server sedang dalam mode pemeliharaan (HTTP 503).
-  bool get sedangPerawatan => status == 503;
+  bool get sedangPerawatan => status == 503 && (code=='MAINTENANCE'||RegExp(r'perawatan|pemeliharaan',caseSensitive:false).hasMatch(pesan));
 
   @override
   String toString() => 'ApiException($status): $pesan';
@@ -24,6 +26,7 @@ class ApiClient {
   /// Dipanggil setiap kali server menjawab 503 (mode pemeliharaan), supaya
   /// aplikasi bisa menampilkan halaman perawatan yang jelas. Diisi oleh AppState.
   void Function(String pesan)? onPerawatan;
+  void Function()? onSesiBerakhir;
 
   String? get token => _token;
   void setToken(String? t) => _token = t;
@@ -31,6 +34,7 @@ class ApiClient {
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        ...DeviceIdentity.headers,
         if (_token != null) 'Authorization': 'Bearer $_token',
       };
 
@@ -83,8 +87,10 @@ class ApiClient {
       return body;
     }
     final msg = (body is Map ? body['error'] ?? body['message'] : null) ?? 'Terjadi kesalahan';
-    if (r.statusCode == 503) onPerawatan?.call('$msg');
-    throw ApiException(r.statusCode, '$msg');
+    final e=ApiException(r.statusCode,'$msg',code:body is Map?body['code'] as String?:null);
+    if(e.sedangPerawatan)onPerawatan?.call('$msg');
+    if(r.statusCode==401&&_token!=null&&('$msg'=='Unauthorized'||'$msg'.startsWith('Sesi berakhir')))onSesiBerakhir?.call();
+    throw e;
   }
 
   void dispose() => _http.close();

@@ -189,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       delay: const Duration(milliseconds: 140),
                       child: Text(
                         daftar
-                            ? 'Daftar gratis. Kami kirim kode verifikasi ke emailmu, jadi pastikan emailnya aktif.'
+                            ? 'Pendaftaran dibatasi per perangkat, jaringan, dan email. Pastikan email aktif untuk menerima kode verifikasi.'
                             : 'Masuk untuk melanjutkan sewa PC, membeli akun, dan memantau order kamu.',
                         style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 14, height: 1.6),
                       ),

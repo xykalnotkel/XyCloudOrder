@@ -19,12 +19,12 @@ class XySpace {
 class XyRadius {
   static const double sm = 14;
   static const double md = 18;
-  static const double lg = 22;
-  static const double xl = 28;
+  static const double lg = 18;
+  static const double xl = 22;
   static const double pill = 100;
 
   /// Radius khusus tombol supaya bentuknya membulat, bukan kotak.
-  static const double tombol = 30;
+  static const double tombol = 12;
 }
 
 class XyTheme {
@@ -32,56 +32,56 @@ class XyTheme {
       XyPalette(Theme.of(context).brightness == Brightness.dark);
 
   // ---------- palet ungu XyCloudStore ----------
-  // Diambil langsung dari logo resmi: ungu pekat glosi, tanpa warna neon.
-  static const Color primary = Color(0xFF6C2BE2); // ungu utama
-  static const Color primaryDeep = Color(0xFF4A12B8); // ungu pekat
-  static const Color primaryDark = Color(0xFF33087F); // ungu paling gelap
-  static const Color primarySoft = Color(0xFFF2ECFF); // latar lembut
-  static const Color violet = Color(0xFF8B5CF6); // ungu terang
-  static const Color lavender = Color(0xFFC4B5FD); // aksen lembut
-  static const Color plum = Color(0xFF9333EA); // aksen tua
+  // Diambil langsung dari logo resmi: aksen ungu tenang pada permukaan netral.
+  static const Color primary = Color(0xFF6254A8); // ungu utama
+  static const Color primaryDeep = Color(0xFF51448C); // ungu pekat
+  static const Color primaryDark = Color(0xFF3C345E); // ungu paling gelap
+  static const Color primarySoft = Color(0xFFF0EEF7); // latar lembut
+  static const Color violet = Color(0xFF8275BE); // ungu terang
+  static const Color lavender = Color(0xFFB9B0DC); // aksen lembut
+  static const Color plum = Color(0xFF806A9C); // aksen tua
 
-  static const Color ink = Color(0xFF1A1033); // teks utama (ungu kehitaman)
-  static const Color inkSoft = Color(0xFF453B5E);
-  static const Color muted = Color(0xFF7C7391);
-  static const Color line = Color(0xFFEAE3F7);
-  static const Color lineSoft = Color(0xFFF4F0FD);
-  static const Color bg = Color(0xFFFAF8FF);
+  static const Color ink = Color(0xFF24313B); // teks utama (ungu kehitaman)
+  static const Color inkSoft = Color(0xFF4F5E6B);
+  static const Color muted = Color(0xFF74818B);
+  static const Color line = Color(0xFFE1E6EC);
+  static const Color lineSoft = Color(0xFFF0F2F5);
+  static const Color bg = Color(0xFFF6F7F9);
   static const Color surface = Color(0xFFFFFFFF);
 
-  static const Color success = Color(0xFF16A34A);
+  static const Color success = Color(0xFF2D7357);
   static const Color warning = Color(0xFFD9880F);
-  static const Color danger = Color(0xFFDC2626);
+  static const Color danger = Color(0xFFB54450);
   static const Color gold = Color(0xFFD9A441);
 
   // ---------- gradien ----------
   static const LinearGradient gradPrimary = LinearGradient(
-    colors: [Color(0xFF7C3AED), Color(0xFF5B16CC)],
+    colors: [Color(0xFF6254A8), Color(0xFF6254A8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradDeep = LinearGradient(
-    colors: [Color(0xFF33087F), Color(0xFF5B16CC), Color(0xFF7C3AED)],
+    colors: [Color(0xFF51448C), Color(0xFF51448C)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradMidnight = LinearGradient(
-    colors: [Color(0xFF1A1033), Color(0xFF2E1065), Color(0xFF4A12B8)],
+    colors: [Color(0xFF2D3A48), Color(0xFF2D3A48)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradAurora = LinearGradient(
-    colors: [Color(0xFFC4B5FD), Color(0xFF8B5CF6), Color(0xFF6C2BE2)],
+    colors: [Color(0xFF8275BE), Color(0xFF8275BE)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
   static const LinearGradient gradSoft = LinearGradient(
-    colors: [Color(0xFFF6F1FF), Color(0xFFEDE4FF)],
+    colors: [Color(0xFFF0F2F5), Color(0xFFF0F2F5)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   static const LinearGradient gradGold = LinearGradient(
-    colors: [Color(0xFFE8C07A), Color(0xFFC08A2E)],
+    colors: [Color(0xFFD3BB8A), Color(0xFFD3BB8A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -112,19 +112,14 @@ class XyTheme {
             blurRadius: 4,
             offset: const Offset(0, 1)),
       ];
-  static List<BoxShadow> glow(Color c, [double o = .32]) => [
-        BoxShadow(
-            color: c.withOpacity(o),
-            blurRadius: 26,
-            offset: const Offset(0, 12)),
-      ];
+  static List<BoxShadow> glow(Color c, [double o = .32]) => const [];
 
   // ---------- palet gelap ----------
-  static const Color bgGelap = Color(0xFF120C22);
-  static const Color surfaceGelap = Color(0xFF1B1233);
-  static const Color lineGelap = Color(0xFF2C1F4D);
-  static const Color inkGelap = Color(0xFFECE6FA);
-  static const Color mutedGelap = Color(0xFF9C92B8);
+  static const Color bgGelap = Color(0xFF12171C);
+  static const Color surfaceGelap = Color(0xFF1C242C);
+  static const Color lineGelap = Color(0xFF303C47);
+  static const Color inkGelap = Color(0xFFF0F3F5);
+  static const Color mutedGelap = Color(0xFFA6B3BE);
 
   // ---------- tema ----------
   static ThemeData light() {
@@ -405,13 +400,13 @@ class XyPalette {
   Color get bg => dark ? XyTheme.bgGelap : XyTheme.bg;
   Color get surface => dark ? XyTheme.surfaceGelap : XyTheme.surface;
   Color get ink => dark ? XyTheme.inkGelap : XyTheme.ink;
-  Color get inkSoft => dark ? const Color(0xFFCCC1DF) : XyTheme.inkSoft;
-  Color get muted => dark ? const Color(0xFFB2A6C9) : XyTheme.muted;
+  Color get inkSoft => dark ? const Color(0xFFC4CFD8) : XyTheme.inkSoft;
+  Color get muted => dark ? const Color(0xFFA6B3BE) : XyTheme.muted;
   Color get line => dark ? XyTheme.lineGelap : XyTheme.line;
-  Color get lineSoft => dark ? const Color(0xFF251A3B) : XyTheme.lineSoft;
-  Color get primarySoft => dark ? const Color(0xFF30204A) : XyTheme.primarySoft;
+  Color get lineSoft => dark ? const Color(0xFF252F39) : XyTheme.lineSoft;
+  Color get primarySoft => dark ? const Color(0xFF302E44) : XyTheme.primarySoft;
   Color get accent => dark ? XyTheme.lavender : XyTheme.primary;
   LinearGradient get gradSoft => dark
-      ? const LinearGradient(colors: [Color(0xFF291B40), Color(0xFF20152F)])
+      ? const LinearGradient(colors: [Color(0xFF252F39), Color(0xFF252F39)])
       : XyTheme.gradSoft;
 }

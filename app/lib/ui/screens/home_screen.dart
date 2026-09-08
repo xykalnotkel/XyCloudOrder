@@ -260,33 +260,18 @@ class _KartuSaldoState extends State<_KartuSaldo> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           gradient: const LinearGradient(
-            colors: [Color(0xFF3B0F8F), Color(0xFF6C2BE2), Color(0xFF4A12B8)],
+            colors: [Color(0xFF334251), Color(0xFF334251), Color(0xFF334251)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             stops: [0, .55, 1],
           ),
           boxShadow: [
-            BoxShadow(color: XyTheme.primaryDark.withOpacity(.42), blurRadius: 26, offset: const Offset(0, 14)),
+            BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 8, offset: const Offset(0, 3)),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: Stack(children: [
-            // kilau melintang khas kartu
-            Positioned(
-              right: -70,
-              top: -90,
-              child: Container(
-                width: 250,
-                height: 250,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(colors: [Colors.white.withOpacity(.16), Colors.transparent]),
-                ),
-              ),
-            ),
-            Positioned.fill(child: CustomPaint(painter: _GarisKartu())),
-
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

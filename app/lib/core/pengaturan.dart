@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PengaturanLokal {
   static const defaults = <String, dynamic>{
-    'resolution': '1280x720',
+    'stickerAutoSave': true, 'resolution': '1280x720',
     'fps': 60,
     'bitrate': 10000,
     'codec': 'auto',

@@ -20,7 +20,7 @@ public class XyGameActivity extends Game {
         super.onCreate(state);
         FrameLayout root=findViewById(android.R.id.content);
         hud=new LinearLayout(this);hud.setOrientation(LinearLayout.HORIZONTAL);
-        hud.setPadding(8,4,8,4);hud.setBackgroundColor(0xB51A1033);
+        hud.setPadding(8,4,8,4);hud.setBackgroundColor(0xCF263541);
         addButton("‹ Sesi",()->new AlertDialog.Builder(this).setTitle("Kembali ke sesi?")
             .setMessage("Video akan terputus. Waktu sewa tetap berjalan sampai sesi diakhiri di XyCloudStore.")
             .setNegativeButton("Batal",null).setPositiveButton("Kembali",(d,w)->finish()).show());
@@ -30,7 +30,7 @@ public class XyGameActivity extends Game {
             new AlertDialog.Builder(this).setTitle("Tombol keyboard")
                 .setItems(keys,(d,i)->xyTapKey(i==0?KeyEvent.KEYCODE_ESCAPE:i==1?KeyEvent.KEYCODE_TAB:KeyEvent.KEYCODE_F1+i-2)).show();
         });
-        Button toggle=new Button(this);toggle.setText("☰");toggle.setTextColor(Color.WHITE);toggle.setBackgroundColor(0xB56C2BE2);
+        Button toggle=new Button(this);toggle.setText("☰");toggle.setTextColor(Color.WHITE);toggle.setBackgroundColor(0xCF475664);
         toggle.setOnClickListener(v->hud.setVisibility(hud.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE));
         FrameLayout.LayoutParams menu=new FrameLayout.LayoutParams(dp(42),dp(42),Gravity.TOP|Gravity.END);menu.setMargins(0,dp(6),dp(8),0);root.addView(toggle,menu);
         FrameLayout.LayoutParams params=new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,ViewGroup.LayoutParams.WRAP_CONTENT,Gravity.TOP|Gravity.CENTER_HORIZONTAL);params.topMargin=dp(6);root.addView(hud,params);

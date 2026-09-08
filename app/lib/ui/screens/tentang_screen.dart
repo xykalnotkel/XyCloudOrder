@@ -51,7 +51,7 @@ class _TentangScreenState extends State<TentangScreen> {
             ]),
           ),
 
-          ListTile(leading:const Icon(Icons.code_rounded),title:const Text('Source & lisensi streaming'),subtitle:const Text('XyCloudStore memakai engine Moonlight GPLv3'),onTap:()=>launchUrl(Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/tag/v2.5.1'),mode:LaunchMode.externalApplication)),
+          ListTile(leading:const Icon(Icons.code_rounded),title:const Text('Source & lisensi streaming'),subtitle:const Text('XyCloudStore memakai engine Moonlight GPLv3'),onTap:()=>launchUrl(Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/tag/v2.6.0'),mode:LaunchMode.externalApplication)),
           const SectionHeader('Legal'),
           _Baris(
             ikon: Icons.description_outlined,

@@ -21,37 +21,26 @@ Future<PilihanStiker?> pilihStiker(BuildContext context) =>
       builder: (_) => const StikerPicker(),
     );
 
-class GambarStiker extends StatelessWidget {
-  const GambarStiker(this.stiker, {super.key, this.bytes, this.ukuran = 160});
-  final Stiker stiker;
-  final Uint8List? bytes;
-  final double ukuran;
-  @override
-  Widget build(BuildContext context) => Semantics(
-      label: stiker.nama,
-      image: true,
-      child: SizedBox(
-        width: ukuran,
-        height: ukuran,
-        child: bytes != null
-            ? Image.memory(bytes!,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.broken_image_outlined))
-            : Image.network(stiker.url,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
-                loadingBuilder: (_, child, p) => p == null
-                    ? child
-                    : const Center(
-                        child: SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2))),
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.broken_image_outlined)),
-      ));
+class GambarStiker extends StatefulWidget {
+  const GambarStiker(this.stiker,{super.key,this.bytes,this.ukuran=160});
+  final Stiker stiker;final Uint8List? bytes;final double ukuran;
+  @override State<GambarStiker> createState()=>_GambarStikerState();
+}
+class _GambarStikerState extends State<GambarStiker>{
+  Future<Uint8List>? future;
+  @override void initState(){super.initState();load();}
+  @override void didUpdateWidget(covariant GambarStiker old){super.didUpdateWidget(old);if(old.stiker.url!=widget.stiker.url||old.bytes!=widget.bytes)load();}
+  void load(){
+    if(widget.bytes!=null){future=Future.value(widget.bytes!);return;}
+    String? user;try{user=context.read<AppState>().user?.id;}catch(_){}
+    future=user==null?StikerStore.unduh(widget.stiker.url):StikerStore.untuk(user).bytesUntuk(widget.stiker);
+  }
+  @override Widget build(BuildContext context)=>Semantics(label:widget.stiker.nama,image:true,child:SizedBox(width:widget.ukuran,height:widget.ukuran,
+    child:FutureBuilder<Uint8List>(future:future,builder:(context,snapshot){
+      if(snapshot.hasData)return Image.memory(snapshot.data!,fit:BoxFit.contain,gaplessPlayback:true,cacheWidth:(widget.ukuran*MediaQuery.devicePixelRatioOf(context)).ceil().clamp(128,512),errorBuilder:(_,__,___)=>const Icon(Icons.broken_image_outlined));
+      if(snapshot.hasError)return IconButton(tooltip:'Coba muat stiker lagi',onPressed:()=>setState(load),icon:const Icon(Icons.refresh_rounded));
+      return const Center(child:SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)));
+    })));
 }
 
 Future<void> menuStiker(BuildContext context, Stiker stiker) async {

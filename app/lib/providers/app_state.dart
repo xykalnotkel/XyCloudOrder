@@ -28,6 +28,7 @@ class AppState extends ChangeNotifier {
       offline = false;
       notifyListeners();
     };
+    _api.onSesiBerakhir=(){if(user!=null&&!sedangKeluar)unawaited(logout());};
     _repo = XyRepository.create(_api);
     unawaited(muatKonfigurasi());
     unawaited(muatPromosi());
@@ -672,9 +673,11 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<String?> kodePasswordSosial() async {try{await _api.post('/me/password/kode');return null;}catch(e){return _pesan(e);}}
   Future<String?> gantiPassword(String lama, String baru) async {
     try {
       await _repo.gantiPassword(lama, baru);
+      await logout();
       return null;
     } catch (e) {
       return _pesan(e);

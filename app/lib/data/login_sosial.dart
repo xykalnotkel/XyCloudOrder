@@ -1,3 +1,4 @@
+import 'device_identity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -60,7 +61,7 @@ class LoginSosial {
   /// dikembalikan lewat tautan xycloudstore://auth?token=...
   static Future<String> tokenLewatHalaman(String provider) async {
     final mulai = Uri.parse('${XyConfig.aktif}/api/auth/$provider/start')
-        .replace(queryParameters: {'state': DateTime.now().millisecondsSinceEpoch.toString()});
+        .replace(queryParameters: {if(DeviceIdentity.id.isNotEmpty)'device':DeviceIdentity.id});
 
     try {
       final hasil = await FlutterWebAuth2.authenticate(

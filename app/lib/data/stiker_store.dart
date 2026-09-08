@@ -27,6 +27,8 @@ class StikerStore {
   Future<void>? _initializing;
   Future<void> _queue = Future.value();
   List<StikerLokal> _items = [];
+  final Map<String,Future<Uint8List>> _downloads = {};
+  static const batasCache = 32 * 1024 * 1024;
   String get _keyName => 'xy_stiker_key_$_id';
 
   Future<void> _siap() => _initializing ??= _buka();
@@ -93,7 +95,7 @@ class StikerStore {
   Future<StikerLokal> simpan(Stiker sticker, {Uint8List? bytes}) =>
       _urut(() async {
         await _siap();
-        bytes ??= await unduh(sticker.url);
+        bytes ??= await bytesUntuk(sticker);
         if (bytes!.length > batasBytes)
           throw const FormatException('Stiker maksimal 2 MB.');
         final id = sha256.convert(bytes!).toString();
@@ -131,8 +133,45 @@ class StikerStore {
         _initializing = null;
       });
 
+  Future<Uint8List> bytesUntuk(Stiker stiker) {
+    final id=sha256.convert(utf8.encode(stiker.url)).toString();
+    final active=_downloads[id];if(active!=null)return active;
+    final job=_cacheRead(stiker,id);_downloads[id]=job;
+    job.then<void>((_){_downloads.remove(id);},onError:(Object _,StackTrace __){_downloads.remove(id);});
+    return job;
+  }
+  Future<Uint8List> _cacheRead(Stiker stiker,String id) async {
+    await _siap();final file=File('${_dir!.path}/cache_$id.xys');
+    if(await file.exists()){
+      try{final bytes=await StikerCipher.dekripsi(await file.readAsBytes(),_key!);await file.setLastModified(DateTime.now());return bytes;}
+      catch(_){await file.delete();}
+    }
+    final bytes=await unduh(stiker.url);
+    await _tulis('cache_$id.xys',bytes);
+    await _rapikanCache();return bytes;
+  }
+  Future<void> _rapikanCache() async {
+    final files=await _dir!.list().where((x)=>x is File&&x.path.split('/').last.startsWith('cache_')&&x.path.endsWith('.xys')).cast<File>().toList();
+    final sizes=<String,int>{},times=<String,DateTime>{};var total=0;
+    for(final file in files){final stat=await file.stat();sizes[file.path]=stat.size;times[file.path]=stat.modified;total+=stat.size;}
+    files.sort((a,b)=>times[a.path]!.compareTo(times[b.path]!));
+    for(final file in files){if(total<=batasCache)break;total-=sizes[file.path]!;try{await file.delete();}catch(_){}}
+  }
+  Future<Map<String,dynamic>> informasi() async {
+    await _siap();await _queue;var cache=0,collection=0;
+    await for(final entry in _dir!.list()){
+      if(entry is! File)continue;final size=await entry.length();
+      if(entry.path.split('/').last.startsWith('cache_'))cache+=size;else collection+=size;
+    }
+    return {'path':_dir!.path,'count':_items.length,'cacheBytes':cache,'collectionBytes':collection,'maxCache':batasCache};
+  }
+  Future<void> bersihkanCache() async {
+    await _siap();
+    await for(final f in _dir!.list())if(f is File&&f.path.split('/').last.startsWith('cache_')){try{await f.delete();}catch(_){}}
+  }
+
   static Future<Uint8List> unduh(String value) async {
-    final u = Uri.tryParse(value);
+    var u = Uri.tryParse(value);
     if (u == null ||
         u.scheme != 'https' ||
         !(u.host == 'res.cloudinary.com' ||
@@ -140,11 +179,20 @@ class StikerStore {
       throw const FormatException('Alamat stiker tidak didukung.');
     final client = http.Client();
     try {
-      final r = await client
-          .send(http.Request('GET', u)..followRedirects = false)
-          .timeout(const Duration(seconds: 20));
-      if (r.statusCode != 200)
-        throw const HttpException('Gagal mengunduh stiker.');
+      http.StreamedResponse? response;
+      for(var hop=0;hop<4;hop++){
+        final current=await client.send(http.Request('GET',u!)..followRedirects=false).timeout(const Duration(seconds:20));
+        if([301,302,303,307,308].contains(current.statusCode)){
+          final location=current.headers['location'];await current.stream.drain<void>().timeout(const Duration(seconds:20));
+          if(location==null)throw const HttpException('Alamat stiker tidak tersedia.');
+          final next=u.resolve(location);
+          if(next.scheme!='https'||!(next.host=='res.cloudinary.com'||RegExp(r'^(media\d*|i)\.giphy\.com$').hasMatch(next.host)))throw const FormatException('Pengalihan stiker tidak diizinkan.');
+          u=next;continue;
+        }
+        response=current;break;
+      }
+      if(response==null||response.statusCode!=200)throw const HttpException('Gagal mengunduh stiker.');
+      final r=response;
       if ((r.contentLength ?? 0) > batasBytes)
         throw const FormatException('Stiker maksimal 2 MB.');
       final b = BytesBuilder();

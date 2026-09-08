@@ -15,6 +15,7 @@ import '../widgets/lembar.dart';
 import 'tentang_screen.dart';
 import 'opsi_screen.dart';
 import 'hapus_akun_screen.dart';
+import 'stiker_library_screen.dart';
 
 /// ============================================================
 ///  Pengaturan: daftar utama dan halaman turunannya
@@ -54,6 +55,7 @@ class PengaturanScreen extends StatelessWidget {
           _Baris(ikon:Icons.text_fields_rounded,judul:'Teks & Gerakan',sub:'Ukuran teks dan animasi halaman',tujuan:const OpsiTampilanScreen()),
           _Baris(ikon:Icons.sports_esports_rounded,judul:'Streaming & Kontrol',sub:'Resolusi, FPS, bitrate, gamepad, dan keyboard',tujuan:const OpsiStreamingScreen()),
           const _Judul('Aplikasi'),
+          _Baris(ikon:Icons.emoji_emotions_outlined,judul:'Stiker & Penyimpanan',sub:'Koleksi otomatis, folder internal, dan cache',tujuan:const StikerLibraryScreen()),
           _Baris(
             ikon: Icons.notifications_none_rounded,
             judul: 'Notifikasi',
@@ -346,6 +348,8 @@ class _KeamananScreenState extends State<KeamananScreen> {
            Text('Kosongkan password lama kalau kamu mendaftar lewat Google.',
               style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.5)),
           const SizedBox(height: 18),
+          Text('Setelah password disimpan, semua sesi dicabut dan kamu perlu masuk lagi.',style:TextStyle(color:XyTheme.of(context).muted,height:1.5)),
+          TextButton(onPressed:()async{final e=await context.read<AppState>().kodePasswordSosial();if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e??'Kode dikirim. Masukkan pada kolom password lama.')));},child:const Text('Akun Google tanpa password? Kirim kode email')),
           const _Label('Password Lama'),
           TextField(
             controller: _lama,
