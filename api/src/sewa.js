@@ -82,6 +82,7 @@ export async function antreAkhir(env,s,alasan='Sesi diakhiri pengguna'){
 export async function bacaSewa(env,userId,key){
   const s=await env.DB.prepare('SELECT * FROM sesi WHERE id=? AND user_id=?').bind(key,userId).first();
   if(!s)fail('Sesi tidak ditemukan.',404);
+  if(!s.berakhir&&s.order_id){const o=await env.DB.prepare('SELECT mulai,berakhir FROM orders WHERE id=?').bind(s.order_id).first();if(o?.berakhir){s.mulai=s.mulai||o.mulai;s.berakhir=o.berakhir;}}
   if(s.berakhir&&Date.parse(s.berakhir)<=Date.now())return antreAkhir(env,s,'Waktu sewa habis');
   if(s.status==='menyiapkan'&&Date.parse(s.dibuat.replace(' ','T')+(s.dibuat.endsWith('Z')?'':'Z'))<Date.now()-120000){
     await env.DB.prepare("UPDATE orders SET status='batal' WHERE id=? AND status='provisioning'").bind(s.order_id).run();

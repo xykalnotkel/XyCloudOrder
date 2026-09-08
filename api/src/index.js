@@ -630,7 +630,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
             ).bind(...results.map((r) => r.id)).run();
           }
 
-          const lease = await env.DB.prepare("SELECT s.id,s.berakhir,s.status FROM sesi s JOIN agen a ON a.sesi_aktif=s.id WHERE a.id=?").bind(agen.id).first();
+          const lease = await env.DB.prepare("SELECT s.id,COALESCE(s.berakhir,o.berakhir) AS berakhir,s.status FROM sesi s JOIN agen a ON a.sesi_aktif=s.id LEFT JOIN orders o ON o.id=s.order_id WHERE a.id=?").bind(agen.id).first();
           return json({
             ok: true, lease,
             perintah: results.map((r) => ({ ...r, muatan: r.muatan ? JSON.parse(r.muatan) : {} })),
