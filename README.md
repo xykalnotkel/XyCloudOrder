@@ -8,6 +8,12 @@ Desain: modern, clean, quick. Tanpa satu pun emoji — seluruh ikon memakai sist
 
 ---
 
+## Pembaruan v2.6.0
+
+Quiet Surface (tanpa neon/glow), batas 2 pendaftaran per identitas perangkat, OTP/email atomik, sesi akun yang dapat dicabut, pengelolaan pengguna/Sampah/permanen, menu audit/media/perangkat, sajian gambar WebP/AVIF dan cache stiker terenkripsi di folder internal aplikasi.
+
+Panduan dan batas perlindungan: [docs/rilis-2.6.0.md](docs/rilis-2.6.0.md). Pengguna perlu masuk ulang setelah hardening sesi; saldo dan riwayat tetap ada. Package APK dan signing key tidak diubah.
+
 ## Pembaruan v2.5.1
 
 **Streaming native dalam satu APK**, pairing otomatis ke Sunshine melalui agen 1.1.0, alur sewa nyata/idempoten, timestamp komentar relatif, stiker transparan, retensi CS 7 hari, serta pengaturan streaming dan channel/nada Android.
