@@ -1,0 +1,56 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Preview — Popup & Layar Pembaruan</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+body{background:radial-gradient(900px 500px at 80% -10%,#f3ecfa,#e9ebf1);min-height:100vh;display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start;padding:34px}
+.blob{position:absolute;border-radius:50%;filter:blur(46px);opacity:.55;animation:float 9s ease-in-out infinite alternate}
+@keyframes float{from{transform:translate(0,0) scale(1)}to{transform:translate(24px,-26px) scale(1.1)}}
+.card{position:relative;overflow:hidden;background:#fff;border-radius:24px;width:340px;box-shadow:0 24px 60px rgba(81,68,143,.20)}
+.phone{width:340px;background:#f6f1fb;border-radius:34px;border:1px solid #e3d9f0;overflow:hidden;box-shadow:0 24px 60px rgba(36,49,59,.18)}
+.phbar{display:flex;align-items:center;gap:8px;padding:16px 18px 4px}
+.phbar b{font-size:13px}
+.banner{position:relative;height:180px;background:linear-gradient(180deg,#E0C9EF,#B492DF);overflow:hidden}
+.banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pur{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.32),transparent 45%)}
+.x{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.badge{position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.85);padding:5px 11px;border-radius:99px;font-size:10.5px;font-weight:800;color:#6d5cc0}
+.morph{position:absolute;width:120px;height:120px;border-radius:50%;filter:blur(40px)}
+.pad{padding:16px 18px 20px}
+.h{font-size:15px;font-weight:800}
+.sub{font-size:12.5px;color:#6b6878;margin-top:6px;line-height:1.55}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.chip{font-size:11px;font-weight:800;background:rgba(180,146,223,.15);color:#7a5cc0;padding:4px 10px;border-radius:99px}
+.note{flex-basis:100%;max-width:760px;font-size:12px;line-height:1.7;background:#fff;border:1px dashed #c9bfd8;border-radius:12px;padding:12px 14px;color:#4a4a58}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:14px;background:linear-gradient(180deg,#E0C9EF,#B492DF);color:#fff;border-radius:14px;padding:13px;font-weight:800;font-size:13.5px;box-shadow:0 10px 22px rgba(180,146,223,.4)}
+.gambar{height:150px;background:#efe6fa;border-radius:16px;display:grid;place-items:center;overflow:hidden;margin-top:12px}
+.gambar svg{width:100%;height:100%}
+</style></head><body>
+<div class="card" style="width:340px">
+ <div class="blob" style="width:150px;height:150px;background:#B492DF;top:-30px;left:-30px"></div>
+ <div class="blob" style="width:120px;height:120px;background:#E0C9EF;bottom:-20px;right:-20px;animation-delay:1s"></div>
+ <div class="banner"><div class="pur"></div><div class="x">✕</div><div class="badge">Pembaruan v2.7.0</div></div>
+ <div class="pad">
+   <div class="h">Ada versi baru, makin mulus &amp; cepat</div>
+   <div class="sub">Ini <b>popup rilis</b> yang muncul otomatis saat ada versi baru. Gambar banner dipasang per-rilis (custom).</div>
+   <div class="row"><span class="chip">X = buka layar pembaruan</span></div>
+ </div>
+</div>
+
+<div class="phone">
+ <div class="phbar">‹ <b>Pembaruan</b></div>
+ <div style="padding:0 18px">
+  <div class="banner" style="height:150px;border-radius:16px"></div>
+  <div class="h" style="margin-top:14px">Apa yang baru</div>
+  <div class="sub" style="background:#fff;border-radius:12px;padding:10px 12px">
+   • Deteksi versi otomatis + popup rilis.<br>• Unduh dengan notifikasi progress.<br>• Gambar &amp; cache lebih ringan.
+  </div>
+  <div class="btn">Perbarui Sekarang</div>
+  <div class="gambar">
+   <svg viewBox="0 0 200 90"><rect width="200" height="90" fill="#E0C9EF"/><ellipse cx="60" cy="45" rx="26" ry="20" fill="#B492DF" opacity=".9"/><ellipse cx="90" cy="42" rx="18" ry="14" fill="#fff" opacity=".7"/><rect x="110" y="30" width="40" height="6" rx="3" fill="#fff" opacity=".8"/><rect x="110" y="42" width="32" height="5" rx="2.5" fill="#fff" opacity=".6"/></svg>
+  </div>
+  <div class="btn" style="margin-top:10px">Unduh &amp; Pasang</div>
+  <div style="height:18px"></div>
+ </div>
+</div>
+
+<div class="note"><b>Ini mock arahan (bukan screenshot Flutter).</b> Di kiri: popup rilis — gambar murni di atas, latar blob blur <i>morphing melayang</i>, tombol X → buka layar pembaruan. Di kanan: layar pembaruan dengan gambar rilis, catatan, tombol "Perbarui Sekarang" yang memanggil unduh native (progress di notifikasi, jalan walau app ditutup). Kode sudah dibuat di repo (commit lokal) — bagian unduh native wajib kamu <b>flutter build & tes di perangkat</b> sebelum rilis.</div>
+</body></html>
