@@ -44,6 +44,8 @@ const PRIVASI = [
   ['Data yang Kami Kumpulkan',
    'Nama, alamat email, nomor WhatsApp, dan foto profil bila kamu masuk memakai Google. ' +
    'Kami juga menyimpan riwayat pesanan, transaksi saldo, bukti transfer, ulasan, dan percakapan dengan admin.'],
+  ['Perangkat dan Anti-Penyalahgunaan',
+   'Identitas perangkat Android yang dipseudonimkan atau identitas instalasi/browser, model perangkat, serta hash alamat jaringan dipakai untuk membatasi pendaftaran dan OTP. Kami tidak mengumpulkan IMEI atau advertising ID untuk fitur ini. Penghitung pendaftaran dapat tetap disimpan tanpa email setelah akun dihapus untuk mencegah pendaftaran berulang. Catatan kejadian keamanan disimpan hingga 30 hari.'],
   ['Cara Kami Memakainya',
    'Data dipakai untuk memproses pesanan, memverifikasi pembayaran, mengirim kredensial akun, menjawab pertanyaanmu, ' +
    'serta mengirim pemberitahuan penting mengenai pesanan. Kami tidak menjual data pribadi kepada siapa pun.'],
@@ -53,10 +55,10 @@ const PRIVASI = [
    'Masing-masing hanya menerima data seperlunya untuk menjalankan fungsinya.'],
   ['Keamanan',
    'Password disimpan dalam bentuk hash SHA-256 dengan garam acak, tidak pernah dalam bentuk teks biasa. ' +
-   'Semua komunikasi memakai HTTPS. Token login disimpan di penyimpanan terenkripsi pada perangkatmu.'],
+   'Komunikasi API memakai HTTPS. Streaming memakai protokol host tersendiri. Token login dan koleksi stiker disimpan di penyimpanan terenkripsi pada perangkatmu.'],
   ['Penyimpanan Data',
-   'Data disimpan selama akunmu aktif. Kamu bisa meminta penghapusan akun beserta datanya lewat menu Chat Admin, ' +
-   'dan permintaan akan diproses paling lambat tujuh hari kerja.'],
+   'Data akun disimpan selama akun aktif; pesan CS yang lebih tua dari tujuh hari dihapus. Penghapusan akun dapat diminta melalui menu Hapus Akun setelah saldo dan sesi aktif diselesaikan. Data pembukuan dianonimkan. ' +
+   'Salinan yang sudah disimpan penerima dan retensi cadangan penyedia tidak dapat dihapus seketika melalui aplikasi.'],
   ['Hak Kamu',
    'Kamu berhak melihat, memperbaiki, atau meminta penghapusan data pribadimu, serta menolak menerima notifikasi ' +
    'lewat pengaturan perangkat.'],

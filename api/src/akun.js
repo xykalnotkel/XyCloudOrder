@@ -38,6 +38,7 @@ export async function bersihkanAkun(env, user) {
     q("UPDATE orders SET user_id='dihapus',username=NULL,password=NULL,host=NULL WHERE user_id=?", id),
     q("UPDATE transaksi SET user_id='dihapus' WHERE user_id=?", id),
     q("UPDATE topup SET user_id='dihapus' WHERE user_id=?", id),
+    q('DELETE FROM security_device_users WHERE user_id=?', id),
     q('DELETE FROM users WHERE id=?', id),
   ]);
 }

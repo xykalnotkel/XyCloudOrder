@@ -355,39 +355,7 @@ CREATE INDEX idx_ulasan_produk ON ulasan (produk_id);
 DROP INDEX IF EXISTS idx_voucher_pakai;
 CREATE INDEX idx_voucher_pakai ON voucher_pakai (kode, user_id);
 
--- ------------------------- SEED -------------------------
--- Data contoh supaya situs tidak kosong saat pertama diinisialisasi.
--- Kolom baru (rating, jumlah_ulasan, dll.) memakai nilai bawaan.
-
-INSERT INTO users (id, nama, email, password, phone, saldo, tier) VALUES
- ('u_001','Rangga Pratama','rangga@xycloud.id','xycloud123','081234567890',275000,'pro');
-
-INSERT INTO pc_plans (id,nama,gpu,cpu,ram_gb,storage_gb,harga_per_jam,harga_per_hari,region,tag,total_unit,unit_tersedia,gambar) VALUES
- ('pc-lite','XyLite','GTX 1650 4GB','Ryzen 5 3600',16,256,5000,65000,'Jakarta','Hemat',20,12,''),
- ('pc-gaming','XyGaming','RTX 3060 12GB','Ryzen 7 5800X',32,512,12000,150000,'Jakarta','Populer',15,4,''),
- ('pc-editor','XyCreator','RTX 4070 12GB','i7-13700K',64,1024,20000,240000,'Singapore','Editing',10,6,''),
- ('pc-ultra','XyUltra','RTX 4090 24GB','i9-14900K',128,2048,38000,450000,'Singapore','Ultra',6,0,'');
-
-INSERT INTO akun_produk (id,nama,kategori,deskripsi,harga,harga_coret,stok,rating,terjual,gambar,fitur,garansi) VALUES
- ('ak-steam','Steam Account + 5 AAA Games','Gaming','Akun Steam siap pakai berisi 5 game AAA populer.',185000,250000,8,4.9,1240,'','["Full akses email","Bisa ganti password","Garansi 30 hari"]','30 hari'),
- ('ak-gamepass','Xbox Game Pass Ultimate 1 Bulan','Subscription','Akses 400+ game PC & cloud gaming.',65000,120000,25,4.8,3120,'','["Aktivasi akun sendiri","Cloud gaming","Legal & resmi"]','30 hari'),
- ('ak-netflix','Netflix Premium 4K — 1 Profil','Streaming','Sharing profil privat kualitas 4K UHD.',28000,54000,3,4.7,8900,'','["4K UHD","Profil privat","Garansi full replace"]','30 hari'),
- ('ak-adobe','Adobe Creative Cloud All Apps','Produktivitas','Semua aplikasi Adobe untuk 1 tahun.',320000,600000,5,4.9,640,'','["All apps","1 tahun","Cloud storage 100GB"]','1 tahun'),
- ('ak-spotify','Spotify Premium Individual 3 Bulan','Streaming','Upgrade akun pribadi tanpa iklan.',42000,82000,40,4.8,5400,'','["Akun sendiri","Tanpa iklan","Proses instan"]','90 hari');
-
-INSERT INTO banners (id,judul,subjudul,label,cta,aksi,target,warna1,warna2,ikon,urutan,aktif) VALUES
- ('bn-1','Diskon 10% sewa 8 jam ke atas','Otomatis diterapkan saat checkout, berlaku untuk semua paket.','PROMO DURASI','Sewa Sekarang','sewa','','#2F5BFF','#6A4BFF','bolt',1,1),
- ('bn-2','RTX 4090 kini tersedia','Render dan gaming 4K tanpa kompromi di paket XyUltra.','BARU','Lihat Paket','sewa','pc-ultra','#7B5CFF','#2F5BFF','gpu',2,1),
- ('bn-3','Akun bergaransi 30 hari','Rusak atau bermasalah? Kami ganti tanpa biaya tambahan.','JAMINAN','Belanja Akun','akun','','#12A66C','#17C3E0','shield',3,1),
- ('bn-4','Top up pertama bonus 5%','Isi saldo minimal Rp50.000 dan dapatkan bonus otomatis.','BONUS','Top Up','topup','','#E0A33B','#E0453B','wallet',4,1);
-
-INSERT INTO akun_stok (produk_id,email,password,terpakai) VALUES
- ('ak-steam','steam.xy001@mail.xycloud.id','StXy#4471a',0),
- ('ak-steam','steam.xy002@mail.xycloud.id','StXy#8823b',0),
- ('ak-gamepass','gp.xy001@mail.xycloud.id','GpXy#1190c',0),
- ('ak-netflix','nf.xy001@mail.xycloud.id','NfXy#7745d',0),
- ('ak-spotify','sp.xy001@mail.xycloud.id','SpXy#3312e',0),
- ('ak-adobe','ad.xy001@mail.xycloud.id','AdXy#9908f',0);
+-- Tidak ada data contoh yang otomatis dimasukkan.
 
 -- Tambahan skema v2.4.0 (inisialisasi database baru)
 -- Migrasi non-destruktif v2.4.0: tidak menghapus tabel/data pengguna.
@@ -462,3 +430,41 @@ WHEN NEW.metode='saldo' AND NEW.status IN ('selesai','batal') AND OLD.status NOT
 END;
 
 CREATE TABLE IF NOT EXISTS media_hapus (url TEXT PRIMARY KEY, dibuat TEXT NOT NULL DEFAULT (datetime('now')), percobaan INTEGER NOT NULL DEFAULT 0);
+-- Additive: existing accounts are not assigned a guessed device.
+ALTER TABLE users ADD COLUMN registration_device TEXT;
+ALTER TABLE users ADD COLUMN deleted_at TEXT;
+ALTER TABLE users ADD COLUMN blocked_before_trash INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS security_devices (
+ id TEXT PRIMARY KEY, kind TEXT NOT NULL DEFAULT 'unknown', model TEXT NOT NULL DEFAULT '',
+ registrations INTEGER NOT NULL DEFAULT 0, max_accounts INTEGER, blocked INTEGER NOT NULL DEFAULT 0,
+ reason TEXT, created_at TEXT NOT NULL, last_seen TEXT NOT NULL, reset_at TEXT
+);
+CREATE TABLE IF NOT EXISTS security_device_users (
+ device_id TEXT NOT NULL, user_id TEXT NOT NULL, signup INTEGER NOT NULL DEFAULT 0,
+ created_at TEXT NOT NULL DEFAULT (datetime('now')), last_seen TEXT NOT NULL DEFAULT (datetime('now')),
+ PRIMARY KEY(device_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS security_events (
+ id TEXT PRIMARY KEY, kind TEXT NOT NULL, subject TEXT, route TEXT, note TEXT, count INTEGER NOT NULL DEFAULT 1,
+ created_at TEXT NOT NULL, last_seen TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_security_events_time ON security_events(last_seen);
+CREATE INDEX IF NOT EXISTS idx_users_trash ON users(deleted_at);
+CREATE TABLE IF NOT EXISTS oauth_states (
+ id TEXT PRIMARY KEY, provider TEXT NOT NULL, device_id TEXT, expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS media_assets (
+ id TEXT PRIMARY KEY, url TEXT NOT NULL UNIQUE, folder TEXT NOT NULL, format TEXT,
+ width INTEGER, height INTEGER, bytes INTEGER, animated INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TRIGGER IF NOT EXISTS register_device_quota AFTER INSERT ON users
+WHEN NEW.registration_device IS NOT NULL BEGIN
+ SELECT RAISE(ABORT,'DEVICE_UNKNOWN') WHERE NOT EXISTS(SELECT 1 FROM security_devices WHERE id=NEW.registration_device);
+ SELECT RAISE(ABORT,'DEVICE_BLOCKED') WHERE EXISTS(SELECT 1 FROM security_devices WHERE id=NEW.registration_device AND blocked=1);
+ SELECT RAISE(ABORT,'DEVICE_LIMIT') WHERE EXISTS(
+  SELECT 1 FROM security_devices d WHERE d.id=NEW.registration_device AND d.registrations>=COALESCE(d.max_accounts,
+    (SELECT CAST(nilai AS INTEGER) FROM setelan WHERE kunci='security_device_accounts'),2));
+ UPDATE security_devices SET registrations=registrations+1,last_seen=datetime('now') WHERE id=NEW.registration_device;
+ INSERT INTO security_device_users(device_id,user_id,signup) VALUES(NEW.registration_device,NEW.id,1);
+END;

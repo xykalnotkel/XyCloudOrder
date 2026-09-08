@@ -33,7 +33,7 @@ test('Integrasi D1: rename, thread, stiker+teks, promo, GIPHY belum aktif, hapus
     await db.prepare("INSERT INTO forum_post(id,user_id,nama,kategori,judul,isi) VALUES('post-a','test-a','Nama Lama','Umum','Judul pengujian','Isi untuk pengujian lokal'),('post-b','test-b','Pengguna B','Umum','Diskusi lainnya','Konten pengujian lokal')").run();
     await db.prepare("INSERT INTO forum_balasan(id,post_id,user_id,nama,isi) VALUES('reply-a','post-b','test-a','Nama Lama','Komentar sebelum rename')").run();
     const token=async id=>{
-      const body=Buffer.from(JSON.stringify({sub:id,email:id+'@example.invalid',exp:Date.now()+3600000})).toString('base64url');
+      const body=Buffer.from(JSON.stringify({v:2,sv:0,sub:id,email:id+'@example.invalid',exp:Date.now()+3600000})).toString('base64url');
       const key=await webcrypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
       return body+'.'+Buffer.from(await webcrypto.subtle.sign('HMAC',key,new TextEncoder().encode(body))).toString('base64url');
     };

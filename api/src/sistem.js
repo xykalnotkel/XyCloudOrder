@@ -77,6 +77,9 @@ export async function jalankanPemeliharaan(env) {
     ).bind(tpAmbang).run();
     hasil.topupKedaluwarsa = tp.meta?.changes ?? 0;
 
+    await env.DB.prepare("DELETE FROM security_events WHERE datetime(last_seen)<datetime('now','-30 days')").run();
+    await env.DB.prepare("DELETE FROM oauth_states WHERE expires_at<?").bind(sekarang).run();
+
     // catatan sistem lama
     const logLama = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
     await env.DB.prepare('DELETE FROM log_sistem WHERE waktu < ?').bind(logLama).run();

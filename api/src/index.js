@@ -1,3 +1,5 @@
+import { adminSecurity, ownerProtected } from './admin_security.js';
+import { SecurityError, securityConfig, securityHash, securitySlot, auditSecurity, requireRate, deviceFromRequest, linkDevice, beforeRegistration, translateRegistrationError, assertAccountEnabled, otpAllowed, otpDigest, newOAuthState, consumeOAuthState, saveSecurityConfig } from './security.js';
 import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa } from './sewa.js';
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
@@ -66,7 +68,7 @@ async function buatPw(password) {
 }
 
 async function cocokPw(password, tersimpan) {
-  if (!tersimpan) return false;
+  if (!tersimpan || String(tersimpan).startsWith('sosial:')) return false;
   if (!tersimpan.includes('$')) return tersimpan === password; // data lama
   const [salt, h] = tersimpan.split('$');
   return (await hashPw(password, salt)) === h;
@@ -79,11 +81,13 @@ function buatKode() {
 
 /** Simpan OTP (berlaku 15 menit) lalu kirim emailnya. */
 async function kirimOtp(env, { email, nama, tipe }) {
+  if(!await otpAllowed(env,email))return {ok:false,rateLimited:true,alasan:'Batas kode untuk email ini tercapai. Tunggu sebelum meminta lagi.'};
   const kode = buatKode();
+  const digest = await otpDigest(env,email,tipe,kode);
   const kadaluarsa = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   await env.DB.prepare('DELETE FROM otp WHERE email = ? AND tipe = ?').bind(email, tipe).run();
   await env.DB.prepare('INSERT INTO otp (id,email,kode,tipe,kadaluarsa) VALUES (?,?,?,?,?)')
-    .bind(uid('otp_'), email, kode, tipe, kadaluarsa).run();
+    .bind(uid('otp_'), email, digest, tipe, kadaluarsa).run();
   return kirimEmail(env, {
     to: email,
     template: tipe === 'reset' ? 'resetPassword' : tipe === 'hapus_akun' ? 'hapusAkun' : 'verifikasi',
@@ -93,39 +97,19 @@ async function kirimOtp(env, { email, nama, tipe }) {
 
 /** Periksa OTP; kalau cocok, tandai terpakai. */
 async function cekOtp(env, { email, kode, tipe }) {
-  const row = await env.DB
-    .prepare('SELECT * FROM otp WHERE email = ? AND tipe = ? AND kode = ? AND dipakai = 0')
-    .bind(email, tipe, String(kode).trim()).first();
-  if (!row) return { ok: false, pesan: 'Kode verifikasi salah' };
-  if (new Date(row.kadaluarsa) < new Date()) return { ok: false, pesan: 'Kode sudah kedaluwarsa, minta kode baru' };
-  await env.DB.prepare('UPDATE otp SET dipakai = 1 WHERE id = ?').bind(row.id).run();
-  return { ok: true };
+  await requireRate(env,'otp-verify-email',email,5,900);
+  const hash=await otpDigest(env,email,tipe,kode);
+  const row=await env.DB.prepare(`UPDATE otp SET dipakai=1 WHERE email=? AND tipe=? AND (kode=? OR kode=?)
+    AND dipakai=0 AND kadaluarsa>? RETURNING id`).bind(email,tipe,hash,String(kode).trim(),new Date().toISOString()).first();
+  return row?{ok:true}:{ok:false,pesan:'Kode salah, kedaluwarsa, atau sudah dipakai.'};
 }
 
 /**
  * Pembatas laju sederhana berbasis D1.
  * Mengembalikan true kalau permintaan masih boleh diproses.
  */
-async function bolehLanjut(env, kunci, maks, detik) {
-  try {
-    const sekarang = Date.now();
-    const row = await env.DB.prepare('SELECT jumlah, sampai FROM batas WHERE kunci = ?').bind(kunci).first();
-
-    if (!row || new Date(row.sampai).getTime() < sekarang) {
-      const sampai = new Date(sekarang + detik * 1000).toISOString();
-      await env.DB.prepare(
-        'INSERT INTO batas (kunci,jumlah,sampai) VALUES (?,1,?) ON CONFLICT(kunci) DO UPDATE SET jumlah=1, sampai=?'
-      ).bind(kunci, sampai, sampai).run();
-      return true;
-    }
-
-    if (row.jumlah >= maks) return false;
-    await env.DB.prepare('UPDATE batas SET jumlah = jumlah + 1 WHERE kunci = ?').bind(kunci).run();
-    return true;
-  } catch (_) {
-    // kalau tabel bermasalah, jangan sampai layanan ikut mati
-    return true;
-  }
+async function bolehLanjut(env,kunci,maks,detik) {
+  try{return await securitySlot(env,'request',kunci,maks,detik);}catch{return false;}
 }
 
 /**
@@ -179,14 +163,16 @@ const MASA_TOKEN = 30 * 24 * 60 * 60 * 1000;
  * Ambil akun berdasarkan email dari penyedia sosial, atau buat baru.
  * Akun sosial otomatis dianggap terverifikasi.
  */
-async function akunSosial(env, ctx, prof, provider) {
+async function akunSosial(env, ctx, prof, provider, deviceId, req) {
   let u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(prof.email).first();
 
+  if(u)assertAccountEnabled(u);
   if (!u) {
+    await beforeRegistration(env,req,deviceId);
     const idBaru = uid('u_');
     await env.DB.prepare(
-      "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified,foto) VALUES (?,?,?,?,?,0,'basic',1,?)"
-    ).bind(idBaru, prof.nama, prof.email, `sosial:${provider}`, null, prof.foto || null).run();
+      "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified,foto,registration_device) VALUES (?,?,?,?,?,0,'basic',1,?,?)"
+    ).bind(idBaru, prof.nama, prof.email, `sosial:${provider}`, null, prof.foto || null,deviceId).run().catch(translateRegistrationError);
 
     const sapa = {
       id: uid('m_'),
@@ -239,13 +225,23 @@ async function verify(token, secret) {
   if (expected !== token) return null;
 
   // token lama tanpa exp tetap diterima, yang baru wajib belum kedaluwarsa
-  if (isi.exp && Number(isi.exp) < Date.now()) return null;
+  if (isi.v!==2 || !isi.sub || !Number.isFinite(Number(isi.exp)) || Number(isi.exp)<=Date.now()) return null;
   return isi;
 }
 
 async function auth(req, env) {
-  const h = req.headers.get('Authorization') || '';
-  return verify(h.replace('Bearer ', ''), env.JWT_SECRET);
+  const h=req.headers.get('Authorization')||'';
+  const session=await verify(h.replace('Bearer ',''),env.JWT_SECRET);
+  if(!session)return null;
+  const u=await env.DB.prepare('SELECT session_version,deleted_at FROM users WHERE id=?').bind(session.sub).first();
+  if(!u||u.deleted_at||Number(u.session_version)!==Number(session.sv||0))return null;
+  if(session.dv){const d=await env.DB.prepare('SELECT blocked FROM security_devices WHERE id=?').bind(session.dv).first();if(d?.blocked)return null;}
+  return session;
+}
+async function issueUserToken(env,u,deviceId=null){
+  assertAccountEnabled(u);
+  await linkDevice(env,deviceId,u.id);
+  return sign({sub:u.id,email:u.email,v:2,sv:u.session_version||0,dv:deviceId,iat:Date.now(),exp:Date.now()+MASA_TOKEN},env.JWT_SECRET);
 }
 
 const uid = (p = '') => p + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
@@ -317,7 +313,7 @@ async function push(env, room, type, payload) {
 async function kirimBanner(env) {
   const { results } = await env.DB
     .prepare('SELECT * FROM banners WHERE aktif = 1 ORDER BY urutan ASC').all();
-  return push(env, 'katalog', 'banner.update', { banners: results });
+  return push(env, 'katalog', 'banner.update', { banners: results.map(r=>({...r,gambar:samarkanGambar(env,r.gambar,'m')})) });
 }
 
 // ============================================================
@@ -350,7 +346,8 @@ export default {
       const room = decodeURIComponent(path.slice(4));
       if (!['forum','katalog'].includes(room)) {
         const admin = await kenaliAdmin(req, env);
-        const user = await verify(url.searchParams.get('token'), env.JWT_SECRET);
+        const wsHeaders=new Headers(req.headers);wsHeaders.set('Authorization','Bearer '+(url.searchParams.get('token')||''));
+        const user = await auth(new Request(req.url,{headers:wsHeaders}),env);
         const exists = user && await env.DB.prepare('SELECT id FROM users WHERE id=?').bind(user.sub).first();
         if (!admin && (!exists || room !== `user:${user.sub}`)) return err('Unauthorized room',401,env);
         if (admin && !['pemilik','cs'].includes(admin.peran)) return err('Akses chat ditolak',403,env);
@@ -407,7 +404,8 @@ export default {
     }
 
     if (path === '/' || path === '/admin' || path === '/admin/') {
-      return new Response(ADMIN_HTML, {
+      const adminHtml=ADMIN_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\\u003c'));
+      return new Response(adminHtml, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-store',
@@ -520,7 +518,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       });
     }
 
-    if (path.startsWith('/img/')) return layaniGambar(env, path, req);
+    if (path.startsWith('/img/')) return layaniGambar(env, path, req,ctx);
 
     if (path === '/brand/og.png') {
       return new Response(OG_PNG, {
@@ -597,6 +595,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
     }
 
     try {
+      if(p.startsWith('auth/')&&Number(req.headers.get('content-length')||0)>32768)return err('Data autentikasi terlalu besar',413,env);
       // ---------------- AGEN PC HOST ----------------
       // Agen memakai kode rahasianya sendiri, bukan token pengguna.
       if (p.startsWith('agen/')) {
@@ -800,12 +799,14 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---------------- LOGIN GOOGLE NATIVE (tanpa browser) ----------------
       if (p === 'auth/google/native' && req.method === 'POST') {
+        await requireRate(env,'google-native-ip',ip,12,300);
+        const deviceId=await deviceFromRequest(env,req);
         const { id_token: idToken } = await req.json().catch(() => ({}));
         const prof = await verifikasiIdTokenGoogle(env, idToken);
         if (!prof.ok) return err(prof.alasan, 401, env);
 
-        const u = await akunSosial(env, ctx, prof, 'google');
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        const u = await akunSosial(env, ctx, prof, 'google',deviceId,req);
+        const token = await issueUserToken(env,u,typeof deviceId==='undefined'?null:deviceId);
         delete u.password;
         return json({ token, user: u }, 200, env);
       }
@@ -822,8 +823,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
 
         if (aksi === 'start') {
-          const state = url.searchParams.get('state') || uid('st_');
-          return Response.redirect(urlMulai(env, provider, state), 302);
+          await requireRate(env,'oauth-start-ip',ip,12,300);
+          const deviceId=await deviceFromRequest(env,req,{raw:url.searchParams.get('device')});
+          const state=await newOAuthState(env,provider,deviceId);
+          return new Response(null,{status:302,headers:{Location:urlMulai(env,provider,state),
+            'Set-Cookie':`xy_oauth_nonce=${state}; HttpOnly; Secure; SameSite=Lax; Path=/api/auth; Max-Age=600`}});
+        }
+        let deviceId;
+        try{deviceId=await consumeOAuthState(env,req,provider);}catch(e){
+          return new Response(halamanKembali(`${SKEMA_APLIKASI}://auth?error=Login%20kedaluwarsa.%20Mulai%20ulang.`, 'Login tidak valid'),{headers:{'Content-Type':'text/html; charset=utf-8'}});
         }
 
         // callback
@@ -844,9 +852,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
           );
         }
 
-        const u = await akunSosial(env, ctx, prof, provider);
+        const u = await akunSosial(env, ctx, prof, provider,deviceId,req);
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        const token = await issueUserToken(env,u,typeof deviceId==='undefined'?null:deviceId);
         return new Response(
           halamanKembali(`${SKEMA_APLIKASI}://auth?token=${encodeURIComponent(token)}`, `Halo ${u.nama.split(' ')[0]}`),
           { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
@@ -855,6 +863,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---------------- AUTH ----------------
       if (p === 'auth/login' && req.method === 'POST') {
+        const deviceId=await deviceFromRequest(env,req);
         const body = await req.json().catch(() => ({}));
         if (!(await bolehLanjut(env, `login:${ip}`, 12, 300))) {
           return err('Terlalu banyak percobaan masuk. Coba lagi 5 menit lagi.', 429, env);
@@ -862,15 +871,17 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
         if (!email || !password) return err('Email dan password wajib diisi', 400, env);
+        await requireRate(env,'login-email',email,10,900);
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
-        if (!u) return err('Email belum terdaftar. Silakan daftar dulu.', 404, env);
+        if (!u) return err('Email atau password belum sesuai.', 401, env);
+        assertAccountEnabled(u);
         if (!(await cocokPw(password, u.password))) return err('Password salah. Coba lagi.', 401, env);
 
         if (!u.email_verified) {
           ctx.waitUntil(kirimOtp(env, { email: u.email, nama: u.nama, tipe: 'verifikasi' }));
           return json({ perluVerifikasi: true, email: u.email, nama: u.nama,
-            pesan: 'Email belum diverifikasi. Kode baru sudah kami kirim.' }, 200, env);
+            pesan: 'Email belum diverifikasi. Periksa kode terakhir atau gunakan Kirim Ulang setelah jeda.' }, 200, env);
         }
 
         // upgrade otomatis password lama ke bentuk hash
@@ -879,7 +890,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           ctx.waitUntil(env.DB.prepare('UPDATE users SET password=? WHERE id=?').bind(baru, u.id).run());
         }
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        const token = await issueUserToken(env,u,typeof deviceId==='undefined'?null:deviceId);
         delete u.password;
         return json({ token, user: u }, 200, env);
       }
@@ -887,7 +898,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       if (p === 'auth/register' && req.method === 'POST') {
         const body = await req.json().catch(() => ({}));
         if (!(await bolehLanjut(env, `daftar:${ip}`, 6, 3600))) {
-          return err('Terlalu banyak pendaftaran dari perangkat ini. Coba lagi nanti.', 429, env);
+          return err('Terlalu banyak pendaftaran dari jaringan ini. Coba lagi nanti.', 429, env);
         }
         const nama = String(body.nama || '').trim();
         const email = String(body.email || '').trim().toLowerCase();
@@ -902,17 +913,12 @@ ${halaman.map(([u, p2, f]) => `  <url>
           .bind(email).first();
         if (ada && ada.email_verified) return err('Email sudah terdaftar. Silakan masuk.', 409, env);
 
-        let id = ada?.id;
-        if (ada) {
-          // pendaftaran diulang sebelum diverifikasi: perbarui datanya
-          await env.DB.prepare('UPDATE users SET nama=?, password=?, phone=? WHERE id=?')
-            .bind(nama, await buatPw(password), phone, id).run();
-        } else {
-          id = uid('u_');
-          await env.DB.prepare(
-            "INSERT INTO users (id,nama,email,password,phone,saldo,tier,email_verified) VALUES (?,?,?,?,?,0,'basic',0)"
-          ).bind(id, nama, email, await buatPw(password), phone).run();
-        }
+        if(ada)return json({perluVerifikasi:true,email,nama,emailTerkirim:false,pesan:'Pendaftaran sudah tercatat. Masuk atau minta ulang kode; data akun tidak ditimpa.'},200,env);
+        const deviceId=await deviceFromRequest(env,req,{required:true});
+        await beforeRegistration(env,req,deviceId);
+        const id=uid('u_');
+        await env.DB.prepare("INSERT INTO users(id,nama,email,password,phone,saldo,tier,email_verified,registration_device) VALUES(?,?,?,?,?,0,'basic',0,?)")
+          .bind(id,nama,email,await buatPw(password),phone,deviceId).run().catch(translateRegistrationError);
 
         const hasil = await kirimOtp(env, { email, nama, tipe: 'verifikasi' });
 
@@ -929,6 +935,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---- verifikasi email dengan kode OTP ----
       if (p === 'auth/verify' && req.method === 'POST') {
+        const deviceId=await deviceFromRequest(env,req);
         const body = await req.json().catch(() => ({}));
         if (!(await bolehLanjut(env, `verif:${ip}`, 20, 900))) {
           return err('Terlalu banyak percobaan kode. Coba lagi nanti.', 429, env);
@@ -937,12 +944,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const kode = String(body.kode || '').trim();
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
-        if (!u) return err('Akun tidak ditemukan', 404, env);
-        if (u.email_verified) {
-          const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
-          delete u.password;
-          return json({ token, user: u }, 200, env);
-        }
+        if (!u) return err('Akun tidak ditemukan',404,env);
+        assertAccountEnabled(u);
+        if (u.email_verified) return err('Email sudah terverifikasi. Silakan masuk dengan password atau penyedia login.',409,env);
 
         const cek = await cekOtp(env, { email, kode, tipe: 'verifikasi' });
         if (!cek.ok) return err(cek.pesan, 400, env);
@@ -959,7 +963,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           .bind(sapa.id, sapa.room, u.id, 'cs', sapa.teks, sapa.waktu).run());
         ctx.waitUntil(kirimEmail(env, { to: email, template: 'selamatDatang', data: { nama: u.nama } }));
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        const token = await issueUserToken(env,u,typeof deviceId==='undefined'?null:deviceId);
         delete u.password;
         u.email_verified = 1;
         return json({ token, user: u }, 200, env);
@@ -997,6 +1001,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---- pasang password baru ----
       if (p === 'auth/reset' && req.method === 'POST') {
+        const deviceId=await deviceFromRequest(env,req);
+        await requireRate(env,'reset-ip',ip,10,900);
         const body = await req.json().catch(() => ({}));
         const email = String(body.email || '').trim().toLowerCase();
         const kode = String(body.kode || '').trim();
@@ -1004,15 +1010,17 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (password.length < 6) return err('Password minimal 6 karakter', 400, env);
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
-        if (!u) return err('Akun tidak ditemukan', 404, env);
+        if (!u) return err('Akun tidak ditemukan',404,env);
+        assertAccountEnabled(u);
 
         const cek = await cekOtp(env, { email, kode, tipe: 'reset' });
         if (!cek.ok) return err(cek.pesan, 400, env);
 
-        await env.DB.prepare('UPDATE users SET password = ?, email_verified = 1 WHERE id = ?')
+        await env.DB.prepare('UPDATE users SET password = ?, email_verified = 1,session_version=session_version+1 WHERE id = ?')
           .bind(await buatPw(password), u.id).run();
 
-        const token = await sign({ sub: u.id, email: u.email, iat: Date.now(), exp: Date.now() + MASA_TOKEN }, env.JWT_SECRET);
+        u.session_version=(u.session_version||0)+1;
+        const token = await issueUserToken(env,u,typeof deviceId==='undefined'?null:deviceId);
         delete u.password;
         u.email_verified = 1;
         return json({ token, user: u }, 200, env);
@@ -1020,13 +1028,13 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       if (p === 'pc/plans' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT * FROM pc_plans').all();
-        return json(results, 200, env);
+        return json(results.map(r=>({...r,gambar:samarkanGambar(env,r.gambar,'m')})),200,env);
       }
 
       if (p === 'banners' && req.method === 'GET') {
         const { results } = await env.DB
           .prepare('SELECT * FROM banners WHERE aktif = 1 ORDER BY urutan ASC').all();
-        return json(results, 200, env);
+        return json(results.map(r=>({...r,gambar:samarkanGambar(env,r.gambar,'m')})),200,env);
       }
 
       // ================= ADMIN =================
@@ -1046,6 +1054,16 @@ ${halaman.map(([u, p2, f]) => `  <url>
           ctx.waitUntil(catatAdmin(env, admin, `${req.method} ${jalurAdmin}`, null));
         }
         const a = jalurAdmin;
+
+        if(a==='security'||a.startsWith('security/')||a==='devices'||a.startsWith('devices/')||a==='audit'||/^users\/[^/]+\/(trash|restore|permanent)$/.test(a)){
+          const result=await adminSecurity(env,admin,a,req);
+          if(result!==undefined)return json(result,200,env);
+        }
+        if(a==='media'&&req.method==='GET'){
+          if(admin.peran!=='pemilik')return err('Hanya pemilik',403,env);
+          const {results}=await env.DB.prepare('SELECT * FROM media_assets ORDER BY created_at DESC LIMIT 200').all();
+          return json(results.map(m=>({...m,preview:samarkanGambar(env,m.url,'t')})),200,env);
+        }
 
         if (a === 'stats' && req.method === 'GET') {
           const q = (sql) => env.DB.prepare(sql).first();
@@ -1275,13 +1293,16 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
 
         // ---- pengguna ----
-        if (a === 'users' && req.method === 'GET') {
-          const { results } = await env.DB
-            .prepare(`SELECT id,nama,email,phone,saldo,tier,badge,diblokir,alasan_blokir,peringatan,
-                             foto,email_verified,created_at
-                      FROM users ORDER BY created_at DESC LIMIT 200`).all();
-          return json(results, 200, env);
+        if(a==='users'&&req.method==='GET'){
+          const trash=url.searchParams.get('trash')==='1';
+          if(trash&&admin.peran!=='pemilik')return err('Hanya pemilik',403,env);
+          const q=String(url.searchParams.get('q')||'').slice(0,80);
+          const {results}=await env.DB.prepare(`SELECT id,nama,email,phone,saldo,tier,badge,diblokir,alasan_blokir,peringatan,
+            created_at,foto,total_belanja,kode_referral,deleted_at,registration_device FROM users
+            WHERE deleted_at IS ${trash?'NOT ':''}NULL AND (nama LIKE ? OR email LIKE ?) ORDER BY created_at DESC LIMIT 200`).bind('%'+q+'%','%'+q+'%').all();
+          return json(results.map(u=>({...u,foto:samarkanGambar(env,u.foto,'s'),owner_protected:ownerProtected(env,u)})),200,env);
         }
+
         if (a === 'users/saldo' && req.method === 'POST') {
           const { user_id, nominal, catatan } = await req.json();
           await env.DB.batch([
@@ -1388,6 +1409,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a.startsWith('users/') && a.endsWith('/kelola') && req.method === 'PATCH') {
           const idU = a.split('/')[1];
           const b = await req.json().catch(() => ({}));
+          const target=await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(idU).first();
+          if(target&&b.diblokir&&ownerProtected(env,target))return err('Akun pemilik dilindungi.',409,env);
           const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idU).first();
           if (!u) return err('Pengguna tidak ditemukan', 404, env);
 
@@ -1404,6 +1427,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
           ).run();
 
           if (b.diblokir != null) {
+            await env.DB.prepare('UPDATE users SET session_version=session_version+1 WHERE id=?').bind(idU).run();
+            if(b.diblokir){const sessions=await env.DB.prepare("SELECT * FROM sesi WHERE user_id=? AND status NOT IN ('selesai','gagal')").bind(idU).all();for(const session of sessions.results)await antreAkhir(env,session,'Akun dibatasi oleh admin');}
             ctx.waitUntil(buatNotif(env, ctx, {
               userId: idU,
               jenis: 'sistem',
@@ -1940,9 +1965,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
       const room = `user:${me.sub}`;
 
       // akun yang diblokir hanya boleh membaca pemberitahuan dan menghubungi admin
-      const statusAkun = await env.DB.prepare('SELECT diblokir, alasan_blokir FROM users WHERE id = ?')
+      const statusAkun = await env.DB.prepare('SELECT diblokir, alasan_blokir,deleted_at FROM users WHERE id = ?')
         .bind(me.sub).first();
-      if (!statusAkun) return err('Sesi berakhir. Silakan masuk kembali.', 401, env);
+      if (!statusAkun || statusAkun.deleted_at) return err('Sesi berakhir. Silakan masuk kembali.', 401, env);
       if (statusAkun?.diblokir === 1 && !p.startsWith('cs/') && !p.startsWith('notifikasi') && p !== 'me') {
         return err(
           statusAkun.alasan_blokir
@@ -2345,17 +2370,25 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json(u, 200, env);
       }
 
+      if(p==='me/password/kode'&&req.method==='POST'){
+        const u=await env.DB.prepare('SELECT email,nama,password FROM users WHERE id=?').bind(me.sub).first();
+        if(!String(u.password).startsWith('sosial:'))return err('Gunakan password lama untuk akun ini.',400,env);
+        const sent=await kirimOtp(env,{email:u.email,nama:u.nama,tipe:'pasang_password'});
+        return sent.ok?json({ok:true},200,env):err(sent.alasan,sent.rateLimited?429:502,env);
+      }
+
       // ---- ganti password ----
       if (p === 'me/password' && req.method === 'POST') {
         const { lama, baru } = await req.json().catch(() => ({}));
         if (String(baru || '').length < 6) return err('Password baru minimal 6 karakter', 400, env);
 
-        const u = await env.DB.prepare('SELECT password FROM users WHERE id = ?').bind(me.sub).first();
+        const u = await env.DB.prepare('SELECT email,password FROM users WHERE id = ?').bind(me.sub).first();
         const akunSosialSaja = String(u.password || '').startsWith('sosial:');
+        if(akunSosialSaja){const cek=await cekOtp(env,{email:u.email,kode:lama,tipe:'pasang_password'});if(!cek.ok)return err('Akun sosial memerlukan kode email yang valid.',401,env);}
         if (!akunSosialSaja && !(await cocokPw(String(lama || ''), u.password))) {
           return err('Password lama salah', 401, env);
         }
-        await env.DB.prepare('UPDATE users SET password = ? WHERE id = ?')
+        await env.DB.prepare('UPDATE users SET password = ?,session_version=session_version+1 WHERE id = ?')
           .bind(await buatPw(String(baru)), me.sub).run();
         return json({ ok: true }, 200, env);
       }
@@ -2925,6 +2958,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       return err('Endpoint tidak dikenal', 404, env);
     } catch (e) {
+      if(e instanceof SecurityError)return new Response(JSON.stringify({error:e.message,code:e.code}),{status:e.status,headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':env.ALLOW_ORIGIN||'*','Cache-Control':'no-store'}});
       return e instanceof KontenError ? err(e.message, e.status, env) : err(`Server error: ${e.message}`, 500, env);
     }
   },

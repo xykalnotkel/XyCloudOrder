@@ -135,15 +135,15 @@ export async function verifikasiIdTokenGoogle(env, idToken) {
     const diizinkan = [env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_ID_ANDROID]
       .filter(Boolean)
       .map((x) => x.trim());
-    if (diizinkan.length && !diizinkan.includes(p.aud)) {
+    if (!diizinkan.length || !diizinkan.includes(p.aud)) {
       return { ok: false, alasan: 'Aplikasi tidak dikenali oleh server' };
     }
 
     const penerbitSah = p.iss === 'accounts.google.com' || p.iss === 'https://accounts.google.com';
     if (!penerbitSah) return { ok: false, alasan: 'Penerbit token tidak sah' };
-    if (Number(p.exp) * 1000 < Date.now()) return { ok: false, alasan: 'Token sudah kedaluwarsa' };
+    if (!Number.isFinite(Number(p.exp)) || Number(p.exp) * 1000 <= Date.now()) return { ok: false, alasan: 'Token sudah kedaluwarsa' };
     if (!p.email) return { ok: false, alasan: 'Akun Google tidak membagikan email' };
-    if (p.email_verified === 'false') return { ok: false, alasan: 'Email Google belum terverifikasi' };
+    if (p.email_verified !== true && p.email_verified !== 'true') return { ok: false, alasan: 'Email Google belum terverifikasi' };
 
     return {
       ok: true,

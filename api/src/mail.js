@@ -1,3 +1,4 @@
+import { securityConfig } from './security.js';
 /**
  * ============================================================
  *  XyCloudStore - Modul email (Resend)
@@ -159,33 +160,14 @@ export const TEMPLATE = {
  * (bawaan 100/hari — aman untuk paket gratis Resend yang 100/hari).
  */
 async function catatDanBolehKirim(env) {
-  const db = env.DB;
-  if (!db) return true; // tanpa DB tidak bisa menghitung, biarkan saja
-  try {
-    const hariIni = new Date();
-    const kunci = 'email:' + hariIni.toISOString().slice(0, 10);
-    const besok = new Date(hariIni.getTime() + 86400000);
-    const sampai = `${besok.toISOString().slice(0, 10)}T00:00:00.000Z`;
-    const batas = Number(env.EMAIL_BATAS_HARIAN || 100);
-
-    const baris = await db.prepare('SELECT jumlah, sampai FROM batas WHERE kunci = ?').bind(kunci).first();
-    const kini = Date.now();
-
-    if (!baris) {
-      await db.prepare('INSERT INTO batas (kunci, jumlah, sampai) VALUES (?, 1, ?)').bind(kunci, sampai).run();
-      return true;
-    }
-    // hari berganti: reset
-    if (Date.parse(baris.sampai) <= kini) {
-      await db.prepare('UPDATE batas SET jumlah = 1, sampai = ? WHERE kunci = ?').bind(sampai, kunci).run();
-      return true;
-    }
-    if (Number(baris.jumlah) >= batas) return false;
-    await db.prepare('UPDATE batas SET jumlah = jumlah + 1 WHERE kunci = ?').bind(kunci).run();
-    return true;
-  } catch (_) {
-    return true; // kalau ada masalah, jangan halangi email penting
-  }
+  if(!env.DB)return false;
+  try{
+    const cfg=await securityConfig(env),date=new Date(),key='email:'+date.toISOString().slice(0,10);
+    const until=new Date(Date.UTC(date.getUTCFullYear(),date.getUTCMonth(),date.getUTCDate()+1)).toISOString();
+    const r=await env.DB.prepare(`INSERT INTO batas(kunci,jumlah,sampai) VALUES(?,1,?)
+      ON CONFLICT(kunci) DO UPDATE SET jumlah=batas.jumlah+1 WHERE batas.jumlah<? RETURNING jumlah`).bind(key,until,cfg.email_daily).first();
+    return !!r;
+  }catch{return false;}
 }
 
 /**
