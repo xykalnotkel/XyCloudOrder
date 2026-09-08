@@ -21,6 +21,8 @@ import WEB_HTML from './web.html';
 import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
 import OG_PNG from './brand-og.png';
+import MAINT_WEB_PNG from './assets/maintenance-web.png';
+import MAINT_APP_PNG from './assets/maintenance-app.png';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
@@ -52,6 +54,35 @@ const err = (message, status = 400, env) =>
       'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
     },
   });
+
+// ---------- mode pemeliharaan bertingkat ----------
+// Cakupan pemeliharaan (`pemeliharaan_cakupan`):
+//   'semua'      -> blokir web + aplikasi Android (bawaan, perilaku lama)
+//   'web'        -> blokir situs publik saja, aplikasi tetap jalan
+//   'aplikasi'   -> blokir aplikasi Android saja, situs tetap jalan
+//   'admin'      -> blokir console admin (dan web/app), hanya kunci pemilik tersembunyi
+//                   (opsional; berbahaya). Kami batasi ke yang aman di bawah.
+const CAKUPAN_PEMELIHARAAN = ['semua', 'web', 'aplikasi'];
+
+/** Deteksi asal permintaan: 'web' (SPA publik) vs 'aplikasi' (Android/native).
+ *  Permintaan dari browser ke host API lintas-asal membawa header Origin,
+ *  sedangkan aplikasi Android / klien non-peramban tidak mengirimnya. */
+function deteksiPlatform(req) {
+  const origin = (req.headers.get('origin') || '').trim().toLowerCase();
+  return origin ? 'web' : 'aplikasi';
+}
+
+/** Baca apakah permintaan dengan platform tertentu sedang diblokir mode pemeliharaan. */
+async function tertutupPemeliharaan(env, req) {
+  const mode = await setelan(env, 'mode_pemeliharaan', '0');
+  if (mode !== '1') return false;
+  const cakupan = (await setelan(env, 'pemeliharaan_cakupan', 'semua')) || 'semua';
+  if (cakupan === 'semua') return true;
+  const plat = deteksiPlatform(req);
+  if (cakupan === 'web' && plat === 'web') return true;
+  if (cakupan === 'aplikasi' && plat === 'aplikasi') return true;
+  return false;
+}
 
 // ---------- password ----------
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -364,6 +395,42 @@ export default {
     if (domainWeb && (path === '/' || !path.includes('.')) && !path.startsWith('/api/')
         && !path.startsWith('/img/') && !path.startsWith('/unduh/') && !path.startsWith('/legal/')
         && !path.startsWith('/brand/') && !path.startsWith('/bayar/')) {
+      // Mode pemeliharaan khusus situs: tampilkan halaman perawatan berilustrasi,
+      // bukan web.html yang gagal memuat data. Berkas /brand/ masih boleh dimuat
+      // sehingga ilustrasi tampil.
+      const maintWeb = (await setelan(env, 'mode_pemeliharaan', '0')) === '1';
+      const cakupan = maintWeb ? (await setelan(env, 'pemeliharaan_cakupan', 'semua')) || 'semua' : 'semua';
+      if (maintWeb && (cakupan === 'semua' || cakupan === 'web')) {
+        const pesan = await setelan(env, 'pesan_pemeliharaan',
+          'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.');
+        const aman = String(pesan).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        return new Response(`<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XyCloudStore — Perawatan</title>
+<style>
+:root{--bg:#140E29;--panel:rgba(255,255,255,.04);--line:rgba(124,58,237,.25);--pur:#A78BFA;--pur2:#7C3AED;--ink:#EDE9F8}
+*{box-sizing:border-box;margin:0;padding:0}body{min-height:100dvh;background:radial-gradient(1200px 800px at 50% -10%,#2B1660 0%,var(--bg) 55%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:28px;overflow-x:hidden}
+.wrap{max-width:520px;text-align:center;animation:masuk .7s ease both}
+@keyframes masuk{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.img{width:min(78vw,380px);margin:0 auto 8px;filter:drop-shadow(0 22px 44px rgba(124,58,237,.45))}
+h1{font-size:clamp(24px,6vw,34px);letter-spacing:-.5px;margin:6px 0 12px;background:linear-gradient(90deg,#C4B5FD,#8B5CF6,#C4B5FD);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22px}
+.meter{height:5px;border-radius:99px;background:rgba(124,58,237,.2);overflow:hidden;max-width:300px;margin:0 auto 18px}
+.meter i{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#C084FC);animation:geser 1.6s ease-in-out infinite}
+@keyframes geser{0%{margin-left:-40%}100%{margin-left:100%}}
+.tombol{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(167,139,250,.4);background:rgba(124,58,237,.14);color:#D6CBF5;padding:11px 22px;border-radius:99px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:inherit}
+.tombol:hover{background:rgba(124,58,237,.3);transform:translateY(-1px)}
+.small{display:block;margin-top:14px;color:#8E82B4;font-size:12px}
+</style></head><body><div class="wrap">
+<img class="img" src="/brand/maintenance-web.png" alt="Sedang perawatan">
+<h1>Sedang Perawatan</h1><p>${aman}</p>
+<div class="meter"><i></i></div>
+<button class="tombol" onclick="location.reload()">↻ Coba lagi sekarang</button>
+<span class="small">Kami segera kembali. Terima kasih sudah sabar.</span>
+</div></body></html>`, {
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+        });
+      }
       // Petunjuk arsitektur dari header peramban (dikirim setelah permintaan
       // Accept-CH di bawah). Disuntikkan ke halaman supaya deteksi ABI di web
       // akurat tanpa menunggu getHighEntropyValues yang ditolak banyak browser.
@@ -532,6 +599,18 @@ ${halaman.map(([u, p2, f]) => `  <url>
       });
     }
 
+    // Ilustrasi mode pemeliharaan (3D ungu glossy, latar transparan).
+    if (path === '/brand/maintenance-web.png') {
+      return new Response(MAINT_WEB_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
+    if (path === '/brand/maintenance-app.png') {
+      return new Response(MAINT_APP_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
+      });
+    }
+
     if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
 
     // pemberitahuan dari penyedia pembayaran
@@ -582,10 +661,14 @@ ${halaman.map(([u, p2, f]) => `  <url>
     const p = path.slice(5);
     const ip = req.headers.get('CF-Connecting-IP') || 'tanpa-ip';
 
-    // saat mode pemeliharaan menyala, hanya admin dan agen yang boleh lewat
-    if (!p.startsWith('admin/') && !p.startsWith('agen/') && p !== 'config') {
-      const mode = await setelan(env, 'mode_pemeliharaan', '0');
-      if (mode === '1') {
+    // saat mode pemeliharaan bertingkat menyala, hanya admin dan agen yang boleh
+    // lewat; admin tetap selalu boleh untuk mematikannya. Cakupan memutuskan
+    // apakah situs publik (web), aplikasi Android, atau keduanya yang diblokir.
+    if (!p.startsWith('admin/') && !p.startsWith('agen/')) {
+      const kena = await tertutupPemeliharaan(env, req);
+      // /api/config tetap boleh dibaca supaya aplikasi bisa menampilkan pesan
+      // pemeliharaan yang benar, bukan galat yang membingungkan.
+      if (kena && p !== 'config') {
         return err(
           await setelan(env, 'pesan_pemeliharaan',
             'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
@@ -1702,6 +1785,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a === 'sistem/pemeliharaan' && req.method === 'POST') {
           const b = await req.json().catch(() => ({}));
           const aktif = Boolean(b.aktif);
+          // cakupan yang boleh: 'semua' | 'web' | 'aplikasi'
+          let cakupan = String(b.cakupan || 'semua').toLowerCase();
+          if (!CAKUPAN_PEMELIHARAAN.includes(cakupan)) cakupan = 'semua';
           if (aktif) {
             const kini = Date.now();
             const maks = Number(b.maks_menit ?? (await setelan(env, 'pemeliharaan_maks_menit', '720')));
@@ -1715,15 +1801,19 @@ ${halaman.map(([u, p2, f]) => `  <url>
           } else {
             await simpanSetelan(env, 'mode_pemeliharaan_mulai', '');
             await simpanSetelan(env, 'mode_pemeliharaan_sampai', '');
+            cakupan = String(b.cakupan || 'semua').toLowerCase();
+            if (!CAKUPAN_PEMELIHARAAN.includes(cakupan)) cakupan = 'semua';
           }
           await simpanSetelan(env, 'mode_pemeliharaan', aktif ? '1' : '0');
+          await simpanSetelan(env, 'pemeliharaan_cakupan', cakupan);
           if (b.pesan) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan));
           const sampai = aktif ? await setelan(env, 'mode_pemeliharaan_sampai', '') : '';
+          const label = { semua: 'semua (web + aplikasi)', web: 'hanya situs web', aplikasi: 'hanya aplikasi Android' }[cakupan];
           ctx.waitUntil(catatLog(env, 'pemeliharaan',
             aktif
-              ? `Mode pemeliharaan dinyalakan${sampai ? ` (auto-mati ${sampai})` : ' (tanpa batas)'}`
+              ? `Mode pemeliharaan dinyalakan untuk ${label}${sampai ? ` (auto-mati ${sampai})` : ' (tanpa batas)'}`
               : 'Mode pemeliharaan dimatikan'));
-          return json({ ok: true, aktif, sampai: aktif ? (sampai || null) : null }, 200, env);
+          return json({ ok: true, aktif, cakupan, sampai: aktif ? (sampai || null) : null }, 200, env);
         }
 
         // ---- jalankan pemeliharaan sekarang ----

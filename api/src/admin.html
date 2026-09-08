@@ -1202,18 +1202,36 @@ async function vSistem(){
 
     <div class="grid g2">
       <div class="card">
-        <div style="font-weight:800;font-size:15px">Mode pemeliharaan</div>
+      <div class="card">
+        <div style="font-weight:800;font-size:15px">Mode pemeliharaan bertingkat</div>
         <p style="color:var(--muted);font-size:12.5px;margin:6px 0 16px">
-          Saat menyala, aplikasi menampilkan pesan perawatan dan semua permintaan pengguna ditolak sementara.
-          Dashboard dan agen PC tetap bisa dipakai.</p>
-        <div class="row" style="gap:10px;flex-wrap:wrap">
+          Pilih <b>cakupan</b> yang mau dimatikan dulu &mdash; situs web saja, aplikasi Android saja,
+          atau keduanya sekaligus. Console admin &amp; agen PC tetap bisa dipakai supaya kamu tetap bisa mematikannya kembali.</p>
+        <div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">
           <span class="tag" style="background:${st.modePemeliharaan?'rgba(217,136,15,.2)':'rgba(34,197,94,.16)'};
-            color:${st.modePemeliharaan?'#96681E':'#2D7357'}">${st.modePemeliharaan?'sedang menyala':'layanan normal'}</span>
+            color:${st.modePemeliharaan?'#96681E':'#2D7357'}\">${st.modePemeliharaan?'sedang menyala':'layanan normal'}</span>
           <div style="flex:1"></div>
           <button class="btn sm ${st.modePemeliharaan?'':'danger'}" onclick="ubahPemeliharaan(${st.modePemeliharaan?0:1})">
             ${st.modePemeliharaan?'Matikan mode':'Nyalakan mode'}</button>
         </div>
-        <div class="field" style="margin-top:16px"><label>Pesan untuk pengguna</label>
+
+        <div style="margin:18px 0 6px;font-weight:700;font-size:12.5px">Cakupan yang dimatikan</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <label style="display:flex;flex-direction:column;gap:4px;border:1.6px solid ${(st.cakupanPemeliharaan||'semua')==='semua'?'#7C3AED':'var(--line)'};border-radius:14px;padding:12px 13px;cursor:pointer;background:${(st.cakupanPemeliharaan||'semua')==='semua'?'rgba(124,58,237,.10)':'transparent'}">
+            <input type="radio" name="pm_cakupan" value="semua" style="width:auto" ${(st.cakupanPemeliharaan||'semua')==='semua'?'checked':''} onchange="ketCakupan('semua')">
+            <b style="font-size:13px">Semua</b><span style="font-size:10.5px;color:var(--muted)">Web + aplikasi</span>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;border:1.6px solid ${(st.cakupanPemeliharaan||'semua')==='web'?'#7C3AED':'var(--line)'};border-radius:14px;padding:12px 13px;cursor:pointer;background:${(st.cakupanPemeliharaan||'semua')==='web'?'rgba(124,58,237,.10)':'transparent'}">
+            <input type="radio" name="pm_cakupan" value="web" style="width:auto" ${(st.cakupanPemeliharaan||'semua')==='web'?'checked':''} onchange="ketCakupan('web')">
+            <b style="font-size:13px">Situs web</b><span style="font-size:10.5px;color:var(--muted)">Publik saja</span>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:4px;border:1.6px solid ${(st.cakupanPemeliharaan||'semua')==='aplikasi'?'#7C3AED':'var(--line)'};border-radius:14px;padding:12px 13px;cursor:pointer;background:${(st.cakupanPemeliharaan||'semua')==='aplikasi'?'rgba(124,58,237,.10)':'transparent'}">
+            <input type="radio" name="pm_cakupan" value="aplikasi" style="width:auto" ${(st.cakupanPemeliharaan||'semua')==='aplikasi'?'checked':''} onchange="ketCakupan('aplikasi')">
+            <b style="font-size:13px">Aplikasi Android</b><span style="font-size:10.5px;color:var(--muted)">App saja</span>
+          </label>
+        </div>
+        <div id="keteranganCakupan" style="margin-top:12px;font-size:11.5px;color:var(--muted);line-height:1.6"></div>
+        <div class="field" style="margin-top:14px"><label>Pesan untuk pengguna</label>
           <input id="f_pesanPemeliharaan" value="${esc(st.pesanPemeliharaan||'')}"></div>
         <button class="btn ghost sm" onclick="simpanPesanPemeliharaan()">Simpan pesan</button>
       </div>
@@ -1238,20 +1256,31 @@ async function vSistem(){
         </div>
       </div>
     </div>`;
+  inisialisasiCakupan();
 }
 
+function cakupanPemeliharaan(){ return (document.querySelector('input[name="pm_cakupan"]:checked')||{}).value||'semua'; }
+const KET_CAKUPAN={
+  'semua':'Menonaktifkan situs web dan aplikasi Android. Pakai untuk perawatan menyeluruh.',
+  'web':'Hanya situs publik (xycloud.my.id) yang ditutup dan menampilkan halaman perawatan. Aplikasi Android tetap berjalan normal.',
+  'aplikasi':'Hanya aplikasi Android yang diblokir (melihat halaman perawatan). Situs web tetap berjalan normal.'
+};
+function ketCakupan(v){ const el=document.getElementById('keteranganCakupan'); if(el) el.textContent=KET_CAKUPAN[v]||''; }
 async function ubahPemeliharaan(aktif){
+  const ck=cakupanPemeliharaan();
   if(aktif && !await xkonfirmasi('Nyalakan mode pemeliharaan?',
-    'Semua pengguna aplikasi tidak akan bisa memakai layanan sampai mode ini dimatikan.',
+    'Ini akan menonaktifkan: '+KET_CAKUPAN[ck]+'\n\nDashboard admin dan agen PC tetap bisa dipakai sampai kamu mematikannya lagi.',
     {tombol:'Nyalakan',bahaya:true})) return;
-  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:Boolean(aktif)})});
-  toast(aktif?'Mode pemeliharaan menyala':'Layanan kembali normal'); vSistem();
+  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:Boolean(aktif),cakupan:ck})});
+  toast(aktif?('Mode pemeliharaan menyala ('+ck+')'):'Layanan kembali normal'); vSistem();
 }
 async function simpanPesanPemeliharaan(){
   const pesan=document.getElementById('f_pesanPemeliharaan').value;
-  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:false,pesan})});
-  toast('Pesan pemeliharaan disimpan'); vSistem();
+  const ck=cakupanPemeliharaan();
+  await api('/sistem/pemeliharaan',{method:'POST',body:JSON.stringify({aktif:false,cakupan:ck,pesan})});
+  toast('Pesan & cakupan pemeliharaan disimpan'); vSistem();
 }
+function inisialisasiCakupan(){ ketCakupan(cakupanPemeliharaan()); }
 async function jalankanPemeliharaan(){
   const el=document.getElementById('hasilSistem'); el.textContent='Menjalankan...';
   const d=await api('/sistem/bersihkan',{method:'POST'});

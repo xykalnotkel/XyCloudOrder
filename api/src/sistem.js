@@ -193,6 +193,7 @@ export async function statistikLengkap(env) {
     log: logTerakhir,
     pemeliharaanTerakhir: await setelan(env, 'pemeliharaan_terakhir'),
     modePemeliharaan: (await setelan(env, 'mode_pemeliharaan', '0')) === '1',
+    cakupanPemeliharaan: await setelan(env, 'pemeliharaan_cakupan', 'semua') || 'semua',
     pesanPemeliharaan: await setelan(env, 'pesan_pemeliharaan',
       'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
   };

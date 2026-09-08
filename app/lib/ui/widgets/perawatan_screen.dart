@@ -32,28 +32,44 @@ class PerawatanScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Ilustrasi 3D ungu glossy (transparan) dengan lingkaran cahaya lembut.
                 Stack(alignment: Alignment.center, children: [
                   Container(
-                    width: 210,
-                    height: 210,
+                    width: 230,
+                    height: 230,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(colors: [
-                        XyTheme.primary.withOpacity(.14),
-                        XyTheme.violet.withOpacity(.05),
+                        XyTheme.primary.withOpacity(.18),
+                        XyTheme.violet.withOpacity(.07),
                         Colors.transparent,
                       ]),
                     ),
                   ),
                   Container(
-                    width: 118,
-                    height: 118,
+                    width: 168,
+                    height: 168,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: XyTheme.gradPrimary,
-                      boxShadow: XyTheme.glow(XyTheme.primary, .32),
+                      boxShadow: [
+                        BoxShadow(
+                          color: XyTheme.primary.withOpacity(.25),
+                          blurRadius: 40,
+                          spreadRadius: 6,
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.engineering_rounded, size: 56, color: Colors.white),
+                    alignment: Alignment.center,
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.asset(
+                      'assets/ilustrasi/maintenance.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.engineering_rounded,
+                        size: 60,
+                        color: Color(0xFF7C3AED),
+                      ),
+                    ),
                   ),
                 ]),
                 const SizedBox(height: 18),
