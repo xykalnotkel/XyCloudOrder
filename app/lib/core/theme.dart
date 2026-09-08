@@ -54,24 +54,26 @@ class XyTheme {
   static const Color danger = Color(0xFFB54450);
   static const Color gold = Color(0xFFD9A441);
 
-  // ---------- gradien ----------
+  // ---------- gradien (kilau glossy ungu) ----------
+  // Gradien vertikal berlapis: puncak lebih terang seperti pantulan kaca,
+  // dasar lebih pekat. Memberi kesan glossy/berkilau tanpa kembali ke neon.
   static const LinearGradient gradPrimary = LinearGradient(
-    colors: [Color(0xFF6254A8), Color(0xFF6254A8)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    colors: [Color(0xFF9C90E2), Color(0xFF6E60C2), Color(0xFF51448F)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
   static const LinearGradient gradDeep = LinearGradient(
-    colors: [Color(0xFF51448C), Color(0xFF51448C)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    colors: [Color(0xFF8A7DD6), Color(0xFF5B4E9F), Color(0xFF3E3372)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
   static const LinearGradient gradMidnight = LinearGradient(
-    colors: [Color(0xFF2D3A48), Color(0xFF2D3A48)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    colors: [Color(0xFF2D3A48), Color(0xFF222C38), Color(0xFF1A222C)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
   static const LinearGradient gradAurora = LinearGradient(
-    colors: [Color(0xFF8275BE), Color(0xFF8275BE)],
+    colors: [Color(0xFFB6ACE9), Color(0xFF8275BE), Color(0xFF5F52A0)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
@@ -112,7 +114,18 @@ class XyTheme {
             blurRadius: 4,
             offset: const Offset(0, 1)),
       ];
-  static List<BoxShadow> glow(Color c, [double o = .32]) => const [];
+
+  /// Kilau lembut ungu (bukan neon): bayangan berwarna transparan untuk kartu/hero.
+  static List<BoxShadow> glow(Color c, [double o = .30]) => [
+        BoxShadow(
+            color: c.withOpacity((o.clamp(0.0, .45)).toDouble()),
+            blurRadius: 24,
+            offset: const Offset(0, 10)),
+        BoxShadow(
+            color: c.withOpacity(.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2)),
+      ];
 
   // ---------- palet gelap ----------
   static const Color bgGelap = Color(0xFF12171C);

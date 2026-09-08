@@ -5,9 +5,9 @@ permintaan: **UI/UX tetap ungu glossy**, scroll antilag, validasi transaksi tida
 konfirmasi, pindah akun dengan select/select-all, maintenance yang bisa dipilih cakupannya,
 serta ilustrasi 3D.
 
-> Status: **Bagian D (maintenance) ✅**, **Bagian C (pilih-semua/aksi massal) ✅**, **Bagian B (validasi transaksi) ✅**.
+> Status: **Bagian D ✅ · C ✅ · B ✅ · A (fondasi aplikasi glossy + anti-lag) ✅ sebagian**.
 > Backend & console belum dideploy — perlu kamu tes dulu (wrangler) sebelum dipakai di produksi.
-> Bagian A/E sebagian/belum menunggu giliran.
+> Perlu build Flutter & profil perangkat untuk validasi visual/lag akhir (lihat Bagian A).
 
 ---
 
@@ -161,3 +161,31 @@ jangan potong saldo**.
 4. **Validasi saldo otomatis**: untuk pembayaran lewat penyedia yang sudah lunas, tetap auto-masuk,
    atau mau diubah menjadi diverifikasi admin dulu?
 5. **GitHub Actions**: repo mau dibuat **privat**, atau tetap publik (workflow tetap terlihat di repo)?
+
+### A. UI/UX ungu glossy + scroll anti-lag — fondasi SELESAI (perlu build & profil)
+Prioritas dari pemilik: menyeluruh, terutama di aplikasi.
+
+**Glossy ungu (aplikasi Flutter)** — `core/theme.dart`:
+- Gradien kini **glossy vertikal** (kilau terang di atas → pekat di bawah) untuk gradPrimary,
+  gradDeep, gradMidnight, gradAurora — memberi kesan kaca/gloss tanpa kembali ke neon.
+- `XyTheme.glow()` diaktifkan kembali sebagai **kilau lembut ungu** (bukan neon): bayangan
+  berwarna transparan 2 lapis. Semua GradientButton & elemen hero kini mendapat kilau halus.
+- `gradPrimary` tetap `static const` → semua `const BoxDecoration` yang memakainya tetap valid.
+
+**Anti-lag scroll (aplikasi)** — `ui/widgets/common.dart`:
+- `XyCard` kini membungkus isinya dengan `RepaintBoundary` → saat bergulir, repaint per kartu
+  tidak menyebar ke seluruh layar (mengurangi jank di daftar panjang).
+- Catatan: `GambarProduk` sudah `cacheWidth` + loading shimmer; home sudah pakai
+  `ListView.separated` & `GridView` (lazy). FadeInUp animasi hanya sekali (bukan per-frame).
+
+**Preview arahan desain:** `preview/app-glossy-preview.html` (mock, bukan screenshot).
+
+**Perlu langkah validasi oleh pemilik (Flutter build):**
+- `flutter analyze` untuk memastikan tak ada galat tipe.
+- `flutter build apk` lalu uji di perangkat: pastikan gradien glossy tampak pas di tema
+  terang & gelap, kontras teks putih di kartu saldo tetap terbaca, dan scroll home/forum/CS
+  terasa ringan.
+- Langkah anti-lag lanjutan yang disarankan (per layar, butuh profil real-device):
+  kurangi bayangan besar pada item feed, aktifkan `cacheExtent` sedang, dan pastikan layar
+  komunitas (thread panjang) & chat CS tidak membangun semua pesan sekaligus (pakai lazy +
+  binarisasi tanggal), plus hentikan animasi list saat tab tidak aktif.

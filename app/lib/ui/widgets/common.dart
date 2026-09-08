@@ -53,7 +53,7 @@ class _XyCardState extends State<XyCard> {
           border: widget.border ? Border.all(color: XyTheme.of(context).line) : null,
           boxShadow: widget.elevated ? (_down ? XyTheme.shadowXs : XyTheme.shadowSm) : null,
         ),
-        child: widget.child,
+        child: RepaintBoundary(child: widget.child),
       ),
     );
 
