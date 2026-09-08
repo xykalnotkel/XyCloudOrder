@@ -215,6 +215,7 @@ class _SheetDetailState extends State<_SheetDetail> {
     final hasil = await s.beliAkun(widget.produk, metode);
     if (!mounted) return;
     setState(() => proses = false);
+    final galat = hasil == null ? (s.error ?? '') : null;
     Navigator.pop(context);
     if (hasil != null) {
       showModalBottomSheet(
@@ -223,6 +224,14 @@ class _SheetDetailState extends State<_SheetDetail> {
         isScrollControlled: true,
         builder: (_) => _DialogAkun(data: hasil, produk: widget.produk),
       );
+    } else if (galat != null && galat.isNotEmpty) {
+      // Validasi gagal dari server (saldo tak cukup, kredensial belum siap, dst.)
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(
+          content: Text(galat, maxLines: 3, overflow: TextOverflow.ellipsis),
+          behavior: SnackBarBehavior.floating,
+        ));
     }
   }
 

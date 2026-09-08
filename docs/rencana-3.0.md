@@ -5,9 +5,9 @@ permintaan: **UI/UX tetap ungu glossy**, scroll antilag, validasi transaksi tida
 konfirmasi, pindah akun dengan select/select-all, maintenance yang bisa dipilih cakupannya,
 serta ilustrasi 3D.
 
-> Status: **Bagian D (maintenance bertingkat) SELESAI** & **Bagian C (pilih-semua/aksi massal) SELESAI**.
+> Status: **Bagian D (maintenance) ✅**, **Bagian C (pilih-semua/aksi massal) ✅**, **Bagian B (validasi transaksi) ✅**.
 > Backend & console belum dideploy — perlu kamu tes dulu (wrangler) sebelum dipakai di produksi.
-> Bagian A/B/E sebagian/belum menunggu giliran.
+> Bagian A/E sebagian/belum menunggu giliran.
 
 ---
 
@@ -121,6 +121,30 @@ bilang — perlu mekanisme kunci pemulihan terpisah supaya tidak terkunci.
 - Bilah aksi `position:sticky` + sorot baris ungu muda; kotak centang diwarnai ungu.
 - Preview interaktif: `preview/multi-select-preview.html` (mock Order — bisa diklik untuk coba).
 - (File: `admin.html`. Perlu uji interaktif: pilih beberapa → aksi; pilih semua → aksi.)
+
+### B. Validasi transaksi (tidak "langsung konfirmasi") — ✅ SELESAI (belum deploy)
+Arah dari pemilik: perkuat validasi di semua jalur (sewa sudah kuat), fokus ke **beli akun**
+(dulu paling "langsung konfirmasi") & **top-up**; untuk kredensial tak tersedia → **TOLAK,
+jangan potong saldo**.
+
+- **Beli akun (`/akun/beli`, index.js)**:
+  - Klaim kredensial ATOMIK & eksklusif (UPDATE guarded; coba sampai 3×) → dua pembeli tak
+    bisa ambil baris kredensial yang sama.
+  - Kalau tak ada kredensial siap → ditolak bersih, saldo **tidak** dipotong (bukan lagi
+    "akan dikirim admin" sambil memotong saldo).
+  - Potong saldo pakai pengaman `... WHERE id=? AND saldo>=?`; kalau gagal, klaim dilepas.
+  - Kredensial kosong → klaim dilepas & tolak.
+  - Stok produk & catatan transaksi baru menyusul setelah klaim+potong berhasil.
+- **Top-up webhook (jalur penyedia otomatis, index.js)**: klaim atomik `status='disetujui'`
+  hanya untuk status menunggu/diperiksa → webhook terulang/bersamaan **tidak menggandakan saldo**.
+- **Top-up setujui admin (`/admin/topup/:id`, index.js)**: klaim atomik yang sama; cegah
+  setujui dua kali / setelah ditolak; nominal di-guard.
+- **App (`akun_screen.dart`)**: kalau beli gagal karena validasi server, muncul SnackBar pesan
+  jelas (saldo tak cukup / kredensial belum siap), bukan diam-diam tutup.
+- **Sewa PC**: sudah divalidasi (cek saldo/voucher/unit, `dibayar`→`provisioning`→`aktif` hanya
+  setelah agen sukses; refund bila tak siap). Tidak ada "langsung konfirmasi" yang perlu diubah.
+- ⚠️ Menyentuh saldo/transaksi — **uji dulu**: `cd api && npm i && npx wrangler dev`.
+  Catatan: tabel `akun_stok` tak berubah (tetap `id/produk_id/email/password/terpakai/user_id`).
 
 ### E. Ilustrasi 3D ungu glossy (sudah jadi)
 - `api/src/assets/maintenance-web.png` (1584×672, banner situs).

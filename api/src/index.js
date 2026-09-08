@@ -621,32 +621,38 @@ ${halaman.map(([u, p2, f]) => `  <url>
       if (!hasil.sah) return new Response('signature tidak sah', { status: 401 });
 
       if (hasil.status === 'lunas') {
-        const t = await env.DB.prepare("SELECT * FROM topup WHERE id = ? AND status != 'disetujui'")
-          .bind(hasil.id).first();
-        if (t) {
-          const waktu = new Date().toISOString();
-          await env.DB.batch([
-            env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(t.nominal, t.user_id),
-            env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-              .bind(uid('t_'), t.user_id, 'Top up saldo otomatis', 'topup', t.nominal),
-            env.DB.prepare("UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=?")
-              .bind(`Lunas otomatis lewat ${provider}`, waktu, t.id),
-          ]);
+        const waktu = new Date().toISOString();
+        // Klaim atomik: hanya SATU panggilan webhook yang boleh menandai top up
+        // 'disetujui'. Webhook yang terulang/bersamaan untuk id sama akan kena 0
+        // baris sehingga saldo tidak pernah ditambah dua kali.
+        const klaim = await env.DB.prepare(
+          "UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=? AND status NOT IN ('disetujui','ditolak')"
+        ).bind(`Lunas otomatis lewat ${provider}`, waktu, hasil.id).run();
+        if (klaim.meta?.changes) {
+          const t = await env.DB.prepare('SELECT * FROM topup WHERE id = ?').bind(hasil.id).first();
+          const nominal = Number(t?.nominal) || 0;
+          if (t && nominal > 0 && t.user_id) {
+            await env.DB.batch([
+              env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, t.user_id),
+              env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+                .bind(uid('t_'), t.user_id, 'Top up saldo otomatis', 'topup', nominal),
+            ]);
 
-          const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?')
-            .bind(t.user_id).first();
-          ctx.waitUntil(push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u?.saldo ?? 0 }));
-          ctx.waitUntil(kirimPush(env, {
-            userId: t.user_id,
-            judul: 'Saldo berhasil ditambahkan',
-            pesan: `Pembayaran Rp${Number(t.nominal).toLocaleString('id-ID')} sudah kami terima.`,
-            data: { tipe: 'wallet' },
-          }));
-          if (u?.email) {
-            ctx.waitUntil(kirimEmail(env, {
-              to: u.email, template: 'struk',
-              data: { nama: u.nama, kode: t.id.toUpperCase(), judul: 'Top up saldo', total: t.nominal, metode: t.metode },
+            const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?')
+              .bind(t.user_id).first();
+            ctx.waitUntil(push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u?.saldo ?? 0 }));
+            ctx.waitUntil(kirimPush(env, {
+              userId: t.user_id,
+              judul: 'Saldo berhasil ditambahkan',
+              pesan: `Pembayaran Rp${nominal.toLocaleString('id-ID')} sudah kami terima.`,
+              data: { tipe: 'wallet' },
             }));
+            if (u?.email) {
+              ctx.waitUntil(kirimEmail(env, {
+                to: u.email, template: 'struk',
+                data: { nama: u.nama, kode: t.id.toUpperCase(), judul: 'Top up saldo', total: nominal, metode: t.metode },
+              }));
+            }
           }
         }
       } else if (hasil.status === 'gagal') {
@@ -1419,39 +1425,51 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a.startsWith('topup/') && req.method === 'PATCH') {
           const id = a.split('/')[1];
           const { status, catatan } = await req.json();
-          const t = await env.DB.prepare('SELECT * FROM topup WHERE id = ?').bind(id).first();
-          if (!t) return err('Permintaan tidak ditemukan', 404, env);
-          if (t.status === 'disetujui') return err('Top up ini sudah disetujui', 409, env);
-
           const waktu = new Date().toISOString();
           if (status === 'disetujui') {
+            // Klaim atomik: hanya sekali yang boleh menandai 'disetujui' sehingga
+            // setujui berulang/bersamaan tidak pernah menggandakan saldo.
+            const klaim = await env.DB.prepare(
+              "UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=? AND status IN ('menunggu','diperiksa')"
+            ).bind(catatan || 'Disetujui admin', waktu, id).run();
+            if (!klaim.meta?.changes) {
+              const kini = await env.DB.prepare('SELECT status FROM topup WHERE id=?').bind(id).first();
+              if (kini?.status === 'disetujui') return err('Top up ini sudah disetujui', 409, env);
+              if (kini?.status === 'ditolak') return err('Top up ini sudah ditolak sebelumnya', 409, env);
+              return err('Permintaan tidak ditemukan', 404, env);
+            }
+            const t2 = await env.DB.prepare('SELECT * FROM topup WHERE id=?').bind(id).first();
+            const nominal = Number(t2?.nominal) || 0;
+            if (!t2 || nominal <= 0 || !t2.user_id) return err('Top up tidak valid', 400, env);
             await env.DB.batch([
-              env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(t.nominal, t.user_id),
+              env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, t2.user_id),
               env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-                .bind(uid('t_'), t.user_id, 'Top up saldo', 'topup', t.nominal),
-              env.DB.prepare("UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=?")
-                .bind(catatan || null, waktu, id),
+                .bind(uid('t_'), t2.user_id, 'Top up saldo', 'topup', nominal),
             ]);
-            const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?').bind(t.user_id).first();
-            ctx.waitUntil(push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u.saldo }));
+            const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?').bind(t2.user_id).first();
+            ctx.waitUntil(push(env, `user:${t2.user_id}`, 'wallet.update', { saldo: u.saldo }));
             ctx.waitUntil(kirimPush(env, {
-              userId: t.user_id, judul: 'Top up berhasil',
-              pesan: `Saldo Rp${Number(t.nominal).toLocaleString('id-ID')} sudah masuk ke dompetmu.`,
+              userId: t2.user_id, judul: 'Top up berhasil',
+              pesan: `Saldo Rp${nominal.toLocaleString('id-ID')} sudah masuk ke dompetmu.`,
               data: { tipe: 'wallet' },
             }));
             if (u?.email) {
               ctx.waitUntil(kirimEmail(env, {
                 to: u.email, template: 'struk',
-                data: { nama: u.nama, kode: id.toUpperCase(), judul: 'Top up saldo', total: t.nominal, metode: t.metode },
+                data: { nama: u.nama, kode: id.toUpperCase(), judul: 'Top up saldo', total: nominal, metode: t2.metode },
               }));
             }
             return json({ ok: true, saldo: u.saldo }, 200, env);
           }
 
+          const tr = await env.DB.prepare('SELECT * FROM topup WHERE id = ?').bind(id).first();
+          if (!tr) return err('Permintaan tidak ditemukan', 404, env);
+          if (tr.status === 'disetujui') return err('Top up ini sudah disetujui', 409, env);
+          if (tr.status === 'ditolak') return err('Top up ini sudah ditolak', 409, env);
           await env.DB.prepare("UPDATE topup SET status='ditolak', catatan=?, diproses=? WHERE id=?")
             .bind(catatan || 'Bukti transfer tidak cocok', waktu, id).run();
           ctx.waitUntil(kirimPush(env, {
-            userId: t.user_id, judul: 'Top up ditolak',
+            userId: tr.user_id, judul: 'Top up ditolak',
             pesan: catatan || 'Bukti transfer tidak cocok. Hubungi CS untuk bantuan.',
             data: { tipe: 'wallet' },
           }));
@@ -2809,6 +2827,11 @@ ${halaman.map(([u, p2, f]) => `  <url>
       }
 
       // ---- beli akun ----
+      // Pembayaran hanya lewat saldo. Untuk mencegah "langsung konfirmasi" tanpa validasi:
+      //  1) kredensial diklaim ATOMIK & eksklusif (dua pembeli tak bisa ambil baris sama);
+      //  2) kalau tak ada kredensial siap -> DITOLAK dan saldo TIDAK dipotong;
+      //  3) pemotongan saldo diguard (harus cukup); kalau gagal, klaim dilepas;
+      //  4) pengurangan stok & catatan menyusul HANYA setelah klaim & potong berhasil.
       if (p === 'akun/beli' && req.method === 'POST') {
         const { produk_id, metode, voucher } = await req.json();
         if(metode!=='saldo')return err('Gunakan saldo untuk pembelian. Top up terlebih dahulu.',400,env);
@@ -2816,76 +2839,77 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (!prod) return err('Produk tidak ditemukan', 404, env);
         if (prod.stok <= 0) return err('Stok habis', 409, env);
 
-        const stok = await env.DB
-          .prepare('SELECT * FROM akun_stok WHERE produk_id = ? AND terpakai = 0 LIMIT 1')
-          .bind(produk_id).first();
-
         const user = await env.DB.prepare('SELECT saldo, tier FROM users WHERE id = ?').bind(me.sub).first();
-
-        const persenTier = diskonTier(user?.tier);
-        const potonganTier = Math.floor((prod.harga * persenTier) / 100);
-
-        let potonganVoucher = 0;
-        let kodeVoucher = null;
+        const potonganTier = Math.floor((prod.harga * (diskonTier(user?.tier) || 0)) / 100);
+        let potonganVoucher = 0, kodeVoucher = null;
         if (voucher) {
           const cek = await cekVoucher(env, { kode: voucher, userId: me.sub, jenis: 'akun', total: prod.harga });
           if (!cek.ok) return err(cek.alasan, 400, env);
-          potonganVoucher = cek.potongan;
-          kodeVoucher = cek.voucher.kode;
+          potonganVoucher = cek.potongan; kodeVoucher = cek.voucher.kode;
         }
-
         const bayar = Math.max(0, prod.harga - potonganTier - potonganVoucher);
-        if (metode === 'saldo' && user.saldo < bayar) return err('Saldo tidak cukup', 402, env);
+        if ((user?.saldo ?? 0) < bayar) return err('Saldo tidak cukup', 402, env);
 
-        await env.DB.batch([
-          env.DB.prepare('UPDATE akun_produk SET stok = stok - 1, terjual = terjual + 1 WHERE id = ?').bind(produk_id),
-          ...(stok ? [env.DB.prepare('UPDATE akun_stok SET terpakai = 1, user_id = ? WHERE id = ?').bind(me.sub, stok.id)] : []),
-          env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-            .bind(uid('t_'), me.sub, `Beli ${prod.nama}`, 'akun', -bayar),
-          ...(metode === 'saldo'
-            ? [env.DB.prepare('UPDATE users SET saldo = saldo - ?, total_belanja = total_belanja + ? WHERE id = ?')
-                .bind(bayar, bayar, me.sub)]
-            : [env.DB.prepare('UPDATE users SET total_belanja = total_belanja + ? WHERE id = ?')
-                .bind(bayar, me.sub)]),
-        ]);
-
-        if (kodeVoucher) {
-          ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: produk_id, potongan: potonganVoucher }));
+        // (1) Klaim satu kredensial secara atomik. Coba beberapa kali karena bisa
+        // kalah lomba sesaat dengan pembeli lain; hasil akhirnya pasti satu pemenang.
+        let stok = null;
+        for (let coba = 0; coba < 3 && !stok; coba++) {
+          const calon = await env.DB.prepare('SELECT id FROM akun_stok WHERE produk_id=? AND terpakai=0 ORDER BY id LIMIT 1').bind(produk_id).first();
+          if (!calon) break;
+          const up = await env.DB.prepare('UPDATE akun_stok SET terpakai=1, user_id=? WHERE id=? AND terpakai=0').bind(me.sub, calon.id).run();
+          if (up.meta?.changes) {
+            stok = await env.DB.prepare('SELECT * FROM akun_stok WHERE id=?').bind(calon.id).first();
+          }
         }
-        ctx.waitUntil(segarkanTier(env, me.sub));
+        if (!stok) {
+          // Tidak ada kredensial siap: tolak bersih, jangan potong saldo.
+          return err('Kredensial produk belum tersedia. Tidak ada saldo yang dipotong — coba lagi beberapa saat.', 409, env);
+        }
+        if (!stok.email || !stok.password) {
+          await env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id).run();
+          return err('Kredensial tidak lengkap. Tidak ada saldo yang dipotong; hubungi CS.', 409, env);
+        }
 
+        // (2) Potong saldo dengan pengaman; kalau saldo berubah jadi kurang, lepaskan klaim.
+        const potong = await env.DB.prepare(
+          'UPDATE users SET saldo=saldo-?, total_belanja=total_belanja+? WHERE id=? AND saldo>=?'
+        ).bind(bayar, bayar, me.sub, bayar).run();
+        if (!potong.meta?.changes) {
+          await env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id).run();
+          return err('Saldo tidak cukup', 402, env);
+        }
+
+        // (3) Kurangi stok (tidak boleh minus) & catat transaksi.
+        await env.DB.prepare('UPDATE akun_produk SET stok=MAX(0,stok-1), terjual=terjual+1 WHERE id=?').bind(produk_id).run();
+        await env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+          .bind(uid('t_'), me.sub, `Beli ${prod.nama}`, 'akun', -bayar).run();
+
+        if (kodeVoucher) ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: produk_id, potongan: potonganVoucher }));
+        ctx.waitUntil(segarkanTier(env, me.sub));
         ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: produk_id, stok: prod.stok - 1 }));
 
         const kodeAkun = 'AK-' + Math.floor(1000 + Math.random() * 8999);
         const pembeli = await env.DB.prepare('SELECT nama, email FROM users WHERE id = ?').bind(me.sub).first();
         if (pembeli?.email) {
           ctx.waitUntil(kirimEmail(env, {
-            to: pembeli.email,
-            template: 'kredensialAkun',
-            data: {
-              nama: pembeli.nama, produk: prod.nama, kode: kodeAkun,
-              email: stok?.email || 'akan dikirim admin', password: stok?.password || '-',
-              catatan: `Segera ganti password setelah login. Garansi ${prod.garansi}.`,
-            },
+            to: pembeli.email, template: 'kredensialAkun',
+            data: { nama: pembeli.nama, produk: prod.nama, kode: kodeAkun,
+              email: stok.email, password: stok.password,
+              catatan: `Segera ganti password setelah login. Garansi ${prod.garansi}.` },
           }));
           ctx.waitUntil(kirimEmail(env, {
-            to: pembeli.email,
-            template: 'struk',
+            to: pembeli.email, template: 'struk',
             data: { nama: pembeli.nama, kode: kodeAkun, judul: prod.nama, total: bayar, metode },
           }));
         }
         ctx.waitUntil(kirimPush(env, {
-          userId: me.sub,
-          judul: 'Pembelian berhasil',
+          userId: me.sub, judul: 'Pembelian berhasil',
           pesan: `${prod.nama} sudah aktif. Kredensial juga dikirim ke emailmu.`,
-          data: { tipe: 'akun', kode: kodeAkun },
-          tombol: [{ id: 'buka', text: 'Lihat Akun Saya' }],
+          data: { tipe: 'akun', kode: kodeAkun }, tombol: [{ id: 'buka', text: 'Lihat Akun Saya' }],
         }));
 
         return json({
-          kode: kodeAkun,
-          email: stok?.email || 'akan dikirim admin',
-          password: stok?.password || '-',
+          kode: kodeAkun, email: stok.email, password: stok.password,
           catatan: `Segera ganti password. Garansi ${prod.garansi}.`,
         }, 201, env);
       }
