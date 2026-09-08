@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Popup Update — Sistem Tema</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif}
+body{background:#100030;padding:24px;color:#F0EBFF}
+h1{font-size:22px;font-weight:900;letter-spacing:-.7px}
+.sub{color:#B3A6CA;font-size:13px;margin:8px 0 18px;line-height:1.7;max-width:760px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.card{background:#1A0B2E;border:1px solid #2E1A4E;border-radius:22px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.thumb{aspect-ratio:928/1152;background:linear-gradient(180deg,#2E1065,#100030);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.thumb::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,.32),transparent 70%);left:10%;top:8%}
+.thumb::after{content:'';position:absolute;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,.28),transparent 70%);right:12%;bottom:18%}
+.badge{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;padding:5px 10px;border-radius:99px;font-size:10.5px;font-weight:800;backdrop-filter:blur(6px)}
+.close{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);border:1px solid #C4B5FD;color:#2E1065;display:grid;place-items:center;font-weight:900;box-shadow:0 8px 18px rgba(16,0,48,.22)}
+.content{padding:14px 16px}
+.content b{display:block;font-size:14px;font-weight:800}.content small{color:#B3A6CA;font-size:11.5px;display:block;margin-top:4px;line-height:1.5}
+.glow{height:6px;background:linear-gradient(90deg,#A78BFA,#7C3AED,#A855F7);border-radius:99px;margin-top:12px;box-shadow:0 6px 16px rgba(124,58,237,.32)}
+.note{margin-top:22px;background:#1A0B2E;border:1px dashed #7C3AED;border-radius:14px;padding:14px 16px;font-size:12px;color:#C4B5FD;line-height:1.7}
+code{background:rgba(124,58,237,.14);padding:2px 6px;border-radius:6px;font-size:11.5px}
+</style>
+</head>
+<body>
+<h1>Popup Update — Sistem Tema Berbeda</h1>
+<div class="sub">Sesuai permintaan: <b>"gambar popup nya nanti bakal di buat beda beda tema nya misal tema ramadan dll"</b>. Ini mock preview 6 tema. Gambar asli nanti di-generate AI 928×1152 dengan teks baked-in + tombol X. Di app, prioritas: <code>rilis.gambar (server)</code> → <code>rilis_popup_{tema}.png</code> → <code>rilis_popup.png</code>.</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="thumb"><span class="badge">DEFAULT</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:42px">✦</div><div style="font-weight:900;font-size:18px;margin-top:8px;letter-spacing:-.5px">Ada Pembaruan Baru</div><div style="font-size:11px;opacity:.7;margin-top:4px">Fitur makin mulus & cepat</div></div></div>
+    <div class="content"><b>Default — Violet-Indigo Glossy</b><small>BG #100030→#2E1065 + blobs #8B5CF6/#A855F7. Untuk update biasa tanpa hari raya.</small><div class="glow"></div></div>
+  </div>
+  <div class="card">
+    <div class="thumb" style="background:linear-gradient(180deg,#1E0A3C,#100030)"><span class="badge" style="background:rgba(217,164,65,.18);border-color:rgba(217,164,65,.32);color:#F5D48A">RAMADAN</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:40px">☾</div><div style="font-weight:900;font-size:17px;margin-top:8px">Update Ramadan</div><div style="font-size:11px;opacity:.7">Fitur Lebih Berkah</div><div style="margin-top:10px;display:flex;gap:6px;justify-content:center"><span style="width:8px;height:8px;border-radius:50%;background:#D9A441"></span><span style="width:8px;height:8px;border-radius:50%;background:#8B5CF6"></span><span style="width:8px;height:8px;border-radius:50%;background:#D9A441"></span></div></div></div>
+    <div class="content"><b>Ramadan</b><small>Lentera emas #D9A441 + bulan sabit + arabesque halus. File: <code>rilis_popup_ramadan.png</code></small><div class="glow" style="background:linear-gradient(90deg,#D9A441,#8B5CF6)"></div></div>
+  </div>
+  <div class="card">
+    <div class="thumb"><span class="badge" style="background:rgba(124,58,237,.18)">IDUL FITRI</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:36px">✺</div><div style="font-weight:900;font-size:17px;margin-top:8px">Selamat Idul Fitri</div><div style="font-size:11px;opacity:.7">Ada Pembaruan Spesial!</div></div></div>
+    <div class="content"><b>Idul Fitri / Lebaran</b><small>Ketupat minimalis, confetti, emas+violet. File: <code>rilis_popup_idulfitri.png</code></small><div class="glow"></div></div>
+  </div>
+  <div class="card">
+    <div class="thumb" style="background:linear-gradient(180deg,#1A0B2E,#0E0720)"><span class="badge">NATAL</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:36px">❅</div><div style="font-weight:900;font-size:17px;margin-top:8px">Merry Christmas</div><div style="font-size:11px;opacity:.7">Update Baru Hadir</div></div></div>
+    <div class="content"><b>Natal</b><small>Salju tipis, lampu warm, pohon ungu minimalis. File: <code>rilis_popup_natal.png</code></small><div class="glow" style="background:linear-gradient(90deg,#C4B5FD,#7C3AED)"></div></div>
+  </div>
+  <div class="card">
+    <div class="thumb"><span class="badge">TAHUN BARU</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:36px">🎆</div><div style="font-weight:900;font-size:17px;margin-top:8px">2026 — Fitur Baru!</div><div style="font-size:11px;opacity:.7">Tahun Baru, Semangat Baru</div></div></div>
+    <div class="content"><b>Tahun Baru</b><small>Kembang api violet-emas, angka tahun. File: <code>rilis_popup_tahunbaru.png</code></small><div class="glow" style="background:linear-gradient(90deg,#A78BFA,#D9A441)"></div></div>
+  </div>
+  <div class="card">
+    <div class="thumb" style="background:linear-gradient(180deg,#2E1065,#4C1D95)"><span class="badge" style="background:rgba(220,38,38,.18);color:#FCA5A5">KEMERDEKAAN</span><div class="close">✕</div><div style="position:relative;z-index:1;text-align:center"><div style="font-size:32px">🇮🇩</div><div style="font-weight:900;font-size:17px;margin-top:8px">Merdeka! Update</div><div style="font-size:11px;opacity:.7">Spesial 17 Agustus</div></div></div>
+    <div class="content"><b>Kemerdekaan</b><small>Merah-putih subtle + violet, confetti. File: <code>rilis_popup_kemerdekaan.png</code></small><div class="glow" style="background:linear-gradient(90deg,#EF4444,#fff,#7C3AED)"></div></div>
+  </div>
+</div>
+
+<div class="note">
+<b>Next step untuk agent selanjutnya:</b><br>
+1. Generate gambar AI asli 928×1152 per tema pakai prompt di <code>docs/PopupUpdate.md</code>.<br>
+2. Simpan ke <code>api/src/assets/popup-update-{tema}.png</code> + <code>app/assets/ilustrasi/rilis_popup_{tema}.png</code>.<br>
+3. (Opsional) Tambah kolom <code>tema</code> di tabel <code>rilis</code> via migration <code>0005_rilis_tema.sql</code> biar admin bisa pilih tema di console.<br>
+4. Update <code>preview/popup-final-preview.html</code> pakai gambar baru.<br>
+5. Test di device: popup harus muncul dengan barrier #100030, tombol X putih glossy, dan animasi scale.<br><br>
+<b>Warna sudah sinkron:</b> app <code>theme.dart</code> (#7C3AED / #100030) = web <code>--u</code> = console <code>--primary</code>. Jangan balikin ke #6254A8 flat lagi.
+</div>
+</body>
+</html>
