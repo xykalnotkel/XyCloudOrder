@@ -1,4 +1,4 @@
-# XyCloudStore 2.5.0 — sesi internal, CS dan pengaturan
+# XyCloudStore 2.5.1 — sesi internal, CS dan pengaturan
 
 ## Persetujuan pemilik
 
@@ -61,7 +61,7 @@ Kompilasi library native telah berhasil untuk armeabi-v7a, arm64-v8a, dan x86_64
 1. Perbarui `xy_agent.py` ke **1.1.0**, gunakan kode unit dan kredensial Sunshine yang sama. Hentikan proses agen lama sebelum menjalankan yang baru.
 2. Jalankan `python xy_agent.py --cek`, lalu agen normal. Jangan menjalankan dua proses dengan kode unit yang sama.
 3. Terapkan `api/migrations/0002_streaming_cs.sql` via `wrangler d1 migrations apply`, bukan `schema.sql` yang ditujukan untuk inisialisasi lokal.
-4. Deploy Worker; pasang APK 2.5.0. Tidak ada transaksi uji produksi atau penyewa nyata yang dibuat/dihapus oleh pengujian otomatis.
+4. Deploy Worker; pasang APK 2.5.1. Tidak ada transaksi uji produksi atau penyewa nyata yang dibuat/dihapus oleh pengujian otomatis.
 5. Source lengkap aplikasi/engine dan dependency native disertakan sebagai asset rilis. Lihat `native/README.md`, `app/LICENSE`, dan halaman lisensi dalam aplikasi. Signing key, API key dan password tidak disertakan.
 
 Uji: `flutter analyze --no-fatal-infos --no-fatal-warnings`, `flutter test`, `cd api && npm test`, dan `python -m unittest discover -s agent -p 'test_*.py'`. Firmware/streaming nyata harus diuji pada PC + HP setelah pembaruan.

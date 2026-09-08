@@ -190,7 +190,7 @@ jobs:
           done
 
       - name: Sertakan corresponding source GPL
-        run: python3 tools/buat_sumber_streaming.py dist/XyCloudStore-2.5.0-source.zip
+        run: python3 tools/buat_sumber_streaming.py dist/XyCloudStore-2.5.1-source.zip
 
       - name: Upload artifact APK
         uses: actions/upload-artifact@v4

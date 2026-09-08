@@ -45,6 +45,11 @@ if settings.exists():
  s=settings.read_text()
  if "include ':xy_stream'" not in s:s+="\ninclude ':xy_stream'\nproject(':xy_stream').projectDir = file('../../native/xy_stream')\n"
  settings.write_text(s)
+project_gradle=android/'build.gradle'
+if project_gradle.exists():
+ s=project_gradle.read_text()
+ if 'https://jitpack.io' not in s:s=s.replace('mavenCentral()', "mavenCentral()\n        maven { url 'https://jitpack.io' }")
+ project_gradle.write_text(s)
 gradle=android/'app/build.gradle'
 if gradle.exists():
  s=gradle.read_text()

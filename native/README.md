@@ -6,7 +6,7 @@ The Android APK includes Moonlight Android v12.1 as an Android **library**, not 
 
 The user authorized distribution of the integrated Android application under GPLv3. `app/LICENSE` and the in-app license screen contain the original GPL notice. Original upstream source/copyright notices are retained. The separate Worker backend is not linked into the APK.
 
-`native/moonlight.lock.json` pins Moonlight and its submodule revisions. The release publishes `XyCloudStore-2.5.0-source.zip`, including:
+`native/moonlight.lock.json` pins Moonlight and its submodule revisions. The release publishes `XyCloudStore-2.5.1-source.zip`, including:
 - Flutter application, locked package versions, native adapter and build scripts;
 - the full pinned Moonlight Java/C/JNI/resource tree and submodules;
 - source archives matching the prebuilt OpenSSL 1.1.1q / Opus 1.3 libraries;
