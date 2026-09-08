@@ -2,25 +2,23 @@ import 'package:flutter/material.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../screens/pembaruan_screen.dart';
-import 'common.dart';
-import 'morph_bg.dart';
 
 /// ============================================================
-///  RilisPopup — banner muncul saat ada versi baru
+///  RilisPopup — popup saat ada versi baru
 /// ============================================================
-///  Menampilkan gambar rilis (murni, tanpa teks di atas gambar) dengan
-///  latar morphing elemen melayang. Tombol X → tutup popup lalu buka
-///  [PembaruanScreen] untuk memperbarui langsung dari aplikasi.
+///  Hanya menampilkan gambar popup (di-generate AI, teks sudah ikut di
+///  dalam gambar) + tombol X di pojok kanan atas. Tombol X menutup popup
+///  lalu membuka layar pembaruan.
 Future<void> tampilkanRilisPopup(BuildContext context, AppState s) async {
-  final r = s.rilisTerbaru;
-  if (r == null) return;
   final hasil = await showGeneralDialog<String>(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Rilis',
-    barrierColor: Colors.black.withOpacity(.55),
-    transitionDuration: const Duration(milliseconds: 260),
-    pageBuilder: (_, __, ___) => RilisPopup(rilis: r),
+    barrierColor: Colors.black.withOpacity(.6),
+    transitionDuration: const Duration(milliseconds: 220),
+    transitionBuilder: (_, anim, __, child) =>
+        FadeTransition(opacity: anim, child: child),
+    pageBuilder: (_, __, ___) => const RilisPopup(),
   );
   if (hasil == 'buka' && context.mounted) {
     Navigator.of(context, rootNavigator: true)
@@ -29,100 +27,54 @@ Future<void> tampilkanRilisPopup(BuildContext context, AppState s) async {
 }
 
 class RilisPopup extends StatelessWidget {
-  const RilisPopup({super.key, required this.rilis});
-  final Map<String, dynamic> rilis;
+  const RilisPopup({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final versi = '${rilis['versi'] ?? ''}';
-    final gambar = '${rilis['gambar'] ?? ''}';
-    final skema = Theme.of(context).brightness == Brightness.dark;
-
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(22),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 40),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: Container(
-          decoration: BoxDecoration(color: XyTheme.of(context).bg),
-          constraints: const BoxConstraints(maxHeight: 560),
-          child: Stack(children: [
-            // latar elemen melayang (morphing)
-            const Positioned.fill(child: IgnorePointer(child: XyMorphBg(saturasi: .7))),
-            Column(mainAxisSize: MainAxisSize.min, children: [
-              // gambar murni rilis (bukan placeholder teks)
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: gambar.isEmpty
-                    ? Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          gradient: XyTheme.gradPrimary,
-                          boxShadow: XyTheme.glow(XyTheme.primary, .2),
-                        ),
-                        alignment: Alignment.center,
-                        child: const XyIlustrasi('maintenance', tinggi: 130),
-                      )
-                    : Image.network(gambar,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (_, __, ___) => Container(
-                              decoration: BoxDecoration(gradient: XyTheme.gradPrimary),
-                            )),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: XyTheme.primary.withOpacity(.12),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: Text('Pembaruan $_versi',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
-                              color: XyTheme.primary)),
-                    ),
-                    const Spacer(),
-                    Text('Baru',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                            color: skema ? XyTheme.lavender : XyTheme.violet)),
-                  ]),
-                  const SizedBox(height: 8),
-                  const Text('Ada versi baru, makin mulus & cepat',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, height: 1.3)),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Sentuh X untuk membuka layar pembaruan dan pasang versi terbaru langsung dari aplikasi.',
-                    style: TextStyle(fontSize: 12.5, height: 1.5),
-                  ),
-                ]),
-              ),
-            ]),
-            // tombol X (ke layar pembaruan) di pojok kanan atas gambar
-            Positioned(
-              top: 10,
-              right: 10,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context, 'buka'),
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.92),
-                    shape: BoxShape.circle,
-                    boxShadow: XyTheme.shadowXs,
-                  ),
-                  child: Icon(Icons.close_rounded, size: 19, color: XyTheme.ink),
+        borderRadius: BorderRadius.circular(24),
+        child: AspectRatio(
+          aspectRatio: 928 / 1152,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Gambar popup penuh (morphing glossy violet, teks ikut di gambar)
+              Image.asset(
+                'assets/ilustrasi/rilis_popup.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  decoration: BoxDecoration(gradient: XyTheme.gradPrimary),
                 ),
               ),
-            ),
-          ]),
+              // Tombol X — tutup popup lalu buka layar pembaruan
+              Positioned(
+                top: 14,
+                right: 14,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context, 'buka'),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withOpacity(.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2)),
+                      ],
+                    ),
+                    child: const Icon(Icons.close_rounded,
+                        size: 22, color: Color(0xFF2A1A44)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

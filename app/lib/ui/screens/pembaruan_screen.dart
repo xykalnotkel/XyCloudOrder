@@ -82,9 +82,12 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
     final gambar = '${r?['gambar'] ?? ''}';
     final skema = Theme.of(context).brightness == Brightness.dark;
 
-    // gambar rilis, atau fallback 3D glossy.
+    // gambar rilis (AI per update), atau fallback ilustrasi update bawaan.
     final hero = gambar.isEmpty
-        ? const XyIlustrasi('maintenance', tinggi: 210)
+        ? Image.asset('assets/ilustrasi/update.png',
+            height: 210,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const XyIlustrasi('update', tinggi: 210))
         : Image.network(gambar,
             height: 210,
             fit: BoxFit.contain,
@@ -93,7 +96,8 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                 ? anak
                 : const Shimmer(height: 210),
             errorBuilder: (_, __, ___) =>
-                const XyIlustrasi('maintenance', tinggi: 210));
+                Image.asset('assets/ilustrasi/update.png',
+                    height: 210, fit: BoxFit.contain));
 
     return Scaffold(
       backgroundColor: XyTheme.of(context).bg,
