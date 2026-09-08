@@ -250,6 +250,9 @@ const P={
   wallet:'<rect x="2.5" y="5.5" width="19" height="14" rx="3"/><path d="M17 12.5h.01"/>',
   money:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M14.5 9.5c-.5-.8-1.4-1.2-2.5-1.2-1.5 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1 2-2.5 2c-1.1 0-2-.4-2.5-1.2"/>',
   box:'<path d="m12 2.8 9 5v8.4l-9 5-9-5V7.8l9-5Z"/><path d="m3 7.8 9 5 9-5M12 12.8v10"/>',
+  check:'<path d="M4 12.5 9.5 18 20 6"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  circle:'<circle cx="12" cy="12" r="9"/>',
 };
 const ic=(n,s=18,c='currentColor',w=1.9)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${P[n]||''}</svg>`;
 document.querySelector('aside button[onclick="keluar()"]').innerHTML=ic('logout')+'Keluar';
@@ -381,16 +384,66 @@ async function vDash(){
 /* ---------- order ---------- */
 const STATUS=['pending','dibayar','provisioning','aktif','selesai','batal'];
 const warnaStatus=s=>({aktif:'var(--ok)',selesai:'var(--muted)',batal:'var(--danger)'}[s]||'var(--warn)');
+
+/* ============ pilih banyak (multi-select) — tanpa cape ============
+   Dipakai di Order, Top Up, Pengguna & Sampah. Pilih kotak per baris,
+   atau kotak di kepala tabel untuk "pilih semua". Aksi massal muncul
+   sebagai bilah saat ada yang tercentang. PILIH dikunci per cakupan
+   (orders/topup/users) supaya berpindah menu tidak menumpuk. */
+const PILIH={};
+const scount=s=>Object.keys(PILIH[s]||{}).length;
+const sids=s=>Object.keys(PILIH[s]||{}).filter(k=>PILIH[s][k]);
+function selReset(s){delete PILIH[s];syncSel(s)}
+function setSel(s,id,on){PILIH[s]=PILIH[s]||{};if(on)PILIH[s][id]=1;else delete PILIH[s][id];}
+function setSelAll(s,ids,on){PILIH[s]=PILIH[s]||{};ids.forEach(id=>{if(on)PILIH[s][id]=1;else delete PILIH[s][id]});}
+function cbSel(s,id){return `<input type="checkbox" class="cbOne" data-s="${s}" data-id="${id}"
+  ${PILIH[s]&&PILIH[s][id]?'checked':''} onchange="setSel('${s}','${id}',this.checked);syncSel('${s}')">`;}
+function cbSelHead(s,ids){const n=scount(s),t=ids.length;
+  return `<input type="checkbox" class="cbAll" data-s="${s}" ${t&&n===t?'checked':''} ${t?'':'disabled'}
+  onchange="setSelAll('${s}',[${ids.map(id=>`'${id}'`).join(',')}],this.checked);document.querySelectorAll('.cbOne[data-s="${s}"]').forEach(c=>c.checked=this.checked);syncSel('${s}')">`;}
+function syncSel(s){
+  const on=[];document.querySelectorAll(`.cbOne[data-s="${s}"]`).forEach(c=>{c.checked=!!(PILIH[s]&&PILIH[s][c.dataset.id]);if(c.checked)on.push(c.dataset.id)});
+  const head=document.querySelector(`.cbAll[data-s="${s}"]`);const tot=document.querySelectorAll(`.cbOne[data-s="${s}"]`).length;
+  if(head)head.checked=tot>0&&on.length===tot;
+  document.querySelectorAll(`.cbOne[data-s="${s}"]`).forEach(c=>{const tr=c.closest('tr');if(tr)tr.classList.toggle('srow',c.checked)});
+  const bar=document.getElementById('bar-'+s);const hitung=document.getElementById('bar-'+s+'-n');
+  if(bar)bar.style.display=on.length?'flex':'none';
+  if(hitung)hitung.textContent=on.length;
+  const hapusBar=document.getElementById('bar-'+s+'-hapus');
+  if(hapusBar)hapusBar.style.display=on.length?'flex':'none';
+  const kosong=document.getElementById('kosong-'+s);
+  if(kosong)kosong.style.display=on.length?'none':'flex';
+}
+function warnaBar(n){return n>1?'baris '+n+' pesanan':'baris '+n+' pesanan';}
+// sisipkan gaya highlight baris terpilih + kotak
+(function(){const st=document.createElement('style');
+st.textContent=`tr.srow{background:rgba(124,58,237,.10)!important}
+tr.srow td:first-child{box-shadow:inset 3px 0 0 #7C3AED}
+.cbAll,.cbOne{width:auto;accent-color:#7C3AED;cursor:pointer;min-height:auto;padding:0;margin:0}
+.bar{display:none;align-items:center;gap:8px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(167,139,250,.12));border:1px solid rgba(124,58,237,.35);border-radius:14px;padding:10px 14px;margin-bottom:16px;position:sticky;top:14px;z-index:5;backdrop-filter:blur(6px)}
+.bar .pill{background:rgba(124,58,237,.22);color:#8B7BD8;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800}
+.ktkhead{width:34px}`;document.head.appendChild(st);})();
+
 async function vOrders(){
   const m=document.getElementById('main');
   m.innerHTML=head('Order','Status sesi mengikuti agen; jangan isi host atau kredensial contoh',
     `<button class="btn ghost" onclick="vOrders()">${ic('refresh',16)}Muat ulang</button>`)+'<div class="empty">Memuat...</div>';
   const d=await api('/orders');DATA.orders=d;
+  const ids=d.map(o=>o.id);
   m.innerHTML=head('Order','Status sesi mengikuti agen; jangan isi host atau kredensial contoh',
     `<button class="btn ghost" onclick="vOrders()">${ic('refresh',16)}Muat ulang</button>`)+
-    (d.length?`<div class="card" style="padding:18px 6px"><table><thead><tr>
+    (d.length?`<div id="bar-orders" class="bar" style="display:${scount('orders')?'flex':'none'}">
+      <span class="pill">${ic('check',14,'#8B7BD8')} <span id="bar-orders-n">${scount('orders')}</span> pesanan terpilih</span>
+      <div style="flex:1"></div>
+      <button class="btn sm" onclick="ubahStatusMassal('selesai')">${ic('check',15)} Selesaikan</button>
+      <button class="btn sm danger" onclick="ubahStatusMassal('batal')">${ic('x',15)} Batalkan</button>
+      <button class="btn sm ghost" onclick="kosongPilihan('orders')">Bersihkan</button>
+    </div>
+    <div class="card" style="padding:18px 6px"><table><thead><tr>
+      <th class="ktkhead">${cbSelHead('orders',ids)}</th>
       <th>Kode</th><th>Pengguna</th><th>Paket</th><th>Durasi</th><th>Total</th><th>Status</th><th>Dibuat</th><th></th></tr></thead>
       <tbody>${d.map(o=>`<tr>
+        <td>${cbSel('orders',o.id)}</td>
         <td class="mono"><b>${o.kode}</b></td>
         <td>${esc(o.user_nama||'-')}<div style="color:var(--muted);font-size:11px">${esc(o.user_email||'')}</div></td>
         <td>${o.plan_nama}</td><td>${o.durasi_jam} jam</td><td><b>${rp(o.total)}</b></td>
@@ -400,6 +453,22 @@ async function vOrders(){
           ${STATUS.map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select></td>
       </tr>`).join('')}</tbody></table></div>`
     :'<div class="card empty">Belum ada order masuk.</div>');
+  syncSel('orders');
+}
+function kosongPilihan(s){delete PILIH[s];syncSel(s);toast('Pilihan dibersihkan');}
+async function ubahStatusMassal(status){
+  const ids=sids('orders');if(!ids.length)return;
+  const label=status==='selesai'?'menyelesaikan':'membatalkan';
+  if(!await xkonfirmasi(`${label==='menyelesaikan'?'Selesaikan':'Batalkan'} ${ids.length} pesanan?`,
+    `Akan diteruskan ke agen untuk ${ids.length} order terpilih. Host dibersihkan dan pengembalian hanya berlaku sebelum unit siap.`,
+    {tombol:status==='selesai'?'Selesaikan semua':'Batalkan semua',bahaya:true}))return;
+  let ok=0,ganggu=[];
+  for(const id of ids){
+    try{await api('/orders/'+id,{method:'PATCH',body:JSON.stringify({status})});ok++}
+    catch(e){ganggu.push((DATA.orders.find(o=>o.id===id)||{}).kode||id)}
+  }
+  toast(`${ok} diperbarui${ganggu.length?' · '+ganggu.length+' gagal':''}`);
+  delete PILIH['orders'];vOrders();
 }
 async function ubahStatus(id,status){
   if(!['batal','selesai'].includes(status)){toast('Status siap/aktif diperbarui otomatis oleh agen, bukan dibuat manual.');vOrders();return;}
@@ -1430,12 +1499,21 @@ async function hapusForum(id){
 /* ---------- konfirmasi top up ---------- */
 async function vTopup(){
   const m=document.getElementById('main');
-  const d=await api('/topup');
+  const d=await api('/topup');DATA.topup=d;
   const warna={menunggu:'#9A8CBF',diperiksa:'#D9A441',disetujui:'#22C55E',ditolak:'#EF4444'};
-  m.innerHTML=head('Permintaan Top Up','Verifikasi bukti transfer lalu setujui untuk menambah saldo')+
-    `<div class="card" style="padding:18px 6px"><table><thead><tr>
+  const ids=d.map(t=>t.id);
+  const pilih=scount('topup')?'flex':'none';
+  const bar=`<div id="bar-topup" class="bar" style="display:${pilih}">
+      <span class="pill">${ic('check',14,'#8B7BD8')} <span id="bar-topup-n">${scount('topup')}</span> permintaan terpilih</span>
+      <div style="flex:1"></div>
+      <button class="btn sm" onclick="prosesTopupMassal('disetujui')">${ic('check',15)} Setujui semua</button>
+      <button class="btn sm danger" onclick="prosesTopupMassal('ditolak')">${ic('x',15)} Tolak semua</button>
+      <button class="btn sm ghost" onclick="kosongPilihan('topup')">Bersihkan</button></div>`;
+  const isi=d.length?bar+`<div class="card" style="padding:18px 6px"><table><thead><tr>
+      <th class="ktkhead">${cbSelHead('topup',ids)}</th>
       <th>Waktu</th><th>Pengguna</th><th>Nominal</th><th>Transfer</th><th>Bukti</th><th>Status</th><th></th></tr></thead>
-      <tbody>${d.length?d.map(t=>`<tr>
+      <tbody>${d.map(t=>`<tr>
+        <td>${cbSel('topup',t.id)}</td>
         <td style="font-size:12px;color:var(--muted)">${(t.dibuat||'').replace('T',' ').slice(0,16)}</td>
         <td><b>${esc(t.nama)}</b><div style="font-size:11px;color:var(--muted)">${esc(t.email)}</div>
           ${t.phone?`<a href="https://wa.me/${String(t.phone).replace(/^0/,'62').replace(/[^0-9]/g,'')}" target="_blank"
@@ -1448,8 +1526,27 @@ async function vTopup(){
         <td style="white-space:nowrap">${t.status==='disetujui'?'':`
           <button class="btn sm" onclick="prosesTopup('${t.id}','disetujui')">Setujui</button>
           <button class="btn sm danger" onclick="prosesTopup('${t.id}','ditolak')">Tolak</button>`}</td>
-      </tr>`).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:26px">Belum ada permintaan top up</td></tr>'}
-      </tbody></table></div>`;
+      </tr>`).join('')}</tbody></table></div>`
+    :'<div class="card empty">Belum ada permintaan top up</div>';
+  m.innerHTML=head('Permintaan Top Up','Verifikasi bukti transfer lalu setujui untuk menambah saldo',
+    `<button class="btn ghost" onclick="vTopup()">${ic('refresh',16)}Muat ulang</button>`)+isi;
+  syncSel('topup');
+}
+
+async function prosesTopupMassal(status){
+  const ids=sids('topup');if(!ids.length)return;
+  const setuju=status==='disetujui';
+  if(!await xkonfirmasi(`${setuju?'Setujui':'Tolak'} ${ids.length} permintaan top up?`,
+    setuju?'Saldo akan ditambahkan ke semua akun terpilih.':'Pastikan sudah meninjau bukti transfer tiap baris.',{tombol:setuju?'Setujui semua':'Tolak semua',bahaya:!setuju}))return;
+  let ok=0,lewati=0;
+  for(const id of ids){
+    const t=(DATA.topup||[]).find(x=>x.id===id);
+    if(t && ((setuju&&t.status==='disetujui')||(!setuju&&t.status==='ditolak'))){lewati++;continue}
+    try{await api('/topup/'+id,{method:'PATCH',body:JSON.stringify({status})});ok++}
+    catch(e){lewati++}
+  }
+  toast(ok+' diproses'+(lewati?' · '+lewati+' dilewati':''));
+  delete PILIH['topup'];vTopup();
 }
 async function prosesTopup(id,status){
   let catatan=null;
@@ -1667,14 +1764,29 @@ function mediaUrl(value,size='t'){
  }catch{return value;}
 }
 /* Clean account management and owner-only security tools. */
-function userRow(u,trash=false){return `<tr><td><div class="person"><div class="person-avatar">${u.foto?`<img src="${esc(mediaUrl(u.foto,'s'))}" loading="lazy" alt="">`:esc((u.nama||'U')[0])}</div><div><b>${esc(u.nama)}</b><small>${esc(u.email)}</small></div></div></td><td><span class="status-pill ${trash?'muted':u.diblokir?'bad':'good'}">${trash?'Sampah':u.diblokir?'Diblokir':'Aktif'}</span></td><td>${esc(u.tier)}</td><td>${rp(u.saldo)}</td><td><button class="btn sm ghost" onclick="kelolaUser('${esc(u.id)}')">Kelola</button></td></tr>`;}
+function userRow(u,trash=false){const sc=trash?'sampah':'users';const cb=cbSel(sc,u.id); return `<tr><td>${cb}</td><td><div class="person"><div class="person-avatar">${u.foto?`<img src="${esc(mediaUrl(u.foto,'s'))}" loading="lazy" alt="">`:esc((u.nama||'U')[0])}</div><div><b>${esc(u.nama)}</b><small>${esc(u.email)}</small></div></div></td><td><span class="status-pill ${trash?'muted':u.diblokir?'bad':'good'}">${trash?'Sampah':u.diblokir?'Diblokir':'Aktif'}</span></td><td>${esc(u.tier)}</td><td>${rp(u.saldo)}</td><td><button class="btn sm ghost" onclick="kelolaUser('${esc(u.id)}')">Kelola</button></td></tr>`;}
 async function vUsers(trash=false){
  const d=await api('/users'+(trash?'?trash=1':''));DATA.users=d;
+ const sc=trash?'sampah':'users', ids=d.map(u=>u.id), n=scount(sc), tampil=n?'flex':'none';
+ const bar=`<div id="bar-${sc}" class="bar" style="display:${tampil}">
+   <span class="pill">${ic('check',14,'#8B7BD8')} <span id="bar-${sc}-n">${n}</span> akun terpilih</span><div style="flex:1"></div>
+   ${trash
+     ?`<button class="btn sm" onclick="restoreUserMassal()">${ic('check',15)} Pulihkan</button>
+       <button class="btn sm danger" onclick="permanentUserMassal()">${ic('trash',14)} Hapus permanen</button>`
+     :`<button class="btn sm danger" onclick="trashUserMassal()">${ic('trash',14)} Pindah ke Sampah</button>
+       <button class="btn sm" onclick="blokirUserMassal(true)">Blokir</button>
+       <button class="btn sm ghost" onclick="blokirUserMassal(false)">Buka blokir</button>`}
+   <button class="btn sm ghost" onclick="kosongPilihan('${sc}')">Bersihkan</button></div>`;
  document.getElementById('main').innerHTML=head(trash?'Sampah Pengguna':'Pengguna',trash?'Pulihkan akun atau hapus permanen setelah peninjauan':'Status akun, akses, dan data pelanggan',`<button class="btn ghost" onclick="ke('${trash?'users':'sampah'}')">${trash?'Kembali ke pengguna':'Buka sampah'}</button>`)+
- `<div class="card"><div class="toolbar"><input id="user_search" placeholder="Cari nama atau email…" oninput="filterUsers(${trash})"><span class="muted">${d.length} akun</span></div><div class="table-scroll"><table><thead><tr><th>Pengguna</th><th>Status</th><th>Tier</th><th>Saldo</th><th></th></tr></thead><tbody id="user_rows">${d.map(u=>userRow(u,trash)).join('')||'<tr><td colspan="5" class="empty">Belum ada akun di daftar ini.</td></tr>'}</tbody></table></div></div>`;
+ `<div class="card">${bar}<div class="toolbar"><input id="user_search" placeholder="Cari nama atau email…" oninput="filterUsers(${trash})"><span class="muted">${d.length} akun</span></div><div class="table-scroll"><table><thead><tr><th class="ktkhead">${cbSelHead(sc,ids)}</th><th>Pengguna</th><th>Status</th><th>Tier</th><th>Saldo</th><th></th></tr></thead><tbody id="user_rows">${d.map(u=>userRow(u,trash)).join('')||`<tr><td colspan="6" class="empty">Belum ada akun di daftar ini.</td></tr>`}</tbody></table></div></div>`;
+ syncSel(sc);
 }
 const vSampah=()=>vUsers(true);
-function filterUsers(trash){const q=document.getElementById('user_search').value.toLowerCase();document.getElementById('user_rows').innerHTML=DATA.users.filter(u=>(u.nama+' '+u.email).toLowerCase().includes(q)).map(u=>userRow(u,trash)).join('');}
+function filterUsers(trash){const sc=trash?'sampah':'users';const q=document.getElementById('user_search').value.toLowerCase();document.getElementById('user_rows').innerHTML=DATA.users.filter(u=>(u.nama+' '+u.email).toLowerCase().includes(q)).map(u=>userRow(u,trash)).join('');syncSel(sc);}
+async function trashUserMassal(){const ids=sids('users').filter(id=>!((DATA.users.find(u=>u.id===id)||{}).owner_protected));if(!ids.length){toast('Tidak ada akun non-pemilik yang terpilih.');return}if(!await xkonfirmasi('Pindahkan '+ids.length+' akun ke Sampah?','Akun tidak bisa masuk sampai dipulihkan. Bukan penghapusan permanen. Akun pemilik dilindungi dan dilewati.',{tombol:'Pindahkan',bahaya:true}))return;let ok=0;for(const id of ids){try{await api('/users/'+id+'/trash',{method:'POST',body:JSON.stringify({konfirmasi:'HAPUS'})});ok++}catch(e){}}toast(ok+' akun dipindahkan');delete PILIH['users'];vUsers();}
+async function blokirUserMassal(blokir){const ids=sids('users').filter(id=>{const u=DATA.users.find(x=>x.id===id);return u&&!u.owner_protected&&!!u.diblokir!==blokir});if(!ids.length){toast('Tidak ada akun yang cocok untuk diubah.');return}if(!await xkonfirmasi((blokir?'Blokir ':'Buka blokir ')+ids.length+' akun?','Akun pemilik dilindungi dan dilewati.',{tombol:blokir?'Blokir':'Buka blokir',bahaya:blokir}))return;let ok=0;for(const id of ids){try{await api('/users/'+id+'/block',{method:'POST',body:JSON.stringify({blocked:blokir})});ok++}catch(e){}}toast(ok+' akun diperbarui');delete PILIH['users'];vUsers();}
+async function restoreUserMassal(){const ids=sids('sampah');if(!ids.length)return;if(!await xkonfirmasi('Pulihkan '+ids.length+' akun?','Akun bisa masuk kembali setelah login ulang.',{tombol:'Pulihkan'}))return;let ok=0;for(const id of ids){try{await api('/users/'+id+'/restore',{method:'POST',body:'{}'});ok++}catch(e){}}toast(ok+' akun dipulihkan');delete PILIH['sampah'];vSampah();}
+async function permanentUserMassal(){const ids=sids('sampah').filter(id=>!((DATA.users.find(u=>u.id===id)||{}).owner_protected));if(!ids.length){toast('Tidak ada akun non-pemilik di pilihan.');return}const kunci=await xtanya('Hapus permanen massal','Ketik HAPUS untuk menghapus permanen '+ids.length+' akun (tidak bisa dibatalkan) dan seluruh datanya.','');if(kunci!=='HAPUS'){toast('Dibatalkan.');return}const yes=await xkonfirmasi('Tindakan permanen','Yakin hapus permanen '+ids.length+' akun? Seluruh data akan hilang.',{tombol:'Hapus permanen',bahaya:true});if(!yes)return;let ok=0;for(const id of ids){try{await api('/users/'+id+'/permanent',{method:'DELETE',body:JSON.stringify({konfirmasi:'HAPUS PERMANEN'})});ok++}catch(e){}}toast(ok+' akun dihapus permanen');delete PILIH['sampah'];vSampah();}
 function kelolaUser(id){const u=DATA.users.find(x=>x.id===id);if(!u)return;
  modal(`<div class="dialog-eyebrow">PENGELOLAAN AKUN</div><h2>${esc(u.nama)}</h2><p class="muted" style="margin:8px 0 20px">${esc(u.email)}</p>
  <div class="detail-grid"><div><small>Status</small><strong>${u.deleted_at?'Dalam sampah':u.diblokir?'Diblokir':'Aktif'}</strong></div><div><small>Saldo</small><strong>${rp(u.saldo)}</strong></div><div><small>Tier</small><strong>${esc(u.tier)}</strong></div><div><small>Terdaftar</small><strong>${esc((u.created_at||'').slice(0,10))}</strong></div></div>

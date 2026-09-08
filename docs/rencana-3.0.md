@@ -5,9 +5,9 @@ permintaan: **UI/UX tetap ungu glossy**, scroll antilag, validasi transaksi tida
 konfirmasi, pindah akun dengan select/select-all, maintenance yang bisa dipilih cakupannya,
 serta ilustrasi 3D.
 
-> Status: **Bagian D (maintenance bertingkat) SUDAH DIIMPLEMENTASIKAN** (lihat di bawah).
-> Bagian A/B/C/E sebagian/belum menunggu giliran. Backend & console belum dideploy — perlu
-> kamu tes dulu (wrangler) sebelum dipakai di produksi.
+> Status: **Bagian D (maintenance bertingkat) SELESAI** & **Bagian C (pilih-semua/aksi massal) SELESAI**.
+> Backend & console belum dideploy — perlu kamu tes dulu (wrangler) sebelum dipakai di produksi.
+> Bagian A/B/E sebagian/belum menunggu giliran.
 
 ---
 
@@ -105,6 +105,22 @@ Catatan desain: "halaman ini saja / backend-sistem" pada prompt asli kami sempit
 3 cakupan aman di atas (web/app/semua). Console admin sengaja selalu diizinkan agar tidak
 mengunci pemilik di luar. Kalau butuh opsi "console admin juga ikut mati" / "backend-sistem",
 bilang — perlu mekanisme kunci pemulihan terpisah supaya tidak terkunci.
+
+### C. Multi-select & pilih semua + aksi massal (Console) — ✅ SELESAI (belum deploy)
+- Sistem pilihan generik `PILIH` (per cakupan `orders`/`topup`/`users`/`sampah`) + helper:
+  `cbSel` (kotak per baris), `cbSelHead` (kotak "pilih semua"), `syncSel` (sorot baris + bilah
+  aksi muncul), `kosongPilihan`.
+- **Order**: kotak per baris + pilih semua → aksi massal **Selesaikan** / **Batalkan** (loop
+  PATCH per id, konfirmasi, laporan sukses/gagal).
+- **Top Up**: pilih semua → **Setujui semua** / **Tolak semua** (melewati yang sudah berstatus
+  akhir).
+- **Pengguna**: pilih semua → **Pindah ke Sampah** / **Blokir** / **Buka blokir** (akun pemilik
+  otomatis dilewati).
+- **Sampah**: pilih semua → **Pulihkan** / **Hapus permanen** (butuh ketik `HAPUS` + konfirmasi,
+  pemilik dilewati).
+- Bilah aksi `position:sticky` + sorot baris ungu muda; kotak centang diwarnai ungu.
+- Preview interaktif: `preview/multi-select-preview.html` (mock Order — bisa diklik untuk coba).
+- (File: `admin.html`. Perlu uji interaktif: pilih beberapa → aksi; pilih semua → aksi.)
 
 ### E. Ilustrasi 3D ungu glossy (sudah jadi)
 - `api/src/assets/maintenance-web.png` (1584×672, banner situs).

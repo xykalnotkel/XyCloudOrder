@@ -1,0 +1,77 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preview — Pilih Semua &amp; Aksi Massal (Console)</title>
+<style>
+:root{--bg:#0E0A1C;--panel:#161130;--panel2:#1D1740;--line:#2A2250;--ink:#EDE9F8;--muted:#8E82B4;--pur:#7C3AED;--ok:#22C55E;--danger:#EF4444;--warn:#D9A441}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(900px 500px at 80% -10%,#2B1660,#0E0A1C);color:var(--ink);font-family:-apple-system,'Segoe UI',Roboto,sans-serif;padding:30px;min-height:100vh}
+h1{font-size:22px;margin-bottom:4px} .sub{color:var(--muted);font-size:13px;margin-bottom:22px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;max-width:960px}
+.toolbar{display:flex;align-items:center;gap:16px;padding-bottom:16px}.toolbar .muted{margin-left:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;letter-spacing:.05em;color:#83909B;background:#141030;padding:11px 12px;border-bottom:1px solid var(--line)}
+td{padding:13px 12px;border-bottom:1px solid #1D1733;vertical-align:middle}
+tr.srow td{background:rgba(124,58,237,.10)}
+tr.srow td:first-child{box-shadow:inset 3px 0 0 #7C3AED}
+.tag{display:inline-flex;padding:4px 9px;border-radius:20px;font-size:10.5px;font-weight:800;background:rgba(34,197,94,.16);color:#3AA46E}
+.tag.batal{background:rgba(239,68,68,.15);color:#E26}.tag.aktif{background:rgba(124,58,237,.16);color:#A78BFA}
+.cbAll,.cbOne{width:auto;accent-color:#7C3AED;cursor:pointer}
+.ktkhead{width:36px}
+.btn{border:0;border-radius:10px;padding:9px 15px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--pur);color:#fff}
+.btn.sm{padding:7px 12px;font-size:12px;border-radius:8px}.btn.danger{background:rgba(239,68,68,.15);color:#F28;border:1px solid rgba(239,68,68,.3)}.btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.bar{display:none;align-items:center;gap:8px;flex-wrap:wrap;background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(167,139,250,.12));border:1px solid rgba(124,58,237,.35);border-radius:14px;padding:10px 14px;margin-bottom:16px;position:sticky;top:10px;z-index:5;backdrop-filter:blur(6px)}
+.pill{background:rgba(124,58,237,.22);color:#B9A8F5;border-radius:99px;padding:4px 11px;font-size:11px;font-weight:800}
+select{background:#141030;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+.toast{position:fixed;right:22px;bottom:22px;background:#2A2250;color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;opacity:0;transform:translateY(10px);transition:.25s;z-index:99;border:1px solid var(--line)}
+.toast.on{opacity:1;transform:none}
+.note{margin-top:16px;font-size:12px;color:var(--muted);line-height:1.7;background:rgba(124,58,237,.08);border:1px dashed rgba(124,58,237,.35);padding:12px 14px;border-radius:12px}
+</style></head><body>
+<h1>Pilih Semua &amp; Aksi Massal</h1>
+<div class="sub">Preview interaktif — klik kotak per baris, atau centang di kepala tabel untuk pilih semua, lalu tekan aksi. Tampilan &amp; logika sama dengan yang ditanam di Console admin.</div>
+<div class="card">
+  <div id="bar" class="bar">
+    <span class="pill">&#10003; <span id="jn">0</span> pesanan terpilih</span><div style="flex:1"></div>
+    <button class="btn sm" onclick="aksi('selesai')">Selesaikan</button>
+    <button class="btn sm danger" onclick="aksi('batal')">Batalkan</button>
+    <button class="btn sm ghost" onclick="bersih()">Bersihkan</button>
+  </div>
+  <div class="toolbar"><span style="font-weight:700">Order</span><span class="muted">mock data</span></div>
+  <table><thead><tr><th class="ktkhead"><input type="checkbox" class="cbAll" onchange="semua(this)"></th><th>Kode</th><th>Pengguna</th><th>Paket</th><th>Total</th><th>Status</th><th></th></tr></thead>
+  <tbody id="tb"></tbody></table>
+</div>
+<div class="note">Catatan: ini contoh Order saja. Di Console nyata, pola yang sama juga aktif di <b>Top Up</b>, <b>Pengguna</b> (pindah ke Sampah / blokir / pulihkan), dan <b>Sampah</b>. Aksi massal butuh konfirmasi &amp; dilewati jika ada yang tidak memenuhi syarat (mis. akun pemilik / yang sudah dalam status akhir).</div>
+<div class="toast" id="toast"></div>
+<script>
+const SEL={};let rows=[
+ {k:'XY-2417',u:'Andi Pratama',p:'RTX 4090 Ultra',t:175000,s:'aktif'},
+ {k:'XY-2418',u:'Budi Santoso',p:'RTX 4060',t:60000,s:'pending'},
+ {k:'XY-2419',u:'Citra Ayu',p:'Cloud Gaming Pro',t:120000,s:'aktif'},
+ {k:'XY-2420',u:'Dewi Lestari',p:'RTX 4090 Ultra',t:175000,s:'selesai'},
+ {k:'XY-2421',u:'Eko Prasetyo',p:'RTX 3060',t:55000,s:'batal'},
+ {k:'XY-2422',u:'Fitri Rahma',p:'RTX 4060',t:60000,s:'pending'},
+ {k:'XY-2423',u:'Galih Putra',p:'Cloud Gaming Pro',t:120000,s:'aktif'},
+];
+const STAT={'aktif':'aktif','pending':'aktif','batal':'batal','selesai':'aktif'};
+function g(){rows.forEach((r,i)=>{r.sel=!!SEL[i]})}
+function muat(){g();document.getElementById('tb').innerHTML=rows.map((r,i)=>{
+  const c=STAT[r.s]||'aktif';
+  return `<tr id="r${i}" class="${r.sel?'srow':''}"><td><input type="checkbox" class="cbOne" ${r.sel?'checked':''} onchange="tog(${i},this)"></td>
+  <td><b>${r.k}</b></td><td>${r.u}</td><td>${r.p}</td><td><b>${r.t.toLocaleString('id-ID')}</b></td>
+  <td><span class="tag ${r.s==='batal'?'batal':''}">${r.s}</span></td>
+  <td><select onchange="setS(${i},this.value)">${['pending','aktif','selesai','batal'].map(x=>`<option ${r.s===x?'selected':''}>${x}</option>`).join('')}</select></td></tr>`}).join('');
+  const on=rows.filter(r=>r.sel).length, bar=document.getElementById('bar');
+  bar.style.display=on?'flex':'none';document.getElementById('jn').textContent=on;
+  const h=document.querySelector('.cbAll');h.checked=on===rows.length&&on>0;
+}
+function tog(i,c){SEL[i]=c;if(!c)delete SEL[i];muat()}
+function semua(c){rows.forEach((r,i)=>{if(c)SEL[i]=true;else delete SEL[i]});document.querySelectorAll('.cbOne').forEach(x=>x.checked=c);muat()}
+function bersih(){for(const k in SEL)delete SEL[k];muat()}
+function setS(i,v){rows[i].s=v;toast('Status '+rows[i].k+' → '+v);muat()}
+function aksi(ke){const on=rows.filter(r=>r.sel);if(!on.length)return;
+ if(!confirm((ke==='selesai'?'Selesaikan':'Batalkan')+' '+on.length+' pesanan?'))return;
+ const label=ke==='selesai'?'Selesai':'Batal';
+ on.forEach(r=>{r.s=ke==='selesai'?'selesai':'batal';toast(r.k+' → '+label);delete SEL[rows.indexOf(r)]});
+ muat();toast(on.length+' pesanan diperbarui');}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),1800)}
+muat();
+</script></body></html>
