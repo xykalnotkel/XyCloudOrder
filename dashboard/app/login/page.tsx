@@ -36,7 +36,7 @@ export default function LoginPage() {
       <div className="w-full max-w-[420px]">
         <div className="xy-card p-7">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-[#7C3AED] grid place-items-center font-black text-white text-[18px] tracking-tight">XY</div>
+            <img src="/brand/logo.png" alt="XyCloud" className="w-12 h-12 rounded-xl object-contain bg-[#1A0A3A] border border-[#2D1B5E] p-1.5" />
             <div>
               <div className="font-black text-white text-[16px] tracking-tight leading-tight">XyCloud Admin</div>
               <div className="text-[11px] text-[#9A8CBF] font-semibold tracking-wide mt-0.5">ADMIN.XYCLOUD.MY.ID • CONSOLE</div>

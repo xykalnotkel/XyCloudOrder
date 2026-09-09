@@ -92,11 +92,11 @@ export default function Sidebar() {
   return (
     <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-[#1A0A3A] border-r border-[#2D1B5E] font-[Plus_Jakarta_Sans]`}>
       <div className="h-[64px] flex items-center px-4 gap-3 border-b border-[#2D1B5E]">
-        <div className="w-9 h-9 rounded-xl bg-[#7C3AED] grid place-items-center font-black text-white tracking-tight">XY</div>
+        <img src="/brand/logo.png" alt="logo" className="w-9 h-9 rounded-xl object-contain bg-[#21114A] border border-[#2D1B5E] p-1" />
         {!collapsed && (
           <div className="leading-tight">
             <div className="font-bold text-white tracking-tight text-[14px]">XyCloud Console</div>
-            <div className="text-[11px] text-[#9A8CBF] font-medium">v3.3d • {MENU.length} menu • Solid</div>
+            <div className="text-[11px] text-[#9A8CBF] font-medium">v3.3e • {MENU.length} menu • Solid</div>
           </div>
         )}
         <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-lg bg-[#21114A] hover:bg-[#2A1A5E] grid place-items-center border border-[#2D1B5E]">
