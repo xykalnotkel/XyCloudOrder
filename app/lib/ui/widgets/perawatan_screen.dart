@@ -51,6 +51,7 @@ class PerawatanScreen extends StatelessWidget {
                     height: 168,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      color: const Color(0xFF140E29),
                       boxShadow: [
                         BoxShadow(
                           color: XyTheme.primary.withOpacity(.25),
@@ -73,8 +74,33 @@ class PerawatanScreen extends StatelessWidget {
                   ),
                 ]),
                 const SizedBox(height: 18),
-                const Text(
-                  'Sedang Perawatan',
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: XyTheme.primary.withOpacity(.14),
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: XyTheme.primary.withOpacity(.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _TitikPulsa(),
+                      SizedBox(width: 7),
+                      Text(
+                        'Sedang Perawatan',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.6,
+                          color: Color(0xFFD8CDF5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Kami Sebentar Lagi',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
@@ -141,6 +167,23 @@ class PerawatanScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Titik kecil pada lencana "Sedang Perawatan".
+class _TitikPulsa extends StatelessWidget {
+  const _TitikPulsa();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 7,
+      height: 7,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color(0xFFC084FC),
       ),
     );
   }

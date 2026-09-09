@@ -3,6 +3,20 @@
 Program kecil yang dijalankan di setiap PC atau VM yang disewakan. Tugasnya menyambungkan mesin itu
 ke server XyCloudStore supaya sesi sewa bisa dinyalakan, dipasangkan, dan ditutup otomatis dari aplikasi.
 
+## Cara paling gampang (Windows): instal otomatis
+
+Berkas **`instal_otomatis.ps1`** berperan seperti aplikasi installer:
+
+- Mengecek & **otomatis memasang Python** (winget) bila belum ada.
+- Mengecek & **otomatis memasang Sunshine** (engine streaming) bila belum ada.
+- Memandu isi **kode unit** (dari dashboard → Unit PC) + kredensial web-UI Sunshine sekali saja
+  (disimpan **terenkripsi DPAPI** akun Windows, bukan teks polos).
+- Menjalankan diagnosis `--cek`, lalu **menjalankan agen** dan **mendaftarkan autostart**
+  (penjadwal `XyAgent` @ saat PC dinyalakan).
+
+Cara pakai: letakkan `instal_otomatis.ps1` **di folder yang sama dengan `xy_agent.py`**,
+klik kanan → *Run with PowerShell*. Jalankan ulang kapan saja untuk mengubah konfigurasi.
+
 ## Cara kerja singkat
 
 ```

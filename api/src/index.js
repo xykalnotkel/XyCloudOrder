@@ -23,8 +23,8 @@ import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
 import LOGO_FULL_PNG from './brand-logo-full.png';
 import OG_PNG from './brand-og.png';
-import MAINT_WEB_PNG from './assets/maintenance-web.png';
-import MAINT_APP_PNG from './assets/maintenance-app.png';
+import MAINT_WEB_WEBP from './assets/maintenance-web.webp';
+import MAINT_APP_WEBP from './assets/maintenance-app.webp';
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
@@ -82,7 +82,17 @@ const err = (message, status = 400, env) =>
 //   'aplikasi'   -> blokir aplikasi Android saja, situs tetap jalan
 //   'admin'      -> blokir console admin (dan web/app), hanya kunci pemilik tersembunyi
 //                   (opsional; berbahaya). Kami batasi ke yang aman di bawah.
-const CAKUPAN_PEMELIHARAAN = ['semua', 'web', 'aplikasi'];
+const CAKUPAN_PEMELIHARAAN = ['semua', 'web', 'aplikasi', 'halaman'];
+
+/** Baca daftar halaman yang diblokir saat cakupan = 'halaman'. */
+async function halamanPemeliharaan(env) {
+  try {
+    const d = JSON.parse((await setelan(env, 'pemeliharaan_halaman', '[]')) || '[]');
+    return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && x.trim().startsWith('/')) : [];
+  } catch (_) {
+    return [];
+  }
+}
 
 /** Deteksi asal permintaan: 'web' (SPA publik) vs 'aplikasi' (Android/native).
  *  Permintaan dari browser ke host API lintas-asal membawa header Origin,
@@ -426,39 +436,81 @@ export default {
     if (domainWeb && (path === '/' || !path.includes('.')) && !path.startsWith('/api/')
         && !path.startsWith('/img/') && !path.startsWith('/unduh/') && !path.startsWith('/legal/')
         && !path.startsWith('/brand/') && !path.startsWith('/bayar/')) {
-      // Mode pemeliharaan khusus situs: tampilkan halaman perawatan berilustrasi,
-      // bukan web.html yang gagal memuat data. Berkas /brand/ masih boleh dimuat
-      // sehingga ilustrasi tampil.
+      // Mode pemeliharaan khusus situs: tampilkan halaman perawatan yang jelas,
+      // bukan web.html yang gagal memuat data. Berkas /brand/ tetap boleh dimuat
+      // sehingga ilustrasi (WebP ringan) tampil cepat.
       const maintWeb = (await setelan(env, 'mode_pemeliharaan', '0')) === '1';
-      const cakupan = maintWeb ? (await setelan(env, 'pemeliharaan_cakupan', 'semua')) || 'semua' : 'semua';
-      if (maintWeb && (cakupan === 'semua' || cakupan === 'web')) {
+      const cakupanM = maintWeb ? ((await setelan(env, 'pemeliharaan_cakupan', 'semua')) || 'semua') : 'semua';
+      let kenaHalaman = false;
+      if (maintWeb && cakupanM === 'halaman') {
+        let daftar = [];
+        try { daftar = JSON.parse((await setelan(env, 'pemeliharaan_halaman', '[]')) || '[]'); } catch (_) { daftar = []; }
+        if (!Array.isArray(daftar)) daftar = [];
+        kenaHalaman = daftar.length === 0
+          ? path === '/'
+          : daftar.some((h) => {
+              const a = String(h || '').trim();
+              if (!a) return false;
+              if (a === '/') return path === '/';
+              return path === a || path.startsWith(a.endsWith('/') ? a : a + '/');
+            });
+      }
+      const kenaWeb = maintWeb && (cakupanM === 'semua' || cakupanM === 'web' || kenaHalaman);
+      if (kenaWeb) {
         const pesan = await setelan(env, 'pesan_pemeliharaan',
           'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.');
         const aman = String(pesan).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        let catatan = '';
+        if (cakupanM === 'web') catatan = 'Mode khusus situs web aktif — aplikasi Android tetap bisa dipakai.';
+        else if (cakupanM === 'halaman') catatan = 'Sebagian halaman situs sedang diperbarui, halaman lain tetap terbuka.';
+        let sampaiHtml = '';
+        try {
+          const sampai = await setelan(env, 'mode_pemeliharaan_sampai', '');
+          const sisa = sampai ? new Date(sampai).getTime() - Date.now() : NaN;
+          if (Number.isFinite(sisa) && sisa > 0) {
+            const mnt = Math.max(1, Math.ceil(sisa / 60000));
+            sampaiHtml = mnt >= 120
+              ? Math.round(mnt / 60) + ' jam lagi'
+              : mnt >= 60 ? '+/- ' + (mnt / 60).toFixed(1).replace('.', ',') + ' jam lagi' : '+/- ' + mnt + ' menit lagi';
+          }
+        } catch (_) {}
         return new Response(`<!doctype html><html lang="id"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>XyCloudStore — Perawatan</title>
+<title>XyCloudStore — Sedang Perawatan</title>
 <style>
-:root{--bg:#140E29;--panel:rgba(255,255,255,.04);--line:rgba(124,58,237,.25);--pur:#A78BFA;--pur2:#7C3AED;--ink:#EDE9F8}
-*{box-sizing:border-box;margin:0;padding:0}body{min-height:100dvh;background:radial-gradient(1200px 800px at 50% -10%,#2B1660 0%,var(--bg) 55%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:28px;overflow-x:hidden}
-.wrap{max-width:520px;text-align:center;animation:masuk .7s ease both}
-@keyframes masuk{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.img{width:min(78vw,380px);margin:0 auto 8px;filter:drop-shadow(0 22px 44px rgba(124,58,237,.45))}
-h1{font-size:clamp(24px,6vw,34px);letter-spacing:-.5px;margin:6px 0 12px;background:linear-gradient(90deg,#C4B5FD,#8B5CF6,#C4B5FD);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
-p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22px}
-.meter{height:5px;border-radius:99px;background:rgba(124,58,237,.2);overflow:hidden;max-width:300px;margin:0 auto 18px}
-.meter i{display:block;height:100%;width:40%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#C084FC);animation:geser 1.6s ease-in-out infinite}
-@keyframes geser{0%{margin-left:-40%}100%{margin-left:100%}}
-.tombol{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(167,139,250,.4);background:rgba(124,58,237,.14);color:#D6CBF5;padding:11px 22px;border-radius:99px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:inherit}
-.tombol:hover{background:rgba(124,58,237,.3);transform:translateY(-1px)}
-.small{display:block;margin-top:14px;color:#8E82B4;font-size:12px}
-</style></head><body><div class="wrap">
-<img class="img" src="/brand/maintenance-web.png" alt="Sedang perawatan">
-<h1>Sedang Perawatan</h1><p>${aman}</p>
+:root{--bg:#0D0920;--line:rgba(139,92,246,.28);--pur:#A78BFA;--ink:#F1EDFC;--mut:#A99BD6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
+.kartu{max-width:470px;width:100%;text-align:center;animation:naik .7s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:32px;padding:28px 26px 24px;box-shadow:0 30px 90px rgba(10,4,40,.55)}
+@keyframes naik{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+.merek{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px}
+.merek img{height:20px;opacity:.95}
+.merek span{color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.5px}
+.gambar{width:min(56vw,216px);aspect-ratio:1;margin:2px auto;border-radius:50%;overflow:hidden;border:1px solid rgba(167,139,250,.4);box-shadow:0 24px 60px rgba(124,58,237,.45),0 0 0 12px rgba(124,58,237,.08);background:#140E29}
+.gambar img{width:100%;height:100%;object-fit:cover;display:block}
+.lencana{display:inline-flex;align-items:center;gap:7px;margin:18px auto 0;background:linear-gradient(90deg,rgba(124,58,237,.3),rgba(168,85,247,.16));border:1px solid rgba(167,139,250,.4);color:#D8CDF5;font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;padding:7px 16px;border-radius:99px}
+.lencana i{width:7px;height:7px;border-radius:50%;background:#C084FC;animation:denyut 1.6s infinite}
+@keyframes denyut{0%{box-shadow:0 0 0 0 rgba(192,132,252,.6)}70%{box-shadow:0 0 0 9px rgba(192,132,252,0)}100%{box-shadow:0 0 0 0 rgba(192,132,252,0)}}
+h1{font-size:clamp(22px,6vw,30px);letter-spacing:-.6px;margin:14px 0 10px;background:linear-gradient(90deg,#CBB9FF,#9F6BFF,#CBB9FF);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+p{color:#B7A9E0;font-size:14.5px;line-height:1.7;margin:0 auto}
+p.kecil,span.kecil{color:#7d6faa;font-size:12px}
+.catatan{color:#9A8CC6;font-size:12px;margin-top:10px}
+.aksi{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22px}
+.tombol{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#7C3AED,#8B5CF6);color:#fff;padding:12px 26px;border-radius:99px;font-size:14px;font-weight:800;border:0;cursor:pointer;transition:.18s;font-family:inherit;box-shadow:0 14px 34px rgba(124,58,237,.4)}
+.tombol:hover{transform:translateY(-1px);box-shadow:0 18px 44px rgba(124,58,237,.55)}
+.meter{height:4px;width:min(220px,66%);border-radius:99px;background:rgba(124,58,237,.25);overflow:hidden;margin:16px auto 0}
+.meter i{display:block;height:100%;width:42%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#D8B4FE);animation:geser 1.4s ease-in-out infinite}
+@keyframes geser{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
+@media (prefers-reduced-motion:reduce){.kartu,.lencana i,.meter i{animation:none}}
+</style></head><body><main class="kartu">
+<div class="merek"><img src="/brand/logo-full.png" alt="XyCloudStore"><span>XYCLOUDSTORE</span></div>
+<div class="gambar"><img src="/brand/maintenance-web.webp" alt="Sedang perawatan"></div>
+<div class="lencana"><i></i>` + (sampaiHtml ? 'Kembali ' + sampaiHtml : 'Sedang Pemeliharaan') + `</div>
+<h1>Kami Sebentar Lagi</h1>
+<p>` + aman + `</p>` + (catatan ? '<p class="catatan">' + catatan + '</p>' : '') + `
 <div class="meter"><i></i></div>
-<button class="tombol" onclick="location.reload()">↻ Coba lagi sekarang</button>
-<span class="small">Kami segera kembali. Terima kasih sudah sabar.</span>
-</div></body></html>`, {
+<div class="aksi"><button class="tombol" onclick="location.reload()">Coba lagi sekarang</button><span class="kecil">Data dan saldo kamu tetap aman.</span></div>
+</main></body></html>`, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
         });
       }
@@ -711,15 +763,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
       });
     }
 
-    // Ilustrasi mode pemeliharaan (3D ungu glossy, latar transparan).
-    if (path === '/brand/maintenance-web.png') {
-      return new Response(MAINT_WEB_PNG, {
-        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
+    // Ilustrasi mode pemeliharaan (WebP ringan — muat paling cepat).
+    if (path === '/brand/maintenance-web.webp' || path === '/brand/maintenance-web.png') {
+      return new Response(MAINT_WEB_WEBP, {
+        headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=3600' },
       });
     }
-    if (path === '/brand/maintenance-app.png') {
-      return new Response(MAINT_APP_PNG, {
-        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' },
+    if (path === '/brand/maintenance-app.webp') {
+      return new Response(MAINT_APP_WEBP, {
+        headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=3600' },
       });
     }
 
@@ -2056,9 +2108,14 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (a === 'sistem/pemeliharaan' && req.method === 'POST') {
           const b = await req.json().catch(() => ({}));
           const aktif = Boolean(b.aktif);
-          // cakupan yang boleh: 'semua' | 'web' | 'aplikasi'
+          // cakupan: 'semua' | 'web' | 'aplikasi' | 'halaman'
           let cakupan = String(b.cakupan || 'semua').toLowerCase();
           if (!CAKUPAN_PEMELIHARAAN.includes(cakupan)) cakupan = 'semua';
+          // daftar halaman saat cakupan = 'halaman'
+          const halaman = (Array.isArray(b.halaman) ? b.halaman : [])
+            .map((x) => String(x || '').trim().slice(0, 120))
+            .filter((x) => x.startsWith('/'));
+          const unik = [...new Set(halaman)];
           if (aktif) {
             const kini = Date.now();
             const maks = Number(b.maks_menit ?? (await setelan(env, 'pemeliharaan_maks_menit', '720')));
@@ -2077,14 +2134,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
           }
           await simpanSetelan(env, 'mode_pemeliharaan', aktif ? '1' : '0');
           await simpanSetelan(env, 'pemeliharaan_cakupan', cakupan);
-          if (b.pesan) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan));
+          await simpanSetelan(env, 'pemeliharaan_halaman', JSON.stringify(unik));
+          if (b.pesan !== undefined) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan ?? ''));
           const sampai = aktif ? await setelan(env, 'mode_pemeliharaan_sampai', '') : '';
-          const label = { semua: 'semua (web + aplikasi)', web: 'hanya situs web', aplikasi: 'hanya aplikasi Android' }[cakupan];
+          const label = { semua: 'semua (web + aplikasi)', web: 'hanya situs web', aplikasi: 'hanya aplikasi Android', halaman: unik.length ? unik.length + ' halaman dipilih' : 'beranda saja (/)' }[cakupan];
           ctx.waitUntil(catatLog(env, 'pemeliharaan',
             aktif
-              ? `Mode pemeliharaan dinyalakan untuk ${label}${sampai ? ` (auto-mati ${sampai})` : ' (tanpa batas)'}`
+              ? 'Mode pemeliharaan dinyalakan untuk ' + label + (sampai ? ' (auto-mati ' + sampai + ')' : ' (tanpa batas)')
               : 'Mode pemeliharaan dimatikan'));
-          return json({ ok: true, aktif, cakupan, sampai: aktif ? (sampai || null) : null }, 200, env);
+          return json({ ok: true, aktif, cakupan, sampai: aktif ? (sampai || null) : null, halaman: unik }, 200, env);
         }
 
         // ---- jalankan pemeliharaan sekarang ----
@@ -2365,9 +2423,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
           const cakupan = await setelan(env, 'pemeliharaan_cakupan', 'semua');
           const pesan = await setelan(env, 'pesan_pemeliharaan', '');
           const versi = await setelan(env, 'versi_minimal', '');
+          const sampai = await setelan(env, 'mode_pemeliharaan_sampai', '');
+          const mulaiPm = await setelan(env, 'mode_pemeliharaan_mulai', '');
           return json({
             database: { hidup: dbOk, jedaMs: Date.now()-mulai, baris: ukuran },
-            pemeliharaan: { aktif: mode==='1', cakupan, pesan, versi_minimal: versi },
+            pemeliharaan: {
+              aktif: mode==='1', cakupan, pesan, versi_minimal: versi,
+              halaman: await halamanPemeliharaan(env),
+              sampai: sampai || null, mulai: mulaiPm || null,
+            },
             email: Boolean(env.RESEND_API_KEY),
             push: Boolean(env.ONESIGNAL_API_KEY),
             gambar: Boolean(env.CLOUDINARY_KEY),
