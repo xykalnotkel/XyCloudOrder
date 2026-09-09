@@ -500,39 +500,37 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
       return unduhApk(env, ctx, decodeURIComponent(path.slice(7)));
     }
 
-    // v3.3g: admin.xycloud.my.id langsung serve dashboard baru tanpa redirect (proxy ke Pages)
-    // User tanya kenP harus redirect — jadi kita proxy, bukan redirect
+    // v3.3h: admin.xycloud.my.id langsung serve dashboard baru tanpa redirect (proxy ke Pages)
+    // Fix stuck "Memeriksa sesi admin terus" di "/" karena pathname "/" dianggap protected
+    // — AuthGuard sekarang allow "/" & "/login" sebagai public, dan proxy serve binary benar via arrayBuffer
     const isAdminHost = host.startsWith('admin.');
     if (isAdminHost) {
       if (!(path.startsWith('/api/') || path.startsWith('/ws/') || path.startsWith('/img/') || path.startsWith('/brand/') || path.startsWith('/unduh/') || path.startsWith('/legal/') || path === '/robots.txt' || path === '/sitemap.xml' || path === '/manifest.webmanifest' || path === '/sw.js' || path === '/health')) {
-        // proxy ke Pages dashboard — tanpa redirect, jadi URL tetap admin.xycloud.my.id
         try {
-          const destPath = path === '/' ? '/login/' : path;
-          const dest = 'https://xycloud-dashboard.pages.dev' + destPath + (url.search || '');
+          const dest = 'https://xycloud-dashboard.pages.dev' + path + (url.search || '');
           const proxied = await fetch(dest, {
             headers: {
               'User-Agent': req.headers.get('User-Agent') || 'XyCloud-Worker',
-              'Accept': req.headers.get('Accept') || 'text/html',
+              'Accept': req.headers.get('Accept') || '*/*',
+              'Accept-Language': req.headers.get('Accept-Language') || 'id,en;q=0.9',
             },
           });
-          let body = await proxied.text();
-          // rewrite absolute links to Pages to stay on admin domain (optional)
-          // keep as is for now — Pages assets are relative
-          return new Response(body, {
+          // penting: pakai arrayBuffer biar _next/static/*.js dan font tidak corrupt
+          const buf = await proxied.arrayBuffer();
+          const ct = proxied.headers.get('Content-Type') || (path.endsWith('.js') ? 'application/javascript' : path.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
+          return new Response(buf, {
             status: proxied.status,
             headers: {
-              'Content-Type': proxied.headers.get('Content-Type') || 'text/html; charset=utf-8',
-              'Cache-Control': 'no-store',
+              'Content-Type': ct,
+              'Cache-Control': 'no-store, max-age=0, must-revalidate',
+              'CDN-Cache-Control': 'no-store',
               'X-Content-Type-Options': 'nosniff',
+              'Access-Control-Allow-Origin': '*',
             },
           });
         } catch (e) {
-          // fallback: serve solid login if proxy gagal
           return new Response(ADMIN_HTML, {
-            headers: {
-              'Content-Type': 'text/html; charset=utf-8',
-              'Cache-Control': 'no-store',
-            },
+            headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
           });
         }
       }

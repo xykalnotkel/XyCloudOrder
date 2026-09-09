@@ -12,8 +12,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checked, setChecked] = useState(false);
 
-  // login page never guarded
-  if (pathname === "/login") {
+  // login page never guarded — allow / and /login both (admin host "/" proxies to /login/)
+  const isPublic = pathname === "/login" || pathname === "/" || pathname === "/login/";
+  if (isPublic) {
     return <>{children}</>;
   }
 

@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { adminFetch, getAdminKey, setAdminKey, loginAdmin } from "@/lib/api";
-import { Users, Receipt, Wallet, Cpu, ShieldCheck, Rocket, Bell, Activity } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { getAdminKey, loginAdmin } from "@/lib/api";
+import { Users, Receipt, Wallet, Cpu, ShieldCheck, Rocket, Activity } from "lucide-react";
 
 type Stats = {
   total_users: number;
@@ -11,64 +12,37 @@ type Stats = {
 };
 
 export default function DashboardPage() {
-  const [keyInput, setKeyInput] = useState("");
-  const [logged, setLogged] = useState(false);
+  const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const k = getAdminKey();
-    if (k) {
-      setKeyInput(k);
-      loginAdmin(k)
-        .then((d) => {
-          setLogged(true);
-          setStats({
-            total_users: d?.total_users ?? d?.users ?? 0,
-            total_orders: d?.total_orders ?? d?.orders ?? 0,
-            pendapatan: d?.pendapatan ?? 0,
-            unit_online: d?.unit_online ?? 0,
-          });
-        })
-        .catch(() => setLogged(false));
+    if (!k) {
+      router.replace("/login");
+      return;
     }
-  }, []);
+    loginAdmin(k)
+      .then((d) => {
+        setStats({
+          total_users: d?.total_users ?? d?.users ?? 0,
+          total_orders: d?.total_orders ?? d?.orders ?? 0,
+          pendapatan: d?.pendapatan ?? 0,
+          unit_online: d?.unit_online ?? 0,
+        });
+      })
+      .catch(() => {
+        router.replace("/login");
+      })
+      .finally(() => setLoading(false));
+  }, [router]);
 
-  const handleLogin = async () => {
-    setErr("");
-    try {
-      const d = await loginAdmin(keyInput);
-      setAdminKey(keyInput);
-      setLogged(true);
-      setStats({
-        total_users: d?.total_users ?? 0,
-        total_orders: d?.total_orders ?? 0,
-        pendapatan: d?.pendapatan ?? 0,
-        unit_online: d?.unit_online ?? 0,
-      });
-    } catch (e: any) {
-      setErr(e.message || "Gagal login");
-    }
-  };
-
-  if (!logged) {
+  if (loading) {
     return (
-      <div className="min-h-[80vh] grid place-items-center font-[Plus_Jakarta_Sans]">
-        <div className="xy-card rounded-[20px] p-8 w-full max-w-[420px]">
-          <div className="w-12 h-12 rounded-xl xy-btn grid place-items-center font-black mb-4 text-white tracking-tight">XY</div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Login Console v3.3</h1>
-          <p className="text-sm text-violet-200/70 mt-1 font-medium">Pakai x-admin-key. Palette violet-indigo #7C3AED + #100030</p>
-          <input
-            value={keyInput}
-            onChange={(e) => setKeyInput(e.target.value)}
-            placeholder="x-admin-key"
-            className="mt-5 w-full px-4 py-3 rounded-xl bg-[#100030] border border-white/10 text-white outline-none focus:border-[#7C3AED] font-mono text-sm"
-          />
-          {err && <div className="mt-3 text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-xl p-2">{err}</div>}
-          <button onClick={handleLogin} className="mt-4 w-full py-3 rounded-xl xy-btn text-white font-bold tracking-wide">
-            Masuk
-          </button>
-          <div className="mt-4 text-[11px] text-white/30 text-center font-medium">Next.js 14 • API tetap Cloudflare Worker • Font Plus Jakarta Sans • Icons Lucide</div>
+      <div className="min-h-[60vh] grid place-items-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-[#2D1B5E] border-t-[#7C3AED] animate-spin" />
+          <div className="text-[13px] text-[#9A8CBF] font-medium">Memuat dashboard...</div>
         </div>
       </div>
     );
