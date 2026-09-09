@@ -21,6 +21,7 @@ import ADMIN_LEGACY_HTML from './admin-legacy.html';
 import WEB_HTML from './web.html';
 import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
+import LOGO_FULL_PNG from './brand-logo-full.png';
 import OG_PNG from './brand-og.png';
 import MAINT_WEB_PNG from './assets/maintenance-web.png';
 import MAINT_APP_PNG from './assets/maintenance-app.png';
@@ -695,6 +696,16 @@ ${halaman.map(([u, p2, f]) => `  <url>
     }
 
     if (path === '/brand/logo.png') {
+      return new Response(LOGO_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+    if (path === '/brand/logo-full.png' || path === '/brand/logo_icon_putih.png') {
+      return new Response(LOGO_FULL_PNG, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
+      });
+    }
+    if (path === '/brand/logo-icon.png') {
       return new Response(LOGO_PNG, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
       });
@@ -2153,7 +2164,85 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json(hasil, hasil.ok ? 200 : 502, env);
         }
 
-        return err('Endpoint admin tidak dikenal', 404, env);
+
+        // ---- alias & missing endpoints for dashboard v3.3 full migration ----
+        if (a === 'audit' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM log_admin ORDER BY waktu DESC LIMIT 120').all();
+          return json(results, 200, env);
+        }
+        if (a === 'cs' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT m.room, u.nama, u.email, u.phone, COUNT(*) total,
+                    MAX(m.waktu) terakhir,
+                    (SELECT teks FROM cs_messages x WHERE x.room = m.room ORDER BY waktu DESC LIMIT 1) preview
+             FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
+             WHERE m.dihapus=0 AND datetime(m.waktu)>=datetime('now','-7 days')
+             GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
+          ).all();
+          return json(results, 200, env);
+        }
+        if ((a === 'unit' || a === 'units') && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM agen ORDER BY dibuat DESC').all();
+          const sekarang = Date.now();
+          return json(results.map((r) => ({
+            ...r,
+            spec: r.spec ? JSON.parse(r.spec) : {},
+            hidup: r.terakhir ? sekarang - new Date(r.terakhir).getTime() < 90000 : false,
+          })), 200, env);
+        }
+        if (a === 'sistem' && req.method === 'GET') {
+          const mulai = Date.now();
+          let dbOk = true;
+          try { await env.DB.prepare('SELECT 1').first(); } catch (_) { dbOk = false; }
+          const ukuran = await env.DB.prepare(
+            `SELECT (SELECT COUNT(*) FROM users) users, (SELECT COUNT(*) FROM orders) orders,
+                    (SELECT COUNT(*) FROM cs_messages) pesan, (SELECT COUNT(*) FROM forum_post) forum,
+                    (SELECT COUNT(*) FROM log_sistem) log`
+          ).first().catch(() => ({}));
+          const mode = await setelan(env, 'mode_pemeliharaan', '0');
+          const cakupan = await setelan(env, 'pemeliharaan_cakupan', 'semua');
+          const pesan = await setelan(env, 'pesan_pemeliharaan', '');
+          const versi = await setelan(env, 'versi_minimal', '');
+          return json({
+            database: { hidup: dbOk, jedaMs: Date.now()-mulai, baris: ukuran },
+            pemeliharaan: { aktif: mode==='1', cakupan, pesan, versi_minimal: versi },
+            email: Boolean(env.RESEND_API_KEY),
+            push: Boolean(env.ONESIGNAL_API_KEY),
+            gambar: Boolean(env.CLOUDINARY_KEY),
+            pembayaran: penyediaBayar(env),
+            waktu: new Date().toISOString(),
+          }, 200, env);
+        }
+        if (a === 'rilis' && req.method === 'GET') {
+          const info = await infoRilis(env, ctx);
+          return json(info, 200, env);
+        }
+        if (a === 'alat' && req.method === 'GET') {
+          return json({ ok: true, endpoints: ['uji/email','uji/push','sistem/kesehatan'] }, 200, env);
+        }
+        if (a === 'keuangan' && req.method === 'GET') {
+          const rev = await env.DB.prepare("SELECT COALESCE(SUM(ABS(nominal)),0) c FROM transaksi WHERE nominal < 0").first();
+          const top = await env.DB.prepare("SELECT COALESCE(SUM(nominal),0) c FROM transaksi WHERE tipe='topup'").first();
+          return json({ pendapatan: rev?.c||0, topup: top?.c||0 }, 200, env);
+        }
+        if (a === 'live' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT * FROM agen ORDER BY terakhir DESC LIMIT 20').all();
+          return json(results, 200, env);
+        }
+        if (a === 'favorit' && req.method === 'GET') {
+          const { results } = await env.DB.prepare('SELECT COUNT(*) as c FROM favorit').first().then(r=>({results:[r]})).catch(()=>({results:[]}));
+          return json({ total: results[0]?.c||0 }, 200, env);
+        }
+        // brand logos for new dash (admin path fallback)
+        if (a === 'brand/logo-full' && req.method === 'GET') {
+          return new Response(LOGO_FULL_PNG, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
+        }
+        if (a === 'brand/logo' && req.method === 'GET') {
+          return new Response(LOGO_PNG, { headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' } });
+        }
+
+        return err('Endpoint admin tidak dikenal: '+a, 404, env);
+
       }
 
       // ---- ulasan sebuah produk ----

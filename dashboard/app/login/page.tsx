@@ -58,7 +58,7 @@ export default function LoginPage() {
                   placeholder="xya_xxx atau key utama"
                   className="xy-input w-full pr-10"
                 />
-                <button type="button" onClick={()=>setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center rounded-lg bg-white/5 hover:bg-white/10">
+                <button type="button" onClick={()=>setShow(!show)} className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 grid place-items-center rounded-lg bg-[#21114A] hover:bg-[#2D1B5E]">
                   {show ? <EyeOff size={16} className="text-[#9A8CBF]"/> : <Eye size={16} className="text-[#9A8CBF]"/>}
                 </button>
               </div>

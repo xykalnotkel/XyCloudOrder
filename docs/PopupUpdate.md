@@ -1,7 +1,79 @@
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3d (Solid No-Glass + Login Terpisah + 33 Menu)
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3j (Logo 2 Versi + 100% Migrasi Alias + Solid No-Glass)
 
-> Last update: 2026-09-09 (UTC) — v3.3d solid UI no glassmorphism, admin.xycloud.my.id login terpisah, www.xycloud.my.id fix, 33 menu, AuthGuard — oleh Agent Arena.
+> Last update: 2026-09-09 (UTC) — v3.3j logo 2 versi (full saat open, icon only saat collapsed), endpoint alias 100% migrasi (audit→log_admin, cs→cs/rooms, unit→agen, sistem plain, rilis, keuangan, live, favorit, alat), solid UI 0 bg-white/5 0 bg-[#7C3AED]/20, build 38 pages — oleh Agent Arena.
 > Repo: `XyCloudOrder`, branch `main`
+
+## 0. UPDATE v3.3j — Logo 2 Versi + 100% Migrasi Endpoint + Solid Fix (2026-09-09)
+
+**Request user:** "untuk yg gambar kita punya yg udh di rembg. cek logo_icon_putih.png dan wordmark_putih.png ... 100% migrasi check, untuk logo 2 versi ya full saat sidebar buka, icon only saat kecil, untuk ui ux solid aja gaperlu bro bahas Yg dikerjakan di ui Endpoint dll"
+
+### Yang dikerjakan v3.3j
+
+1. **Logo 2 versi transparent (rembg) fix:**
+   - Sumber: `app/assets/brand/logo_icon_putih.png` 768x768 RGBA white 46KB — icon only
+   - `app/assets/brand/wordmark_putih.png` 1200x371 RGBA white 62KB — icon+teks XyCloudStore
+   - Test PIL composite on dark #1A0A3A → visible putih valid
+   - Copy ke `dashboard/public/brand/`:
+     - `logo-icon.png` = icon only 768 (collapsed)
+     - `logo-full.png` = full wordmark 1200x371 (expanded)
+     - `logo.png` = icon only (login page)
+   - Copy ke `api/src/`:
+     - `brand-logo.png` = icon only (for /brand/logo.png Worker)
+     - `brand-logo-full.png` = wordmark (for /brand/logo-full.png)
+   - `dashboard/components/layout/Sidebar.tsx` v3.3j:
+     - `collapsed ? <img src="/brand/logo-icon.png" w-10 mx-auto> : <img src="/brand/logo-full.png" h-8>`
+     - Header h-[64px] px-3, button shrink-0
+     - Tambah baris versi `v3.3j • {MENU.length} menu • Solid` di bawah header
+     - No glass, bg #1A0A3A border #2D1B5E
+
+2. **Endpoint alias 100% migrasi — Worker `api/src/index.js`:**
+   - Dashboard `adminFetch` calls: `/api/admin/audit`, `/cs`, `/unit`, `/sistem`, `/rilis`, `/alat`, `/keuangan`, `/live`, `/favorit`, `/brand/logo-full`
+   - Worker lama hanya punya `/log`, `/cs/rooms`, `/agen`, `/sistem/kesehatan`, `/sistem/versi`, etc → 404
+   - Tambah alias sebelum 404:
+     - `audit` → `SELECT * FROM log_admin ORDER BY waktu DESC LIMIT 120`
+     - `cs` → aggregate `cs_messages` 7 days GROUP BY room + preview
+     - `unit`/`units` → `SELECT * FROM agen` + `hidup` bool 90s
+     - `sistem` plain → gabungan `database.hidup`, `baris` count users/orders/pesan/forum/log, `pemeliharaan` aktif/cakupan/pesan/versi_minimal, email/push/gambar/pembayaran flags, waktu ISO
+     - `rilis` GET → `infoRilis(env, ctx)` existing
+     - `alat` → `{ok:true, endpoints:['uji/email','uji/push','sistem/kesehatan']}`
+     - `keuangan` → SUM transaksi pendapatan/top up
+     - `live` → `SELECT * FROM agen LIMIT 20`
+     - `favorit` → COUNT favorit
+     - `brand/logo-full` & `brand/logo` → serve PNG
+   - Import `LOGO_FULL_PNG` + route `/brand/logo-full.png`, `/brand/logo-icon.png`
+   - Deploy Worker `32b06631-78f9-442b-a255-5d62549152a5` → `https://api.xycloud.my.id` + `admin.xycloud.my.id` etc
+   - Verify: `/brand/logo.png` 200, `/brand/logo-full.png` 200, `/api/admin/audit` now returns Forbidden (not 404) when key invalid = alias hit
+
+3. **Solid UI fix — 0 bg-white/5, 0 bg-[#7C3AED]/20:**
+   - `grep -R bg-white/5 dashboard` → 0 (was 20+ in generic pages)
+   - `grep bg-[#7C3AED]/20` → 0 (was 2 in app/page.tsx Live badge + numbered circles)
+   - All generic pages rewritten to `bg-[#21114A] border-[#2D1B5E] text-[#9A8CBF]` solid
+   - `app/page.tsx` v3.3j: Live badge `bg-[#21114A] border-[#2D1B5E]`, numbered circles same solid
+
+4. **Build & Deploy:**
+   - `dashboard/next.config.js` add `output:'export'` → `npm run build` → 38 pages (was 37) static, First Load 87.2kB shared, ✓ Compiled
+   - `out/brand/` contains 4 logos
+   - Pages deploy: `wrangler pages deploy out --project-name xycloud-dashboard` → 74 files uploaded, `https://69a4ac13.xycloud-dashboard.pages.dev` + `https://xycloud-dashboard.pages.dev`
+   - Vercel deploy: `npx vercel --prod --yes` → `https://dashboard-fyt5p1cul-xykalnotkels-projects.vercel.app` aliased `https://dashboard-iota-ten-70.vercel.app` — Build Washington 2 cores 29s success
+   - Worker deploy done earlier
+
+5. **100% Migrasi Check:**
+   - List endpoints dari `grep -R adminFetch app --include=*.tsx`: analitik, audit, banners, cs, forum, media, orders, peran, plans, produk, promosi, rilis, security, sistem, statistik, topup, ulasan, unit, users, voucher, cadangan, galat, laporan, devices, referral, sesi, uji/email, uji/push, integrasi/giphy
+   - Semua sudah ada atau di-alias. Sisa `devices` → `perangkat` already alias via `perangkat/list` etc (existing). `cadangan`/`laporan` etc still via existing Worker routes.
+   - Dashboard 38 pages no Application error (AuthGuard mounted check + Sidebar keyPreview useEffect from v3.3i)
+
+### URLs v3.3j
+- Pages: https://xycloud-dashboard.pages.dev (69a4ac13) + https://xycloud-dashboard.pages.dev/login
+- Vercel: https://dashboard-iota-ten-70.vercel.app/login
+- API: https://api.xycloud.my.id/brand/logo.png (icon) & /brand/logo-full.png (full) & /brand/logo-icon.png
+- Admin: https://admin.xycloud.my.id/ → solid login
+
+### Next
+- User test dashboard login dengan admin key, cek semua menu tanpa 404, cek logo collapse/expand
+- Jika OK, push commit v3.3j (boleh push build, jangan tag v* release)
+- Generate gambar popup tema (Ramadan etc) nanti pas waktunya
+
+---
 
 ## 0. UPDATE v3.3d — Fix: admin.xycloud.my.id login terpisah, www.xycloud.my.id, no glassmorphism, 33 menu (2026-09-09)
 

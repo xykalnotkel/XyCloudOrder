@@ -97,18 +97,21 @@ export default function Sidebar() {
 
   return (
     <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-[#1A0A3A] border-r border-[#2D1B5E] font-[Plus_Jakarta_Sans]`}>
-      <div className="h-[64px] flex items-center px-4 gap-3 border-b border-[#2D1B5E]">
-        <img src="/brand/logo.png" alt="logo" className="w-11 h-11 object-contain" />
-        {!collapsed && (
-          <div className="leading-tight">
-            <div className="font-bold text-white tracking-tight text-[14px]">XyCloud Console</div>
-            <div className="text-[11px] text-[#9A8CBF] font-medium">v3.3i • {MENU.length} menu • Solid</div>
-          </div>
+      <div className="h-[64px] flex items-center px-3 gap-2 border-b border-[#2D1B5E]">
+        {collapsed ? (
+          <img src="/brand/logo-icon.png" alt="XyCloud" className="w-10 h-10 object-contain mx-auto" />
+        ) : (
+          <img src="/brand/logo-full.png" alt="XyCloudStore" className="h-8 w-auto object-contain" />
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-lg bg-[#21114A] hover:bg-[#2A1A5E] grid place-items-center border border-[#2D1B5E]">
+        <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-lg bg-[#21114A] hover:bg-[#2A1A5E] grid place-items-center border border-[#2D1B5E] shrink-0">
           {collapsed ? <ChevronsRight size={16} className="text-[#9A8CBF]"/> : <ChevronsLeft size={16} className="text-[#9A8CBF]"/>}
         </button>
       </div>
+      {!collapsed && (
+        <div className="px-4 py-2 border-b border-[#2D1B5E]/50">
+          <div className="text-[11px] text-[#6B5A8A] font-medium">v3.3j • {MENU.length} menu • Solid</div>
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin">
         {MENU.map((m) => {
           const active = pathname === m.path || (m.path !== "/" && pathname?.startsWith(m.path));

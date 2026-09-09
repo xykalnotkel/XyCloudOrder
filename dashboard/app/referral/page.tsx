@@ -11,8 +11,8 @@ export default function ReferralPage(){
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Share2 size={18} className="text-white"/></div>
         <div>
-          <h1 className="text-xl font-black text-white tracking-tight">Referral <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#A855F7] font-bold">BARU</span></h1>
-          <p className="text-sm text-violet-200/60 font-medium">Top referrer, bonus tracking, kode referral user</p>
+          <h1 className="text-xl font-black text-white tracking-tight">Referral <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#21114A] font-bold">BARU</span></h1>
+          <p className="text-sm text-[#9A8CBF] font-medium">Top referrer, bonus tracking, kode referral user</p>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -22,8 +22,8 @@ export default function ReferralPage(){
           {l:"Top Pengundang", v: data?.teratas?.[0]?.nama ?? "-", Icon: TrendingUp},
         ].map(c=>(
           <div key={c.l} className="xy-card rounded-[14px] p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#7C3AED]/20 border border-[#7C3AED]/20 grid place-items-center"><c.Icon size={16} className="text-[#A78BFA]"/></div>
-            <div><div className="text-[11px] text-white/50 font-medium uppercase">{c.l}</div><div className="text-lg font-bold text-white mt-0.5">{c.v}</div></div>
+            <div className="w-9 h-9 rounded-xl bg-[#21114A] border border-[#2D1B5E] grid place-items-center"><c.Icon size={16} className="text-[#A78BFA]"/></div>
+            <div><div className="text-[11px] text-[#9A8CBF] font-medium uppercase">{c.l}</div><div className="text-lg font-bold text-white mt-0.5">{c.v}</div></div>
           </div>
         ))}
       </div>
@@ -31,12 +31,12 @@ export default function ReferralPage(){
         <div className="text-[12px] font-bold text-white mb-2 tracking-wide">Daftar Referral Terbaru</div>
         <div className="space-y-2 max-h-[420px] overflow-auto">
           {(data?.daftar ?? []).slice(0,30).map((r:any)=>(
-            <div key={r.id} className="flex items-center justify-between py-2 border-b border-white/5 text-[12px]">
+            <div key={r.id} className="flex items-center justify-between py-2 border-b border-[#2D1B5E] text-[12px]">
               <span className="text-white/80 font-medium">{r.nama_pengundang} → {r.nama_diundang}</span>
-              <span className="text-white/40">{r.status} • Rp {r.bonus_pengundang}</span>
+              <span className="text-[#6B5A8A]">{r.status} • Rp {r.bonus_pengundang}</span>
             </div>
           ))}
-          {(!data?.daftar || data.daftar.length===0) && <div className="text-[12px] text-white/30">Belum ada data — endpoint /api/admin/referral</div>}
+          {(!data?.daftar || data.daftar.length===0) && <div className="text-[12px] text-[#6B5A8A]">Belum ada data — endpoint /api/admin/referral</div>}
         </div>
       </div>
     </div>

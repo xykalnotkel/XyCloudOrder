@@ -17,7 +17,7 @@ export default function CadanganPage(){
           {list.slice(0,50).map((c:any)=>(
             <div key={c.id} className="flex items-center justify-between py-2 border-b border-[#2D1B5E] text-[12px]">
               <div><div className="font-bold text-white">{c.id} • {c.jumlah_baris} baris</div><div className="text-[#6B5A8A] text-[11px]">{c.dibuat} • {c.ukuran} bytes</div></div>
-              <a href={`/api/admin/cadangan/${c.id}`} className="text-[11px] px-3 py-1 rounded-full bg-[#7C3AED]/20 text-[#A78BFA] font-bold flex items-center gap-1"><Download size={12}/> Unduh</a>
+              <a href={`/api/admin/cadangan/${c.id}`} className="text-[11px] px-3 py-1 rounded-full bg-[#21114A] text-[#A78BFA] font-bold flex items-center gap-1"><Download size={12}/> Unduh</a>
             </div>
           ))}
           {list.length===0 && <div className="text-[12px] text-[#6B5A8A]">Belum ada — endpoint /api/admin/cadangan</div>}

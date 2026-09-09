@@ -17,7 +17,7 @@ export default function ModerasiPage(){
           {laporan.slice(0,50).map((l:any)=>(
             <div key={l.id} className="flex items-center justify-between py-2 border-b border-[#2D1B5E] text-[12px]">
               <div><div className="font-bold text-white">{l.jenis} • {l.ref_id}</div><div className="text-[#6B5A8A] text-[11px]">{l.alasan} • {l.status} • {l.dibuat}</div></div>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-[#7C3AED]/20 text-[#A78BFA] font-bold">{l.status}</span>
+              <span className="text-[10px] px-2 py-1 rounded-full bg-[#21114A] text-[#A78BFA] font-bold">{l.status}</span>
             </div>
           ))}
           {laporan.length===0 && <div className="text-[12px] text-[#6B5A8A]">Belum ada laporan — endpoint /api/admin/laporan</div>}
