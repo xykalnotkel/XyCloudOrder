@@ -484,17 +484,19 @@ export default {
         return new Response(`<!doctype html><html lang="id"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>XyCloudStore — Sedang Perawatan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0D0920;--line:rgba(139,92,246,.28);--pur:#A78BFA;--ink:#F1EDFC;--mut:#A99BD6}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
+body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
 .kartu{max-width:470px;width:100%;text-align:center;animation:naik .7s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:32px;padding:28px 26px 24px;box-shadow:0 30px 90px rgba(10,4,40,.55)}
 @keyframes naik{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
 .merek{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px}
 .merek img{height:20px;opacity:.95}
 .merek span{color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.5px}
-.gambar{width:min(62vw,236px);aspect-ratio:1;margin:0 auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 46%,rgba(124,58,237,.32),rgba(124,58,237,.05) 60%,transparent 74%);border:1px solid rgba(167,139,250,.28)}
-.gambar img{width:100%;height:100%;object-fit:contain;display:block;transform:scale(1.02)}
+.gambar{width:min(74vw,288px);height:auto;margin:2px auto;display:block;filter:drop-shadow(0 26px 44px rgba(124,58,237,.42))}
 .lencana{display:inline-flex;align-items:center;gap:7px;margin:18px auto 0;background:linear-gradient(90deg,rgba(124,58,237,.3),rgba(168,85,247,.16));border:1px solid rgba(167,139,250,.4);color:#D8CDF5;font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;padding:7px 16px;border-radius:99px}
 .lencana i{width:7px;height:7px;border-radius:50%;background:#C084FC;animation:denyut 1.6s infinite}
 @keyframes denyut{0%{box-shadow:0 0 0 0 rgba(192,132,252,.6)}70%{box-shadow:0 0 0 9px rgba(192,132,252,0)}100%{box-shadow:0 0 0 0 rgba(192,132,252,0)}}
@@ -511,7 +513,7 @@ p.kecil,span.kecil{color:#7d6faa;font-size:12px}
 @media (prefers-reduced-motion:reduce){.kartu,.lencana i,.meter i{animation:none}}
 </style></head><body><main class="kartu">
 <div class="merek"><img src="/brand/logo-full.png" alt="XyCloudStore"><span>XYCLOUDSTORE</span></div>
-<div class="gambar"><img src="/brand/maintenance-web.webp" alt="Sedang perawatan"></div>
+<img class="gambar" src="/brand/maintenance-web.webp" alt="Sedang perawatan" width="576" height="512">
 <div class="lencana"><i></i>` + (sampaiHtml ? 'Kembali ' + sampaiHtml : 'Sedang Pemeliharaan') + `</div>
 <h1>Kami Sebentar Lagi</h1>
 <p>` + aman + `</p>` + (catatan ? '<p class="catatan">' + catatan + '</p>' : '') + `
@@ -541,7 +543,7 @@ p.kecil,span.kecil{color:#7d6faa;font-size:12px}
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'SAMEORIGIN',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com https://media.giphy.com https://*.onesignal.com data: blob:; script-src 'self' 'unsafe-inline' https://*.onesignal.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://res.cloudinary.com https://*.giphy.com https://media.giphy.com data: blob:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id https://*.onesignal.com; frame-ancestors 'self'",
+          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com https://media.giphy.com https://*.onesignal.com https://fonts.googleapis.com https://fonts.gstatic.com data: blob:; script-src 'self' 'unsafe-inline' https://*.onesignal.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https://res.cloudinary.com https://*.giphy.com https://media.giphy.com data: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id https://*.onesignal.com; frame-ancestors 'self'",
           // minta peramban mengirim arsitektur dan lebar bit perangkat.
           'Accept-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List',
           'Critical-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness',

@@ -32,44 +32,30 @@ class PerawatanScreen extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Ilustrasi 3D ungu glossy (transparan) dengan lingkaran cahaya lembut.
+                // Ilustrasi baru (transparan, tanpa latar & tanpa bingkai lingkaran).
                 Stack(alignment: Alignment.center, children: [
                   Container(
-                    width: 230,
-                    height: 230,
+                    width: 240,
+                    height: 190,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(colors: [
-                        XyTheme.primary.withOpacity(.18),
-                        XyTheme.violet.withOpacity(.07),
-                        Colors.transparent,
-                      ]),
+                      shape: BoxShape.rectangle,
+                      gradient: RadialGradient(
+                        colors: [
+                          XyTheme.primary.withOpacity(.16),
+                          XyTheme.violet.withOpacity(.05),
+                          Colors.transparent,
+                        ],
+                      ),
                     ),
                   ),
-                  Container(
-                    width: 168,
-                    height: 168,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF140E29),
-                      boxShadow: [
-                        BoxShadow(
-                          color: XyTheme.primary.withOpacity(.25),
-                          blurRadius: 40,
-                          spreadRadius: 6,
-                        ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.asset(
-                      'assets/ilustrasi/maintenance.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.engineering_rounded,
-                        size: 60,
-                        color: Color(0xFF7C3AED),
-                      ),
+                  Image.asset(
+                    'assets/ilustrasi/maintenance.png',
+                    width: 176,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.engineering_rounded,
+                      size: 60,
+                      color: Color(0xFF7C3AED),
                     ),
                   ),
                 ]),

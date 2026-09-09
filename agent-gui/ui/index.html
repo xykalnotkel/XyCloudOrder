@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XyCloudStore — Agen PC Host</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="judul">
+    <div class="logo">XyCloudStore</div>
+    <div class="tag">Agen PC Host · Rust/Tauri · tanpa Python</div>
+  </div>
+  <div id="lencana" class="lencana off">Berhenti</div>
+</header>
+
+<main>
+  <section class="kiri">
+    <h2>Pengaturan Unit</h2>
+    <label>Kode unit XyCloud <span class="dim">(dashboard → Unit PC → Daftarkan Unit)</span></label>
+    <input id="kode" placeholder="xya_…" autocomplete="off">
+    <label>Username web-UI Sunshine</label>
+    <input id="user" placeholder="admin" autocomplete="off">
+    <label>Password web-UI Sunshine</label>
+    <input id="sandi" type="password" placeholder="••••••••" autocomplete="off">
+    <label>Server API <span class="dim">(opsional)</span></label>
+    <input id="server" placeholder="https://api.xycloud.my.id" autocomplete="off">
+    <button id="simpan" class="utama">Simpan Pengaturan</button>
+  </section>
+
+  <section class="kanan">
+    <h2>Status</h2>
+    <div id="status" class="status">Memuat…</div>
+    <button id="setup" class="utama">Auto-setup yang belum ada (Sunshine engine)</button>
+    <div class="baris">
+      <button id="uji" class="sekunder">Uji Koneksi (–cek)</button>
+    </div>
+    <div class="baris">
+      <button id="mulai" class="hijau">Jalankan Agen</button>
+      <button id="henti" class="merah">Hentikan</button>
+    </div>
+    <label class="cek"><input type="checkbox" id="auto"> Mulai otomatis saat Windows menyala</label>
+    <button id="autostart" class="sekunder">Terapkan Autostart</button>
+  </section>
+</main>
+
+<footer>
+  <div class="logjudul">LOG</div>
+  <div id="log" class="log"></div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

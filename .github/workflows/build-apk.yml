@@ -196,11 +196,43 @@ jobs:
       - name: Sertakan corresponding source GPL
         run: python3 tools/buat_sumber_streaming.py dist/XyCloudStore-2.6.0-source.zip
 
-      - name: Upload artifact APK
+      - name: Unggah APK universal (terpisah, 1 APK per artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: XyCloudStore-APK
-          path: dist/*
+          name: XyCloudStore-APK-universal
+          path: dist/XyCloudStore-universal.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Unggah APK arm64-v8a (1 APK per artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: XyCloudStore-APK-arm64-v8a
+          path: dist/XyCloudStore-arm64-v8a.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Unggah APK armeabi-v7a (1 APK per artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: XyCloudStore-APK-armeabi-v7a
+          path: dist/XyCloudStore-armeabi-v7a.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Unggah APK x86_64 (1 APK per artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: XyCloudStore-APK-x86_64
+          path: dist/XyCloudStore-x86_64.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Unggah Sumber GPL (zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: XyCloudStore-APK-Sumber-GPL
+          path: dist/XyCloudStore-2.6.0-source.zip
           retention-days: 30
           if-no-files-found: error
 
@@ -228,7 +260,23 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: XyCloudStore-APK
+          name: XyCloudStore-APK-universal
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: XyCloudStore-APK-arm64-v8a
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: XyCloudStore-APK-armeabi-v7a
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: XyCloudStore-APK-x86_64
+          path: dist
+      - uses: actions/download-artifact@v4
+        with:
+          name: XyCloudStore-APK-Sumber-GPL
           path: dist
       - uses: softprops/action-gh-release@v2
         with:

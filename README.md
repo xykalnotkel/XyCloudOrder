@@ -331,8 +331,9 @@ Endpoint pengguna: `POST /api/sesi/mulai`, `GET /api/sesi/:id`, `POST /api/sesi/
 Endpoint agen (pakai header `x-agen-kode`): `POST /api/agen/heartbeat`, `POST /api/agen/perintah/:id`.
 Admin: `GET/POST /api/admin/agen`, `DELETE /api/admin/agen/:id`, `GET /api/admin/sesi`.
 
-Program agennya ada di folder `agent/`, lengkap dengan panduan pemasangan Sunshine,
-daftar port, layanan otomatis, dan skrip pembersihan antar penyewa.
+Program agen untuk PC/VM host ada di folder `agent-gui/` (ditulis ulang penuh dalam
+**Rust + Tauri**, tanpa runtime Python), dengan README berisi panduan pemasangan Sunshine,
+daftar port, layanan otomatis, dan alur pembersihan antar penyewa.
 
 Teknologi streaming yang dipakai: **Sunshine** (host) dan **Moonlight/Artemis** (klien),
 protokol GameStream dengan encoder NVENC/AMF/QuickSync. RDP tidak dipakai karena tidak

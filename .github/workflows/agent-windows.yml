@@ -1,10 +1,10 @@
-name: Build Agen Windows (exe)
+name: Build Agen Windows (Rust/Tauri)
 
 on:
   push:
     branches: [main]
     paths:
-      - "agent/**"
+      - "agent-gui/**"
       - ".github/workflows/agent-windows.yml"
   workflow_dispatch:
 
@@ -14,9 +14,9 @@ concurrency:
 
 jobs:
   build:
-    name: Kemas Agen (UI) jadi aplikasi .exe
+    name: Bangun agen Rust/Tauri jadi .exe (tanpa Python)
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     permissions:
       contents: read
 
@@ -24,35 +24,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pasang ps2exe lalu kemas UI jadi .exe
-        shell: pwsh
-        run: |
-          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-          Install-Module ps2exe -Scope CurrentUser -Force -ErrorAction Stop
-          Import-Module ps2exe
-          New-Item -ItemType Directory -Force agent/dist | Out-Null
-          Invoke-PS2EXE -InputFile agent/xy_agent_ui.ps1 `
-            -OutputFile agent/dist/XyCloudStore-Agent.exe
-          Get-Item agent/dist/XyCloudStore-Agent.exe | Select-Object Name, Length
+      - name: Pasang toolchain Rust (stable-msvc)
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Cek bantuan headless (-Jalankan) muncul di log proses tanpa crash cepat
-        shell: pwsh
-        run: |
-          $exe = (Resolve-Path agent/dist/XyCloudStore-Agent.exe).Path
-          # tanpa arg: harus membuka jendela; kami cukup pastikan file bisa dieksekusi
-          if (-not (Test-Path $exe)) { throw "exe tidak ditemukan" }
-          Write-Host "OK exe siap: $exe"
+      - name: Cache kargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: agent-gui/src-tauri
 
-      - name: Bungkus (exe UI + agen Python)
+      - name: Bangun rilis (cargo build --release)
+        shell: pwsh
+        working-directory: agent-gui/src-tauri
+        run: |
+          cargo build --release --locked
+          Get-Item target/release/xycloud-agent.exe | Select-Object Name, Length
+
+      - name: Kemas exe + uji versi + zip
         shell: pwsh
         run: |
-          Compress-Archive -Path agent/dist/XyCloudStore-Agent.exe, agent/xy_agent.py, agent/instal_otomatis.ps1 `
-            -DestinationPath agent/dist/XyCloudStore-Agent-Windows.zip -Force
-          Get-Item agent/dist/XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item agent-gui/src-tauri/target/release/xycloud-agent.exe `
+            dist/XyCloudStore-Agent.exe -Force
+          Copy-Item agent-gui/README.md dist/README.md -Force
+          # Smoke-test: exe berjalan dan melaporkan versi (tanpa Python)
+          & .\dist\XyCloudStore-Agent.exe --veri
+          if ($LASTEXITCODE -ne 0) { throw "Smoke-test --veri gagal" }
+          Compress-Archive -Path dist/XyCloudStore-Agent.exe, dist/README.md `
+            -DestinationPath XyCloudStore-Agent-Windows.zip -Force
+          Get-Item XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: XyCloudStore-Agent-Windows
-          path: agent/dist/XyCloudStore-Agent-Windows.zip
+          path: XyCloudStore-Agent-Windows.zip
           if-no-files-found: error
