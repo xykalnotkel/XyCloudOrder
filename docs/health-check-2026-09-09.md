@@ -1,5 +1,12 @@
 # Health Check & Perbaikan — XyCloudOrder
-**Tanggal:** 2026-09-09 · Cabang: `main` (HEAD `v3.3j b14694e`)
+**Tanggal:** 2026-09-09 · Cabang: `main` (HEAD `v3.3k 3554801`)
+
+## Status Terkini (setelah deploy)
+- ✅ Perbaikan (endpoint push, halaman keuangan/live/push/statistik/analitik) di-commit & push ke `main`.
+- ✅ Worker ter-deploy (`9862c7c5`) — `/api/admin/push` live, `/admin` launcher baru (tema terang).
+- ✅ Dashboard **tema terang ala web xycloud.my.id** ter-deploy ke Cloudflare Pages (`xycloud-dashboard.pages.dev`) & Vercel (`dashboard-iota-ten-70`, alias `admin.xycloud.my.id` memakai Vercel).
+- ✅ App Flutter: default tema **terang** (`Prefs.tema` default `terang`, `ThemeMode.light`). `XyTheme.light()` memakai token web yang sama. Push ke `main` memicu GitHub Actions `build-apk` → ambil APK dari **Artifacts** untuk tes visual per layar (SDK Flutter tidak tersedia di sandbox, jadi belum bisa di-build/analisa lokal).
+- ⏳ Langkah berikut (fase B): tes APK di device; perbaiki layar yang masih memakai teks/permukaan gelap di luar aksen gradient ungu; audit `Colors.white` pada kartu terang; sinkron versi `pubspec` + `rilis` di D1 bila perlu.
 
 ## Ringkasan Status
 
@@ -86,7 +93,8 @@ M dashboard/app/statistik/page.tsx     (dari dump → ringkasan terstruktur)
 A api/test/push_admin.test.mjs         (test endpoint baru)
 ```
 
-## Belum Dilakukan (menunggu persetujuan)
-- Git commit + push ke `main`
-- Deploy Worker (`wrangler deploy`) supaya `/api/admin/push` eksis di produksi
-- Deploy dashboard ke Cloudflare Pages / Vercel
+## Sudah Dieksekusi (persetujuan user)
+- ✅ Git commit + push ke `main` (`v3.3k`)
+- ✅ Deploy Worker (`wrangler deploy`) → `/api/admin/push` live di produksi
+- ✅ Deploy dashboard ke Cloudflare Pages + Vercel (`dashboard-iota-ten-70` aliased) — `admin.xycloud.my.id` menampilkan tema terang baru
+- ⏳ Deploy/finalisasi **app Flutter**: butuh build APK via GitHub Actions + tes device oleh user (lihat catatan fase B di atas)
