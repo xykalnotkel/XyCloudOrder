@@ -3,92 +3,177 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>XyCloud Console v3.3b — Redirect</title>
+<title>XyCloud Admin — Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#100030;--bg2:#200050;--violet:#7C3AED;--violet2:#8B5CF6;--violet3:#A855F7;--card:#1A0A3A;--border:rgba(124,58,237,0.22);--font:'Plus Jakarta Sans',Inter,sans-serif;--mono:'JetBrains Mono',monospace}
-html,body{background:radial-gradient(120% 120% at 0% 0%,#200050 0%,#100030 38%,#0B001E 100%);min-height:100vh;color:#EDE9FE;font-family:var(--font);-webkit-font-smoothing:antialiased}
-.xy-card{background:linear-gradient(135deg,rgba(26,10,58,0.96),rgba(45,10,94,0.92));border:1px solid var(--border);box-shadow:0 0 0 1px rgba(124,58,237,0.12),0 8px 32px rgba(124,58,237,0.14);backdrop-filter:blur(12px)}
-.xy-btn{background:linear-gradient(135deg,#7C3AED 0%,#8B5CF6 45%,#A855F7 100%);box-shadow:0 4px 20px rgba(124,58,237,0.35),inset 0 1px 0 rgba(255,255,255,0.18);font-weight:600;letter-spacing:-0.01em}
-.xy-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
-a{color:#A78BFA;text-decoration:none}
+:root{--bg:#100030;--card:#1A0A3A;--card2:#21114A;--line:#2D1B5E;--violet:#7C3AED;--violet2:#8B5CF6;--text:#EDE9FE;--muted:#9A8CBF;--font:'Plus Jakarta Sans',Inter,sans-serif}
+html,body{background:var(--bg);min-height:100vh;color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
+a{color:var(--violet2);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px}
+.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7C3AED,#8B5CF6);display:grid;place-items:center;font-weight:800;font-size:18px;letter-spacing:-0.02em;color:#fff}
+.brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.brand h1{font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1.1}
+.brand p{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.06em;margin-top:3px}
+.title{font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+.sub{font-size:13px;color:var(--muted);line-height:1.5;font-weight:500;margin-bottom:20px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.field input{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:0 14px;font-family:var(--font);font-size:14px;font-weight:500;outline:none}
+.field input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,0.18)}
+.btn{width:100%;height:46px;border-radius:12px;border:none;background:linear-gradient(135deg,#7C3AED,#8B5CF6);color:#fff;font-family:var(--font);font-weight:700;font-size:14px;cursor:pointer}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{filter:brightness(0.98)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.divider{height:1px;background:var(--line);margin:20px 0}
+.link-grid{display:grid;gap:10px}
+.link-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);text-decoration:none}
+.link-card:hover{border-color:var(--violet);background:#251553;text-decoration:none}
+.link-card .ic{width:36px;height:36px;border-radius:10px;background:#2A1A5E;display:grid;place-items:center;flex:none}
+.link-card .ic svg{width:18px;height:18px;stroke:#A78BFA;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.link-card .txt{flex:1}
+.link-card .txt b{display:block;font-size:13px;font-weight:700;letter-spacing:-0.01em}
+.link-card .txt span{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
+.err{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:#2A1230;border:1px solid #4A2040;color:#F5B0C0;font-size:12px;font-weight:600}
+.ok{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:#12302A;border:1px solid #1F4A3A;color:#8CE6C0;font-size:12px;font-weight:600}
+.foot{margin-top:18px;text-align:center;font-size:11px;color:var(--muted);font-weight:500}
+.foot a{color:var(--muted)}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px">
-  <div class="xy-card rounded-[24px] p-8 w-full max-w-[560px]">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-      <div class="xy-btn w-11 h-11 rounded-xl grid place-items-center font-black text-white tracking-tight">XY</div>
+<div class="wrap">
+  <div class="card">
+    <div class="brand">
+      <div class="logo">XY</div>
       <div>
-        <div style="font-weight:800;font-size:16px;letter-spacing:-0.02em">XyCloud Console v3.3b</div>
-        <div style="font-size:11px;color:#C4B5FD;letter-spacing:0.06em;font-weight:600">NEXT.JS • LUCIDE • PLUS JAKARTA SANS • NO EMOJI</div>
-      </div>
-      <span style="margin-left:auto;background:#A855F7;color:#fff;font-size:10px;font-weight:800;padding:4px 8px;border-radius:999px;letter-spacing:0.08em">BARU</span>
-    </div>
-
-    <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.2">Dashboard lama sudah diganti</h1>
-    <p style="margin-top:8px;color:#C4B5FD;font-size:13px;line-height:1.6;font-weight:500">Console admin lama di <span style="font-family:var(--mono);background:rgba(124,58,237,0.18);padding:2px 6px;border-radius:6px">api.xycloud.my.id/admin</span> sekarang dialihkan ke dashboard Next.js modern — tanpa emoji, icon Lucide, font Plus Jakarta Sans konsisten di semua platform.</p>
-
-    <div style="margin-top:20px;display:grid;gap:10px">
-      <a href="https://xycloud-dashboard.pages.dev" class="xy-btn rounded-xl p-4 flex items-center gap-3 text-white">
-        <i data-lucide="rocket" style="width:20px;height:20px"></i>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em">Buka Dashboard Cloudflare Pages</div>
-          <div style="font-size:11px;opacity:0.85;font-weight:500">xycloud-dashboard.pages.dev • 27 routes • 87kB</div>
-        </div>
-        <i data-lucide="external-link" style="width:16px;height:16px;opacity:0.8"></i>
-      </a>
-      <a href="https://dashboard-iota-ten-70.vercel.app" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;color:#EDE9FE">
-        <i data-lucide="monitor" style="width:20px;height:20px;color:#A78BFA"></i>
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:13px">Buka Dashboard Vercel (backup)</div>
-          <div style="font-size:11px;color:#9A8CBF;font-weight:500">dashboard-iota-ten-70.vercel.app</div>
-        </div>
-        <i data-lucide="chevron-right" style="width:16px;height:16px;color:#9A8CBF"></i>
-      </a>
-    </div>
-
-    <div style="margin-top:18px;background:rgba(16,0,48,0.6);border:1px solid rgba(124,58,237,0.18);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
-      <i data-lucide="info" style="width:16px;height:16px;color:#8B5CF6;flex:none;margin-top:2px"></i>
-      <div style="font-size:11.5px;line-height:1.6;color:#9A8CBF;font-weight:500">
-        <b style="color:#EDE9FE">Kenapa diganti?</b> Dashboard lama (1826 baris single HTML) pakai emoji tidak konsisten antar OS. Dashboard baru Next.js 14 full rewrite: 24 menu, collapsible sidebar 272→72px, Lucide icons, Plus Jakarta Sans, JetBrains Mono untuk kode, API tetap Cloudflare Workers <span style="font-family:var(--mono)">api.xycloud.my.id</span>. Auto-redirect dalam <span id="cd">5</span> detik.
+        <h1>XyCloud Admin</h1>
+        <p>CONSOLE • ADMIN.XYCLOUD.MY.ID</p>
       </div>
     </div>
 
-    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.25);font-weight:600;letter-spacing:0.04em">#100030</span>
-      <span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.25);font-weight:600;letter-spacing:0.04em">#7C3AED</span>
-      <span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.25);font-weight:600;letter-spacing:0.04em">#8B5CF6</span>
-      <span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.25);font-weight:600;letter-spacing:0.04em">#A855F7</span>
-      <span style="font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);font-weight:500">Font: Plus Jakarta Sans • Icons: Lucide • No Emoji</span>
+    <div id="view-login">
+      <div class="title">Masuk Admin</div>
+      <div class="sub">Masukkan Admin Key untuk membuka dashboard. Key disimpan lokal di browser.</div>
+      <div class="field">
+        <label for="key">Admin Key</label>
+        <input id="key" type="password" placeholder="xya_xxx atau admin key utama" autocomplete="current-password">
+      </div>
+      <button class="btn" id="btnLogin" onclick="masuk()">Masuk</button>
+      <div class="err" id="err"></div>
+      <div class="ok" id="ok"></div>
+
+      <div class="divider"></div>
+      <div class="sub" style="margin-bottom:10px">Dashboard Baru (Next.js) — tanpa emoji, icon Lucide, font konsisten:</div>
+      <div class="link-grid">
+        <a class="link-card" href="https://xycloud-dashboard.pages.dev/login">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+          <div class="txt"><b>Buka Dashboard Pages</b><span>xycloud-dashboard.pages.dev/login • Rekomendasi</span></div>
+        </a>
+        <a class="link-card" href="https://dashboard-iota-ten-70.vercel.app/login">
+          <div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+          <div class="txt"><b>Buka Dashboard Vercel</b><span>Backup • dashboard-iota-ten-70.vercel.app</span></div>
+        </a>
+      </div>
+      <div class="foot">
+        <div>Web: <a href="https://www.xycloud.my.id">www.xycloud.my.id</a> • API: <a href="https://api.xycloud.my.id">api.xycloud.my.id</a></div>
+        <div style="margin-top:6px"><a href="/admin?legacy=1">Buka console lama (legacy)</a> • <a href="/admin-legacy">/admin-legacy</a></div>
+      </div>
     </div>
 
-    <div style="margin-top:20px;display:flex;gap:8px">
-      <button onclick="location.href='https://xycloud-dashboard.pages.dev'" class="xy-btn rounded-xl px-5 py-2.5 text-white text-[13px] font-bold flex items-center gap-2"><i data-lucide="external-link" style="width:14px;height:14px"></i> Buka Sekarang</button>
-      <button onclick="document.getElementById('old').style.display=document.getElementById('old').style.display==='none'?'block':'none'" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;color:#C4B5FD;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><i data-lucide="eye" style="width:14px;height:14px"></i> Lihat console lama</button>
+    <div id="view-ok" class="hidden">
+      <div class="title">Berhasil masuk</div>
+      <div class="sub">Admin key valid. Pilih tujuan:</div>
+      <div class="link-grid">
+        <a class="link-card" href="https://xycloud-dashboard.pages.dev" id="goPages">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></div>
+          <div class="txt"><b>Lanjut ke Dashboard Baru</b><span>Pages — 28+ menu terpisah per halaman</span></div>
+        </a>
+        <a class="link-card" href="/admin?legacy=1">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="txt"><b>Buka Console Lama</b><span>Legacy 27 menu — fallback darurat</span></div>
+        </a>
+      </div>
+      <button class="btn" style="margin-top:16px;background:var(--card2);border:1px solid var(--line);color:var(--muted)" onclick="keluar()">Keluar / Ganti Key</button>
     </div>
 
-    <div id="old" style="display:none;margin-top:18px">
-      <div style="font-size:11px;color:#9A8CBF;margin-bottom:8px;font-weight:600;letter-spacing:0.06em">CONSOLE LAMA (deprecated) — akan tetap bisa diakses via ?legacy=1</div>
-      <div style="background:#0E0720;border:1px solid #2C1B54;border-radius:12px;padding:10px;font-size:11px;color:#9A8CBF">Gunakan <a href="/admin?legacy=1" style="color:#A78BFA">/admin?legacy=1</a> untuk buka console lama jika darurat.</div>
-    </div>
-
-    <div style="margin-top:18px;text-align:center;font-size:10.5px;color:rgba(255,255,255,0.25);font-weight:500">v3.3b • Next.js 14.2.5 • Tailwind • API Worker • Deploy Pages + Vercel</div>
   </div>
 </div>
 <script>
-lucide.createIcons();
-let s=5;
-const cd=document.getElementById('cd');
-const t=setInterval(()=>{s--; if(cd) cd.textContent=s; if(s<=0){clearInterval(t); location.href='https://xycloud-dashboard.pages.dev';}},1000);
-// if ?legacy=1, load old console via fetch
-if(location.search.includes('legacy=1')){
-  document.body.innerHTML='<div style=\"padding:20px;color:#fff;font-family:monospace\">Memuat console lama...</div>';
-  fetch('/api/admin/legacy-html?key='+encodeURIComponent(localStorage.getItem('xy_admin_key')||''),{headers:{'x-admin-key':localStorage.getItem('xy_admin_key')||''}}).then(r=>r.text()).then(h=>{document.open();document.write(h);document.close();}).catch(()=>{location.href='/admin';});
+const $ = id => document.getElementById(id);
+const keyInput = $('key');
+const errEl = $('err');
+const okEl = $('ok');
+const loginView = $('view-login');
+const okView = $('view-ok');
+
+function showErr(t){ errEl.textContent=t; errEl.style.display='block'; okEl.style.display='none'; }
+function showOk(t){ okEl.textContent=t; okEl.style.display='block'; errEl.style.display='none'; }
+function hideMsg(){ errEl.style.display='none'; okEl.style.display='none'; }
+
+function simpanKey(k){ localStorage.setItem('xy_admin_key', k); }
+
+function keluar(){
+  localStorage.removeItem('xy_admin_key');
+  loginView.classList.remove('hidden');
+  okView.classList.add('hidden');
+  keyInput.value='';
+  hideMsg();
 }
+
+async function masuk(){
+  const k = keyInput.value.trim();
+  if(!k){ showErr('Admin key wajib diisi'); return; }
+  const btn = $('btnLogin');
+  btn.disabled=true; btn.textContent='Memeriksa...'; hideMsg();
+  try{
+    const r = await fetch('/api/admin/stats', { headers:{'x-admin-key':k} });
+    if(!r.ok){
+      const j = await r.json().catch(()=>({}));
+      throw new Error(j.error || 'Admin key salah');
+    }
+    simpanKey(k);
+    loginView.classList.add('hidden');
+    okView.classList.remove('hidden');
+    showOk('Key valid — disimpan lokal');
+    // auto redirect ke Pages login with key passthrough? Pages reads localStorage same domain? Different domain so cannot. Show option.
+    // If user is at admin.xycloud.my.id, Pages is different domain, so key must be entered again there. We inform.
+  }catch(e){
+    showErr(e.message || 'Gagal masuk — periksa koneksi');
+  }finally{
+    btn.disabled=false; btn.textContent='Masuk';
+  }
+}
+
+keyInput.addEventListener('keydown', e=>{ if(e.key==='Enter') masuk(); });
+
+// if already have key, try auto validate
+(function(){
+  const saved = localStorage.getItem('xy_admin_key')||'';
+  if(saved){
+    keyInput.value = saved;
+    // don't auto login to avoid NetworkError loop, just show view-ok if key was previously validated? Check via local flag
+    const lastOk = localStorage.getItem('xy_admin_ok');
+    if(lastOk==='1'){
+      loginView.classList.add('hidden');
+      okView.classList.remove('hidden');
+    }
+  }
+})();
+
+// after successful login, set flag
+const origMasuk = masuk;
+masuk = async function(){
+  await origMasuk();
+  if(!loginView.classList.contains('hidden')) return;
+  localStorage.setItem('xy_admin_ok','1');
+};
+
+// If ?login=1 in URL, focus
+if(location.search.includes('login')) keyInput.focus();
 </script>
 </body>
 </html>

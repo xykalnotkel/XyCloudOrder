@@ -14,22 +14,31 @@ export async function adminFetch(path: string, opts: AdminFetchOpts = {}) {
     ...(opts.headers || {}),
   };
   if (key) headers["x-admin-key"] = key;
-  // device fingerprint passthrough
   if (typeof window !== "undefined") {
     const did = localStorage.getItem("xy_device_id");
     if (did) headers["x-xy-device"] = did;
   }
-  const res = await fetch(`${BASE}${path}`, {
-    method: opts.method || "GET",
-    headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: opts.method || "GET",
+      headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      cache: "no-store",
+    });
+  } catch (e:any) {
+    // NetworkError handling — give clear message
+    throw new Error("NetworkError: tidak bisa terhubung ke " + BASE + " — cek koneksi, CORS, atau adblock. Detail: " + (e?.message || "fetch gagal"));
+  }
   const text = await res.text();
   let data: any;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
-  return data;
+  if (!res.ok) {
+    const msg = data?.error || data?.message || `HTTP ${res.status}`;
+    // if 403, key salah
+    throw new Error(msg);
+  }
+  return data?.data !== undefined ? data.data : data;
 }
 
 // client side helpers
@@ -38,10 +47,19 @@ export function getAdminKey(): string {
   return localStorage.getItem("xy_admin_key") || "";
 }
 export function setAdminKey(k: string) {
-  if (typeof window !== "undefined") localStorage.setItem("xy_admin_key", k);
+  if (typeof window !== "undefined") {
+    localStorage.setItem("xy_admin_key", k);
+    localStorage.setItem("xy_admin_ok", "1");
+  }
+}
+export function clearAdminKey() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("xy_admin_key");
+    localStorage.removeItem("xy_admin_ok");
+  }
 }
 
 export async function loginAdmin(key: string) {
-  // quick ping to /api/admin/dashboard
-  return adminFetch("/api/admin/dashboard", { adminKey: key });
+  // use /api/admin/stats which always exists and checks admin key
+  return adminFetch("/api/admin/stats", { adminKey: key });
 }

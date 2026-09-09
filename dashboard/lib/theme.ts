@@ -13,6 +13,7 @@ export const xyTheme = {
 };
 
 // Icon names map to lucide-react icons — NO EMOJI for cross-platform consistency
+// Solid UI — no glassmorphism
 export type MenuIcon =
   | "layout-dashboard"
   | "receipt"
@@ -41,7 +42,12 @@ export type MenuIcon =
   | "share-2"
   | "heart"
   | "bug"
-  | "sesi";
+  | "sesi"
+  | "sticker"
+  | "trash"
+  | "smartphone"
+  | "shield-alert"
+  | "tool";
 
 export const MENU: { id: string; label: string; icon: MenuIcon; path: string; badge?: string }[] = [
   { id: "dash", label: "Dashboard", icon: "layout-dashboard", path: "/" },
@@ -51,25 +57,30 @@ export const MENU: { id: string; label: string; icon: MenuIcon; path: string; ba
   { id: "produk", label: "Produk Akun", icon: "gamepad", path: "/produk" },
   { id: "banners", label: "Banner", icon: "image", path: "/banners" },
   { id: "promosi", label: "Promosi", icon: "gift", path: "/promosi" },
+  { id: "stiker", label: "Stiker & GIPHY", icon: "sticker", path: "/stiker" },
   { id: "voucher", label: "Voucher", icon: "ticket", path: "/voucher" },
   { id: "topup", label: "TopUp", icon: "credit-card", path: "/topup" },
   { id: "unit", label: "Unit PC", icon: "cpu", path: "/unit" },
-  { id: "live", label: "Live Monitor", icon: "activity", path: "/live", badge: "BARU" },
+  { id: "sesi", label: "Sesi PC", icon: "sesi", path: "/sesi", badge: "BARU" },
+  { id: "live", label: "Live Monitor", icon: "activity", path: "/live" },
   { id: "security", label: "Security", icon: "shield-check", path: "/security" },
-  { id: "keuangan", label: "Keuangan", icon: "wallet", path: "/keuangan", badge: "BARU" },
+  { id: "perangkat", label: "Perangkat", icon: "smartphone", path: "/perangkat" },
+  { id: "keuangan", label: "Keuangan", icon: "wallet", path: "/keuangan" },
   { id: "cs", label: "CS Realtime", icon: "message-circle", path: "/cs" },
   { id: "forum", label: "Forum", icon: "messages-square", path: "/forum" },
+  { id: "moderasi", label: "Moderasi", icon: "shield-alert", path: "/moderasi" },
   { id: "ulasan", label: "Ulasan", icon: "star", path: "/ulasan" },
   { id: "statistik", label: "Statistik", icon: "bar-chart-3", path: "/statistik" },
   { id: "analitik", label: "Analitik", icon: "line-chart", path: "/analitik" },
-  { id: "rilis", label: "Rilis App", icon: "rocket", path: "/rilis", badge: "BARU" },
-  { id: "push", label: "Push Notif", icon: "bell", path: "/push", badge: "BARU" },
-  { id: "referral", label: "Referral", icon: "share-2", path: "/referral", badge: "BARU" },
-  { id: "favorit", label: "Favorit", icon: "heart", path: "/favorit", badge: "BARU" },
-  { id: "galat", label: "Galat App", icon: "bug", path: "/galat", badge: "BARU" },
-  { id: "sesi", label: "Sesi PC", icon: "sesi", path: "/sesi", badge: "BARU" },
+  { id: "referral", label: "Referral", icon: "share-2", path: "/referral" },
+  { id: "favorit", label: "Favorit", icon: "heart", path: "/favorit" },
+  { id: "galat", label: "Galat App", icon: "bug", path: "/galat" },
+  { id: "rilis", label: "Rilis App", icon: "rocket", path: "/rilis" },
+  { id: "push", label: "Push Notif", icon: "bell", path: "/push" },
+  { id: "alat", label: "Email & Push", icon: "tool", path: "/alat" },
   { id: "media", label: "Media", icon: "package", path: "/media" },
   { id: "audit", label: "Audit Log", icon: "file-text", path: "/audit" },
+  { id: "sampah", label: "Sampah User", icon: "trash", path: "/sampah" },
   { id: "sistem", label: "Sistem", icon: "settings", path: "/sistem" },
   { id: "peran", label: "Peran Admin", icon: "shield-user", path: "/peran" },
 ] as const;

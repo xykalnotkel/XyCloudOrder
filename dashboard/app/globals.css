@@ -4,15 +4,17 @@
 
 :root {
   --xy-bg: #100030;
+  --xy-bg2: #1A0A3A;
   --xy-violet: #7C3AED;
   --xy-violet2: #8B5CF6;
-  --xy-card: #1A0A3A;
+  --xy-card: #1E123F;
+  --xy-line: #2D1B5E;
   --font-jakarta: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
 
 html, body {
-  background: radial-gradient(120% 120% at 0% 0%, #200050 0%, #100030 38%, #0B001E 100%);
+  background: var(--xy-bg);
   min-height: 100vh;
   color: #EDE9FE;
   font-family: var(--font-jakarta);
@@ -30,22 +32,43 @@ html, body {
 ::-webkit-scrollbar-track { background: #100030; }
 ::-webkit-scrollbar-thumb { background: #7C3AED; border-radius: 999px; }
 
-/* glossy card */
+/* solid card — no glassmorphism, no backdrop-filter */
 .xy-card {
-  background: linear-gradient(135deg, rgba(26,10,58,0.96), rgba(45,10,94,0.92));
-  border: 1px solid rgba(124,58,237,0.22);
-  box-shadow: 0 0 0 1px rgba(124,58,237,0.12), 0 8px 32px rgba(124,58,237,0.14);
-  backdrop-filter: blur(12px);
+  background: var(--xy-card);
+  border: 1px solid var(--xy-line);
+  border-radius: 16px;
 }
+.xy-card-hover:hover {
+  border-color: #3A2A6E;
+  background: #22144A;
+}
+
 .xy-btn {
-  background: linear-gradient(135deg,#7C3AED 0%,#8B5CF6 45%,#A855F7 100%);
-  box-shadow: 0 4px 20px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+  background: linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%);
+  border-radius: 12px;
   font-family: var(--font-jakarta);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: #fff;
+  border: none;
 }
-.xy-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
-.xy-btn:active { transform: translateY(0); }
+.xy-btn:hover { filter: brightness(1.06); }
+.xy-btn:active { filter: brightness(0.97); }
+
+.xy-input {
+  background: #21114A;
+  border: 1px solid var(--xy-line);
+  border-radius: 12px;
+  color: #EDE9FE;
+  font-family: var(--font-jakarta);
+  height: 44px;
+  padding: 0 14px;
+  outline: none;
+}
+.xy-input:focus {
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.18);
+}
 
 /* consistent typography */
 h1, h2, h3, h4, h5, h6 {
