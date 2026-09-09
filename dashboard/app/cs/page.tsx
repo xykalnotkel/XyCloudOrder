@@ -1,53 +1,218 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "@/lib/api";
-import { MessageCircle } from "lucide-react";
-import { Chip, EmptyBox, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { CheckCheck, Loader2, MessageCircle, Search, Send } from "lucide-react";
+import { ErrBox, jam, Load } from "@/components/ui/kit";
+
+const BALASAN_CEPAT = [
+  "Halo, terima kasih sudah menghubungi XyCloudStore. Ada yang bisa dibantu?",
+  "Untuk top up saldo, pilih menu Isi Saldo di aplikasi, lalu kirim bukti transfer. Tim kami cek maksimal beberapa menit.",
+  "Refund sewa yang gagal otomatis dikembalikan ke saldo. Kalau belum masuk, kirim ID pesanan ya.",
+  "Tiket CS kamu sedang kami proses. Mohon tunggu sebentar ya.",
+  "Bisa infokan ID pesanan atau email terdaftar supaya kami cek lebih cepat?",
+];
 
 export default function CsPage() {
   const [rooms, setRooms] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [aktif, setAktif] = useState<string | null>(null);
+  const [pesan, setPesan] = useState<any[]>([]);
+  const [loadingRoom, setLoadingRoom] = useState(true);
   const [err, setErr] = useState("");
+  const [q, setQ] = useState("");
+  const [teks, setTeks] = useState("");
+  const [kirimBusy, setKirimBusy] = useState(false);
+  const bawahRef = useRef<HTMLDivElement>(null);
+  const [sekarang, setSekarang] = useState(Date.now());
+
+  const ruangAktif = useMemo(() => rooms.find((r) => r.room === aktif) || null, [rooms, aktif]);
+
+  async function muatRooms() {
+    try {
+      const d = await adminFetch("/api/admin/cs");
+      setRooms(Array.isArray(d) ? d : []);
+      // otomatis pilih room terbaru saat pertama kali
+      setAktif((prev) => {
+        if (prev && Array.isArray(d) && d.some((r: any) => r.room === prev)) return prev;
+        return Array.isArray(d) && d.length ? d[0].room : null;
+      });
+    } catch (e: any) { setErr(e.message); }
+  }
+
+  async function buka(room: string) {
+    setAktif(room);
+  }
 
   useEffect(() => {
-    adminFetch("/api/admin/cs")
-      .then((d) => setRooms(Array.isArray(d) ? d : []))
-      .catch((e) => setErr(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+    muatRooms();
+    const t = setInterval(() => {
+      muatRooms();
+      if (aktif) {
+        adminFetch("/api/admin/cs/room/" + encodeURIComponent(aktif))
+          .then((d) => { if (Array.isArray(d)) { setPesan(d); setSekarang(Date.now()); } })
+          .catch(() => {});
+      }
+    }, 5000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aktif]);
 
-  const total = rooms.reduce((a, r) => a + Number(r.total || 0), 0);
+  useEffect(() => {
+    if (!aktif) return;
+    setLoadingRoom(true); setErr("");
+    adminFetch("/api/admin/cs/room/" + encodeURIComponent(aktif))
+      .then((d) => setPesan(Array.isArray(d) ? d : []))
+      .catch((e) => setErr(e.message))
+      .finally(() => setLoadingRoom(false));
+  }, [aktif]);
+
+  useEffect(() => {
+    bawahRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [pesan.length, loadingRoom, sekarang]);
+
+  async function kirim(isi?: string) {
+    const txt = (isi ?? teks).trim();
+    if (!txt || !aktif || kirimBusy) return;
+    setKirimBusy(true); setErr("");
+    try {
+      const m = await adminFetch("/api/admin/cs/reply", { method: "POST", body: { room: aktif, teks: txt } });
+      setTeks("");
+      setPesan((p) => [...p, m]);
+      setSekarang(Date.now());
+    } catch (e: any) { setErr(e.message); }
+    finally { setKirimBusy(false); }
+  }
+
+  const daftarRoom = rooms.filter((r) => !q || ((r.nama || "") + " " + (r.email || "") + " " + (r.room || "")).toLowerCase().includes(q.toLowerCase()));
+  const totalPesan = rooms.reduce((a, r) => a + Number(r.total || 0), 0);
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
-      <Header icon={MessageCircle} title="CS Realtime" sub="Room percakapan pengguna 7 hari terakhir (log cs_messages)"
-        right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rooms.length} room • {total} pesan</span>} />
-      {loading ? <Load /> : err ? <ErrBox msg={err} /> : rooms.length === 0 ? (
-        <EmptyBox msg="Belum ada percakapan CS." sub="Room muncul saat pengguna membuka chat dukungan." />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-          {rooms.map((r) => (
-            <div key={r.room} className="xy-card rounded-[18px] p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-bold text-[#1E1B2E] truncate">{r.nama || r.email || r.room}</div>
-                  <div className="text-[11px] text-[#7C738F] font-mono truncate">{r.email || r.room}</div>
-                </div>
-                <Chip tone="info">{r.total} pesan</Chip>
-              </div>
-              {r.preview && (
-                <div className="mt-3 p-3 rounded-xl bg-[#F5F3FF] border border-[#E9E3F5] text-[12px] text-[#1E1B2E]/80 font-medium leading-relaxed">
-                  {r.preview}
-                </div>
-              )}
-              <div className="mt-3 pt-2 border-t border-[#E9E3F5] text-[10.5px] text-[#7C738F] font-medium flex items-center justify-between">
-                <span>Terakhir: {jam(r.terakhir)}</span>
-                {r.phone && <span className="font-mono">{r.phone}</span>}
+    <div className="space-y-3 font-[Plus_Jakarta_Sans]">
+      <div className="flex items-start justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center shadow-[0_8px_18px_rgba(124,58,237,.25)]">
+            <MessageCircle size={18} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">CS Realtime</h1>
+            <p className="text-sm text-[#7C738F] font-medium">Balas chat pengguna langsung • refresh 5 detik</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <span className="text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-700 font-bold">{rooms.length} room</span>
+          <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{totalPesan} pesan</span>
+        </div>
+      </div>
+      {err && <ErrBox msg={err} />}
+
+      <div className="grid md:grid-cols-[300px_1fr] gap-3 h-[calc(100vh-170px)] min-h-[480px]">
+        {/* ===== panel kiri: daftar room ===== */}
+        <div className="xy-card rounded-[20px] flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-[#E9E3F5]">
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A8CBF]" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari percakapan…" className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#F5F3FF] border border-transparent focus:border-[#C4B5FD] focus:bg-white text-[12px] outline-none" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+            {daftarRoom.length === 0 ? (
+              <div className="p-6 text-center text-[12px] text-[#7C738F] font-medium">Belum ada percakapan.<br />Room muncul saat pengguna membuka chat dukungan.</div>
+            ) : daftarRoom.map((r) => {
+              const isAktif = aktif === r.room;
+              const tS = String(r.terakhir || "");
+              const menit = (Date.now() - new Date(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(tS) ? tS.replace(" ", "T") + "Z" : tS).getTime()) / 60000;
+              return (
+                <button key={r.room} onClick={() => buka(r.room)}
+                  className={`w-full text-left rounded-[14px] px-3 py-2.5 transition-all border ${isAktif ? "bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white border-transparent shadow-[0_8px_16px_rgba(124,58,237,.22)]" : "hover:bg-[#F5F3FF] border-transparent"}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12px] font-black ${isAktif ? "bg-white/20 text-white" : "bg-[#F3F0FF] text-[#7C3AED]"}`}>
+                      {(r.nama || r.email || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className={`flex items-center justify-between gap-1`}>
+                        <span className={`truncate text-[12.5px] font-bold ${isAktif ? "text-white" : "text-[#1E1B2E]"}`}>{r.nama || r.email || r.room}</span>
+                        {menit < 60 && <span className={`text-[9px] px-1.5 rounded-full font-bold ${isAktif ? "bg-white/25 text-white" : "bg-emerald-500/15 text-emerald-600"}`}>{Math.max(1, Math.round(menit))}m</span>}
+                      </div>
+                      <div className={`truncate text-[11px] mt-0.5 ${isAktif ? "text-white/75" : "text-[#7C738F]"}`}>{r.preview || "Belum ada pesan teks"}</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="px-3 py-2 border-t border-[#E9E3F5] bg-[#F5F3FF]/60 text-[10.5px] text-[#7C738F] font-medium">Log 7 hari terakhir • {rooms.length} room</div>
+        </div>
+
+        {/* ===== panel kanan: thread ===== */}
+        <div className="xy-card rounded-[20px] flex flex-col overflow-hidden">
+          {!aktif ? (
+            <div className="flex-1 grid place-items-center p-10 text-center">
+              <div>
+                <MessageCircle size={28} className="mx-auto text-[#C4B5FD]" />
+                <p className="mt-3 text-[#7C738F] font-bold text-sm">Pilih percakapan di kiri</p>
+                <p className="text-[11.5px] text-[#9A8CBF]">Room akan muncul saat ada pengguna membuka chat dukungan.</p>
               </div>
             </div>
-          ))}
+          ) : (
+            <>
+              {/* header room */}
+              <div className="px-4 py-3 border-b border-[#E9E3F5] bg-[#F5F3FF]/70 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center text-white font-black text-[13px]">{(ruangAktif?.nama || ruangAktif?.email || "?")[0].toUpperCase()}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-[#1E1B2E] text-[13.5px] truncate">{ruangAktif?.nama || "Pengguna"}</div>
+                  <div className="font-mono text-[10.5px] text-[#7C738F] truncate">{ruangAktif?.email || aktif} {ruangAktif?.phone ? "• " + ruangAktif.phone : ""}</div>
+                </div>
+                <div className="text-[11px] text-[#7C738F] font-medium text-right shrink-0">
+                  <div>{ruangAktif?.total} pesan</div>
+                  {ruangAktif?.terakhir && <div className="text-[10px]">terakhir {jam(ruangAktif.terakhir)}</div>}
+                </div>
+              </div>
+
+              {/* pesan */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-[#FBFAFF]">
+                {loadingRoom ? <Load /> : pesan.length === 0 ? (
+                  <div className="text-center text-[#9A8CBF] text-[12px] pt-10">Belum ada pesan di percakapan ini.</div>
+                ) : pesan.map((m) => {
+                  const dariCs = m.dari === "cs";
+                  return (
+                    <div key={m.id} className={`flex ${dariCs ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[78%] rounded-[18px] px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm whitespace-pre-line ${dariCs ? "bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] text-white rounded-br-md" : "bg-white border border-[#E9E3F5] text-[#1E1B2E] rounded-bl-md"}`}>
+                        {m.gambar && <img src={m.gambar} alt="lampiran" className="mb-1.5 rounded-xl max-h-52 object-cover" />}
+                        <div>{m.teks}</div>
+                        <div className={`flex items-center gap-1 mt-1 text-[9.5px] ${dariCs ? "text-white/70" : "text-[#9A8CBF]"}`}>
+                          {jam(m.waktu)}
+                          {dariCs && <CheckCheck size={11} />}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={bawahRef} />
+              </div>
+
+              {/* balasan cepat */}
+              <div className="px-3 pt-2 border-t border-[#E9E3F5] bg-white">
+                <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
+                  {BALASAN_CEPAT.map((b, i) => (
+                    <button key={i} onClick={() => kirim(b)} disabled={kirimBusy}
+                      className="shrink-0 text-[10.5px] px-2.5 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] text-[#6B5A8A] hover:border-[#C4B5FD] hover:text-[#7C3AED] font-bold whitespace-nowrap">
+                      {b.length > 34 ? b.slice(0, 34) + "…" : b}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 pb-3">
+                  <textarea value={teks} onChange={(e) => setTeks(e.target.value)} rows={1}
+                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); kirim(); } }}
+                    placeholder="Tulis balasan sebagai Kirana - XyCloudStore…" className="flex-1 px-3.5 py-2.5 rounded-2xl bg-white border border-[#E9E3F5] focus:border-[#7C3AED] outline-none text-[13px] resize-none max-h-28" />
+                  <button onClick={() => kirim()} disabled={kirimBusy || !teks.trim()}
+                    className="shrink-0 w-10 h-10 rounded-full xy-btn text-white grid place-items-center disabled:opacity-40">
+                    {kirimBusy ? <Loader2 size={16} className="animate-spin" /> : <Send size={15} />}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -40,6 +40,16 @@ import {
   ShieldAlert,
   Wrench,
   Database,
+  BellRing,
+  ScrollText,
+  Terminal,
+  ReceiptText,
+  MessageSquareText,
+  ArrowLeftRight,
+  SlidersHorizontal,
+  UploadCloud,
+  HeartPulse,
+  ListChecks,
   LogOut,
 } from "lucide-react";
 import { clearAdminKey } from "@/lib/api";
@@ -79,6 +89,16 @@ const iconMap: Record<MenuIcon, any> = {
   "shield-alert": ShieldAlert,
   tool: Wrench,
   database: Database,
+  "bell-ring": BellRing,
+  "scroll-text": ScrollText,
+  terminal: Terminal,
+  "receipt-text": ReceiptText,
+  "message-square-text": MessageSquareText,
+  "arrow-left-right": ArrowLeftRight,
+  "sliders-horizontal": SlidersHorizontal,
+  "upload-cloud": UploadCloud,
+  "heart-pulse": HeartPulse,
+  "list-checks": ListChecks,
 };
 
 export default function Sidebar() {

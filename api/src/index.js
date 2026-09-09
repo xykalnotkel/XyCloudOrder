@@ -1900,6 +1900,138 @@ ${halaman.map(([u, p2, f]) => `  <url>
           });
         }
 
+        // ---- notifikasi semua pengguna (admin) ----
+        if (a === 'notifikasi' && req.method === 'GET') {
+          const q = String(url.searchParams.get('q') || '').slice(0, 60);
+          const hasil = q
+            ? await env.DB.prepare(
+                `SELECT * FROM notifikasi WHERE user_id LIKE ? OR judul LIKE ? OR pesan LIKE ? ORDER BY dibuat DESC LIMIT 300`
+              ).bind('%'+q+'%','%'+q+'%','%'+q+'%').all()
+            : await env.DB.prepare('SELECT * FROM notifikasi ORDER BY dibuat DESC LIMIT 300').all();
+          return json(hasil.results, 200, env);
+        }
+
+        // ---- log sistem (catatan internal Worker) ----
+        if (a === 'log-sistem' && req.method === 'GET') {
+          const hasil = await env.DB.prepare(
+            'SELECT * FROM log_sistem ORDER BY waktu DESC LIMIT 200'
+          ).all();
+          return json(hasil.results, 200, env);
+        }
+        if (a === 'log-sistem/bersihkan' && req.method === 'DELETE') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
+          await env.DB.prepare('DELETE FROM log_sistem WHERE waktu < datetime(\'now\', \'-24 hours\')').run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- perintah ke agen PC ----
+        if (a === 'perintah' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT p.*, a.nama AS agen_nama, a.host FROM perintah p
+             LEFT JOIN agen a ON a.id = p.agen_id
+             ORDER BY p.dibuat DESC LIMIT 200`
+          ).all();
+          return json(results.map((r) => ({ ...r, muatan_terurai: (() => { try { return JSON.parse(r.muatan || 'null'); } catch { return null; } })() })), 200, env);
+        }
+
+        // ---- pemakaian voucher ----
+        if (a === 'voucher-pakai' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT vp.*, u.nama AS user_nama, u.email AS user_email FROM voucher_pakai vp
+             LEFT JOIN users u ON u.id = vp.user_id
+             ORDER BY vp.waktu DESC LIMIT 200`
+          ).all();
+          return json(results, 200, env);
+        }
+
+        // ---- ulasan paket PC ----
+        if (a === 'ulasan-pc' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT r.*, p.nama AS paket FROM ulasan_pc r
+             LEFT JOIN pc_plans p ON p.id = r.plan_id ORDER BY r.waktu DESC LIMIT 200`
+          ).all();
+          return json(results, 200, env);
+        }
+        if (a.startsWith('ulasan-pc/') && req.method === 'PATCH') {
+          const idR = a.split('/')[1];
+          const b = await req.json().catch(() => ({}));
+          await env.DB.prepare('UPDATE ulasan_pc SET balasan = ? WHERE id = ?')
+            .bind(b.balasan || null, idR).run();
+          return json({ ok: true }, 200, env);
+        }
+        if (a.startsWith('ulasan-pc/') && req.method === 'DELETE') {
+          const idR = a.split('/')[1];
+          await env.DB.prepare('DELETE FROM ulasan_pc WHERE id = ?').bind(idR).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- semua transaksi saldo ----
+        if (a === 'transaksi' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT t.*, u.nama AS user_nama, u.email AS user_email FROM transaksi t
+             LEFT JOIN users u ON u.id = t.user_id
+             ORDER BY t.waktu DESC LIMIT 300`
+          ).all();
+          return json(results, 200, env);
+        }
+
+        // ---- setelan kunci-nilai (pemilik) ----
+        if (a === 'setelan' && req.method === 'GET') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
+          const { results } = await env.DB.prepare('SELECT kunci, nilai, diperbarui FROM setelan ORDER BY kunci').all();
+          return json(results, 200, env);
+        }
+        if (a === 'setelan' && req.method === 'POST') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
+          const b = await req.json().catch(() => ({}));
+          const kunci = String(b.kunci || '').trim();
+          if (!/^[a-z0-9_.-]{1,64}$/.test(kunci)) return err('Nama kunci tidak valid', 400, env);
+          await simpanSetelan(env, kunci, b.nilai ?? '');
+          return json({ ok: true, kunci, nilai: b.nilai ?? '' }, 200, env);
+        }
+        if (a === 'setelan' && req.method === 'DELETE') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
+          const kunci = String(a.split('/')[1] || '');
+          await env.DB.prepare('DELETE FROM setelan WHERE kunci = ?').bind(kunci).run();
+          return json({ ok: true }, 200, env);
+        }
+
+        // ---- impor cadangan .json (pemilik) ----
+        if (a === 'cadangan/impor' && req.method === 'POST') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
+          const b = await req.json().catch(() => ({}));
+          const struktur = b?.isi || b;
+          if (!struktur || typeof struktur !== 'object' || Array.isArray(struktur)) {
+            return err('Format cadangan tidak dikenal. Unggah JSON {isi:{nama_tabel:[...]}} dari Cadangan DB.', 400, env);
+          }
+          const izin = new Set(['users','pc_plans','akun_produk','akun_stok','orders','transaksi','topup','banners','forum_post','forum_balasan','ulasan','ulasan_pc','voucher','agen','notifikasi','laporan','setelan','promo_overlay','media_assets']);
+          let masuk = 0, dilewati = 0;
+          for (const [tabel, baris] of Object.entries(struktur)) {
+            if (!izin.has(tabel) || !Array.isArray(baris) || baris.length === 0) { dilewati += 1; continue; }
+            try {
+              if (tabel === 'setelan') {
+                for (const s of baris) if (s && s.kunci) await simpanSetelan(env, s.kunci, s.nilai ?? '');
+                masuk += baris.length;
+              } else {
+                const { results: col } = await env.DB.prepare(`SELECT name FROM pragma_table_info('${tabel}')`).all();
+                const kolom = col.map((c) => c.name);
+                const daftar = baris.filter((r) => r && typeof r === 'object' && kolom.includes('id'));
+                for (let r of daftar) {
+                  if (tabel === 'users') { r = { ...r }; delete r.password; } // jangan pernah impor hash sandi
+                  const kunciKolom = kolom.filter((k) => r[k] !== undefined && r[k] !== null);
+                  if (kunciKolom.length === 0) continue;
+                  const sql = `INSERT OR IGNORE INTO ${tabel} (${kunciKolom.join(',')}) VALUES (${kunciKolom.map(() => '?').join(',')})`;
+                  try { await env.DB.prepare(sql).bind(...kunciKolom.map((k) => r[k])).run(); masuk += 1; }
+                  catch { dilewati += 1; }
+                }
+              }
+            } catch { dilewati += 1; }
+          }
+          await catatLog(env, 'impor', `Impor cadangan selesai: ${masuk} baris masuk, ${dilewati} dilewati`);
+          ctx.waitUntil(catatAdmin(env, admin, 'impor cadangan', `${masuk} baris`));
+          return json({ ok: true, masuk, dilewati, tabel: Object.keys(struktur).length }, 200, env);
+        }
+
         // ---- atur versi minimal aplikasi ----
         if (a === 'sistem/versi' && req.method === 'POST') {
           const b = await req.json().catch(() => ({}));

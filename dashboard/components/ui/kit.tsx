@@ -95,11 +95,18 @@ export function Chip({ children, tone = "netral" }: { children: React.ReactNode;
   );
 }
 
+const TONE_TEKS: Record<string, string> = {
+  ok: "text-emerald-600",
+  warn: "text-amber-600",
+  bad: "text-rose-600",
+  info: "text-[#7C3AED]",
+};
+
 export function Stat({ label, value, sub, tone }: { label: string; value: React.ReactNode; sub?: string; tone?: string }) {
   return (
     <div className="xy-card rounded-[14px] p-4">
       <div className="text-[11px] text-[#7C738F] font-semibold tracking-wide uppercase">{label}</div>
-      <div className={`text-xl font-black tracking-tight mt-1 ${tone || "text-[#1E1B2E]"}`}>{value}</div>
+      <div className={`text-xl font-black tracking-tight mt-1 ${TONE_TEKS[tone || ""] || "text-[#1E1B2E]"}`}>{value}</div>
       {sub && <div className="text-[11px] text-[#7C738F] mt-0.5 font-medium">{sub}</div>}
     </div>
   );

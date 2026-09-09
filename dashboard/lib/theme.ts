@@ -48,7 +48,17 @@ export type MenuIcon =
   | "smartphone"
   | "shield-alert"
   | "tool"
-  | "database";
+  | "database"
+  | "bell-ring"
+  | "scroll-text"
+  | "terminal"
+  | "receipt-text"
+  | "message-square-text"
+  | "arrow-left-right"
+  | "sliders-horizontal"
+  | "upload-cloud"
+  | "heart-pulse"
+  | "list-checks";
 
 export const MENU: { id: string; label: string; icon: MenuIcon; path: string; badge?: string }[] = [
   { id: "dash", label: "Dashboard", icon: "layout-dashboard", path: "/" },
@@ -85,4 +95,14 @@ export const MENU: { id: string; label: string; icon: MenuIcon; path: string; ba
   { id: "cadangan", label: "Cadangan DB", icon: "database", path: "/cadangan" },
   { id: "sistem", label: "Sistem", icon: "settings", path: "/sistem" },
   { id: "peran", label: "Peran Admin", icon: "shield-user", path: "/peran" },
+  { id: "notifikasi", label: "Notifikasi", icon: "bell-ring", path: "/notifikasi" },
+  { id: "log-sistem", label: "Log Sistem", icon: "scroll-text", path: "/log-sistem" },
+  { id: "perintah", label: "Perintah Agen", icon: "terminal", path: "/perintah" },
+  { id: "voucher-pakai", label: "Voucher Terpakai", icon: "receipt-text", path: "/voucher-pakai" },
+  { id: "ulasan-pc", label: "Ulasan Paket PC", icon: "message-square-text", path: "/ulasan-pc" },
+  { id: "transaksi", label: "Riwayat Transaksi", icon: "arrow-left-right", path: "/transaksi" },
+  { id: "setelan", label: "Setelan Umum", icon: "sliders-horizontal", path: "/setelan" },
+  { id: "impor-cadangan", label: "Impor Cadangan", icon: "upload-cloud", path: "/impor-cadangan" },
+  { id: "kesehatan", label: "Kesehatan & Cache", icon: "heart-pulse", path: "/kesehatan" },
+  { id: "keamanan", label: "Log Keamanan", icon: "list-checks", path: "/keamanan" },
 ] as const;
