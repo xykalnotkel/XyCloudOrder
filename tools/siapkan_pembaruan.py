@@ -32,16 +32,21 @@ import re
 from pathlib import Path
 
 # Kotlin code untuk disisipkan
+# Catatan: MethodChannel TIDAK disertakan di sini karena streaming bridge
+# (tools/siapkan_streaming.py) sudah mengimpor io.flutter.plugin.common.MethodChannel;
+# patch_kotlin() menambahkan import yang benar-benar kurang saja supaya tidak ada
+# "Conflicting import ... ambiguous" saat kompilasi Kotlin.
 KOTLIN_IMPORTS = """
 import android.app.DownloadManager
 import android.content.Intent
 import android.net.Uri
-import io.flutter.plugin.common.MethodChannel
 """
-
+# Kode handler memakai penanda __ENGINE__ supaya nama variabel engine mengikuti
+# tanda tangan configureFlutterEngine(engine:) yang dipakai streaming bridge
+# (bukan getFlutterEngine() yang mengembalikan nullable FlutterEngine?).
 KOTLIN_HANDLER = """
         // === XyCloudStore Updater Channel (DownloadManager + notif progress) ===
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "xycloud/updater")
+        MethodChannel(__ENGINE__.dartExecutor.binaryMessenger, "xycloud/updater")
           .setMethodCallHandler { call, result ->
             when (call.method) {
               "available" -> result.success(true)
@@ -194,49 +199,60 @@ def patch_kotlin(file_path: Path):
         print(f"Sudah ada updater di {file_path}, dilewati")
         return
 
-    # Tambah imports jika belum
-    if 'import android.app.DownloadManager' not in src:
-        # sisipkan setelah import terakhir
-        if 'import io.flutter.embedding.android.FlutterActivity' in src:
-            src = src.replace(
-                'import io.flutter.embedding.android.FlutterActivity',
-                'import io.flutter.embedding.android.FlutterActivity\n' + KOTLIN_IMPORTS.strip()
+    # Tambah import yang BENAR-BENAR kurang (cek satu per satu). Streaming bridge
+    # sudah mengimpor MethodChannel, jadi tanpa cek ini akan terjadi
+    # "Conflicting import: 'MethodChannel' is ambiguous".
+    for imp in [
+        'android.app.DownloadManager',
+        'android.content.Intent',
+        'android.net.Uri',
+        'io.flutter.plugin.common.MethodChannel',
+    ]:
+        if f'import {imp}' not in src:
+            if src.startswith('package '):
+                # sisipkan tepat setelah baris package agar tidak merusak import lain
+                nl = src.find('\n')
+                src = src[:nl + 1] + f'import {imp}\n' + src[nl + 1:]
+            else:
+                src = f'import {imp}\n' + src
+
+    # Cari configureFlutterEngine dan sisipkan handler di dalamnya.
+    # Ambil NAMA VARIABEL param engine dari tanda tangan (streaming bridge memakai
+    # `engine: FlutterEngine`), lalu ganti penanda __ENGINE__ — dengan begitu kita
+    # tidak menyentuh getFlutterEngine() yang bertipe FlutterEngine? (nullable).
+    m = re.search(
+        r'override fun configureFlutterEngine\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*:\s*FlutterEngine\??\s*\)\s*\{',
+        src,
+    )
+    if m:
+        handler = KOTLIN_HANDLER.replace('__ENGINE__', m.group(1))
+        pat = r'(override fun configureFlutterEngine\(\s*[A-Za-z_][A-Za-z0-9_]*\s*:\s*FlutterEngine\??\s*\)\s*\{)'
+        src = re.sub(pat, r'\1\n' + handler.strip() + '\n', src, count=1)
+    else:
+        # fallback generik: cari pola tanpa nama variabel tertentu
+        handler = KOTLIN_HANDLER.replace('__ENGINE__', 'flutterEngine')
+        pattern = r'(override fun configureFlutterEngine\([^)]*\)\s*\{)'
+        if re.search(pattern, src):
+            src = re.sub(
+                pattern,
+                r'\1\n' + handler.strip() + '\n',
+                src,
+                count=1
             )
         else:
-            # fallback: tambah di atas
-            src = KOTLIN_IMPORTS + "\n" + src
-
-    # Cari configureFlutterEngine dan sisipkan handler di dalamnya
-    # Pola: override fun configureFlutterEngine(...)
-    pattern = r"(override fun configureFlutterEngine\([^)]*\)\s*\{)"
-    if re.search(pattern, src):
-        src = re.sub(
-            pattern,
-            r"\1\n" + KOTLIN_HANDLER.strip() + "\n",
-            src,
-            count=1
-        )
-    else:
-        # fallback: cari onCreate atau super
-        # sisipkan di akhir kelas sebelum penutup terakhir
-        # cari baris terakhir '}'
-        if 'MethodChannel' not in src:
-            # buat configureFlutterEngine baru
-            inject = """
+            # fallback terakhir: cari onCreate atau super
+            # sisipkan di akhir kelas sebelum penutup terakhir
+            if 'MethodChannel' not in src:
+                # buat configureFlutterEngine baru
+                inject = """
     override fun configureFlutterEngine(flutterEngine: io.flutter.embedding.engine.FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-""" + KOTLIN_HANDLER + """
+""" + handler + """
     }
 """
-            src = src.replace(
-                "class MainActivity",
-                "class MainActivity",
-                1
-            )
-            # sisipkan sebelum penutup kelas terakhir
-            # cari posisi terakhir }
-            last_brace = src.rfind("}")
-            src = src[:last_brace] + inject + "\n}\n"
+                # sisipkan sebelum penutup kelas terakhir
+                last_brace = src.rfind('}')
+                src = src[:last_brace] + inject + '\n}\n'
 
     file_path.write_text(src, encoding='utf-8')
     print(f"Patched Kotlin MainActivity: {file_path}")
