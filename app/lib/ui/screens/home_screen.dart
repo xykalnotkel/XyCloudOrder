@@ -556,11 +556,12 @@ class _MenuCepat extends StatelessWidget {
   // Menu di bawah kartu saldo: hanya jalan pintas yang BELUM ada di nav bawah
   // (Beranda/Sewa PC/Beli Akun/Komunitas/Profil) atau ikon header (Chat & notif),
   // supaya tidak ada fitur yang tampil dobel. Total 4 = 1 baris rapi.
+  // id dipakai untuk memilih aset: assets/ikon/3d_<id>.png
   static const _menu = [
-    ('topup', 'Top Up', WalletScreen(), Icons.account_balance_wallet_rounded),
-    ('voucher', 'Voucher', VoucherScreen(), Icons.local_offer_rounded),
-    ('referral', 'Referral', ReferralScreen(), Icons.card_giftcard_rounded),
-    ('favorit', 'Favorit', FavoritScreen(), Icons.favorite_rounded),
+    ('topup', 'Top Up', WalletScreen()),
+    ('voucher', 'Voucher', VoucherScreen()),
+    ('referral', 'Referral', ReferralScreen()),
+    ('favorit', 'Favorit', FavoritScreen()),
   ];
 
   static const _jelajahi = [
@@ -571,30 +572,28 @@ class _MenuCepat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget kartu(String ikon, String label, Widget layar, IconData iconData) {
+    Widget kartu(String ikon, String label, Widget layar) {
       return Pressable(
         onTap: () => Navigator.push(context, xyRoute(layar)),
         scale: .96,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          padding: const EdgeInsets.fromLTRB(6, 10, 6, 9),
           decoration: BoxDecoration(
             color: XyTheme.of(context).surface,
             borderRadius: BorderRadius.circular(XyRadius.lg),
             border: Border.all(color: XyTheme.of(context).line),
             boxShadow: XyTheme.shadowXs,
           ),
-          child: Column(children: [
-            // ikon dibungkus kotak lembut; nanti diganti aset 3D glossy.
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: XyTheme.of(context).lineSoft,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(iconData, size: 22, color: XyTheme.primary),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            // Ikon 3D glossy-clay: aset AI transparan (lihat assets/ikon/3d_*.png).
+            Image.asset(
+              'assets/ikon/3d_$ikon.png',
+              width: 50,
+              height: 50,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.medium,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               label,
               maxLines: 1,
@@ -612,7 +611,7 @@ class _MenuCepat extends StatelessWidget {
     }
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // 8 grid
+      // grid 4 kolom — kartu menu di bawah saldo
       GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -620,12 +619,12 @@ class _MenuCepat extends StatelessWidget {
           crossAxisCount: 4,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          childAspectRatio: 0.88,
+          childAspectRatio: 0.80,
         ),
         itemCount: _menu.length,
         itemBuilder: (_, i) {
-          final (ikon, label, layar, iconData) = _menu[i];
-          return kartu(ikon, label, layar, iconData);
+          final (ikon, label, layar) = _menu[i];
+          return kartu(ikon, label, layar);
         },
       ),
       const SizedBox(height: 16),
