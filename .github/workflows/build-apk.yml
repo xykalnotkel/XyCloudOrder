@@ -97,6 +97,16 @@ jobs:
             [ -f "$f" ] && sed -i -E 's/(kotlin-gradle-plugin:)[0-9.]+/\12.2.20/' "$f" || true
           done
 
+      - name: Naikkan minSdk ke 23 (dibutuhkan plugin record_android)
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          for f in android/app/build.gradle android/app/build.gradle.kts; do
+            [ -f "$f" ] || continue
+            sed -i -E 's/(minSdk\s*=?\s*)flutter\.minSdkVersion/\123/' "$f"
+            echo "--- $f"
+            grep -nE "minSdk|compileSdk|targetSdk" "$f"
+          done
+
       - name: Bersihkan berkas bawaan flutter create
         working-directory: ${{ env.APP_DIR }}
         run: rm -f test/widget_test.dart
