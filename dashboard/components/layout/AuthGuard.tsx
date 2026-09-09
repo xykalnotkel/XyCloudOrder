@@ -39,8 +39,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-[60vh] grid place-items-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-[#2D1B5E] border-t-[#7C3AED] animate-spin" />
-          <div className="text-[13px] text-[#9A8CBF] font-medium">Memeriksa sesi admin...</div>
+          <div className="w-8 h-8 rounded-full border-2 border-[#E9E3F5] border-t-[#7C3AED] animate-spin" />
+          <div className="text-[13px] text-[#7C738F] font-medium">Memeriksa sesi admin...</div>
         </div>
       </div>
     );

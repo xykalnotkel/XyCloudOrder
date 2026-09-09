@@ -8,39 +8,38 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#100030;--card:#1A0A3A;--card2:#21114A;--line:#2D1B5E;--violet:#7C3AED;--violet2:#8B5CF6;--text:#EDE9FE;--muted:#9A8CBF;--font:'Plus Jakarta Sans',Inter,sans-serif}
-html,body{background:var(--bg);min-height:100vh;color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
-a{color:var(--violet2);text-decoration:none}
+:root{--primary:#7C3AED;--violet:#8B5CF6;--violet2:#5B21B6;--gold:#D9A441;--ok:#16A34A;--warn:#D9880F;--danger:#DC2626;--bg:#F5F3FF;--panel:#FFFFFF;--panel2:#F3F0FF;--line:#E9E3F5;--ink:#1E1B2E;--muted:#7C738F;--r:18px;--font:'Plus Jakarta Sans',Inter,sans-serif;--sh:0 20px 60px rgba(16,0,48,.12)}
+html,body{background:var(--bg);min-height:100vh;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+a{color:var(--primary);text-decoration:none}
 a:hover{text-decoration:underline}
-.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px}
-.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7C3AED,#8B5CF6);display:grid;place-items:center;font-weight:800;font-size:18px;letter-spacing:-0.02em;color:#fff}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(900px 520px at 50% -10%,#E9DFFB 0%,var(--bg) 62%)}
+.card{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:26px;padding:30px;box-shadow:var(--sh)}
 .brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
-.brand h1{font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1.1}
+.brand h1{font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;color:var(--ink)}
 .brand p{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.06em;margin-top:3px}
-.title{font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+.title{font-size:20px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;color:var(--ink)}
 .sub{font-size:13px;color:var(--muted);line-height:1.5;font-weight:500;margin-bottom:20px}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.field input{width:100%;height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);padding:0 14px;font-family:var(--font);font-size:14px;font-weight:500;outline:none}
-.field input:focus{border-color:var(--violet);box-shadow:0 0 0 3px rgba(124,58,237,0.18)}
-.btn{width:100%;height:46px;border-radius:12px;border:none;background:linear-gradient(135deg,#7C3AED,#8B5CF6);color:#fff;font-family:var(--font);font-weight:700;font-size:14px;cursor:pointer}
-.btn:hover{filter:brightness(1.07)}
-.btn:active{filter:brightness(0.98)}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
+.field input{width:100%;height:46px;border-radius:14px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:0 14px;font-family:var(--font);font-size:14px;font-weight:500;outline:none}
+.field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,58,237,0.14)}
+.btn{width:100%;height:46px;border-radius:999px;border:none;background:linear-gradient(135deg,#A78BFA,#7C3AED);box-shadow:0 12px 26px rgba(124,58,237,.32);color:#fff;font-family:var(--font);font-weight:700;font-size:14px;cursor:pointer;transition:transform .18s,box-shadow .18s}
+.btn:hover{background:linear-gradient(135deg,#B5A0FF,#6D28D9);box-shadow:0 18px 34px rgba(124,58,237,.4);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
 .divider{height:1px;background:var(--line);margin:20px 0}
 .link-grid{display:grid;gap:10px}
-.link-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--text);text-decoration:none}
-.link-card:hover{border-color:var(--violet);background:#251553;text-decoration:none}
-.link-card .ic{width:36px;height:36px;border-radius:10px;background:#2A1A5E;display:grid;place-items:center;flex:none}
-.link-card .ic svg{width:18px;height:18px;stroke:#A78BFA;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.link-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-decoration:none;transition:border-color .16s,background .16s}
+.link-card:hover{border-color:var(--primary);background:var(--panel2);text-decoration:none}
+.link-card .ic{width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.link-card .ic svg{width:18px;height:18px;stroke:#7C3AED;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .link-card .txt{flex:1}
-.link-card .txt b{display:block;font-size:13px;font-weight:700;letter-spacing:-0.01em}
+.link-card .txt b{display:block;font-size:13px;font-weight:700;letter-spacing:-0.01em;color:var(--ink)}
 .link-card .txt span{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
-.err{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:#2A1230;border:1px solid #4A2040;color:#F5B0C0;font-size:12px;font-weight:600}
-.ok{display:none;margin-top:12px;padding:10px 12px;border-radius:10px;background:#12302A;border:1px solid #1F4A3A;color:#8CE6C0;font-size:12px;font-weight:600}
+.err{display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:#FFF1F2;border:1px solid #FECDD3;color:#BE123C;font-size:12px;font-weight:600}
+.ok{display:none;margin-top:12px;padding:10px 12px;border-radius:12px;background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;font-size:12px;font-weight:600}
 .foot{margin-top:18px;text-align:center;font-size:11px;color:var(--muted);font-weight:500}
-.foot a{color:var(--muted)}
+.foot a{color:var(--muted);text-decoration:underline}
 .hidden{display:none}
 </style>
 </head>
@@ -48,7 +47,7 @@ a:hover{text-decoration:underline}
 <div class="wrap">
   <div class="card">
     <div class="brand">
-      <img src="/brand/logo.png" alt="XyCloud" style="width:64px;height:64px;object-fit:contain">
+      <img src="/brand/logo-icon.png" alt="XyCloud" style="width:56px;height:56px;object-fit:contain;background:linear-gradient(135deg,#7C3AED,#5B21B6);border-radius:16px;padding:8px">
       <div>
         <h1>XyCloud Admin</h1>
         <p>CONSOLE • ADMIN.XYCLOUD.MY.ID</p>
@@ -67,37 +66,33 @@ a:hover{text-decoration:underline}
       <div class="ok" id="ok"></div>
 
       <div class="divider"></div>
-      <div class="sub" style="margin-bottom:10px">Dashboard Baru (Next.js) — tanpa emoji, icon Lucide, font konsisten:</div>
+      <div class="sub" style="margin-bottom:10px">Dashboard baru (tema terang ala xycloud.my.id):</div>
       <div class="link-grid">
-        <a class="link-card" href="https://xycloud-dashboard.pages.dev/login">
+        <a class="link-card" href="https://admin.xycloud.my.id/login">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
-          <div class="txt"><b>Buka Dashboard Pages</b><span>xycloud-dashboard.pages.dev/login • Rekomendasi</span></div>
-        </a>
-        <a class="link-card" href="https://dashboard-iota-ten-70.vercel.app/login">
-          <div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
-          <div class="txt"><b>Buka Dashboard Vercel</b><span>Backup • dashboard-iota-ten-70.vercel.app</span></div>
+          <div class="txt"><b>Buka Dashboard Utama</b><span>admin.xycloud.my.id/login • Rekomendasi</span></div>
         </a>
       </div>
       <div class="foot">
         <div>Web: <a href="https://www.xycloud.my.id">www.xycloud.my.id</a> • API: <a href="https://api.xycloud.my.id">api.xycloud.my.id</a></div>
-        <div style="margin-top:6px"><a href="/admin?legacy=1">Buka console lama (legacy)</a> • <a href="/admin-legacy">/admin-legacy</a></div>
+        <div style="margin-top:6px"><a href="/admin?legacy=1">Buka console lama (legacy)</a></div>
       </div>
     </div>
 
     <div id="view-ok" class="hidden">
       <div class="title">Berhasil masuk</div>
-      <div class="sub">Admin key valid. Pilih tujuan:</div>
+      <div class="sub">Admin key valid. Lanjut ke dashboard (key dimasukkan ulang di domain dashboard karena domain berbeda):</div>
       <div class="link-grid">
-        <a class="link-card" href="https://xycloud-dashboard.pages.dev" id="goPages">
+        <a class="link-card" href="https://admin.xycloud.my.id/login">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></div>
-          <div class="txt"><b>Lanjut ke Dashboard Baru</b><span>Pages — 28+ menu terpisah per halaman</span></div>
+          <div class="txt"><b>Lanjut ke Dashboard</b><span>admin.xycloud.my.id/login</span></div>
         </a>
         <a class="link-card" href="/admin?legacy=1">
           <div class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="txt"><b>Buka Console Lama</b><span>Legacy 27 menu — fallback darurat</span></div>
+          <div class="txt"><b>Buka Console Lama</b><span>Legacy — fallback darurat</span></div>
         </a>
       </div>
-      <button class="btn" style="margin-top:16px;background:var(--card2);border:1px solid var(--line);color:var(--muted)" onclick="keluar()">Keluar / Ganti Key</button>
+      <button class="btn" style="margin-top:16px;background:#fff;border:1px solid var(--line);color:var(--muted);box-shadow:none" onclick="keluar()">Keluar / Ganti Key</button>
     </div>
 
   </div>
@@ -139,8 +134,6 @@ async function masuk(){
     loginView.classList.add('hidden');
     okView.classList.remove('hidden');
     showOk('Key valid — disimpan lokal');
-    // auto redirect ke Pages login with key passthrough? Pages reads localStorage same domain? Different domain so cannot. Show option.
-    // If user is at admin.xycloud.my.id, Pages is different domain, so key must be entered again there. We inform.
   }catch(e){
     showErr(e.message || 'Gagal masuk — periksa koneksi');
   }finally{
@@ -150,12 +143,10 @@ async function masuk(){
 
 keyInput.addEventListener('keydown', e=>{ if(e.key==='Enter') masuk(); });
 
-// if already have key, try auto validate
 (function(){
   const saved = localStorage.getItem('xy_admin_key')||'';
   if(saved){
     keyInput.value = saved;
-    // don't auto login to avoid NetworkError loop, just show view-ok if key was previously validated? Check via local flag
     const lastOk = localStorage.getItem('xy_admin_ok');
     if(lastOk==='1'){
       loginView.classList.add('hidden');
@@ -164,7 +155,6 @@ keyInput.addEventListener('keydown', e=>{ if(e.key==='Enter') masuk(); });
   }
 })();
 
-// after successful login, set flag
 const origMasuk = masuk;
 masuk = async function(){
   await origMasuk();
@@ -172,7 +162,6 @@ masuk = async function(){
   localStorage.setItem('xy_admin_ok','1');
 };
 
-// If ?login=1 in URL, focus
 if(location.search.includes('login')) keyInput.focus();
 </script>
 </body>

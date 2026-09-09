@@ -2,13 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   XyCloud Console — light theme (ikut gaya web xycloud.my.id)
+   Tokens diambil dari api/src/web.html (:root storefront).
+   ============================================================ */
 :root {
-  --xy-bg: #100030;
-  --xy-bg2: #1A0A3A;
-  --xy-violet: #7C3AED;
-  --xy-violet2: #8B5CF6;
-  --xy-card: #1E123F;
-  --xy-line: #2D1B5E;
+  --xy-bg: #F5F3FF;        /* latar halaman (web --bg) */
+  --xy-card: #FFFFFF;      /* kartu (web --putih) */
+  --xy-soft: #F3F0FF;      /* sub-kartu/inset (web --soft) */
+  --xy-line: #E9E3F5;      /* garis (web --line) */
+  --xy-ink: #1E1B2E;       /* teks utama (web --ink) */
+  --xy-ink2: #4B445F;      /* teks sekunder (web --ink2) */
+  --xy-muted: #7C738F;     /* teks redup (web --muted) */
+  --xy-violet: #7C3AED;    /* ungu utama (web --u) */
+  --xy-violet2: #5B21B6;   /* ungu pekat (web --u2) */
+  --xy-violet3: #2E1065;   /* indigo (web --u3) */
+  --xy-soft-violet: #A78BFA;
+  --xy-gold: #D9A441;      /* emas (web --emas) */
+  --xy-shadow: 0 14px 36px rgba(16, 0, 48, 0.08);  /* web --sh */
+  --xy-btn-glow: 0 12px 26px rgba(124, 58, 237, 0.32);
+  --xy-btn-glow-hover: 0 18px 34px rgba(124, 58, 237, 0.4);
   --font-jakarta: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
@@ -16,7 +29,7 @@
 html, body {
   background: var(--xy-bg);
   min-height: 100vh;
-  color: #EDE9FE;
+  color: var(--xy-ink);
   font-family: var(--font-jakarta);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,41 +38,48 @@ html, body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #7C3AED #100030;
+  scrollbar-color: #C4B5FD #F5F3FF;
   font-family: inherit;
 }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #100030; }
-::-webkit-scrollbar-thumb { background: #7C3AED; border-radius: 999px; }
+::-webkit-scrollbar-track { background: #F5F3FF; }
+::-webkit-scrollbar-thumb { background: #C4B5FD; border-radius: 999px; }
 
-/* solid card — no glassmorphism, no backdrop-filter */
+/* kartu putih — persis .kartu di web.html */
 .xy-card {
   background: var(--xy-card);
   border: 1px solid var(--xy-line);
-  border-radius: 16px;
+  border-radius: 22px;
+  box-shadow: var(--xy-shadow);
 }
 .xy-card-hover:hover {
-  border-color: #3A2A6E;
-  background: #22144A;
+  border-color: #D6CBF5;
+  background: #FBFAFF;
 }
 
+/* tombol pill gradient ungu — persis .btn di web.html */
 .xy-btn {
-  background: linear-gradient(135deg,#7C3AED 0%,#8B5CF6 100%);
-  border-radius: 12px;
+  background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%);
+  border-radius: 999px;
+  box-shadow: var(--xy-btn-glow);
   font-family: var(--font-jakarta);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #fff;
   border: none;
 }
-.xy-btn:hover { filter: brightness(1.06); }
+.xy-btn:hover {
+  background: linear-gradient(135deg, #B5A0FF 0%, #6D28D9 100%);
+  box-shadow: var(--xy-btn-glow-hover);
+  transform: translateY(-1px);
+}
 .xy-btn:active { filter: brightness(0.97); }
 
 .xy-input {
-  background: #21114A;
+  background: #FFFFFF;
   border: 1px solid var(--xy-line);
-  border-radius: 12px;
-  color: #EDE9FE;
+  border-radius: 14px;
+  color: var(--xy-ink);
   font-family: var(--font-jakarta);
   height: 44px;
   padding: 0 14px;
@@ -67,19 +87,25 @@ html, body {
 }
 .xy-input:focus {
   border-color: #7C3AED;
-  box-shadow: 0 0 0 3px rgba(124,58,237,0.18);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
 }
 
-/* consistent typography */
+/* konsisten typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-jakarta);
   letter-spacing: -0.02em;
+  color: var(--xy-ink);
 }
 code, .font-mono {
   font-family: var(--font-mono);
 }
 
-/* no emoji fallback — enforce icon font */
+/* chip lembut untuk label kecil */
+.xy-chip {
+  background: var(--xy-soft);
+  border: 1px solid var(--xy-line);
+  color: var(--xy-ink2);
+}
 .no-emoji {
   font-family: var(--font-jakarta);
 }

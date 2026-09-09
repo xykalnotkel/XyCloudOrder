@@ -59,14 +59,14 @@ class AppState extends ChangeNotifier {
   bool hematData = false;
 
   /// Tema tampilan: sistem, terang, atau gelap.
-  ThemeMode modeTema = ThemeMode.system;
+  ThemeMode modeTema = ThemeMode.light;
 
   Future<void> muatTema() async {
     final t = await Prefs.tema();
     modeTema = switch (t) {
       'terang' => ThemeMode.light,
       'gelap' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      _ => ThemeMode.light,
     };
     notifyListeners();
   }

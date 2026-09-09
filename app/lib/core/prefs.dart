@@ -51,7 +51,7 @@ class Prefs {
   // ---------- tema tampilan ----------
   /// sistem | terang | gelap
   static Future<String> tema() async =>
-      (await SharedPreferences.getInstance()).getString(_kTema) ?? 'sistem';
+      (await SharedPreferences.getInstance()).getString(_kTema) ?? 'terang';
 
   static Future<void> simpanTema(String v) async =>
       (await SharedPreferences.getInstance()).setString(_kTema, v);

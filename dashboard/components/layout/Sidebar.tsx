@@ -89,27 +89,34 @@ export default function Sidebar() {
 
   useEffect(() => {
     const k = typeof window !== "undefined" ? localStorage.getItem("xy_admin_key") || "" : "";
-    if (k) setKeyPreview(k.slice(0,16)+"...");
+    if (k) setKeyPreview(k.slice(0, 16) + "...");
   }, [pathname]);
 
   // hide sidebar on login page
   if (pathname === "/login") return null;
 
   return (
-    <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-[#1A0A3A] border-r border-[#2D1B5E] font-[Plus_Jakarta_Sans]`}>
-      <div className="h-[64px] flex items-center px-3 gap-2 border-b border-[#2D1B5E]">
+    <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-white border-r border-[#E9E3F5] font-[Plus_Jakarta_Sans]`}>
+      <div className={`h-[64px] flex items-center px-3 gap-2 border-b border-[#E9E3F5] bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] ${collapsed ? "justify-center" : ""}`}>
         {collapsed ? (
-          <img src="/brand/logo-icon.png" alt="XyCloud" className="w-10 h-10 object-contain mx-auto" />
+          <img src="/brand/logo-icon.png" alt="XyCloud" className="w-10 h-10 object-contain" />
         ) : (
-          <img src="/brand/logo-full.png" alt="XyCloudStore" className="h-8 w-auto object-contain" />
+          <img src="/brand/logo-full.png" alt="XyCloudStore" className="h-9 w-auto object-contain drop-shadow" />
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-lg bg-[#21114A] hover:bg-[#2A1A5E] grid place-items-center border border-[#2D1B5E] shrink-0">
-          {collapsed ? <ChevronsRight size={16} className="text-[#9A8CBF]"/> : <ChevronsLeft size={16} className="text-[#9A8CBF]"/>}
-        </button>
+        {!collapsed && (
+          <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center border border-white/25 shrink-0">
+            <ChevronsLeft size={16} className="text-white" />
+          </button>
+        )}
+        {collapsed && (
+          <button onClick={() => setCollapsed(!collapsed)} className="absolute left-[62px] top-[14px] w-6 h-6 rounded-full bg-white border border-[#E9E3F5] grid place-items-center shadow">
+            <ChevronsRight size={13} className="text-[#7C3AED]" />
+          </button>
+        )}
       </div>
       {!collapsed && (
-        <div className="px-4 py-2 border-b border-[#2D1B5E]/50">
-          <div className="text-[11px] text-[#6B5A8A] font-medium">v3.3j • {MENU.length} menu • Solid</div>
+        <div className="px-4 py-2 border-b border-[#E9E3F5]/60 bg-[#F5F3FF]">
+          <div className="text-[11px] text-[#7C738F] font-medium">v3.3j • {MENU.length} menu • tema web xycloud.my.id</div>
         </div>
       )}
       <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin">
@@ -120,10 +127,13 @@ export default function Sidebar() {
             <Link
               key={m.id}
               href={m.path}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-all
-                ${active ? "bg-[#7C3AED] text-white font-semibold" : "hover:bg-[#21114A] text-[#9A8CBF] hover:text-white font-medium"}`}
+              title={m.label}
+              className={`group flex items-center gap-3 px-3 py-2.5 rounded-[14px] text-[13px] transition-all
+                ${active
+                  ? "bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] text-white font-bold shadow-[0_8px_18px_rgba(124,58,237,0.25)]"
+                  : "hover:bg-[#F3F0FF] text-[#6B5A8A] hover:text-[#1E1B2E] font-medium"}`}
             >
-              <Icon size={18} className={active ? "text-white" : "text-[#9A8CBF] group-hover:text-white"} />
+              <Icon size={18} className={active ? "text-white" : "text-[#9A8CBF] group-hover:text-[#7C3AED]"} />
               {!collapsed && <span className="truncate tracking-tight">{m.label}</span>}
               {!collapsed && (m as any).badge && (
                 <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-[#A855F7] text-white font-bold tracking-wide">{(m as any).badge}</span>
@@ -132,17 +142,22 @@ export default function Sidebar() {
           );
         })}
       </div>
-      <div className="p-3 border-t border-[#2D1B5E] space-y-2">
+      <div className="p-3 border-t border-[#E9E3F5] space-y-2 bg-[#F5F3FF]/70">
         {!collapsed && (
-          <div className="bg-[#21114A] border border-[#2D1B5E] rounded-xl p-3">
-            <div className="text-[11px] text-[#9A8CBF] font-bold tracking-wide uppercase">Admin</div>
-            <div className="text-[12px] text-white font-medium mt-1 truncate">{keyPreview}</div>
-            <button onClick={()=>{ clearAdminKey(); router.push('/login'); }} className="mt-2 w-full h-8 rounded-lg bg-[#2A1A5E] hover:bg-[#3A2A6E] text-[#9A8CBF] hover:text-white text-[12px] font-semibold flex items-center justify-center gap-1.5">
-              <LogOut size={14}/> Keluar
+          <div className="bg-[#F3F0FF] border border-[#E9E3F5] rounded-[16px] p-3">
+            <div className="text-[11px] text-[#7C738F] font-bold tracking-wide uppercase">Admin</div>
+            <div className="text-[12px] text-[#1E1B2E] font-medium mt-1 truncate font-mono">{keyPreview}</div>
+            <button onClick={() => { clearAdminKey(); router.push('/login'); }} className="mt-2 w-full h-9 rounded-xl bg-white hover:bg-[#E9E3F5] text-[#6B5A8A] hover:text-[#7C3AED] text-[12px] font-bold flex items-center justify-center gap-1.5 border border-[#E9E3F5]">
+              <LogOut size={13} /> Keluar
             </button>
           </div>
         )}
-        {!collapsed && <div className="text-[11px] text-center text-[#6B5A8A] font-medium">Next.js 14 • Solid • No Glass • Lucide</div>}
+        {collapsed && (
+          <button onClick={() => { clearAdminKey(); router.push('/login'); }} title="Keluar"
+            className="mx-auto w-9 h-9 rounded-xl bg-white hover:bg-[#F3F0FF] text-[#6B5A8A] hover:text-[#DC2626] grid place-items-center border border-[#E9E3F5]">
+            <LogOut size={15} />
+          </button>
+        )}
       </div>
     </aside>
   );

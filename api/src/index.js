@@ -2164,6 +2164,36 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json(hasil, hasil.ok ? 200 : 502, env);
         }
 
+        // ---- push builder (dashboard): siarkan ke semua user atau satu user ----
+        // Hanya pemilik yang bisa lewat (push tidak masuk izin cs/moderator di HAK_PERAN).
+        if (a === 'push' && req.method === 'POST') {
+          const b = await req.json().catch(() => ({}));
+          const judul = String(b.judul || '').trim().slice(0, 120);
+          const pesan = String(b.pesan || '').trim().slice(0, 400);
+          if (!judul || !pesan) return err('Judul dan pesan wajib diisi', 400, env);
+          const tipe = ['promo', 'banner', 'order', 'sesi', 'wallet', 'akun', 'forum', 'komunitas', 'cs', 'sistem']
+            .includes(String(b.tipe || '')) ? String(b.tipe) : 'sistem';
+          const urlKirim = typeof b.url === 'string' && b.url.startsWith('https://') ? b.url.slice(0, 300) : undefined;
+          const data = { tipe, ...(typeof b.id === 'string' && b.id ? { id: b.id } : {}) };
+
+          if (b.mode === 'user') {
+            const userId = String(b.user_id || '');
+            if (!userId) return err('user_id wajib diisi untuk sasaran pengguna', 400, env);
+            const ada = await env.DB.prepare('SELECT nama FROM users WHERE id = ? AND deleted_at IS NULL')
+              .bind(userId).first();
+            if (!ada) return err('Pengguna tidak ditemukan', 404, env);
+            const hasil = await kirimPush(env, { userId, judul, pesan, data, url: urlKirim });
+            if (!hasil.ok) return err(hasil.alasan || 'Push gagal dikirim ke penyedia', 502, env);
+            ctx.waitUntil(catatAdmin(env, admin, 'kirim push', `${ada.nama} (${userId}) · ${judul}`));
+            return json({ ok: true, id: hasil.id, sasaran: 'user', user_id: userId }, 200, env);
+          }
+
+          const hasil = await siarkanPush(env, { judul, pesan, data });
+          if (!hasil.ok) return err(hasil.alasan || 'Push gagal dikirim ke penyedia', 502, env);
+          ctx.waitUntil(catatAdmin(env, admin, 'siarkan push', `semua user · ${judul}`));
+          return json({ ok: true, id: hasil.id, sasaran: 'semua' }, 200, env);
+        }
+
 
         // ---- alias & missing endpoints for dashboard v3.3 full migration ----
         if (a === 'audit' && req.method === 'GET') {

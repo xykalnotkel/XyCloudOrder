@@ -17,7 +17,7 @@ const mono = JetBrains_Mono({
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="id" className={`${jakarta.variable} ${mono.variable}`}>
-      <body className="antialiased min-h-screen bg-[#100030] text-white font-[var(--font-jakarta)]">
+      <body className="antialiased min-h-screen bg-[#F5F3FF] text-[#1E1B2E] font-[var(--font-jakarta)]">
         {children}
       </body>
     </html>
