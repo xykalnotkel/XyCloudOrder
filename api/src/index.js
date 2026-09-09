@@ -1989,7 +1989,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           await simpanSetelan(env, kunci, b.nilai ?? '');
           return json({ ok: true, kunci, nilai: b.nilai ?? '' }, 200, env);
         }
-        if (a === 'setelan' && req.method === 'DELETE') {
+        if (a.startsWith('setelan/') && req.method === 'DELETE') {
           if (admin.peran !== 'pemilik') return err('Hanya pemilik', 403, env);
           const kunci = String(a.split('/')[1] || '');
           await env.DB.prepare('DELETE FROM setelan WHERE kunci = ?').bind(kunci).run();
