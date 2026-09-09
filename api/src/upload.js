@@ -65,6 +65,54 @@ export async function unggahGambar(env, { dataUri, folder = 'xycloudstore' }) {
 }
 
 /**
+ * Unggah suara (voice note). Cloudinary menyimpan audio sebagai resource
+ * "video"; endpoint video/upload menerima data:audio/*.base64.
+ */
+export async function unggahAudio(env, { dataUri, folder = 'xycloudstore/chat' }) {
+  if (!env.CLOUDINARY_CLOUD || !env.CLOUDINARY_KEY || !env.CLOUDINARY_SECRET) {
+    return { ok: false, alasan: 'Kredensial Cloudinary belum diatur' };
+  }
+  if (!dataUri) return { ok: false, alasan: 'Tidak ada berkas' };
+  if (typeof dataUri !== 'string' || !dataUri.startsWith('data:')) {
+    return { ok: false, alasan: 'Format berkas tidak dikenal' };
+  }
+  const m = dataUri.match(/^data:([^;]+);base64,/i);
+  const mime = (m ? m[1] : '').toLowerCase();
+  const allowed = ['audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/aac',
+    'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg'];
+  if (!allowed.includes(mime)) {
+    return { ok: false, alasan: `Tipe suara tidak didukung: ${mime || 'unknown'}` };
+  }
+  const b64 = dataUri.split(',')[1] || '';
+  const approxBytes = Math.floor(b64.length * 0.75);
+  if (approxBytes > 3 * 1024 * 1024) {
+    return { ok: false, alasan: 'Pesan suara terlalu besar, maksimal 3MB' };
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const tandaTangan = await sha1(`folder=${folder}&timestamp=${timestamp}${env.CLOUDINARY_SECRET}`);
+  const form = new FormData();
+  form.append('file', dataUri);
+  form.append('api_key', env.CLOUDINARY_KEY);
+  form.append('timestamp', String(timestamp));
+  form.append('folder', folder);
+  form.append('signature', tandaTangan);
+  form.append('resource_type', 'video');
+
+  try {
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD}/video/upload`, {
+      method: 'POST',
+      body: form,
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) return { ok: false, alasan: j.error?.message || `HTTP ${r.status}` };
+    return { ok: true, url: j.secure_url, id: j.public_id, format: j.format, bytes: j.bytes };
+  } catch (e) {
+    return { ok: false, alasan: String(e) };
+  }
+}
+
+/**
  * Ubah URL Cloudinary menjadi tautan milik domain sendiri.
  *
  *   https://res.cloudinary.com/awan/image/upload/v123/xycloudstore/produk/abc.png

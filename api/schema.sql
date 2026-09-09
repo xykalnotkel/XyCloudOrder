@@ -126,7 +126,10 @@ CREATE TABLE cs_messages (
   dari    TEXT NOT NULL,          -- user | cs | system
   teks    TEXT NOT NULL,
   waktu   TEXT NOT NULL DEFAULT (datetime('now'))
-, gambar TEXT, dibaca INTEGER NOT NULL DEFAULT 0, dihapus INTEGER NOT NULL DEFAULT 0);
+, gambar TEXT, audio TEXT, durasi REAL,
+  tipe TEXT NOT NULL DEFAULT 'teks',
+  reply_to TEXT, reply_teks TEXT, reply_tipe TEXT NOT NULL DEFAULT 'teks',
+  dibaca INTEGER NOT NULL DEFAULT 0, dihapus INTEGER NOT NULL DEFAULT 0);
 
 -- ------------------------------------------------------------
 --  banners

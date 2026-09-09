@@ -173,11 +173,33 @@ export default function CsPage() {
                   <div className="text-center text-[#9A8CBF] text-[12px] pt-10">Belum ada pesan di percakapan ini.</div>
                 ) : pesan.map((m) => {
                   const dariCs = m.dari === "cs";
+                  const tipe = m.tipe || (m.audio ? "audio" : m.gambar ? "gambar" : "teks");
+                  const labelTipe = tipe === "gambar" ? "Foto" : tipe === "audio" ? "Pesan suara" : "Pesan";
                   return (
                     <div key={m.id} className={`flex ${dariCs ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[78%] rounded-[18px] px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm whitespace-pre-line ${dariCs ? "bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] text-white rounded-br-md" : "bg-white border border-[#E9E3F5] text-[#1E1B2E] rounded-bl-md"}`}>
-                        {m.gambar && <img src={m.gambar} alt="lampiran" className="mb-1.5 rounded-xl max-h-52 object-cover" />}
-                        <div>{m.teks}</div>
+                      <div className={`max-w-[82%] min-w-[120px] ${tipe !== "gambar" ? "rounded-[18px] px-3.5 py-2.5" : "rounded-[14px] overflow-hidden bg-transparent border-0"} text-[13px] leading-relaxed shadow-sm whitespace-pre-line ${dariCs ? "bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] text-white rounded-br-md" : "bg-white border border-[#E9E3F5] text-[#1E1B2E] rounded-bl-md"}`}>
+                        {(m.reply_teks || m.reply_to) && (
+                          <div className={`mb-1.5 rounded-lg px-2 py-1 border-l-[3px] ${dariCs ? "bg-white/15 border-white/70" : "bg-[#F5F3FF] border-[#7C3AED]"}`}>
+                            <div className={`text-[10px] font-bold ${dariCs ? "text-white/85" : "text-[#7C3AED]"}`}>
+                              {labelTipe} · {dariCs ? "balasan kamu" : "balasan CS"}
+                            </div>
+                            {m.reply_teks && <div className={`text-[11px] truncate ${dariCs ? "text-white/80" : "text-[#7C738F]"}`}>{m.reply_teks}</div>}
+                          </div>
+                        )}
+                        {tipe === "audio" ? (
+                          <div className="flex items-center gap-2 py-0.5">
+                            <span className="w-2 h-2 rounded-full bg-current animate-pulse shrink-0" />
+                            <audio controls preload="metadata" src={m.audio} className="h-9 max-w-[230px]" />
+                            {typeof m.durasi === "number" && (
+                              <span className={`text-[10px] ${dariCs ? "text-white/70" : "text-[#9A8CBF]"}`}>{m.durasi.toFixed(0)}s</span>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            {m.gambar && <img src={m.gambar} alt="lampiran" className={`max-h-56 object-cover ${m.teks ? "mb-1.5" : ""} ${dariCs ? "" : "rounded-lg"}`} />}
+                            {m.teks && <div>{m.teks}</div>}
+                          </>
+                        )}
                         <div className={`flex items-center gap-1 mt-1 text-[9.5px] ${dariCs ? "text-white/70" : "text-[#9A8CBF]"}`}>
                           {jam(m.waktu)}
                           {dariCs && <CheckCheck size={11} />}

@@ -338,8 +338,14 @@ class ChatMessage {
   final String room;
   final String? clientId;
   final String dari; // 'user' | 'cs' | 'system'
+  final String tipe; // 'teks' | 'gambar' | 'audio' | 'system'
   final String teks;
   final String? gambar;
+  final String? audio;
+  final double? durasi;
+  final String? replyTo;
+  final String? replyTeks;
+  final String? replyTipe;
   final DateTime waktu;
   bool terkirim;
   bool dibaca;
@@ -352,6 +358,12 @@ class ChatMessage {
     required this.teks,
     required this.waktu,
     this.gambar,
+    this.audio,
+    this.durasi,
+    this.tipe = 'teks',
+    this.replyTo,
+    this.replyTeks,
+    this.replyTipe,
     this.clientId,
     this.terkirim = true,
     this.dibaca = false,
@@ -360,24 +372,48 @@ class ChatMessage {
 
   bool get milikSaya => dari == 'user';
 
-  factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
+  /// [audio] adalah URL server (bukan data URI) — data URI hanya dipakai
+  /// untuk pratinjau lokal yang belum terkirim.
+  bool get bisaPutarAudio => tipe == 'audio' && (audio?.startsWith('http') ?? false);
+
+  factory ChatMessage.fromJson(Map<String, dynamic> j) {
+    final gambar = (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null;
+    final audio = (j['audio'] as String?)?.isNotEmpty == true ? j['audio'] : null;
+    final dari = j['dari'] ?? j['from'] ?? 'cs';
+    var tipe = '${j['tipe'] ?? (audio != null ? 'audio' : (gambar != null ? 'gambar' : 'teks'))}';
+    if (dari == 'system') tipe = 'system';
+    final durasi = j['durasi'];
+    return ChatMessage(
         id: '${j['id']}',
         room: j['room'] ?? '',
         clientId: j['client_id'],
-        dari: j['dari'] ?? j['from'] ?? 'cs',
+        dari: dari,
+        tipe: tipe,
         teks: j['teks'] ?? j['text'] ?? '',
-        gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
+        gambar: gambar,
+        audio: audio,
+        durasi: durasi is num ? durasi.toDouble() : null,
+        replyTo: (j['reply_to'] as String?)?.isNotEmpty == true ? j['reply_to'] : null,
+        replyTeks: (j['reply_teks'] as String?)?.isNotEmpty == true ? j['reply_teks'] : null,
+        replyTipe: '${j['reply_tipe'] ?? 'teks'}',
         waktu: tanggalServer(j['waktu'] ?? j['at']),
         dibaca: (j['dibaca'] ?? 0) == 1,
       );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'room': room,
         'client_id': clientId,
         'dari': dari,
+        'tipe': tipe,
         'teks': teks,
         'gambar': gambar,
+        'audio': audio,
+        'durasi': durasi,
+        'reply_to': replyTo,
+        'reply_teks': replyTeks,
+        'reply_tipe': replyTipe,
         'waktu': waktu.toIso8601String(),
       };
 }

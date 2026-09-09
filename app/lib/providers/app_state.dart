@@ -1292,15 +1292,59 @@ class AppState extends ChangeNotifier {
 
 
 
-  Future<String?> kirimChat(String teks,{String? gambar,String? pratinjau,String? ulangId}) async {
-    final client=ulangId??'msg_${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1<<30)}';
-    chat.removeWhere((m)=>m.clientId==client&&m.id.startsWith('local_'));
-    final msg=ChatMessage(id:'local_$client',clientId:client,room:'user:${user?.id}',dari:'user',teks:teks,gambar:pratinjau,waktu:DateTime.now(),terkirim:false);
-    chat.add(msg);notifyListeners();
+  Future<String?> kirimChat(
+    String teks, {
+    String? gambar,
+    String? audio,
+    double? durasi,
+    String? replyTo,
+    String? replyTeks,
+    String? replyTipe,
+    String? pratinjauGambar,
+    String? pratinjauAudio,
+    String? ulangId,
+  }) async {
+    final client = ulangId ?? 'msg_${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1 << 30)}';
+    chat.removeWhere((m) => m.clientId == client && m.id.startsWith('local_'));
+    final tipe = audio != null ? 'audio' : (gambar != null ? 'gambar' : 'teks');
+    final msg = ChatMessage(
+      id: 'local_$client',
+      clientId: client,
+      room: 'user:${user?.id}',
+      dari: 'user',
+      tipe: tipe,
+      teks: teks,
+      gambar: pratinjauGambar,
+      audio: pratinjauAudio,
+      durasi: durasi,
+      replyTo: replyTo,
+      replyTeks: replyTeks,
+      replyTipe: replyTipe,
+      waktu: DateTime.now(),
+      terkirim: false,
+    );
+    chat.add(msg);
+    notifyListeners();
     try {
-      final result=await _repo.kirimChat(teks,gambar:gambar,clientId:client);
-      _terimaPesan(result);return null;
-    }catch(e){msg.gagal=true;error=_pesan(e);notifyListeners();return error;}
+      final result = await _repo.kirimChat(
+        teks,
+        gambar: gambar,
+        audio: audio,
+        durasi: durasi,
+        tipe: tipe,
+        replyTo: replyTo,
+        replyTeks: replyTeks,
+        replyTipe: replyTipe,
+        clientId: client,
+      );
+      _terimaPesan(result);
+      return null;
+    } catch (e) {
+      msg.gagal = true;
+      error = _pesan(e);
+      notifyListeners();
+      return error;
+    }
   }
 
   /// Masukkan pesan dari server sambil mencegah pesan kembar.

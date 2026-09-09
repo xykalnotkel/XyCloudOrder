@@ -61,6 +61,8 @@ def main() -> int:
         perms.append('<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>')
     if 'android.permission.POST_NOTIFICATIONS' not in isi:
         perms.append('<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>')
+    if 'android.permission.RECORD_AUDIO' not in isi:
+        perms.append('<uses-permission android:name="android.permission.RECORD_AUDIO"/>')
 
     if perms:
         isi = isi.replace(
@@ -81,7 +83,11 @@ def main() -> int:
 
     open(berkas, 'w', encoding='utf-8').write(isi)
     print('AndroidManifest.xml diperbarui:', berkas)
-    print('Permissions: INTERNET + REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS + queries')
+    if '<uses-feature android:name="android.hardware.microphone"' not in isi:
+        isi = isi.replace('</manifest>',
+            '    <uses-feature android:name="android.hardware.microphone" android:required="false"/>\n</manifest>', 1)
+        open(berkas, 'w', encoding='utf-8').write(isi)
+    print('Permissions: INTERNET + REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS + RECORD_AUDIO + queries')
     return 0
 
 

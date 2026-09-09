@@ -34,7 +34,7 @@ function muatB64(b64) {
 }
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
-import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
+import { unggahGambar, unggahAudio, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
 import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, pantauKesehatan } from './sistem.js';
 import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, pakaiVoucherStrict, buatCadangan } from './loyal.js';
@@ -1527,7 +1527,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
           const { results } = await env.DB.prepare(
             `SELECT m.room, u.nama, u.email, u.phone, COUNT(*) total,
                     MAX(m.waktu) terakhir,
-                    (SELECT teks FROM cs_messages x WHERE x.room = m.room ORDER BY waktu DESC LIMIT 1) preview
+                    (SELECT COALESCE(NULLIF(x.teks,''), CASE WHEN x.audio IS NOT NULL THEN '[Pesan suara]' WHEN x.gambar IS NOT NULL THEN '[Foto]' ELSE '' END)
+                       FROM cs_messages x WHERE x.room = m.room AND x.dari!='system' ORDER BY waktu DESC LIMIT 1) preview
              FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
              WHERE m.dihapus=0 AND datetime(m.waktu)>=datetime('now','-7 days')
              GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
@@ -1541,11 +1542,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json(results, 200, env);
         }
         if (a === 'cs/reply' && req.method === 'POST') {
-          const { room, teks } = await req.json();
-          if(!/^user:[A-Za-z0-9_-]+$/.test(String(room||''))||!String(teks||'').trim())return err('Room dan pesan diperlukan',400,env);
-          const msg = { id: uid('m_'), room, dari: 'cs', teks, waktu: new Date().toISOString() };
-          await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,waktu) VALUES (?,?,?,?,?,?)')
-            .bind(msg.id, room, room.split(':')[1] || '', 'cs', teks, msg.waktu).run();
+          const b = await req.json();
+          const room = b.room, teks = String(b.teks ?? '');
+          if(!/^user:[A-Za-z0-9_-]+$/.test(String(room||''))||!teks.trim())return err('Room dan pesan diperlukan',400,env);
+          const reply_to = String(b.reply_to ?? '').slice(0,64) || null;
+          const reply_teks = String(b.reply_teks ?? '').slice(0,300) || null;
+          const reply_tipe = ['teks','gambar','audio'].includes(b.reply_tipe) ? b.reply_tipe : 'teks';
+          const msg = { id: uid('m_'), room, dari: 'cs', tipe:'teks', teks, reply_to, reply_teks, reply_tipe, waktu: new Date().toISOString() };
+          await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,tipe,teks,reply_to,reply_teks,reply_tipe,waktu) VALUES (?,?,?,?,?,?,?,?,?,?)')
+            .bind(msg.id, room, room.split(':')[1] || '', 'cs', 'teks', teks, reply_to, reply_teks, reply_tipe, msg.waktu).run();
           ctx.waitUntil(push(env, room, 'chat.message', msg));
           ctx.waitUntil(kirimPush(env, {
             userId: room.split(':')[1],
@@ -2403,7 +2408,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
           const { results } = await env.DB.prepare(
             `SELECT m.room, u.nama, u.email, u.phone, COUNT(*) total,
                     MAX(m.waktu) terakhir,
-                    (SELECT teks FROM cs_messages x WHERE x.room = m.room ORDER BY waktu DESC LIMIT 1) preview
+                    (SELECT COALESCE(NULLIF(x.teks,''), CASE WHEN x.audio IS NOT NULL THEN '[Pesan suara]' WHEN x.gambar IS NOT NULL THEN '[Foto]' ELSE '' END)
+                       FROM cs_messages x WHERE x.room = m.room AND x.dari!='system' ORDER BY waktu DESC LIMIT 1) preview
              FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
              WHERE m.dihapus=0 AND datetime(m.waktu)>=datetime('now','-7 days')
              GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
@@ -3486,23 +3492,41 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (!rateMem(`cs-mem:${me.sub}`, 30, 60)) {
           return err('Terlalu banyak pesan, tunggu sebentar.', 429, env);
         }
-        const { teks, gambar, client_id: clientId } = await req.json();
-        if(!String(teks||'').trim()&&!gambar)return err('Pesan kosong',400,env);
-        if(String(teks||'').length>5000)return err('Pesan maksimal 5.000 karakter',400,env);
+        const b = await req.json();
+        const teks = String(b.teks ?? ''), gambar = b.gambar, audio = b.audio;
+        const clientId = b.client_id;
+        const tipe = ['teks','gambar','audio'].includes(b.tipe) ? b.tipe
+          : (audio ? 'audio' : (gambar ? 'gambar' : 'teks'));
+        const durasi = Number.isFinite(Number(b.durasi)) ? Math.max(0, Number(b.durasi)) : null;
+        if(!teks.trim()&&!gambar&&!audio)return err('Pesan kosong',400,env);
+        if(teks.length>5000)return err('Pesan maksimal 5.000 karakter',400,env);
+        if(tipe==='audio'&&(!audio||!durasi||durasi>600))return err('Pesan suara tidak valid',400,env);
+        const reply_to = String(b.reply_to ?? '').slice(0,64) || null;
+        const reply_teks = String(b.reply_teks ?? '').slice(0,300) || null;
+        const reply_tipe = ['teks','gambar','audio'].includes(b.reply_tipe) ? b.reply_tipe : 'teks';
         if(clientId&&!/^[A-Za-z0-9_-]{12,100}$/.test(clientId))return err('ID pesan tidak valid',400,env);
         if(clientId){const old=await env.DB.prepare('SELECT * FROM cs_messages WHERE room=? AND client_id=?').bind(room,clientId).first();if(old)return json(old,200,env);}
         let urlGambar = null;
-        if (gambar) {
+        if (gambar && tipe==='gambar') {
           const hasil = await unggahGambar(env, { dataUri: gambar, folder: 'xycloudstore/chat' });
           if (!hasil.ok) return err(hasil.alasan, 502, env);
           urlGambar = hasil.url;
         }
+        let urlAudio = null;
+        if (audio && tipe==='audio') {
+          const hasil = await unggahAudio(env, { dataUri: audio, folder: 'xycloudstore/chat' });
+          if (!hasil.ok) return err(hasil.alasan, 502, env);
+          urlAudio = hasil.url;
+        }
         const msg = {
-          id: uid('m_'), room, dari: 'user', client_id: clientId || null, teks: teks || '', gambar: urlGambar,
+          id: uid('m_'), room, dari: 'user', client_id: clientId || null,
+          teks: tipe==='audio' ? '' : teks, gambar: urlGambar, audio: urlAudio,
+          durasi: tipe==='audio' ? durasi : null, tipe,
+          reply_to, reply_teks, reply_tipe,
           waktu: new Date().toISOString(), dibaca: 0,
         };
-        await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,teks,gambar,waktu,client_id) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(room,client_id) DO NOTHING')
-          .bind(msg.id, room, me.sub, 'user', msg.teks, urlGambar, msg.waktu,clientId||null).run();
+        await env.DB.prepare('INSERT INTO cs_messages (id,room,user_id,dari,tipe,teks,gambar,audio,durasi,reply_to,reply_teks,reply_tipe,waktu,client_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(room,client_id) DO NOTHING')
+          .bind(msg.id, room, me.sub, 'user', msg.tipe, msg.teks, urlGambar, urlAudio, durasi, reply_to, reply_teks, reply_tipe, msg.waktu, clientId||null).run();
         if(clientId){const stored=await env.DB.prepare('SELECT * FROM cs_messages WHERE room=? AND client_id=?').bind(room,clientId).first();if(stored.id!==msg.id)return json(stored,200,env);}
         ctx.waitUntil(Promise.all([
           push(env, room, 'chat.message', msg),
@@ -3519,7 +3543,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (!m) return err('Pesan tidak ditemukan', 404, env);
         if (m.dari !== 'user') return err('Hanya pesanmu sendiri yang bisa dihapus', 403, env);
 
-        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL WHERE id = ?")
+        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL, audio = NULL, reply_to = NULL, reply_teks = NULL, tipe='teks' WHERE id = ?")
           .bind(id).run();
         ctx.waitUntil(Promise.all([
           push(env, room, 'chat.hapus', { id }),
@@ -3530,7 +3554,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---- bersihkan seluruh percakapan milik sendiri ----
       if (p === 'cs/messages' && req.method === 'DELETE') {
-        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL WHERE room = ? AND dari = 'user'")
+        await env.DB.prepare("UPDATE cs_messages SET dihapus = 1, teks = '', gambar = NULL, audio = NULL, reply_to = NULL, reply_teks = NULL, tipe='teks' WHERE room = ? AND dari = 'user'")
           .bind(room).run();
         return json({ ok: true }, 200, env);
       }

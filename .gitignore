@@ -34,3 +34,4 @@ dashboard/out/
 # Rust / Tauri
 agent-gui/src-tauri/target/
 agent-gui/src-tauri/gen/
+__pycache__/

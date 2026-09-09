@@ -103,7 +103,17 @@ abstract class XyRepository {
   Future<Map<String, dynamic>> beliAkun({required AkunProduk produk, required String metode});
   Future<List<Transaksi>> transaksi();
   Future<List<ChatMessage>> riwayatChat();
-  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId});
+  Future<ChatMessage> kirimChat(
+    String teks, {
+    String? gambar,
+    String? audio,
+    double? durasi,
+    String? tipe,
+    String? replyTo,
+    String? replyTeks,
+    String? replyTipe,
+    String? clientId,
+  });
 
   factory XyRepository.create(ApiClient api) =>
       XyConfig.useMock ? MockRepository() : RemoteRepository(api);
@@ -436,8 +446,28 @@ class RemoteRepository implements XyRepository {
       ((await api.get('/cs/messages')) as List).map((e) => ChatMessage.fromJson(e)).toList();
 
   @override
-  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId}) async =>
-      ChatMessage.fromJson(Map<String,dynamic>.from(await api.post('/cs/messages', {'teks': teks, if (gambar != null) 'gambar': gambar, if(clientId!=null)'client_id':clientId})));
+  Future<ChatMessage> kirimChat(
+    String teks, {
+    String? gambar,
+    String? audio,
+    double? durasi,
+    String? tipe,
+    String? replyTo,
+    String? replyTeks,
+    String? replyTipe,
+    String? clientId,
+  }) async =>
+      ChatMessage.fromJson(Map<String, dynamic>.from(await api.post('/cs/messages', {
+        'teks': teks,
+        if (gambar != null) 'gambar': gambar,
+        if (audio != null) 'audio': audio,
+        if (durasi != null) 'durasi': durasi,
+        if (tipe != null) 'tipe': tipe,
+        if (replyTo != null) 'reply_to': replyTo,
+        if (replyTeks != null) 'reply_teks': replyTeks,
+        if (replyTipe != null) 'reply_tipe': replyTipe,
+        if (clientId != null) 'client_id': clientId,
+      })));
 }
 
 // ------------------------------------------------------------------
@@ -732,5 +762,29 @@ class MockRepository implements XyRepository {
   Future<List<ChatMessage>> riwayatChat() => _delay(_chat, 300);
 
   @override
-  Future<ChatMessage> kirimChat(String teks, {String? gambar, String? clientId}) async => ChatMessage(id:clientId??'local-test',room:'cs',dari:'user',teks:teks,gambar:gambar,clientId:clientId,waktu:DateTime.now());
+  Future<ChatMessage> kirimChat(
+    String teks, {
+    String? gambar,
+    String? audio,
+    double? durasi,
+    String? tipe,
+    String? replyTo,
+    String? replyTeks,
+    String? replyTipe,
+    String? clientId,
+  }) async => ChatMessage(
+        id: clientId ?? 'local-test',
+        room: 'cs',
+        dari: 'user',
+        tipe: tipe ?? (audio != null ? 'audio' : (gambar != null ? 'gambar' : 'teks')),
+        teks: teks,
+        gambar: gambar,
+        audio: audio,
+        durasi: durasi,
+        replyTo: replyTo,
+        replyTeks: replyTeks,
+        replyTipe: replyTipe,
+        clientId: clientId,
+        waktu: DateTime.now(),
+      );
 }
