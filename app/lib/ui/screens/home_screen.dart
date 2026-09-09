@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
@@ -9,13 +7,11 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/banner_slider.dart';
 import '../widgets/common.dart';
-import '../widgets/topup_sheet.dart';
 import '../../core/prefs.dart';
 import '../widgets/error_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
 import 'favorit_screen.dart';
-import 'forum_screen.dart';
 import 'leaderboard_screen.dart';
 import 'notifikasi_screen.dart';
 import 'order_detail_screen.dart';
