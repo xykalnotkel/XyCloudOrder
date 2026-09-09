@@ -1,0 +1,50 @@
+name: Build Agen Windows (exe)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "agent/**"
+      - ".github/workflows/agent-windows.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: agent-win-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Kemas Agen jadi aplikasi .exe
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pasang ps2exe lalu kemas installer jadi .exe
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module ps2exe -Scope CurrentUser -Force -ErrorAction Stop
+          Import-Module ps2exe
+          New-Item -ItemType Directory -Force agent/dist | Out-Null
+          Invoke-PS2EXE -InputFile agent/instal_otomatis.ps1 `
+            -OutputFile agent/dist/XyCloudStore-Agent-Setup.exe -NoProfile
+          Get-Item agent/dist/XyCloudStore-Agent-Setup.exe | Select-Object Name, Length
+
+      - name: Bungkus (exe + agen Python + contoh layanan)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path agent/dist/XyCloudStore-Agent-Setup.exe, agent/xy_agent.py `
+            -DestinationPath agent/dist/XyCloudStore-Agent-Windows.zip -Force
+          Get-Item agent/dist/XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: XyCloudStore-Agent-Windows
+          path: agent/dist/XyCloudStore-Agent-Windows.zip
+          if-no-files-found: error

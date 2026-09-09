@@ -105,8 +105,17 @@ function BacaRahasia {
 # ---------------------------------------------------------------
 function DaftarkanAutostart {
   $tugas = "XyAgent"
-  $aksi = New-ScheduledTaskAction -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`" -Jalankan -Folder `"$folder`""
+  # Bila dijalankan sebagai .ps1 -> lewat powershell -File.
+  # Bila sudah dikemas jadi .exe (ps2exe) -> jalankan exe langsung dengan argumen.
+  $sendiri = $MyInvocation.MyCommand.Path
+  if ($sendiri -like '*.ps1') {
+    $pemula = 'powershell.exe'
+    $argumen = "-NoProfile -ExecutionPolicy Bypass -File `"$sendiri`" -Jalankan"
+  } else {
+    $pemula = $sendiri
+    $argumen = '-Jalankan'
+  }
+  $aksi = New-ScheduledTaskAction -Execute $pemula -Argument $argumen
   $pemicu = New-ScheduledTaskTrigger -AtStartup
   $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
   try {
