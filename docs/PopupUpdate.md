@@ -1,9 +1,57 @@
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3b (No Emoji + Consistent Font + Deploy)
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3c (Hosting Replacement)
 
-> Last update: 2026-09-09 (UTC) — v3.3b emoji-free + Plus Jakarta Sans + Lucide + Vercel+Pages deploy — oleh Agent Arena.
+> Last update: 2026-09-09 (UTC) — v3.3c hosting replacement api.xycloud.my.id/admin → Pages/Vercel — oleh Agent Arena.
 > Repo: `XyCloudOrder`, branch `main`
 
-## 0. UPDATE v3.3b — No Emoji + Font Konsisten + Deploy (2026-09-09)
+## 0. UPDATE v3.3c — Hosting Replacement: api.xycloud.my.id/admin → Next.js Dashboard (2026-09-09)
+
+**Request user:** "dash html di hosting dmn kenapa ga diganti yang itu saja"
+
+### Analisa Hosting Lama
+- Old dash: single-file `api/src/admin.html` 166KB 1826 lines, dibundle via `wrangler.toml` `[[rules]] type="Text" globs=["**/*.html"]` → Worker `xycloud-api`
+- Serve di `api/src/index.js` line ~500: `if (path === '/' || '/admin' || '/admin/') return ADMIN_HTML` dengan CSP ketat.
+- Custom domains: `api.xycloud.my.id`, `admin.xycloud.my.id`, `xycloud.my.id`, `www.xycloud.my.id` → semua point ke Worker yang sama.
+- Jadi "hosting" admin = Cloudflare Worker, bukan static host terpisah — bisa langsung replace `admin.html`.
+
+### Yang dikerjakan v3.3c
+1. **Preserve old console:** `git show HEAD~1:api/src/admin.html > api/src/admin-legacy.html` 163KB untuk rollback.
+2. **Rewrite `api/src/admin.html` 8.0KB (was 166KB):**
+   - Gradient violet-indigo `#100030/#200050/#7C3AED/#8B5CF6/#A855F7`
+   - Font Plus Jakarta Sans + JetBrains Mono via Google Fonts
+   - Lucide CDN `unpkg.com/lucide@latest` — no emoji
+   - `xy-card` + `xy-btn` styles konsisten dengan dashboard Next.js
+   - Auto-redirect 5 detik ke `https://xycloud-dashboard.pages.dev` dengan countdown
+   - Buttons: Buka Dashboard Baru (Pages), Cadangan Vercel (`dashboard-iota-ten-70.vercel.app`), Legacy Console `?legacy=1`
+   - Info card: palet warna + security notes + legacy path
+3. **Update `api/src/index.js`:**
+   - `import ADMIN_LEGACY_HTML from './admin-legacy.html'`
+   - Route `/admin?legacy=1` → serve legacy console (1826 lines old)
+   - Route `/admin-legacy` & `/admin/legacy` → legacy direct
+   - Route `/admin` → serve new redirect page with updated CSP allowing `fonts.googleapis.com`, `fonts.gstatic.com`, `unpkg.com`
+   - Fix global `setInterval` disallowed in Workers: removed `setInterval?.` cleanup map (moved to comment, cleanup will be in scheduled handler)
+4. **Deploy Worker:** `wrangler deploy` → `xycloud-api` v `3f56546b-cfab-4e78-855b-c0c38c690b0c` — https://api.xycloud.my.id/admin now returns new page (verified curl 200 + contains `xycloud-dashboard.pages.dev`)
+5. **Build policy respected:** boleh push build, jangan tag `v*` release.
+
+### URLs Sekarang
+- **Primary admin:** https://api.xycloud.my.id/admin → redirect launcher → https://xycloud-dashboard.pages.dev
+- **Legacy fallback:** https://api.xycloud.my.id/admin?legacy=1 atau https://api.xycloud.my.id/admin-legacy
+- **Next.js Dashboard (baru):** https://xycloud-dashboard.pages.dev (Pages) + https://dashboard-iota-ten-70.vercel.app (Vercel)
+- **API:** https://api.xycloud.my.id tetap
+
+### CSP Update
+Old: `default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob:`
+New: tambah `https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com` di `default-src`, `script-src` allow `unpkg.com`, `style-src` allow `fonts.googleapis.com`, `font-src` allow `fonts.gstatic.com`
+
+### Next Steps v3.3c+
+- Push commit v3.3c ke main
+- Native auto-inject `tools/siapkan_pembaruan.py` — cek next section
+- Tambah fitur/menu app & dash — saran list
+- Security audit final doc
+- Generate gambar popup tema nanti pas waktunya
+
+---
+
+## 0b. UPDATE v3.3b — No Emoji + Font Konsisten + Deploy (2026-09-09)
 
 **Request user:** "ya kan bisa deploy ke nextdll + Jangan ada icon yg menggunakan emoji sesuaikan font dll harus konsisten di semua platform"
 

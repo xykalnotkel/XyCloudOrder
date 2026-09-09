@@ -1,0 +1,28 @@
+"use client";
+import { Heart, Star, TrendingUp } from "lucide-react";
+export default function FavoritPage(){
+  return (
+    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Heart size={18} className="text-white"/></div>
+        <div>
+          <h1 className="text-xl font-black text-white tracking-tight">Favorit <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#A855F7] font-bold">BARU</span></h1>
+          <p className="text-sm text-violet-200/60 font-medium">Produk paling banyak difavoritkan user, insight wishlist</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[
+          {l:"Total Wishlist Item", v:"-", Icon: Heart},
+          {l:"Produk Top Favorit", v:"-", Icon: Star},
+          {l:"Konversi Fav→Beli", v:"-", Icon: TrendingUp},
+        ].map(c=>(
+          <div key={c.l} className="xy-card rounded-[14px] p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#7C3AED]/20 border border-[#7C3AED]/20 grid place-items-center"><c.Icon size={16} className="text-[#A78BFA]"/></div>
+            <div><div className="text-[11px] text-white/50 font-medium uppercase">{c.l}</div><div className="text-lg font-bold text-white mt-0.5">{c.v}</div></div>
+          </div>
+        ))}
+      </div>
+      <div className="xy-card rounded-xl p-4 text-[12px] text-white/40">TODO: endpoint /api/admin/favorit (agregasi favorit table). Saat ini belum ada endpoint, placeholder untuk v3.4.</div>
+    </div>
+  );
+}

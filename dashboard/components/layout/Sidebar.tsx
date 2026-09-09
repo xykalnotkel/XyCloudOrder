@@ -30,6 +30,10 @@ import {
   ShieldUser,
   ChevronsLeft,
   ChevronsRight,
+  Share2,
+  Heart,
+  Bug,
+  MonitorSmartphone,
 } from "lucide-react";
 
 const iconMap: Record<MenuIcon, any> = {
@@ -57,6 +61,10 @@ const iconMap: Record<MenuIcon, any> = {
   "file-text": FileText,
   settings: Settings,
   "shield-user": ShieldUser,
+  "share-2": Share2,
+  heart: Heart,
+  bug: Bug,
+  sesi: MonitorSmartphone,
 };
 
 export default function Sidebar() {

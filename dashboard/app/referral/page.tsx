@@ -1,0 +1,44 @@
+"use client";
+import { Share2, Users, Gift, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { adminFetch } from "@/lib/api";
+
+export default function ReferralPage(){
+  const [data,setData]=useState<any>(null);
+  useEffect(()=>{ adminFetch('/api/admin/referral').then((r:any)=>setData(r)).catch(()=>{}); },[]);
+  return (
+    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Share2 size={18} className="text-white"/></div>
+        <div>
+          <h1 className="text-xl font-black text-white tracking-tight">Referral <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#A855F7] font-bold">BARU</span></h1>
+          <p className="text-sm text-violet-200/60 font-medium">Top referrer, bonus tracking, kode referral user</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[
+          {l:"Total Referral", v: data?.daftar?.length ?? "-", Icon: Users},
+          {l:"Bonus Terbagikan", v: data?.teratas?.reduce((a:number,b:any)=>a+(b.bonus||0),0) ? `Rp ${(data.teratas.reduce((a:number,b:any)=>a+(b.bonus||0),0)).toLocaleString('id-ID')}` : "-", Icon: Gift},
+          {l:"Top Pengundang", v: data?.teratas?.[0]?.nama ?? "-", Icon: TrendingUp},
+        ].map(c=>(
+          <div key={c.l} className="xy-card rounded-[14px] p-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#7C3AED]/20 border border-[#7C3AED]/20 grid place-items-center"><c.Icon size={16} className="text-[#A78BFA]"/></div>
+            <div><div className="text-[11px] text-white/50 font-medium uppercase">{c.l}</div><div className="text-lg font-bold text-white mt-0.5">{c.v}</div></div>
+          </div>
+        ))}
+      </div>
+      <div className="xy-card rounded-xl p-4">
+        <div className="text-[12px] font-bold text-white mb-2 tracking-wide">Daftar Referral Terbaru</div>
+        <div className="space-y-2 max-h-[420px] overflow-auto">
+          {(data?.daftar ?? []).slice(0,30).map((r:any)=>(
+            <div key={r.id} className="flex items-center justify-between py-2 border-b border-white/5 text-[12px]">
+              <span className="text-white/80 font-medium">{r.nama_pengundang} → {r.nama_diundang}</span>
+              <span className="text-white/40">{r.status} • Rp {r.bonus_pengundang}</span>
+            </div>
+          ))}
+          {(!data?.daftar || data.daftar.length===0) && <div className="text-[12px] text-white/30">Belum ada data — endpoint /api/admin/referral</div>}
+        </div>
+      </div>
+    </div>
+  );
+}

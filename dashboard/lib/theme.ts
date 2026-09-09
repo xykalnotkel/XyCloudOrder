@@ -37,7 +37,11 @@ export type MenuIcon =
   | "package"
   | "file-text"
   | "settings"
-  | "shield-user";
+  | "shield-user"
+  | "share-2"
+  | "heart"
+  | "bug"
+  | "sesi";
 
 export const MENU: { id: string; label: string; icon: MenuIcon; path: string; badge?: string }[] = [
   { id: "dash", label: "Dashboard", icon: "layout-dashboard", path: "/" },
@@ -60,6 +64,10 @@ export const MENU: { id: string; label: string; icon: MenuIcon; path: string; ba
   { id: "analitik", label: "Analitik", icon: "line-chart", path: "/analitik" },
   { id: "rilis", label: "Rilis App", icon: "rocket", path: "/rilis", badge: "BARU" },
   { id: "push", label: "Push Notif", icon: "bell", path: "/push", badge: "BARU" },
+  { id: "referral", label: "Referral", icon: "share-2", path: "/referral", badge: "BARU" },
+  { id: "favorit", label: "Favorit", icon: "heart", path: "/favorit", badge: "BARU" },
+  { id: "galat", label: "Galat App", icon: "bug", path: "/galat", badge: "BARU" },
+  { id: "sesi", label: "Sesi PC", icon: "sesi", path: "/sesi", badge: "BARU" },
   { id: "media", label: "Media", icon: "package", path: "/media" },
   { id: "audit", label: "Audit Log", icon: "file-text", path: "/audit" },
   { id: "sistem", label: "Sistem", icon: "settings", path: "/sistem" },

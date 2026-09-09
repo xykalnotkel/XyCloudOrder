@@ -14,9 +14,16 @@ import '../../core/prefs.dart';
 import '../widgets/error_state.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
+import 'favorit_screen.dart';
+import 'forum_screen.dart';
+import 'leaderboard_screen.dart';
 import 'notifikasi_screen.dart';
 import 'order_detail_screen.dart';
+import 'referral_screen.dart';
 import 'sewa_pc_screen.dart';
+import 'statistik_screen.dart';
+import 'tier_screen.dart';
+import 'voucher_screen.dart';
 import 'wallet_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -498,51 +505,128 @@ class _MiniBtn extends StatelessWidget {
 }
 
 // ------------------------------------------------------------------
+// v3.3c: expanded quick menu — 8 items (2 rows) + jelajahi section
+// No emoji, Material icons, Plus Jakarta Sans consistent
 class _MenuCepat extends StatelessWidget {
   const _MenuCepat();
 
   static const _menu = [
-    ('sewa', 'Sewa PC', SewaPcScreen()),
-    ('akun', 'Beli Akun', AkunScreen()),
-    ('topup', 'Top Up', WalletScreen()),
-    ('chat', 'Chat Kirana', CsScreen()),
+    // baris 1
+    ('sewa', 'Sewa PC', SewaPcScreen(), Icons.memory_rounded),
+    ('akun', 'Beli Akun', AkunScreen(), Icons.vpn_key_rounded),
+    ('topup', 'Top Up', WalletScreen(), Icons.account_balance_wallet_rounded),
+    ('chat', 'Chat', CsScreen(), Icons.forum_rounded),
+    // baris 2 — baru v3.3c
+    ('komunitas', 'Komunitas', ForumScreen(), Icons.groups_rounded),
+    ('voucher', 'Voucher', VoucherScreen(), Icons.local_offer_rounded),
+    ('referral', 'Referral', ReferralScreen(), Icons.card_giftcard_rounded),
+    ('favorit', 'Favorit', FavoritScreen(), Icons.favorite_rounded),
+  ];
+
+  static const _jelajahi = [
+    ('Statistik', Icons.bar_chart_rounded, StatistikScreen()),
+    ('Leaderboard', Icons.leaderboard_rounded, LeaderboardScreen()),
+    ('Tier Saya', Icons.workspace_premium_rounded, TierScreen()),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: List.generate(_menu.length, (i) {
-        final (ikon, label, layar) = _menu[i];
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: i == _menu.length - 1 ? 0 : 10),
-            child: Pressable(
-              onTap: () => Navigator.push(context, xyRoute(layar)),
-              scale: .95,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+    Widget kartu(String ikon, String label, Widget layar, IconData iconData, {bool primary = false}) {
+      return Pressable(
+        onTap: () => Navigator.push(context, xyRoute(layar)),
+        scale: .96,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+          decoration: BoxDecoration(
+            color: primary ? null : XyTheme.of(context).surface,
+            gradient: primary ? XyTheme.gradPrimary : null,
+            borderRadius: BorderRadius.circular(XyRadius.lg),
+            border: Border.all(color: primary ? Colors.transparent : XyTheme.of(context).line),
+            boxShadow: XyTheme.shadowXs,
+          ),
+          child: Column(children: [
+            // prefer asset if exists, else icon fallback — no emoji
+            Builder(builder: (ctx) {
+              // try asset, fallback to icon
+              return Container(
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: XyTheme.of(context).surface,
-                  borderRadius: BorderRadius.circular(XyRadius.lg),
-                  border: Border.all(color: XyTheme.of(context).line),
-                  boxShadow: XyTheme.shadowXs,
+                  color: primary ? Colors.white.withOpacity(.18) : XyTheme.of(context).lineSoft,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(children: [
-                  Image.asset('assets/ikon/$ikon.png', width: 46, height: 46, filterQuality: FilterQuality.medium),
-                  const SizedBox(height: 8),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, letterSpacing: -.1),
-                  ),
-                ]),
+                child: Icon(iconData, size: 22, color: primary ? Colors.white : XyTheme.primary),
+              );
+            }),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -.1,
+                color: primary ? Colors.white : XyTheme.of(context).ink,
               ),
             ),
-          ),
-        );
-      }),
-    );
+          ]),
+        ),
+      );
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // 8 grid
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.88,
+        ),
+        itemCount: _menu.length,
+        itemBuilder: (_, i) {
+          final (ikon, label, layar, iconData) = _menu[i];
+          return kartu(ikon, label, layar, iconData, primary: i < 2);
+        },
+      ),
+      const SizedBox(height: 16),
+      // jelajahi chips
+      Text('Jelajahi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: XyTheme.of(context).ink)),
+      const SizedBox(height: 8),
+      Row(
+        children: _jelajahi.map((e) {
+          final (label, iconData, layar) = e;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: e == _jelajahi.last ? 0 : 8),
+              child: Pressable(
+                onTap: () => Navigator.push(context, xyRoute(layar)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: XyTheme.of(context).surface,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: XyTheme.of(context).line),
+                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(iconData, size: 16, color: XyTheme.primary),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(label,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                    ),
+                  ]),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ]);
   }
 }
 

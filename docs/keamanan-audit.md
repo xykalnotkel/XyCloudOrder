@@ -1,22 +1,26 @@
-# Keamanan Audit — v3.3 Full (Updated 2026-09-09)
+# Keamanan Audit — v3.3c Full (Updated 2026-09-09)
 
 > Audit semua lapisan sesuai request user. Status: ✅ sudah ada, ⏳ perlu ditambah di v3.3, ❌ belum.
-> Last update: 2026-09-09 — global IP rate-limit ditambah, dashboard Next.js build sukses, app menu baru 4 screen.
+> Last update: 2026-09-09 — v3.3c hosting replacement + 31 routes dashboard + 8 quick menu app + CSP fonts fix + Worker global-scope fix.
 
-## 1. Ringkasan Temuan v3.3 (Progress 2026-09-09)
+## 1. Ringkasan Temuan v3.3c (Progress 2026-09-09)
 
-### Yang Sudah Aman di v3.3 (baru di-commit)
+### Yang Sudah Aman di v3.3c (baru di-commit)
+- **Hosting replacement**: `api/src/admin.html` old 166KB → 8KB redirect launcher v3.3c, preserved as `admin-legacy.html`, CSP updated allow `fonts.googleapis.com`, `fonts.gstatic.com`, `unpkg.com` untuk Plus Jakarta Sans + Lucide CDN. Worker deploy sukses `3f56546b-cfab-4e78-855b-c0c38c690b0c` via `cfut_...` token. Verified curl 200 `xycloud-dashboard.pages.dev`. Legacy fallback `?legacy=1` & `/admin-legacy`.
 - **Global IP rate-limit**: 180 req/60s via `securitySlot(env,'global-ip',ip,180,60)` di `api/src/index.js` — atomic D1 `batas` table, fail-open kalau D1 error. Skip untuk admin/agen/webhook.
 - **Forum spam**: `rateMem 5/jam` + DB check `SELECT COUNT(*) FROM forum_post WHERE user_id=? AND dibuat>? (1 jam)` + tolak >3 link.
-- **Dashboard Next.js**: build sukses 27 routes, no TS error, `security/page.tsx` fix `>=` JSX escape.
-- **App 4 menu baru**: Favorit, Statistik, Tier, Aktivitas — pakai `DeviceIdentity.id`, `produk`, `rupiah()`/`tanggal()`, no flutter analyze error (manual check).
+- **Dashboard Next.js**: build sukses 31 routes (27→31 + referral,favorit,galat,sesi), no TS error, Lucide icons, Plus Jakarta Sans, no emoji. Deployed Pages `e2f56dc0.xycloud-dashboard.pages.dev` + Vercel `dashboard-miepqucf4-...` aliased to `dashboard-iota-ten-70`.
+- **App 8 quick menu**: Sewa PC, Beli Akun, Top Up, Chat, Komunitas, Voucher, Referral, Favorit (2 rows) + Jelajahi chips Statistik, Leaderboard, Tier — no emoji, Material icons, Plus Jakarta Sans consistent. File `home_screen.dart` rewritten v3.3c.
+- **Worker global-scope fix**: `setInterval` removed (Disallowed operation in global scope) — cleanup moved to comment, will be in scheduled handler.
 - **Upload validasi**: sudah di `upload.js` whitelist png/jpeg/jpg/webp/gif, 5MB, signed Cloudinary.
 - **Device limit 2**: `security.js beforeRegistration` + DB trigger `DEVICE_LIMIT`.
+- **Updater native**: `tools/siapkan_pembaruan.py` idempotent inject MethodChannel `xycloud/updater` DownloadManager + notif progress tetap jalan walau app ditutup, validated domain `xycloud.my.id`, `patch_manifest.py` includes REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS.
 
 ### Yang Masih TODO (low priority, next slice)
 - httpOnly cookie untuk admin key di Next.js (saat ini localStorage).
-- CSP header sudah ada di Worker `securityHeaders`, tapi bisa diperketat lagi untuk dashboard Next.js.
+- CSP header Next.js dashboard (headers() in next.config.js sudah SAMEORIGIN + nosniff, bisa tambah font-src).
 - Voucher stack abuse: sudah cek 1 voucher per transaksi, tapi perlu test e2e concurrent.
+- Generate gambar popup tema Ramadan etc — nanti pas waktunya (sesuai instruksi user).
 
 ## 2. Ringkasan Temuan v3.2 (Sudah Push a1c267e)
 

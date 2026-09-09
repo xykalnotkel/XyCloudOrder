@@ -17,6 +17,7 @@ import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunci
  */
 
 import ADMIN_HTML from './admin.html';
+import ADMIN_LEGACY_HTML from './admin-legacy.html';
 import WEB_HTML from './web.html';
 import { infoRilis, unduhApk, tebakAbi, simpanRilis } from './rilis.js';
 import LOGO_PNG from './brand-logo.png';
@@ -43,14 +44,7 @@ function rateMem(key, max, windowSec) {
   return true;
 }
 // bersihkan map tiap 10 menit biar tidak bocor memori
-setInterval?.(() => {
-  const now = Date.now() / 1000;
-  for (const [k, v] of _rateMem) {
-    const fresh = v.filter((t) => t > now - 3600);
-    if (fresh.length === 0) _rateMem.delete(k);
-    else _rateMem.set(k, fresh);
-  }
-}, 600000);
+// cleanup moved to scheduled handler (global setInterval not allowed in Workers)
 
 const securityHeaders = (env) => ({
   'Content-Type': 'application/json',
@@ -496,16 +490,37 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
     }
 
     if (path === '/' || path === '/admin' || path === '/admin/') {
-      const adminHtml=ADMIN_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\\u003c'));
-      return new Response(adminHtml, {
+      if (url.searchParams.get('legacy') === '1') {
+        const legacyHtml=ADMIN_LEGACY_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\u003c'));
+        return new Response(legacyHtml, {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+            'X-Frame-Options': 'SAMEORIGIN',
+            'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+            'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+          },
+        });
+      }
+      return new Response(ADMIN_HTML, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-store',
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'SAMEORIGIN',
-          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
+          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
           'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+        },
+      });
+    }
+    if (path === '/admin-legacy' || path === '/admin/legacy') {
+      const legacyHtml=ADMIN_LEGACY_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\u003c'));
+      return new Response(legacyHtml, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
         },
       });
     }
