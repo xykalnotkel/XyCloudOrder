@@ -92,7 +92,7 @@ export default function SistemPage() {
   ];
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Settings} title="Sistem" sub="Kesehatan server, mode pemeliharaan & status integrasi"
         right={
           <div className="flex items-center gap-2">

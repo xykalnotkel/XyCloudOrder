@@ -23,7 +23,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Receipt size={18} className="text-white" /></div>

@@ -206,7 +206,7 @@ class _SesiScreenState extends State<SesiScreen> {
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 23,
-                            fontWeight: FontWeight.w800)),
+                            fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     Text(widget.order.planNama,
                         style: const TextStyle(color: Colors.white70)),
@@ -237,7 +237,7 @@ class _SesiScreenState extends State<SesiScreen> {
                       const Text('Belum tersambung',
                           style: TextStyle(
                               color: XyTheme.danger,
-                              fontWeight: FontWeight.w800)),
+                              fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
                       Text(_error!,
                           style: TextStyle(color: p.inkSoft, height: 1.5)),
@@ -256,7 +256,7 @@ class _SesiScreenState extends State<SesiScreen> {
                     children: [
                   const Text('Streaming di XyCloudStore',
                       style:
-                          TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                          TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Text(
                       'Tidak perlu memasang aplikasi lain. Pairing dikirim otomatis melalui agen PC.',

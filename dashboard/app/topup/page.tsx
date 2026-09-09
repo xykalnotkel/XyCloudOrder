@@ -38,7 +38,7 @@ export default function TopupPage() {
   const n = (s: string) => rows.filter((r) => r.status === s).length;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={CreditCard} title="TopUp" sub="Permintaan top up saldo + bukti transfer"
         right={
           <div className="flex gap-2">

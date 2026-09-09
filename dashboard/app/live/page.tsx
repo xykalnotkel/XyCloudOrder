@@ -68,7 +68,7 @@ export default function LivePage() {
   const sesi = agen.filter((a) => a.sesi_aktif).length;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Activity size={18} className="text-white" /></div>

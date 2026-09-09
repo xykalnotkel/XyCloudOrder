@@ -30,7 +30,7 @@ export default function LogSistemPage() {
   const jenis = Array.from(new Set(rows.map((r) => r.jenis)));
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={ScrollText} title="Log Sistem" sub="Catatan internal Worker — pemeliharaan, cache, cadangan, impor"
         right={
           <div className="flex items-center gap-2">

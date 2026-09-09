@@ -36,7 +36,7 @@ Future<bool> konfirmasi(
         const SizedBox(height: 16),
         Text(judul,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, letterSpacing: -.4)),
         const SizedBox(height: 8),
         Text(pesan,
             textAlign: TextAlign.center,
@@ -94,7 +94,7 @@ Future<void> beritahu(
         const SizedBox(height: 16),
         Text(judul,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, letterSpacing: -.4)),
         const SizedBox(height: 8),
         Text(pesan,
             textAlign: TextAlign.center,
@@ -126,7 +126,7 @@ Future<String?> tanyaTeks(
       padding: EdgeInsets.only(bottom: MediaQuery.of(d).viewInsets.bottom),
       child: _Bingkai(
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
+          Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, letterSpacing: -.4)),
           if (keterangan != null) ...[
             const SizedBox(height: 6),
             Text(keterangan, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.5)),
@@ -203,7 +203,7 @@ Future<String?> pilihAlasanLaporan(BuildContext context) async {
     builder: (d) => _Bingkai(
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Laporkan konten',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, letterSpacing: -.4)),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17, letterSpacing: -.4)),
         const SizedBox(height: 6),
          Text('Pilih alasannya. Admin akan meninjau dalam waktu singkat.',
             style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.5)),

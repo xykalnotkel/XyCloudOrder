@@ -91,13 +91,13 @@ class KartuUlasan extends StatelessWidget {
               decoration: const BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
               child: Center(
                 child: Text(inisial,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
               ),
             ),
             const SizedBox(width: 11),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(u.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text(u.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                 const SizedBox(height: 3),
                 Row(children: [
                   Bintang(nilai: u.rating.toDouble(), ukuran: 13),
@@ -132,7 +132,7 @@ class KartuUlasan extends StatelessWidget {
                   Icon(Icons.storefront_rounded, size: 14, color: XyTheme.primary),
                   SizedBox(width: 6),
                   Text('Balasan XyCloudStore',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: XyTheme.primary)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: XyTheme.primary)),
                 ]),
                 const SizedBox(height: 6),
                 Text(u.balasan!, style: const TextStyle(fontSize: 12.5, height: 1.5)),
@@ -224,7 +224,7 @@ class _FormUlasanState extends State<_FormUlasan> {
         ),
         const SizedBox(height: 18),
         const Text('Tulis Ulasan',
-            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, letterSpacing: -.6)),
+            style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -.6)),
         const SizedBox(height: 4),
         Text(widget.produk.nama, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
         const SizedBox(height: 18),

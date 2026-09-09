@@ -29,7 +29,7 @@ export default function TransaksiPage() {
   const pengeluaran = Math.abs(rows.filter((r) => Number(r.nominal) < 0).reduce((a, r) => a + Number(r.nominal), 0));
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={ArrowLeftRight} title="Riwayat Transaksi" sub="Pergerakan saldo semua pengguna (300 terakhir)"
         right={
           <div className="flex gap-2">

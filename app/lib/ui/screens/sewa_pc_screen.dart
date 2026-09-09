@@ -28,7 +28,7 @@ class _SewaPcScreenState extends State<SewaPcScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sewa PC Cloud', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -.4)),
+        title: const Text('Sewa PC Cloud', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -.4)),
         actions: [Padding(padding: const EdgeInsets.only(right: 16), child: Center(child: LiveDot(state: s.koneksi)))],
       ),
       body: RefreshIndicator(
@@ -120,7 +120,7 @@ class _KartuPlan extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text(plan.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16.5, letterSpacing: -.3)),
+                Text(plan.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16.5, letterSpacing: -.3)),
                 const SizedBox(width: 8),
                 if (plan.tag.isNotEmpty) Pill(plan.tag, warna: XyTheme.violet),
               ]),
@@ -162,7 +162,7 @@ class _KartuPlan extends StatelessWidget {
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(rupiah(plan.hargaPerJam),
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 19, color: XyTheme.primary, letterSpacing: -.5)),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 19, color: XyTheme.primary, letterSpacing: -.5)),
                Text('  /jam', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
             ]),
             Text('atau ${rupiah(plan.hargaPerHari)} /hari', style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),

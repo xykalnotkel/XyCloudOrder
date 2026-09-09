@@ -107,7 +107,7 @@ class _HapusAkunScreenState extends State<HapusAkunScreen> {
                 Expanded(
                     child: Text('Keputusan ini tidak bisa dibatalkan.',
                         style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 17)))
+                            fontWeight: FontWeight.w700, fontSize: 17)))
               ])),
           const SizedBox(height: 18),
           Text(
@@ -122,7 +122,7 @@ class _HapusAkunScreenState extends State<HapusAkunScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   const Text('Selesaikan dulu sebelum menghapus',
-                      style: TextStyle(fontWeight: FontWeight.w800)),
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 10),
                   ...(_info!['penghalang'] as List).map((x) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
@@ -133,7 +133,7 @@ class _HapusAkunScreenState extends State<HapusAkunScreen> {
                 ])),
           if (boleh) ...[
             Text(otp ? 'Verifikasi lewat email' : 'Konfirmasi password',
-                style: const TextStyle(fontWeight: FontWeight.w800)),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 10),
             if (otp) ...[
               Text(

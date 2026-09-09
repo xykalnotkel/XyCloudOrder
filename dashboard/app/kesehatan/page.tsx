@@ -30,7 +30,7 @@ export default function KesehatanPage() {
   const baris = d?.database?.baris;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={HeartPulse} title="Kesehatan & Cache" sub="Status layanan realtime dari Worker — DB, integrasi, singgahan"
         right={
           <button onClick={muat} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-bold"><RefreshCw size={13} /> Segarkan</button>

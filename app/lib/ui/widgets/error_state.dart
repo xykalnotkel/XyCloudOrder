@@ -48,7 +48,7 @@ class GagalMuat extends StatelessWidget {
           Text(
             judul ?? 'Ada yang tidak beres',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16.5, letterSpacing: -.3),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16.5, letterSpacing: -.3),
           ),
           const SizedBox(height: 8),
           Text(
@@ -126,7 +126,7 @@ class BilahOffline extends StatelessWidget {
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       child: Text('Muat ulang',
                           style: TextStyle(
-                              fontSize: 11.8, fontWeight: FontWeight.w800, color: XyTheme.primary)),
+                              fontSize: 11.8, fontWeight: FontWeight.w700, color: XyTheme.primary)),
                     ),
                   ),
               ]),

@@ -22,7 +22,7 @@ export default function PerintahPage() {
   const n = (s: string) => rows.filter((r) => r.status === s).length;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Terminal} title="Perintah Agen" sub="Antrean perintah ke agen PC (mulai sesi, pasang pin, dll)"
         right={
           <div className="flex gap-1.5 flex-wrap">

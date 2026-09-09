@@ -22,7 +22,7 @@
   --xy-shadow: 0 14px 36px rgba(16, 0, 48, 0.08);  /* web --sh */
   --xy-btn-glow: 0 12px 26px rgba(124, 58, 237, 0.32);
   --xy-btn-glow-hover: 0 18px 34px rgba(124, 58, 237, 0.4);
-  --font-jakarta: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-inter: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
 
@@ -30,7 +30,7 @@ html, body {
   background: var(--xy-bg);
   min-height: 100vh;
   color: var(--xy-ink);
-  font-family: var(--font-jakarta);
+  font-family: var(--font-inter);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -62,7 +62,7 @@ html, body {
   background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%);
   border-radius: 999px;
   box-shadow: var(--xy-btn-glow);
-  font-family: var(--font-jakarta);
+  font-family: var(--font-inter);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: #fff;
@@ -80,7 +80,7 @@ html, body {
   border: 1px solid var(--xy-line);
   border-radius: 14px;
   color: var(--xy-ink);
-  font-family: var(--font-jakarta);
+  font-family: var(--font-inter);
   height: 44px;
   padding: 0 14px;
   outline: none;
@@ -92,7 +92,7 @@ html, body {
 
 /* konsisten typography */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-jakarta);
+  font-family: var(--font-inter);
   letter-spacing: -0.02em;
   color: var(--xy-ink);
 }
@@ -107,5 +107,5 @@ code, .font-mono {
   color: var(--xy-ink2);
 }
 .no-emoji {
-  font-family: var(--font-jakarta);
+  font-family: var(--font-inter);
 }

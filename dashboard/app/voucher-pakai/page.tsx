@@ -19,7 +19,7 @@ export default function VoucherPakaiPage() {
   const potongan = rows.reduce((a, r) => a + Number(r.potongan || 0), 0);
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={ReceiptText} title="Voucher Terpakai" sub="Riwayat pemakaian kode voucher di pesanan"
         right={
           <div className="flex gap-2">

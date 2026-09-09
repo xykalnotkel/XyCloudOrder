@@ -46,7 +46,7 @@ export default function CadanganPage() {
   const ukuran = list[0] ? Number(list[0].ukuran || 0) : 0;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Database} title="Cadangan DB" sub="Snapshot database D1 (otomatis tiap hari 19 UTC) — unduh atau impor kembali"
         right={
           <div className="flex gap-2">

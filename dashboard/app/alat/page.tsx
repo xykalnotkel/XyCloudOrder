@@ -11,7 +11,7 @@ export default function AlatPage(){
     try{ const r=await adminFetch('/api/admin/uji/push',{method:'POST',body:{user_id:uid,pesan:msg}}); setOut(JSON.stringify(r)); }catch(e:any){ setOut(e.message); }
   }
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-[#7C3AED] grid place-items-center"><Wrench size={18} className="text-white"/></div>
         <div><h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Email & Push</h1><p className="text-sm text-[#7C738F]">Alat uji kirim email & push notifikasi</p></div>

@@ -6,7 +6,7 @@ export default function SampahPage(){
   const [list,setList]=useState<any[]>([]);
   useEffect(()=>{ adminFetch('/api/admin/users?trash=1').then((r:any)=>setList(Array.isArray(r)?r:r.data??[])).catch(()=>{}); },[]);
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-[#7C3AED] grid place-items-center"><Trash2 size={18} className="text-white"/></div>
         <div><h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Sampah Pengguna</h1><p className="text-sm text-[#7C738F]">Akun dihapus soft-delete, bisa restore/permanent</p></div>

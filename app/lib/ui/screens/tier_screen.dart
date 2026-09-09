@@ -69,7 +69,7 @@ class TierScreen extends StatelessWidget {
                 const Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Naik Tier, Makin Hemat',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                     SizedBox(height: 4),
                     Text('Belanja akumulasi otomatis hitung tier. Benefit aktif langsung.',
                         style: TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.4)),
@@ -111,7 +111,7 @@ class TierScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(t['nama'] as String, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                          Text(t['nama'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                           const SizedBox(height: 2),
                           Text('Minimal ${t['min']}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                         ]),
@@ -122,7 +122,7 @@ class TierScreen extends StatelessWidget {
                           gradient: LinearGradient(colors: [t['color'] as Color, (t['color'] as Color).withOpacity(.7)]),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(t['nama'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10)),
+                        child: Text(t['nama'] as String, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 10)),
                       ),
                     ]),
                     const SizedBox(height: 14),
@@ -144,7 +144,7 @@ class TierScreen extends StatelessWidget {
               )),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Cara Naik Tier Cepat', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text('Cara Naik Tier Cepat', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(
                 '• Sewa paket mingguan/bulanan (nilai besar langsung ke tier)\n• Beli akun premium\n• Pakai referral — teman belanja juga hitung 10% ke tier kamu\n• Kumpulkan poin & tukarkan voucher untuk tetap hemat saat push tier',

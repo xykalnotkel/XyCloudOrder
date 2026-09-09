@@ -198,7 +198,7 @@ class _CsScreenState extends State<CsScreen> {
                   children: [
                 const Text('Bantuan XyCloud',
                     style:
-                        TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
                 Text(
                     s.csMengetik
                         ? 'sedang mengetik...'

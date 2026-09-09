@@ -22,7 +22,7 @@ export default function NotifikasiPage() {
   const belum = rows.filter((r) => !Number(r.dibaca)).length;
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={BellRing} title="Notifikasi" sub="Notifikasi yang dikirim ke semua pengguna (300 terakhir)"
         right={
           <div className="flex items-center gap-2 flex-wrap">

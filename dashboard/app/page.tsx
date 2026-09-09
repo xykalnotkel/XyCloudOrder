@@ -51,7 +51,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-6 font-[var(--font-inter)]">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-[#1E1B2E] tracking-tight">Dashboard</h1>

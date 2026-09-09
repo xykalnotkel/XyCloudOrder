@@ -47,12 +47,12 @@ class LiveUnitScreen extends StatelessWidget {
                         Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                           const SizedBox(height: 2),
                           Text('${p.cpu} • ${p.gpu} • ${p.ramGb}GB RAM', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                         ])),
                         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          Text('${p.unitTersedia}/${p.totalUnit}', style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary)),
+                          Text('${p.unitTersedia}/${p.totalUnit}', style: const TextStyle(fontWeight: FontWeight.w700, color: XyTheme.primary)),
                           Text('ready', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 10)),
                         ]),
                       ]),

@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       delay: const Duration(milliseconds: 80),
                       child: Text(
                         daftar ? 'Buat akun baru' : 'Selamat datang kembali',
-                        style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -1.1, height: 1.2),
+                        style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1.2),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -389,7 +389,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 TextSpan(text: daftar ? 'Sudah punya akun?  ' : 'Belum punya akun?  '),
                                 TextSpan(
                                   text: daftar ? 'Masuk' : 'Daftar gratis',
-                                  style: const TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w800),
+                                  style: const TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w700),
                                 ),
                               ],
                             ),

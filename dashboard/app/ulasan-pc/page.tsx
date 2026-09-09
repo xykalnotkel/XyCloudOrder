@@ -45,7 +45,7 @@ export default function UlasanPcPage() {
   const rata = rows.length ? (rows.reduce((a, r) => a + Number(r.rating || 0), 0) / rows.length).toFixed(1) : "—";
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Star} title="Ulasan Paket PC" sub="Ulasan layanan sewa PC cloud per paket"
         right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} ulasan • rata-rata {rata}</span>} />
       {loading ? <Load /> : err ? <ErrBox msg={err} /> : rows.length === 0 ? (

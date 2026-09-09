@@ -19,7 +19,7 @@ export default function UsersPage() {
   const filtered = users.filter((u: any) => !q || (u.email || "").toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Users size={18} className="text-white" /></div>
         <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Pengguna</h1>

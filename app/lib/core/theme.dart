@@ -158,7 +158,7 @@ class XyTheme {
       splashFactory: InkSparkle.splashFactory,
     );
 
-    final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    final text = GoogleFonts.interTextTheme(base.textTheme).apply(
       bodyColor: ink,
       displayColor: ink,
     );
@@ -166,13 +166,13 @@ class XyTheme {
     return base.copyWith(
       textTheme: text.copyWith(
         displayLarge: text.displayLarge
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1.6),
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -1),
         headlineMedium: text.headlineMedium
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -1),
         titleLarge: text.titleLarge
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -.5),
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -.5),
         titleMedium: text.titleMedium
-            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -.2),
+            ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -.1),
         bodyMedium: text.bodyMedium?.copyWith(height: 1.55),
         labelLarge: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
       ),
@@ -185,7 +185,7 @@ class XyTheme {
         titleTextStyle: TextStyle(
           color: ink,
           fontSize: 18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           letterSpacing: -.4,
         ),
         systemOverlayStyle: SystemUiOverlayStyle(
@@ -203,7 +203,7 @@ class XyTheme {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(XyRadius.tombol)),
           textStyle: const TextStyle(
-              fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: -.1),
+              fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: -.1),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -301,7 +301,7 @@ class XyTheme {
       splashFactory: InkSparkle.splashFactory,
     );
 
-    final text = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    final text = GoogleFonts.interTextTheme(base.textTheme).apply(
       bodyColor: inkGelap,
       displayColor: inkGelap,
     );
@@ -309,9 +309,9 @@ class XyTheme {
     return base.copyWith(
       textTheme: text.copyWith(
         headlineMedium: text.headlineMedium
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1),
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -1),
         titleLarge: text.titleLarge
-            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -.5),
+            ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -.5),
         titleMedium: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         bodyMedium: text.bodyMedium?.copyWith(height: 1.55),
       ),
@@ -324,7 +324,7 @@ class XyTheme {
         titleTextStyle: TextStyle(
           color: inkGelap,
           fontSize: 18,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           letterSpacing: -.4,
         ),
         systemOverlayStyle: SystemUiOverlayStyle(
@@ -340,7 +340,7 @@ class XyTheme {
           minimumSize: const Size.fromHeight(54),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(XyRadius.tombol)),
-          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

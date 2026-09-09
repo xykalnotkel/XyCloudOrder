@@ -61,24 +61,25 @@ class PerawatanScreen extends StatelessWidget {
                 ]),
                 const SizedBox(height: 18),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
                   decoration: BoxDecoration(
-                    color: XyTheme.primary.withOpacity(.14),
+                    color: XyTheme.of(context).surface,
                     borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: XyTheme.primary.withOpacity(.4)),
+                    border: Border.all(color: XyTheme.of(context).line),
+                    boxShadow: XyTheme.shadowXs,
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _TitikPulsa(),
-                      SizedBox(width: 7),
+                      const SizedBox(width: 8),
                       Text(
                         'Sedang Perawatan',
                         style: TextStyle(
                           fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.6,
-                          color: Color(0xFFD8CDF5),
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.1,
+                          color: XyTheme.of(context).accent,
                         ),
                       ),
                     ],
@@ -89,7 +90,7 @@ class PerawatanScreen extends StatelessWidget {
                   'Kami Sebentar Lagi',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 21,
                     letterSpacing: -.6,
                   ),
@@ -165,11 +166,11 @@ class _TitikPulsa extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 7,
-      height: 7,
-      decoration: const BoxDecoration(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Color(0xFFC084FC),
+        color: XyTheme.of(context).accent.withOpacity(.8),
       ),
     );
   }

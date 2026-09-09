@@ -105,7 +105,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 30,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 4,
                           ),
                         ),
@@ -129,7 +129,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                                   child: Text('Salin Kode',
                                       style: TextStyle(
                                           color: XyTheme.primaryDeep,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w700,
                                           fontSize: 13.5)),
                                 ),
                               ),
@@ -157,7 +157,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                                 child: const Center(
                                   child: Text('Salin Ajakan',
                                       style: TextStyle(
-                                          color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                                          color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5)),
                                 ),
                               ),
                             ),
@@ -174,7 +174,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                             child: Column(children: [
                               Text(rupiah(data!['bonusPengundang'] ?? 0),
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w800, fontSize: 18, color: XyTheme.primary)),
+                                      fontWeight: FontWeight.w700, fontSize: 18, color: XyTheme.primary)),
                               const SizedBox(height: 3),
                                Text('Bonus untukmu',
                                   style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
@@ -185,7 +185,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                             child: Column(children: [
                               Text(rupiah(data!['bonusDiundang'] ?? 0),
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.w800, fontSize: 18, color: XyTheme.success)),
+                                      fontWeight: FontWeight.w700, fontSize: 18, color: XyTheme.success)),
                               const SizedBox(height: 3),
                                Text('Bonus temanmu',
                                   style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
@@ -195,7 +195,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                           Expanded(
                             child: Column(children: [
                               Text(rupiah(data!['totalBonus'] ?? 0),
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
                               const SizedBox(height: 3),
                                Text('Total didapat',
                                   style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
@@ -281,7 +281,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                                   child: Text(
                                     '${m['nama_diundang'] ?? 'X'}'.characters.first.toUpperCase(),
                                     style: const TextStyle(
-                                        color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                        color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
                                   ),
                                 ),
                               ),
@@ -289,7 +289,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                               Expanded(
                                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                   Text('${m['nama_diundang'] ?? 'Pengguna baru'}',
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                                   const SizedBox(height: 3),
                                   Text('${m['dibuat'] ?? ''}'.replaceFirst('T', ' ').split('.').first,
                                       style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
@@ -297,7 +297,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                               ),
                               Text('+ ${rupiah(m['bonus_pengundang'] ?? 0)}',
                                   style: const TextStyle(
-                                      color: XyTheme.success, fontWeight: FontWeight.w800, fontSize: 13)),
+                                      color: XyTheme.success, fontWeight: FontWeight.w700, fontSize: 13)),
                             ]),
                           ),
                         );

@@ -116,7 +116,7 @@ export default function Sidebar() {
   if (pathname === "/login") return null;
 
   return (
-    <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-white border-r border-[#E9E3F5] font-[Plus_Jakarta_Sans]`}>
+    <aside className={`${collapsed ? "w-[72px]" : "w-[272px]"} shrink-0 transition-all duration-300 flex flex-col h-screen sticky top-0 bg-white border-r border-[#E9E3F5] font-[var(--font-inter)]`}>
       <div className={`h-[64px] flex items-center px-3 gap-2 border-b border-[#E9E3F5] bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] ${collapsed ? "justify-center" : ""}`}>
         {collapsed ? (
           <img src="/brand/logo-icon.png" alt="XyCloud" className="w-10 h-10 object-contain" />

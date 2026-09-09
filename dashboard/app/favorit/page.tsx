@@ -2,7 +2,7 @@
 import { Heart, Star, TrendingUp } from "lucide-react";
 export default function FavoritPage(){
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Heart size={18} className="text-white"/></div>
         <div>

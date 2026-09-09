@@ -102,7 +102,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
     return Scaffold(
       backgroundColor: XyTheme.of(context).bg,
       appBar: AppBar(
-        title: const Text('Pembaruan', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text('Pembaruan', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           IconButton(
             icon: const Icon(Icons.arrow_forward_rounded),
@@ -138,7 +138,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                       ),
                       child: Text('Versi baru $_versi',
                           style: TextStyle(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               fontSize: 12,
                               color: skema ? Colors.white : XyTheme.primaryDeep)),
                     ),
@@ -146,7 +146,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                   Text('Ada Pembaruan Baru',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           fontSize: 22,
                           letterSpacing: -.6,
                           color: skema ? Colors.white : XyTheme.primaryDark)),
@@ -164,7 +164,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
             const SizedBox(height: 14),
 
             Text('Apa yang baru',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const SizedBox(height: 8),
             XyCard(
               padding: const EdgeInsets.all(16),

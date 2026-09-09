@@ -131,7 +131,7 @@ class _Baris extends StatelessWidget {
             const SizedBox(width: 13),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 const SizedBox(height: 3),
                 Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.4)),
               ]),
@@ -202,13 +202,13 @@ class _LegalScreenState extends State<_LegalScreen> {
                                 child: Center(
                                   child: Text('${i + 1}',
                                       style: const TextStyle(
-                                          color: XyTheme.primary, fontWeight: FontWeight.w800, fontSize: 12)),
+                                          color: XyTheme.primary, fontWeight: FontWeight.w700, fontSize: 12)),
                                 ),
                               ),
                               const SizedBox(width: 11),
                               Expanded(
                                 child: Text('${b['judul']}',
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, height: 1.3)),
+                                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, height: 1.3)),
                               ),
                             ]),
                             const SizedBox(height: 10),
@@ -271,7 +271,7 @@ class _LisensiScreenState extends State<LisensiScreen> {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Text('${m['nama']}',
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                         const SizedBox(height: 3),
                         Text('${m['pembuat']}',
                             style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),

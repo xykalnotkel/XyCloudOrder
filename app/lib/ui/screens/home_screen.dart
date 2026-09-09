@@ -138,7 +138,7 @@ class _Header extends StatelessWidget {
         child: Center(
           child: Text(
             user.nama.characters.first.toUpperCase(),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 19),
           ),
         ),
       ),
@@ -151,14 +151,14 @@ class _Header extends StatelessWidget {
             Flexible(
               child: Text(user.nama.split(' ').first,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -.5)),
             ),
             const SizedBox(width: 7),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
               decoration: BoxDecoration(gradient: XyTheme.gradGold, borderRadius: BorderRadius.circular(6)),
               child: Text(user.tier.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w800, letterSpacing: .8)),
+                  style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: .8)),
             ),
           ]),
         ]),
@@ -215,7 +215,7 @@ class _Header extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 9,
                       height: 1.35,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -265,20 +265,63 @@ class _KartuSaldoState extends State<_KartuSaldo> {
       aspectRatio: 1.62, // perbandingan kartu asli
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
+          // Kartu member premium: indigo malam yang tenang (bukan neon/glass).
           gradient: const LinearGradient(
-            colors: [Color(0xFF334251), Color(0xFF334251), Color(0xFF334251)],
+            colors: [Color(0xFF4B1DA6), Color(0xFF2E1065), Color(0xFF130236)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            stops: [0, .55, 1],
+            stops: [0, .52, 1],
           ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 8, offset: const Offset(0, 3)),
+            BoxShadow(
+                color: const Color(0xFF2E1065).withOpacity(.34),
+                blurRadius: 26,
+                offset: const Offset(0, 14)),
+            BoxShadow(
+                color: const Color(0xFF12042E).withOpacity(.9),
+                blurRadius: 0,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(24),
           child: Stack(children: [
+            // kilau lembut dari atas (premium, bukan glass berlebihan)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withOpacity(.12),
+                        Colors.white.withOpacity(.015),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: const Alignment(0, .5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // cahaya violet halus pojok kanan atas
+            Positioned(
+              right: -40,
+              top: -50,
+              child: Container(
+                width: 170,
+                height: 170,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFA78BFA).withOpacity(.22),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -327,7 +370,7 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 27,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: -1,
                               ),
                             )
@@ -336,7 +379,7 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 23,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: -.4,
                               )),
                     ),
@@ -405,7 +448,7 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                     ),
                     child: Text(u.tier.toUpperCase(),
                         style: const TextStyle(
-                            color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 1)),
+                            color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 1)),
                   ),
                 ]),
               ]),
@@ -497,7 +540,7 @@ class _MiniBtn extends StatelessWidget {
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, color: Colors.white, size: 17),
           const SizedBox(width: 7),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13.5)),
+          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5)),
         ]),
       ),
     );
@@ -510,14 +553,11 @@ class _MiniBtn extends StatelessWidget {
 class _MenuCepat extends StatelessWidget {
   const _MenuCepat();
 
+  // Menu di bawah kartu saldo: hanya jalan pintas yang BELUM ada di nav bawah
+  // (Beranda/Sewa PC/Beli Akun/Komunitas/Profil) atau ikon header (Chat & notif),
+  // supaya tidak ada fitur yang tampil dobel. Total 4 = 1 baris rapi.
   static const _menu = [
-    // baris 1
-    ('sewa', 'Sewa PC', SewaPcScreen(), Icons.memory_rounded),
-    ('akun', 'Beli Akun', AkunScreen(), Icons.vpn_key_rounded),
     ('topup', 'Top Up', WalletScreen(), Icons.account_balance_wallet_rounded),
-    ('chat', 'Chat', CsScreen(), Icons.forum_rounded),
-    // baris 2 — baru v3.3c
-    ('komunitas', 'Komunitas', ForumScreen(), Icons.groups_rounded),
     ('voucher', 'Voucher', VoucherScreen(), Icons.local_offer_rounded),
     ('referral', 'Referral', ReferralScreen(), Icons.card_giftcard_rounded),
     ('favorit', 'Favorit', FavoritScreen(), Icons.favorite_rounded),
@@ -531,33 +571,29 @@ class _MenuCepat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget kartu(String ikon, String label, Widget layar, IconData iconData, {bool primary = false}) {
+    Widget kartu(String ikon, String label, Widget layar, IconData iconData) {
       return Pressable(
         onTap: () => Navigator.push(context, xyRoute(layar)),
         scale: .96,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
           decoration: BoxDecoration(
-            color: primary ? null : XyTheme.of(context).surface,
-            gradient: primary ? XyTheme.gradPrimary : null,
+            color: XyTheme.of(context).surface,
             borderRadius: BorderRadius.circular(XyRadius.lg),
-            border: Border.all(color: primary ? Colors.transparent : XyTheme.of(context).line),
+            border: Border.all(color: XyTheme.of(context).line),
             boxShadow: XyTheme.shadowXs,
           ),
           child: Column(children: [
-            // prefer asset if exists, else icon fallback — no emoji
-            Builder(builder: (ctx) {
-              // try asset, fallback to icon
-              return Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: primary ? Colors.white.withOpacity(.18) : XyTheme.of(context).lineSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(iconData, size: 22, color: primary ? Colors.white : XyTheme.primary),
-              );
-            }),
+            // ikon dibungkus kotak lembut; nanti diganti aset 3D glossy.
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: XyTheme.of(context).lineSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(iconData, size: 22, color: XyTheme.primary),
+            ),
             const SizedBox(height: 8),
             Text(
               label,
@@ -567,7 +603,7 @@ class _MenuCepat extends StatelessWidget {
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -.1,
-                color: primary ? Colors.white : XyTheme.of(context).ink,
+                color: XyTheme.of(context).ink,
               ),
             ),
           ]),
@@ -589,12 +625,12 @@ class _MenuCepat extends StatelessWidget {
         itemCount: _menu.length,
         itemBuilder: (_, i) {
           final (ikon, label, layar, iconData) = _menu[i];
-          return kartu(ikon, label, layar, iconData, primary: i < 2);
+          return kartu(ikon, label, layar, iconData);
         },
       ),
       const SizedBox(height: 16),
       // jelajahi chips
-      Text('Jelajahi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: XyTheme.of(context).ink)),
+      Text('Jelajahi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: XyTheme.of(context).ink)),
       const SizedBox(height: 8),
       Row(
         children: _jelajahi.map((e) {
@@ -647,7 +683,7 @@ class _KartuOrderAktif extends StatelessWidget {
           const SizedBox(width: 13),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(order.planNama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+              Text(order.planNama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5)),
               const SizedBox(height: 2),
               Text('${order.kode} · ${order.durasiJam} jam',
                   style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
@@ -663,7 +699,7 @@ class _KartuOrderAktif extends StatelessWidget {
             const SizedBox(width: 16),
              Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Menyiapkan mesin', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text('Menyiapkan mesin', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                 SizedBox(height: 3),
                 Text('Boot image, mount storage, cek driver GPU.',
                     style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.45)),
@@ -683,7 +719,7 @@ class _KartuOrderAktif extends StatelessWidget {
                Text('Sisa waktu sesi', style: TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted, fontWeight: FontWeight.w600)),
               const Spacer(),
               Text(order.berakhir == null ? '-' : durasiSisa(order.berakhir!),
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, letterSpacing: -.3)),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, letterSpacing: -.3)),
             ]),
           ),
           const SizedBox(height: 13),
@@ -721,7 +757,7 @@ class _KartuPlanMini extends StatelessWidget {
                 warna: plan.ready ? XyTheme.success : XyTheme.danger),
           ]),
           const SizedBox(height: 14),
-          Text(plan.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, letterSpacing: -.3)),
+          Text(plan.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, letterSpacing: -.3)),
           const SizedBox(height: 3),
           Text(plan.gpu,
               maxLines: 1,
@@ -736,7 +772,7 @@ class _KartuPlanMini extends StatelessWidget {
           const Spacer(),
           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(rupiah(plan.hargaPerJam),
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: XyTheme.primary, letterSpacing: -.5)),
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17, color: XyTheme.primary, letterSpacing: -.5)),
              Padding(
               padding: EdgeInsets.only(bottom: 2),
               child: Text(' /jam', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, fontWeight: FontWeight.w600)),
@@ -777,7 +813,7 @@ class _BarisProduk extends StatelessWidget {
             ]),
             const SizedBox(height: 6),
             Text(rupiah(produk.harga),
-                style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary, fontSize: 14.5)),
+                style: const TextStyle(fontWeight: FontWeight.w700, color: XyTheme.primary, fontSize: 14.5)),
           ]),
         ),
         Pill(produk.stok > 0 ? 'Stok ${produk.stok}' : 'Habis',

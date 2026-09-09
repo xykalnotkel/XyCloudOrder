@@ -148,7 +148,7 @@ class _PressableState extends State<Pressable> {
 //  Tombol
 // ============================================================
 
-class GradientButton extends StatelessWidget {
+class GradientButton extends StatefulWidget {
   const GradientButton({
     super.key,
     required this.label,
@@ -169,36 +169,81 @@ class GradientButton extends StatelessWidget {
   final Color glowColor;
 
   @override
+  State<GradientButton> createState() => _GradientButtonState();
+}
+
+/// Tombol aksen “3D tapi 2D”: bidang solid + tepi bawah tegas (bayangan keras
+/// tanpa blur) + saat ditekan turun 3px. Dipakai konsisten di seluruh aplikasi.
+class _GradientButtonState extends State<GradientButton> {
+  bool _tekan = false;
+
+  Color get _tepi => Color.lerp(widget.glowColor, Colors.black, .34)!;
+  Color get _atas => Color.lerp(widget.glowColor, Colors.white, .10)!;
+
+  @override
   Widget build(BuildContext context) {
-    final mati = onPressed == null || loading;
-    return Pressable(
-      onTap: mati ? null : onPressed,
-      scale: .975,
+    final mati = widget.onPressed == null || widget.loading;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: mati ? null : (_) => setState(() => _tekan = true),
+      onTapUp: mati ? null : (_) => setState(() => _tekan = false),
+      onTapCancel: () => setState(() => _tekan = false),
+      onTap: widget.onPressed,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        height: height,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        height: widget.height,
+        transform: Matrix4.translationValues(0, _tekan ? 3 : 0, 0),
         decoration: BoxDecoration(
-          gradient: mati ? null : gradient,
-          color: mati ? XyTheme.of(context).primarySoft : null,
           borderRadius: BorderRadius.circular(XyRadius.tombol),
-          boxShadow: mati ? null : XyTheme.glow(glowColor, .30),
+          gradient: mati
+              ? null
+              : LinearGradient(
+                  colors: [_atas, widget.glowColor, widget.glowColor],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0, .42, 1],
+                ),
+          color: mati ? XyTheme.of(context).primarySoft : null,
+          boxShadow: mati
+              ? null
+              : [
+                  // Tepi bawah “3D”: bayangan keras tanpa blur, hilang saat ditekan.
+                  BoxShadow(
+                    color: _tepi,
+                    offset: Offset(0, _tekan ? 1 : 4),
+                    blurRadius: 0,
+                    spreadRadius: 0,
+                  ),
+                  BoxShadow(
+                    color: Colors.transparent,
+                    offset: Offset(0, 0),
+                    blurRadius: 0,
+                  ),
+                ],
         ),
         child: Center(
           child: loading
               ? const SizedBox(
-                  width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.4, color: Colors.white))
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    if (icon != null) ...[
-                      Icon(icon, size: 19, color: mati ? XyTheme.of(context).muted : Colors.white),
+                    if (widget.icon != null) ...[
+                      Icon(widget.icon,
+                          size: 19,
+                          color: mati ? XyTheme.of(context).muted : Colors.white),
                       const SizedBox(width: 9),
                     ],
                     Text(
-                      label,
+                      widget.label,
                       style: TextStyle(
-                        color: mati ? XyTheme.of(context).muted : Colors.white,
-                        fontWeight: FontWeight.w800,
+                        color:
+                            mati ? XyTheme.of(context).muted : Colors.white,
+                        fontWeight: FontWeight.w700,
                         fontSize: 15,
                         letterSpacing: -.1,
                       ),
@@ -240,7 +285,7 @@ class Pill extends StatelessWidget {
             style: TextStyle(
               color: solid ? Colors.white : warna,
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               letterSpacing: .1,
             )),
       ]),
@@ -278,7 +323,7 @@ class SectionHeader extends StatelessWidget {
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(judul, style: const TextStyle(fontSize: 17.5, fontWeight: FontWeight.w800, letterSpacing: -.45)),
+            Text(judul, style: const TextStyle(fontSize: 17.5, fontWeight: FontWeight.w700, letterSpacing: -.45)),
             if (sub != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
@@ -293,7 +338,7 @@ class SectionHeader extends StatelessWidget {
               padding: const EdgeInsets.only(left: 8, top: 2),
               child: Row(children: [
                 Text(aksi!,
-                    style: const TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+                    style: const TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w700, fontSize: 13)),
                 const Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.primary),
               ]),
             ),
@@ -468,7 +513,7 @@ class Kosong extends StatelessWidget {
             ]),
           const SizedBox(height: 14),
           Text(judul, textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, letterSpacing: -.2)),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, letterSpacing: -.2)),
           if (sub != null) ...[
             const SizedBox(height: 7),
             Text(sub!, textAlign: TextAlign.center,
@@ -653,7 +698,7 @@ class ProgressRing extends StatelessWidget {
           ),
         ),
         Text(label ?? '${(value * 100).round()}%',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: size * .21, letterSpacing: -.4)),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: size * .21, letterSpacing: -.4)),
       ]),
     );
   }

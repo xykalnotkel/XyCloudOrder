@@ -75,7 +75,7 @@ class _LupaPasswordScreenState extends State<LupaPasswordScreen> {
 
               const Text(
                 'Lupa password',
-                style: TextStyle(fontSize: 27, fontWeight: FontWeight.w800, letterSpacing: -1.1, height: 1.2),
+                style: TextStyle(fontSize: 27, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1.2),
               ),
               const SizedBox(height: 8),
                Text(

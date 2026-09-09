@@ -113,7 +113,7 @@ class _Judul extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
         child: Text(teks.toUpperCase(),
             style:  TextStyle(
-                fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: XyTheme.of(context).muted)),
+                fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.2, color: XyTheme.of(context).muted)),
       );
 }
 
@@ -139,7 +139,7 @@ class _Baris extends StatelessWidget {
             const SizedBox(width: 13),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 const SizedBox(height: 3),
                 Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
               ]),
@@ -334,7 +334,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
               const SizedBox(width: 13),
                Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Akunmu terlindungi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text('Akunmu terlindungi', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Password disimpan terenkripsi dan sesi otomatis kedaluwarsa 30 hari.',
                       style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.45)),
@@ -344,7 +344,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
           ),
           const SizedBox(height: 22),
           const Text('Ganti Password',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -.3)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: -.3)),
           const SizedBox(height: 4),
            Text('Kosongkan password lama kalau kamu mendaftar lewat Google.',
               style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.5)),
@@ -393,7 +393,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
 
           const SizedBox(height: 34),
           const Text('Zona Berbahaya',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: XyTheme.danger)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: XyTheme.danger)),
           const SizedBox(height: 10),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -411,7 +411,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
                   style: OutlinedButton.styleFrom(side: const BorderSide(color: XyTheme.danger)),
                   icon: const Icon(Icons.delete_forever_rounded, size: 18, color: XyTheme.danger),
                   label: const Text('Hapus Akun Saya',
-                      style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w800)),
+                      style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),
                 ),
               ),
             ]),
@@ -457,7 +457,7 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
               const SizedBox(width: 13),
                Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Komunitas', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text('Komunitas', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Balasan diskusi, suka, dan pengumuman admin',
                       style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
@@ -481,7 +481,7 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
               Row(children:  [
                 Icon(Icons.lock_clock_rounded, size: 18, color: XyTheme.of(context).muted),
                 SizedBox(width: 9),
-                Text('Selalu aktif', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text('Selalu aktif', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
               ]),
               const SizedBox(height: 10),
                Text(
@@ -542,7 +542,7 @@ class _DataScreenState extends State<DataScreen> {
               const SizedBox(width: 13),
                Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Mode Hemat Data', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text('Mode Hemat Data', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Gambar produk dan komunitas tidak diunduh otomatis',
                       style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
@@ -559,9 +559,9 @@ class _DataScreenState extends State<DataScreen> {
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text('Data tersimpan di perangkat',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 ),
-                Text('$kb KB', style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary)),
+                Text('$kb KB', style: const TextStyle(fontWeight: FontWeight.w700, color: XyTheme.primary)),
               ]),
               const SizedBox(height: 10),
                Text(
@@ -640,7 +640,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               const SizedBox(width: 13),
                Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Saringan Konten Dewasa', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                  Text('Saringan Konten Dewasa', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                   SizedBox(height: 3),
                   Text('Gambar yang ditandai sensitif ditutup dulu, ketuk untuk melihat',
                       style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
@@ -662,7 +662,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Row(children: [
                 Icon(Icons.flag_outlined, size: 18, color: XyTheme.primary),
                 SizedBox(width: 9),
-                Text('Melaporkan konten', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text('Melaporkan konten', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
               ]),
               SizedBox(height: 10),
               Text(
@@ -679,7 +679,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Row(children: const [
                 Icon(Icons.download_for_offline_outlined, size: 18, color: XyTheme.primary),
                 SizedBox(width: 9),
-                Text('Unduh dataku', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text('Unduh dataku', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
               ]),
               const SizedBox(height: 10),
                Text(
@@ -723,7 +723,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Row(children: [
                 Icon(Icons.privacy_tip_outlined, size: 18, color: XyTheme.primary),
                 SizedBox(width: 9),
-                Text('Data yang kami simpan', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text('Data yang kami simpan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
               ]),
               SizedBox(height: 10),
               Text(
@@ -773,7 +773,7 @@ class BantuanScreen extends StatelessWidget {
           const Center(child: XyIlustrasi('cs', tinggi: 150)),
           const SizedBox(height: 8),
           const Text('Pertanyaan yang sering ditanyakan',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: -.3)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: -.3)),
           const SizedBox(height: 14),
           ..._tanya.map((t) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -859,7 +859,7 @@ class _TemaScreenState extends State<TemaScreen> {
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(o.$2, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                    Text(o.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                     const SizedBox(height: 3),
                     Text(o.$3, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.4)),
                   ]),
@@ -916,7 +916,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
               const XyLogo(size: 84, radius: 26),
               const SizedBox(height: 16),
               Text('Versi terpasang ${s.versiSekarang.isEmpty ? '-' : s.versiSekarang}',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               const SizedBox(height: 6),
               if (memeriksa)
                  Text('Memeriksa versi terbaru...',
@@ -942,7 +942,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                   const Icon(Icons.new_releases_rounded, size: 19, color: XyTheme.primary),
                   const SizedBox(width: 9),
                   Text('Pembaruan ${rilis['versi']}',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                 ]),
                 const SizedBox(height: 10),
                  Text(

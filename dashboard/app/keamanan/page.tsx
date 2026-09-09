@@ -29,7 +29,7 @@ export default function KeamananPage() {
   }));
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={ListChecks} title="Log Keamanan" sub="Peristiwa keamanan terbaru dari modul security (150 terakhir, 30 hari)"
         right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{totalCount.toLocaleString("id-ID")} peristiwa</span>} />
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">

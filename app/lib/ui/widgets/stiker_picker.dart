@@ -231,7 +231,7 @@ class _StikerPickerState extends State<StikerPicker> {
                 const Expanded(
                     child: Text('Stiker',
                         style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w800))),
+                            fontSize: 20, fontWeight: FontWeight.w700))),
                 IconButton(
                     tooltip: 'Tutup',
                     onPressed: () => Navigator.pop(context),

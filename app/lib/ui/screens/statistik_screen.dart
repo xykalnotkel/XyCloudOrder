@@ -58,7 +58,7 @@ class StatistikScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Ringkasan Belanja', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                    Text('Ringkasan Belanja', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                     SizedBox(height: 2),
                     Text('Pantau pengeluaran & hemat dengan tier', style: TextStyle(color: Colors.white70, fontSize: 11.5)),
                   ]),
@@ -91,7 +91,7 @@ class StatistikScreen extends StatelessWidget {
                     child: const Icon(Icons.desktop_windows_rounded, color: XyTheme.primary),
                   ),
                   const SizedBox(height: 10),
-                  Text('$totalSewa', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
+                  Text('$totalSewa', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
                   const SizedBox(height: 2),
                   Text('Sewa PC', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                 ]),
@@ -109,7 +109,7 @@ class StatistikScreen extends StatelessWidget {
                     child: const Icon(Icons.account_circle_rounded, color: Color(0xFFA855F7)),
                   ),
                   const SizedBox(height: 10),
-                  Text('$totalAkun', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 22)),
+                  Text('$totalAkun', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
                   const SizedBox(height: 2),
                   Text('Beli Akun', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                 ]),
@@ -127,7 +127,7 @@ class StatistikScreen extends StatelessWidget {
                     child: const Icon(Icons.savings_rounded, color: Color(0xFF22C55E)),
                   ),
                   const SizedBox(height: 10),
-                  Text('${s.user?.tier ?? "-"}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                  Text('${s.user?.tier ?? "-"}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
                   const SizedBox(height: 2),
                   Text('Tier', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                 ]),
@@ -153,12 +153,12 @@ class StatistikScreen extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(o.planNama, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                            Text(o.planNama, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                             const SizedBox(height: 2),
                             Text('${formatTanggal(o.dibuat)} • ${o.status.name}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
                           ]),
                         ),
-                        Text(formatRupiah(o.total), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                        Text(formatRupiah(o.total), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
                       ]),
                     ),
                   )),
@@ -176,12 +176,12 @@ class StatistikScreen extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(t.judul, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                            Text(t.judul, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                             const SizedBox(height: 2),
                             Text('${formatTanggal(t.waktu)} • ${t.status}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
                           ]),
                         ),
-                        Text(formatRupiah(t.nominal.abs()), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                        Text(formatRupiah(t.nominal.abs()), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
                       ]),
                     ),
                   )),
@@ -189,7 +189,7 @@ class StatistikScreen extends StatelessWidget {
           const SizedBox(height: 8),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Hemat dengan Tier', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text('Hemat dengan Tier', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(
                 '• Bronze: 0% — tier awal\n• Silver: 2% cashback setelah 500rb belanja\n• Gold: 5% + prioritas support setelah 2jt\n• Platinum: 8% + unit prioritas + voucher eksklusif setelah 5jt',
@@ -214,7 +214,7 @@ class _StatBig extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label, style: TextStyle(color: Colors.white.withOpacity(.72), fontSize: 11)),
           const SizedBox(height: 6),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15)),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
         ]),
       );
 }
@@ -235,7 +235,7 @@ class _StatSmall extends StatelessWidget {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(label, style: TextStyle(color: Colors.white.withOpacity(.6), fontSize: 10)),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
+              Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11.5)),
             ]),
           ),
         ]),

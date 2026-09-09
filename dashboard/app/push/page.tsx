@@ -65,7 +65,7 @@ export default function PushPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-[700px] font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 max-w-[700px] font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Bell size={18} className="text-white" /></div>
         <div>

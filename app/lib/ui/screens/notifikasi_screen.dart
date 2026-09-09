@@ -146,7 +146,7 @@ class _Baris extends StatelessWidget {
                   child: Text(
                     notif.judul,
                     style: TextStyle(
-                      fontWeight: notif.dibaca ? FontWeight.w700 : FontWeight.w800,
+                      fontWeight: notif.dibaca ? FontWeight.w700 : FontWeight.w700,
                       fontSize: 13.8,
                       height: 1.35,
                     ),

@@ -76,7 +76,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         const Text('Perangkat Terpercaya',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                         const SizedBox(height: 4),
                         Text('Device ID: ${deviceId.substring(0, 12)}... • Max 2 akun per device',
                             style: const TextStyle(color: Colors.white70, fontSize: 11)),
@@ -97,7 +97,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          const Text('HP Ini', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                          const Text('HP Ini', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                           const SizedBox(height: 2),
                           Text(deviceId, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: XyTheme.of(context).muted, fontSize: 10.5, fontFamily: 'monospace')),
                         ]),
@@ -105,7 +105,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(.15), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('Aktif', style: TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w800, fontSize: 10)),
+                        child: const Text('Aktif', style: TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w700, fontSize: 10)),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -144,7 +144,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Row(children: [
-                                Text(a['aksi'] as String, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                                Text(a['aksi'] as String, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                                 const SizedBox(width: 8),
                                 Text(_fmtWaktu(a['waktu'] as DateTime), style: TextStyle(color: XyTheme.of(context).muted, fontSize: 10.5)),
                               ]),
@@ -163,7 +163,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                 const SizedBox(height: 12),
                 XyCard(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('Tips Keamanan', style: TextStyle(fontWeight: FontWeight.w800)),
+                    const Text('Tips Keamanan', style: TextStyle(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     Text(
                       '• Jangan bagikan OTP ke siapapun\n• Gunakan email pribadi, bukan email bersama\n• Jika ada login mencurigakan, segera ganti password di menu Keamanan\n• Device dibatasi 2 akun untuk mencegah abuse voucher',

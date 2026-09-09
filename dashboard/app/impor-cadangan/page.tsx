@@ -34,7 +34,7 @@ export default function ImporCadanganPage() {
   }
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={UploadCloud} title="Impor Cadangan" sub="Tarik data DB lama ke D1 dari file .json cadangan (format ekspor Cadangan DB)"
         right={<span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-bold">Khusus pemilik</span>} />
       {err && <ErrBox msg={err} />}

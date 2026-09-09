@@ -35,7 +35,7 @@ class OrderDetailScreen extends StatelessWidget {
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(order.kode,
               style:
-                  const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                  const TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
           Text(order.planNama,
               style:
                   TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
@@ -141,7 +141,7 @@ class _KartuStatus extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(order.status.label,
                   style: TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 16, color: warna)),
+                      fontWeight: FontWeight.w700, fontSize: 16, color: warna)),
               const SizedBox(height: 2),
               Text(
                 aktif
@@ -173,7 +173,7 @@ class _KartuStatus extends StatelessWidget {
               Text(durasiSisa(order.berakhir!),
                   style: const TextStyle(
                       fontSize: 30,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: -1)),
             ]),
           ),
@@ -220,7 +220,7 @@ class _KartuStatus extends StatelessWidget {
                     children: [
                       Text('Menyiapkan mesin',
                           style: TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 14)),
+                              fontWeight: FontWeight.w700, fontSize: 14)),
                       SizedBox(height: 4),
                       Text('Agen memeriksa Sunshine dan menyiapkan sesi.',
                           style: TextStyle(
@@ -299,7 +299,7 @@ class _Timeline extends StatelessWidget {
                       Text(langkah[i].$1,
                           style: TextStyle(
                             fontWeight: aktifSekarang
-                                ? FontWeight.w800
+                                ? FontWeight.w700
                                 : FontWeight.w600,
                             fontSize: 13.5,
                             color: done
@@ -336,7 +336,7 @@ class _Info extends StatelessWidget {
         const Spacer(),
         Text(v,
             style: TextStyle(
-                fontSize: tebal ? 15.5 : 13, fontWeight: FontWeight.w800)),
+                fontSize: tebal ? 15.5 : 13, fontWeight: FontWeight.w700)),
       ]),
     );
   }

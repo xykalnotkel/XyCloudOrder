@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
-import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
-import '../widgets/lembar.dart';
 import '../widgets/topup_sheet.dart';
-import 'tentang_screen.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -18,28 +15,102 @@ class WalletScreen extends StatelessWidget {
     final u = s.user!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dompet & Riwayat', style: TextStyle(fontWeight: FontWeight.w800))),
+      appBar: AppBar(title: const Text('Dompet & Riwayat', style: TextStyle(fontWeight: FontWeight.w700))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
         children: [
           Container(
-            padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(24),
               gradient: const LinearGradient(
-                  colors: [Color(0xFF33087F), Color(0xFF6C2BE2)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight),
+                colors: [Color(0xFF4B1DA6), Color(0xFF2E1065), Color(0xFF130236)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0, .52, 1],
+              ),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF2E1065).withOpacity(.34),
+                    blurRadius: 26,
+                    offset: const Offset(0, 14)),
+                BoxShadow(
+                    color: const Color(0xFF12042E).withOpacity(.9),
+                    blurRadius: 0,
+                    offset: const Offset(0, 2)),
+              ],
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Total Saldo', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
-              const SizedBox(height: 6),
-              Text(rupiah(u.saldo),
-                  style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -1)),
-              const SizedBox(height: 4),
-              Text('${u.nama} · ${u.tier.toUpperCase()}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
-            ]),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: Stack(children: [
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(.12),
+                            Colors.white.withOpacity(.015),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: const Alignment(0, .5),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -40,
+                  top: -50,
+                  child: Container(
+                    width: 170,
+                    height: 170,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          const Color(0xFFA78BFA).withOpacity(.22),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      const Text('Total Saldo',
+                          style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: XyTheme.gradGold,
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                        ),
+                        child: Text(u.tier.toUpperCase(),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1)),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Text(rupiah(u.saldo),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -1.2)),
+                    const SizedBox(height: 4),
+                    Text(u.nama.toUpperCase(),
+                        style: const TextStyle(
+                            color: Colors.white60, fontSize: 11.5, letterSpacing: .8)),
+                  ]),
+                ),
+              ]),
+            ),
           ),
           const SizedBox(height: 18),
           GradientButton(
@@ -101,52 +172,13 @@ class WalletScreen extends StatelessWidget {
                     ),
                     Text('${masuk ? '+' : '-'} ${rupiah(t.nominal.abs())}',
                         style: TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13.5,
                             color: masuk ? XyTheme.success : XyTheme.of(context).ink)),
                   ]),
                 ),
               );
             }),
-          const SectionHeader('Lainnya'),
-          XyCard(
-            padding: const EdgeInsets.all(15),
-            onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
-            child: Row(children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-                child: const Icon(Icons.info_outline_rounded, size: 20, color: XyTheme.primary),
-              ),
-              const SizedBox(width: 13),
-               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Tentang Aplikasi', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                  SizedBox(height: 3),
-                  Text('Versi, syarat, privasi, dan lisensi',
-                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8)),
-                ]),
-              ),
-               Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
-            ]),
-          ),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final yakin = await konfirmasi(
-                context,
-                judul: 'Keluar dari akun?',
-                pesan: 'Kamu perlu masuk lagi untuk memakai aplikasi.',
-                tombolYa: 'Keluar',
-                ikon: Icons.logout_rounded,
-                bahaya: true,
-              );
-              if (yakin && context.mounted) context.read<AppState>().logout();
-            },
-            icon: const Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
-            label: const Text('Keluar', style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),
-          ),
         ],
       ),
     );

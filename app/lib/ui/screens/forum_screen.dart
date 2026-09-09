@@ -94,7 +94,7 @@ class _ForumScreenState extends State<ForumScreen> {
                   Text('Tulis',
                       style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           fontSize: 13)),
                 ]),
               ),
@@ -224,7 +224,7 @@ class _AjakanTulis extends StatelessWidget {
               child: Text(nama.isEmpty ? 'X' : nama[0].toUpperCase(),
                   style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontSize: 15)),
             ),
           ),
@@ -277,7 +277,7 @@ class LencanaTier extends StatelessWidget {
             style: TextStyle(
                 color: warna,
                 fontSize: 8.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 letterSpacing: .5)),
       ]),
     );
@@ -304,7 +304,7 @@ class LencanaKhusus extends StatelessWidget {
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: .5)),
         ]),
       );
@@ -338,7 +338,7 @@ class _KartuPost extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                                fontWeight: FontWeight.w800, fontSize: 13.5)),
+                                fontWeight: FontWeight.w700, fontSize: 13.5)),
                       ),
                       LencanaTier(post.tier),
                       if (post.badge != null) LencanaKhusus(post.badge!),
@@ -359,7 +359,7 @@ class _KartuPost extends StatelessWidget {
           const SizedBox(height: 12),
           Text(post.judul,
               style: const TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   fontSize: 15,
                   height: 1.32,
                   letterSpacing: -.2)),
@@ -417,7 +417,7 @@ class _KartuPost extends StatelessWidget {
             const Text('Lihat',
                 style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: XyTheme.primary)),
             const Icon(Icons.chevron_right_rounded,
                 size: 17, color: XyTheme.primary),
@@ -564,7 +564,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                   Text(nama,
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text(tanggal(p.dibuat),
                       style: TextStyle(color: pal.muted, fontSize: 11))
                 ])),
@@ -576,7 +576,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           Text(p.judul,
               style: const TextStyle(
                   fontSize: 21,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   height: 1.3,
                   letterSpacing: -.5)),
           const SizedBox(height: 10),
@@ -647,7 +647,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                     Text(nama,
                                         style: const TextStyle(
                                             fontSize: 13,
-                                            fontWeight: FontWeight.w800)),
+                                            fontWeight: FontWeight.w700)),
                                     if (b.admin || b.tier != 'basic')
                                       LencanaTier(b.admin ? 'admin' : b.tier),
                                     if (b.badge != null) LencanaKhusus(b.badge!)
@@ -812,7 +812,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                       const Text('Percakapan',
                                           style: TextStyle(
                                               fontSize: 17,
-                                              fontWeight: FontWeight.w800)),
+                                              fontWeight: FontWeight.w700)),
                                       const SizedBox(width: 8),
                                       Text('${_balasan.length}',
                                           style: TextStyle(color: pal.muted))
@@ -1080,7 +1080,7 @@ class _FormTulisState extends State<_FormTulis> {
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
         children: [
           const Text('Kategori',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -1110,7 +1110,7 @@ class _FormTulisState extends State<_FormTulis> {
           ),
           const SizedBox(height: 20),
           const Text('Judul',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
           const SizedBox(height: 9),
           TextField(
             controller: _judul,
@@ -1120,7 +1120,7 @@ class _FormTulisState extends State<_FormTulis> {
           ),
           const SizedBox(height: 18),
           const Text('Isi diskusi',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
           const SizedBox(height: 9),
           TextField(
             controller: _isi,
@@ -1195,7 +1195,7 @@ class _Avatar extends StatelessWidget {
             : Text(nama.isEmpty ? 'X' : nama[0].toUpperCase(),
                 style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: ukuran * .42)),
       ),
     );

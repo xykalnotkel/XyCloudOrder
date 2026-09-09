@@ -486,27 +486,27 @@ export default {
 <title>XyCloudStore — Sedang Perawatan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0D0920;--line:rgba(139,92,246,.28);--pur:#A78BFA;--ink:#F1EDFC;--mut:#A99BD6}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
+body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
 .kartu{max-width:470px;width:100%;text-align:center;animation:naik .7s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:32px;padding:28px 26px 24px;box-shadow:0 30px 90px rgba(10,4,40,.55)}
 @keyframes naik{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
 .merek{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px}
 .merek img{height:20px;opacity:.95}
 .merek span{color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.5px}
 .gambar{width:min(74vw,288px);height:auto;margin:2px auto;display:block;filter:drop-shadow(0 26px 44px rgba(124,58,237,.42))}
-.lencana{display:inline-flex;align-items:center;gap:7px;margin:18px auto 0;background:linear-gradient(90deg,rgba(124,58,237,.3),rgba(168,85,247,.16));border:1px solid rgba(167,139,250,.4);color:#D8CDF5;font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;padding:7px 16px;border-radius:99px}
-.lencana i{width:7px;height:7px;border-radius:50%;background:#C084FC;animation:denyut 1.6s infinite}
-@keyframes denyut{0%{box-shadow:0 0 0 0 rgba(192,132,252,.6)}70%{box-shadow:0 0 0 9px rgba(192,132,252,0)}100%{box-shadow:0 0 0 0 rgba(192,132,252,0)}}
-h1{font-size:clamp(22px,6vw,30px);letter-spacing:-.6px;margin:14px 0 10px;background:linear-gradient(90deg,#CBB9FF,#9F6BFF,#CBB9FF);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.lencana{display:inline-flex;align-items:center;gap:8px;margin:16px auto 0;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);color:#CDC0F0;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;padding:7px 15px;border-radius:99px}
+.lencana i{width:6px;height:6px;border-radius:50%;background:#A99BE0}
+h1{font-size:clamp(22px,6vw,30px);letter-spacing:-.5px;margin:14px 0 10px;color:#E7DFFB;font-weight:700}
 p{color:#B7A9E0;font-size:14.5px;line-height:1.7;margin:0 auto}
 p.kecil,span.kecil{color:#7d6faa;font-size:12px}
 .catatan{color:#9A8CC6;font-size:12px;margin-top:10px}
 .aksi{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22px}
-.tombol{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#7C3AED,#8B5CF6);color:#fff;padding:12px 26px;border-radius:99px;font-size:14px;font-weight:800;border:0;cursor:pointer;transition:.18s;font-family:inherit;box-shadow:0 14px 34px rgba(124,58,237,.4)}
-.tombol:hover{transform:translateY(-1px);box-shadow:0 18px 44px rgba(124,58,237,.55)}
+.tombol{display:inline-flex;align-items:center;gap:9px;background:#7C3AED;color:#fff;padding:13px 27px;border-radius:14px;font-size:14px;font-weight:700;border:0;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;font-family:inherit;box-shadow:0 4px 0 #4C1D95,0 12px 22px rgba(76,29,149,.28)}
+.tombol:hover{transform:translateY(-1px)}
+.tombol:active{transform:translateY(3px);box-shadow:0 1px 0 #4C1D95}
 .meter{height:4px;width:min(220px,66%);border-radius:99px;background:rgba(124,58,237,.25);overflow:hidden;margin:16px auto 0}
 .meter i{display:block;height:100%;width:42%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#D8B4FE);animation:geser 1.4s ease-in-out infinite}
 @keyframes geser{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}

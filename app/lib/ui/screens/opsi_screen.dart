@@ -49,7 +49,7 @@ class _OpsiStreamingScreenState extends State<OpsiStreamingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 Text('Bitrate ${((p['bitrate'] as num) / 1000).round()} Mbps',
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
                 Slider(
                     value: (p['bitrate'] as num).toDouble().clamp(2000, 80000),
                     min: 2000,
@@ -136,7 +136,7 @@ class _OpsiTampilanScreenState extends State<OpsiTampilanScreen> {
       appBar: AppBar(title: const Text('Teks & Gerakan')),
       body: ListView(padding: const EdgeInsets.all(20), children: [
         Text('Ukuran teks ${((PengaturanLokal.skala) * 100).round()}%',
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
         Slider(
             value: PengaturanLokal.skala,
             min: .85,
@@ -222,7 +222,7 @@ class _OpsiNotifikasiScreenState extends State<OpsiNotifikasiScreen>
                         ? 'Izin notifikasi aktif'
                         : 'Izin notifikasi belum aktif',
                     style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w800)),
+                        fontSize: 17, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 10),
                 const Text(
                     'Nada, getar, prioritas, dan tampilan layar kunci mengikuti pengaturan channel Android. Pilih kategori di bawah untuk mengaturnya.'),

@@ -155,7 +155,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
               Text(
                 _reset ? 'Buat password baru' : 'Cek email kamu',
-                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -1, height: 1.2),
+                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1.2),
               ),
               const SizedBox(height: 8),
               Text.rich(
@@ -163,7 +163,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   const TextSpan(text: 'Kami mengirim kode 6 digit ke '),
                   TextSpan(
                     text: widget.email,
-                    style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary),
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: XyTheme.primary),
                   ),
                   const TextSpan(text: '. Kode berlaku 15 menit.'),
                 ]),
@@ -184,7 +184,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
                       maxLength: 1,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 0),
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: 0),
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
                         counterText: '',
@@ -260,7 +260,7 @@ class _OtpScreenState extends State<OtpScreen> {
                         child: const Padding(
                           padding: EdgeInsets.all(6),
                           child: Text('Kirim ulang kode',
-                              style: TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+                              style: TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w700, fontSize: 13.5)),
                         ),
                       ),
               ),

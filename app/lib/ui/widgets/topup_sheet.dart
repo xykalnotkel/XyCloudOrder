@@ -129,7 +129,7 @@ class _SheetTopupState extends State<_SheetTopup> {
   // ---------------- langkah 1: pilih nominal ----------------
   List<Widget> _langkahPilih(AppState s) => [
         const Text('Isi Saldo',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: -.8)),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -.8)),
         const SizedBox(height: 6),
         Text('Minimal ${rupiah(s.konfigurasi.minTopup)}. Saldo dipakai untuk sewa PC dan beli akun.',
             style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13, height: 1.5)),
@@ -157,7 +157,7 @@ class _SheetTopupState extends State<_SheetTopup> {
                 child: Center(
                   child: Text(rupiah(n),
                       style: TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         fontSize: 14.5,
                         color: aktif ? Colors.white : XyTheme.of(context).ink,
                       )),
@@ -179,7 +179,7 @@ class _SheetTopupState extends State<_SheetTopup> {
         ),
         const SizedBox(height: 18),
         const Text('Metode Pembayaran',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
         const SizedBox(height: 10),
         if (s.konfigurasi.metodeBayar.isEmpty)
           Row(children: [
@@ -275,7 +275,7 @@ class _SheetTopupState extends State<_SheetTopup> {
           const SizedBox(width: 12),
           const Expanded(
             child: Text('Bayar Sekarang',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -.5)),
           ),
         ]),
         const SizedBox(height: 18),
@@ -292,7 +292,7 @@ class _SheetTopupState extends State<_SheetTopup> {
             const SizedBox(height: 6),
             Text(rupiah(t.total),
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
+                    color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: -1)),
           ]),
         ),
         if (t.bayar['qr'] != null) ...[
@@ -344,7 +344,7 @@ class _SheetTopupState extends State<_SheetTopup> {
         const SizedBox(width: 12),
         const Expanded(
           child: Text('Selesaikan Pembayaran',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: -.5)),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: -.5)),
         ),
       ]),
       const SizedBox(height: 18),
@@ -364,7 +364,7 @@ class _SheetTopupState extends State<_SheetTopup> {
           const SizedBox(height: 6),
           Text(rupiah(t.total),
               style: const TextStyle(
-                  color: Colors.white, fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
+                  color: Colors.white, fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: -1)),
           const SizedBox(height: 6),
           Text('Termasuk kode unik ${t.kodeUnik} untuk pencocokan otomatis',
               textAlign: TextAlign.center,
@@ -478,7 +478,7 @@ class _SheetTopupState extends State<_SheetTopup> {
   Widget _barisRek(String k, String v, {bool salin = false}) => Row(children: [
         Text(k, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
         const Spacer(),
-        Text(v, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+        Text(v, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
         if (salin) ...[
           const SizedBox(width: 8),
           Pressable(
@@ -523,7 +523,7 @@ class KartuTopup extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Top up ${rupiah(t.nominal)}',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.8)),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8)),
               const SizedBox(height: 3),
               Text(t.catatan ?? label,
                   style: TextStyle(color: warna, fontSize: 11.8, fontWeight: FontWeight.w600)),

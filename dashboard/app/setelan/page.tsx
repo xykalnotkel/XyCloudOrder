@@ -46,7 +46,7 @@ export default function SetelanPage() {
   const tampil = rows.filter((r) => !q || r.kunci.includes(q.toLowerCase()) || String(r.nilai || "").toLowerCase().includes(q.toLowerCase()));
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={SlidersHorizontal} title="Setelan Umum" sub="Penyimpanan kunci–nilai (key–value) di tabel setelan — diatur Worker & dashboard"
         right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} kunci</span>} />
       {hasil && <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 text-[12.5px] font-semibold">{hasil}</div>}

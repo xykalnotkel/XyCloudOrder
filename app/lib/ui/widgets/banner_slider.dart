@@ -237,7 +237,7 @@ class _KartuBanner extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 9.5,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 1.1,
                         ),
                       ),
@@ -253,7 +253,7 @@ class _KartuBanner extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 17,
                         height: 1.22,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: -.4,
                       ),
                     ),
@@ -281,7 +281,7 @@ class _KartuBanner extends StatelessWidget {
                       Flexible(child: Text(
                         banner.cta,
                         maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: c1, fontSize: 11.8, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: c1, fontSize: 11.8, fontWeight: FontWeight.w700),
                       )),
                       const SizedBox(width: 3),
                       Icon(Icons.arrow_forward_rounded, size: 14, color: c1),

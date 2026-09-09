@@ -72,7 +72,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                     color: Colors.white,
                     fontSize: 32,
                     height: 1.16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: -1.7,
                   ),
                 ),
@@ -133,7 +133,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                       ),
                       child: const Center(
                         child: Text('Buat Akun Baru',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                       ),
                     ),
                   ),
@@ -163,7 +163,7 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(nilai,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19, letterSpacing: -.6)),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 19, letterSpacing: -.6)),
       const SizedBox(height: 2),
       Text(label, style: TextStyle(color: Colors.white.withOpacity(.40), fontSize: 11, fontWeight: FontWeight.w600)),
     ]);

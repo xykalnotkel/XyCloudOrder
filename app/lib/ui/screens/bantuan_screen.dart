@@ -30,7 +30,7 @@ class BantuanScreen extends StatelessWidget {
               Container(width: 48, height: 48, decoration: BoxDecoration(color: Colors.white.withOpacity(.16), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.support_agent_rounded, color: Colors.white, size: 26)),
               const SizedBox(width: 14),
               const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Butuh bantuan cepat?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                Text('Butuh bantuan cepat?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                 SizedBox(height: 4),
                 Text('Chat CS realtime 24/7 atau WA admin.', style: TextStyle(color: Colors.white70, fontSize: 12)),
               ])),
@@ -51,7 +51,7 @@ class BantuanScreen extends StatelessWidget {
                 child: XyCard(
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
-                    title: Text(f['q']!, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                    title: Text(f['q']!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                     children: [Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(f['a']!, style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6)))],
                   ),
                 ),
@@ -59,7 +59,7 @@ class BantuanScreen extends StatelessWidget {
           const SizedBox(height: 8),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Video Tutorial', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text('Video Tutorial', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text('Segera hadir: cara sewa PC, cara pakai RDP, cara beli akun.', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5)),
             ]),
@@ -82,7 +82,7 @@ class _ActionBtn extends StatelessWidget {
         child: Container(
           height: 48,
           decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(14), border: Border.all(color: XyTheme.of(context).line)),
-          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 18, color: XyTheme.primary), const SizedBox(width: 8), Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13))]),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 18, color: XyTheme.primary), const SizedBox(width: 8), Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13))]),
         ),
       );
 }

@@ -176,7 +176,7 @@ class _XyShellState extends State<XyShell> {
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: on ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: on ? FontWeight.w700 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.of(context).muted,
                       ),
                       child: Text(it.$3),

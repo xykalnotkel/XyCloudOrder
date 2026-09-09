@@ -89,7 +89,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                             child: Text(
                               u.nama.isEmpty ? 'X' : u.nama[0].toUpperCase(),
                               style: const TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 26),
+                                  color: Colors.white, fontWeight: FontWeight.w700, fontSize: 26),
                             ),
                           )
                         : null,
@@ -119,7 +119,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w800, fontSize: 19, letterSpacing: -.5)),
+                            color: Colors.white, fontWeight: FontWeight.w700, fontSize: 19, letterSpacing: -.5)),
                     const SizedBox(height: 4),
                     Text(u.email,
                         maxLines: 1,
@@ -138,7 +138,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           const SizedBox(width: 5),
                           Text('Member ${u.tier.toUpperCase()}',
                               style: const TextStyle(
-                                  color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: .4)),
+                                  color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: .4)),
                         ]),
                       ),
                       if (u.badge != null)
@@ -155,7 +155,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                                 style: const TextStyle(
                                     color: XyTheme.primary,
                                     fontSize: 10.5,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     letterSpacing: .4)),
                           ]),
                         ),
@@ -314,7 +314,7 @@ class _Statistik extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15.5, letterSpacing: -.4)),
+                  color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15.5, letterSpacing: -.4)),
           const SizedBox(height: 3),
           Text(label, style: TextStyle(color: Colors.white.withOpacity(.55), fontSize: 11)),
         ]),
@@ -349,7 +349,7 @@ class _Menu extends StatelessWidget {
             const SizedBox(width: 13),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 const SizedBox(height: 3),
                 Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
               ]),

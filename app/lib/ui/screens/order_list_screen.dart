@@ -22,7 +22,7 @@ class OrderListScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Order Saya', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -.4)),
+          title: const Text('Order Saya', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -.4)),
           actions: [
             IconButton(
               onPressed: () => Navigator.push(context, xyRoute(const WalletScreen())),
@@ -35,7 +35,7 @@ class OrderListScreen extends StatelessWidget {
             unselectedLabelColor: XyTheme.of(context).muted,
             indicatorColor: XyTheme.primary,
             indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
             tabs: [Tab(text: 'Berjalan (${berjalan.length})'), Tab(text: 'Riwayat (${riwayat.length})')],
           ),
         ),
@@ -80,7 +80,7 @@ class _List extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(o.planNama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text(o.planNama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
                     Text('${o.kode} · ${tanggal(o.dibuat)}', style:  TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
                   ]),
                 ),
@@ -105,7 +105,7 @@ class _List extends StatelessWidget {
                       style: const TextStyle(fontSize: 12.5, color: XyTheme.success, fontWeight: FontWeight.w700)),
                 ],
                 const Spacer(),
-                Text(rupiah(o.total), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(rupiah(o.total), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               ]),
             ]),
           );

@@ -42,7 +42,7 @@ export default function PromosiPage() {
   }
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Gift} title="Promosi" sub="Pop-up & floating promo lintas platform (promo_overlay)"
         right={
           <button onClick={() => setBuka(!buka)} className="text-xs px-3.5 py-2 rounded-full xy-btn text-white font-bold flex items-center gap-1.5">

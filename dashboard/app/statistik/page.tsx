@@ -47,7 +47,7 @@ export default function StatistikPage() {
   const totPengguna = (d?.penggunaHarian || []).reduce((s: number, r: any) => s + k(r.n), 0);
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><BarChart3 size={18} className="text-white" /></div>
         <div>

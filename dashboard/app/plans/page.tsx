@@ -45,7 +45,7 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Monitor} title="Paket PC" sub="Katalog paket sewa PC (pc_plans) — CRUD via /api/admin/plans"
         right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} paket</span>} />
 

@@ -32,7 +32,7 @@ class _AkunScreenState extends State<AkunScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Beli Akun', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -.4)),
+        title: const Text('Beli Akun', style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: -.4)),
         actions: [Padding(padding: const EdgeInsets.only(right: 16), child: Center(child: LiveDot(state: s.koneksi)))],
       ),
       body: Column(children: [
@@ -142,7 +142,7 @@ class _KartuProduk extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(color: XyTheme.danger, borderRadius: BorderRadius.circular(20)),
                 child: Text('-$diskon%',
-                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800)),
+                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
               ),
             ),
         ]),
@@ -164,7 +164,7 @@ class _KartuProduk extends StatelessWidget {
               style:  TextStyle(
                   fontSize: 11, color: XyTheme.of(context).muted, decoration: TextDecoration.lineThrough)),
         Text(rupiah(produk.harga),
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: XyTheme.primary, letterSpacing: -.3)),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: XyTheme.primary, letterSpacing: -.3)),
         const SizedBox(height: 6),
         Row(children: [
           Container(
@@ -265,12 +265,12 @@ class _SheetDetailState extends State<_SheetDetail> {
                     Pill(p.kategori, warna: XyTheme.violet),
                     const SizedBox(height: 8),
                     Text(p.nama,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, height: 1.28, letterSpacing: -.4)),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, height: 1.28, letterSpacing: -.4)),
                     const SizedBox(height: 8),
                     Row(children: [
                       Bintang(nilai: p.rating, ukuran: 15),
                       const SizedBox(width: 7),
-                      Text('${p.rating}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+                      Text('${p.rating}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
                       Text('  ·  ${p.jumlahUlasan} ulasan  ·  ${p.terjual} terjual',
                           style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12)),
                     ]),
@@ -370,7 +370,7 @@ class _SheetDetailState extends State<_SheetDetail> {
             child: Row(children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                  Text('Harga', style: TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted)),
-                Text(rupiah(p.harga), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18, letterSpacing: -.5)),
+                Text(rupiah(p.harga), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, letterSpacing: -.5)),
               ]),
               const SizedBox(width: 16),
               Expanded(
@@ -429,7 +429,7 @@ class _Stat extends StatelessWidget {
     return Column(children: [
       Icon(icon, size: 18, color: XyTheme.primary),
       const SizedBox(height: 5),
-      Text(nilai, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+      Text(nilai, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
       Text(label, style:  TextStyle(fontSize: 10.5, color: XyTheme.of(context).muted)),
     ]);
   }
@@ -471,7 +471,7 @@ class _DialogAkun extends StatelessWidget {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const XyIlustrasi('sukses', tinggi: 132),
           const SizedBox(height: 6),
-          const Text('Pembelian Berhasil', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          const Text('Pembelian Berhasil', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17)),
           const SizedBox(height: 4),
           Text(produk.nama, textAlign: TextAlign.center, style:  TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted)),
           const SizedBox(height: 18),

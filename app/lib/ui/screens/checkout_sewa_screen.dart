@@ -113,7 +113,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
     return Scaffold(
       appBar: AppBar(
           title: const Text('Checkout Sewa',
-              style: TextStyle(fontWeight: FontWeight.w800))),
+              style: TextStyle(fontWeight: FontWeight.w700))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         children: [
@@ -127,7 +127,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
                     children: [
                       Text(p.nama,
                           style: const TextStyle(
-                              fontWeight: FontWeight.w800, fontSize: 16)),
+                              fontWeight: FontWeight.w700, fontSize: 16)),
                       Text('${p.gpu} · ${p.ramGb}GB RAM',
                           style: TextStyle(
                               color: XyTheme.of(context).muted,
@@ -307,7 +307,7 @@ class _CheckoutSewaScreenState extends State<CheckoutSewaScreen> {
                         fontSize: 11.5, color: XyTheme.of(context).muted)),
                 Text(rupiah(total),
                     style: const TextStyle(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         fontSize: 18,
                         letterSpacing: -.5)),
               ]),
@@ -403,12 +403,12 @@ class _Baris extends StatelessWidget {
                 fontSize: 13.5,
                 color:
                     tebal ? XyTheme.of(context).ink : XyTheme.of(context).muted,
-                fontWeight: tebal ? FontWeight.w800 : FontWeight.w500)),
+                fontWeight: tebal ? FontWeight.w700 : FontWeight.w500)),
         const Spacer(),
         Text(kanan,
             style: TextStyle(
                 fontSize: tebal ? 16 : 13.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: warna ?? XyTheme.of(context).ink)),
       ]),
     );

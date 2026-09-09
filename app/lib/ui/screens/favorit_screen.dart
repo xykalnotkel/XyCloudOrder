@@ -56,7 +56,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('${favIds.length} Produk Disukai',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                   const SizedBox(height: 4),
                   const Text('Tap produk untuk lihat detail, tap ♥ lagi untuk hapus.',
                       style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -92,7 +92,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(p.nama, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          Text(p.nama, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                           const SizedBox(height: 3),
                           Text('${p.kategori} • Rp ${p.harga}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                           const SizedBox(height: 6),
@@ -115,7 +115,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
           const SizedBox(height: 12),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Tips', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text('Tips', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text(
                 '• Favorit tersinkron ke server, tetap ada meski ganti HP\n• Dapatkan notifikasi kalau produk favorit restock atau diskon\n• Gunakan filter Favorit di halaman Akun untuk lihat cepat',

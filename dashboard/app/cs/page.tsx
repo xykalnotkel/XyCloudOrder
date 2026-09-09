@@ -86,7 +86,7 @@ export default function CsPage() {
   const totalPesan = rooms.reduce((a, r) => a + Number(r.total || 0), 0);
 
   return (
-    <div className="space-y-3 font-[Plus_Jakarta_Sans]">
+    <div className="space-y-3 font-[var(--font-inter)]">
       <div className="flex items-start justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center shadow-[0_8px_18px_rgba(124,58,237,.25)]">

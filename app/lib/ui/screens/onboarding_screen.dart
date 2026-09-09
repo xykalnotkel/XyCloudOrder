@@ -164,7 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                             style: const TextStyle(
                               fontSize: 28,
                               height: 1.22,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: -1.1,
                             ),
                           ),

@@ -66,7 +66,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
               Container(width: 48, height: 48, decoration: BoxDecoration(color: Colors.white.withOpacity(.16), borderRadius: BorderRadius.circular(14)), child: const Icon(Icons.local_offer_rounded, color: Colors.white, size: 26)),
               const SizedBox(width: 14),
               const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Punya kode voucher?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                Text('Punya kode voucher?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
                 SizedBox(height: 4),
                 Text('Cek dulu di sini, lalu masukkan saat checkout sewa PC atau beli akun.', style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
               ])),
@@ -76,7 +76,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
           XyCard(
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Cek Kode Voucher', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5)),
+              const Text('Cek Kode Voucher', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
               const SizedBox(height: 10),
               TextField(
                 controller: _kode,
@@ -120,7 +120,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: XyTheme.success.withOpacity(.1), borderRadius: BorderRadius.circular(12)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Voucher berlaku!', style: TextStyle(color: XyTheme.success, fontWeight: FontWeight.w800, fontSize: 13)),
+                      Text('Voucher berlaku!', style: TextStyle(color: XyTheme.success, fontWeight: FontWeight.w700, fontSize: 13)),
                       const SizedBox(height: 6),
                       Text(
                         potongan > 0
@@ -138,7 +138,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
           const SizedBox(height: 16),
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Cara pakai', style: TextStyle(fontWeight: FontWeight.w800)),
+              const Text('Cara pakai', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               Text('1. Pilih paket PC atau produk akun\n2. Di halaman checkout, tap "Pakai Voucher"\n3. Masukkan kode — potongan langsung terhitung\n4. Voucher tidak bisa digabung & ada minimal belanja',
                   style: TextStyle(color: t.muted, fontSize: 12.5, height: 1.7)),
