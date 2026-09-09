@@ -223,7 +223,7 @@ class _GradientButtonState extends State<GradientButton> {
                 ],
         ),
         child: Center(
-          child: loading
+          child: widget.loading
               ? const SizedBox(
                   width: 22,
                   height: 22,
