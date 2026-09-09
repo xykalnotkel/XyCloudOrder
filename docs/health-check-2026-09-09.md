@@ -93,6 +93,17 @@ M dashboard/app/statistik/page.tsx     (dari dump → ringkasan terstruktur)
 A api/test/push_admin.test.mjs         (test endpoint baru)
 ```
 
+## Hotfix lanjutan: "Global error — Node.removeChild"
+- **Gejala:** halaman *Global error* `Node.removeChild: The node to be removed is not a child of this node` setelah login/navigasi.
+- **Akar:** `app/login/layout.tsx` membuat `<html><body>` **kedua** yang bersarang di dalam `<body>` root layout (`body > html > body`). Saat React berpindah rute (login → `/`), pembongkaran node tidak valid → DOMException.
+- **Fix:** hapus `app/login/layout.tsx` (Sidebar & AuthGuard di root sudah menangani `/login`). Terverifikasi: `out/login.html` kini 1 `<html>` + 1 `<body>`; sudah di-deploy ke Pages & Vercel.
+
+## Fase B App (tema terang) — catatan audit
+- `_MiniBtn` (translucent-putih, gaya dark) tidak terpakai — grid & hero app sudah token-aware (`XyTheme.of(context)`), sehingga default terang aman untuk sebagian besar layar.
+- Aksen **dark-gradient** (header/hero `0xFF100030→0xFF7C3AED`) dibiarkan sebagai aksen brand (konsisten dgn kartu gradient violet di dashboard light).
+- **Yang perlu dicek saat tes APK** (beri tahu layar yg bermasalah): `Colors.white` pada kartu terang, bilah status/teks pada `welcome`, `splash`, `shell` (bottom nav), `wallet`, `akun`, `cs`, `forum`; prioritas lihat tangkapan layar dari HP.
+- Versi app dinaikkan `2.6.0+20 → 3.3.0+21` (artefak APK berikutnya terbaca versi baru; tidak ada tag release).
+
 ## Sudah Dieksekusi (persetujuan user)
 - ✅ Git commit + push ke `main` (`v3.3k`)
 - ✅ Deploy Worker (`wrangler deploy`) → `/api/admin/push` live di produksi
