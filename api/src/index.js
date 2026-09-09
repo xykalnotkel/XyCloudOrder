@@ -389,7 +389,18 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname;
 
-    if (req.method === 'OPTIONS') return json({}, 204, env);
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-key, x-xy-device',
+          'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+          'Access-Control-Max-Age': '86400',
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
 
     // Private rooms require a valid user token or an authorized admin key.
     if (path.startsWith('/ws/')) {
@@ -489,20 +500,45 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
       return unduhApk(env, ctx, decodeURIComponent(path.slice(7)));
     }
 
-    // v3.3e: gabung hosting — admin.xycloud.my.id langsung ke Pages dashboard baru, hapus legacy dari default
-    // Jika host admin.xycloud.my.id, semua non-API redirect ke Pages (dashboard baru)
+    // v3.3g: admin.xycloud.my.id langsung serve dashboard baru tanpa redirect (proxy ke Pages)
+    // User tanya kenP harus redirect — jadi kita proxy, bukan redirect
     const isAdminHost = host.startsWith('admin.');
     if (isAdminHost) {
       if (!(path.startsWith('/api/') || path.startsWith('/ws/') || path.startsWith('/img/') || path.startsWith('/brand/') || path.startsWith('/unduh/') || path.startsWith('/legal/') || path === '/robots.txt' || path === '/sitemap.xml' || path === '/manifest.webmanifest' || path === '/sw.js' || path === '/health')) {
-        // preserve path, but / -> /login for better UX
-        const destPath = path === '/' ? '/login' : path;
-        const dest = 'https://xycloud-dashboard.pages.dev' + destPath + (url.search || '');
-        return Response.redirect(dest, 302);
+        // proxy ke Pages dashboard — tanpa redirect, jadi URL tetap admin.xycloud.my.id
+        try {
+          const destPath = path === '/' ? '/login/' : path;
+          const dest = 'https://xycloud-dashboard.pages.dev' + destPath + (url.search || '');
+          const proxied = await fetch(dest, {
+            headers: {
+              'User-Agent': req.headers.get('User-Agent') || 'XyCloud-Worker',
+              'Accept': req.headers.get('Accept') || 'text/html',
+            },
+          });
+          let body = await proxied.text();
+          // rewrite absolute links to Pages to stay on admin domain (optional)
+          // keep as is for now — Pages assets are relative
+          return new Response(body, {
+            status: proxied.status,
+            headers: {
+              'Content-Type': proxied.headers.get('Content-Type') || 'text/html; charset=utf-8',
+              'Cache-Control': 'no-store',
+              'X-Content-Type-Options': 'nosniff',
+            },
+          });
+        } catch (e) {
+          // fallback: serve solid login if proxy gagal
+          return new Response(ADMIN_HTML, {
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Cache-Control': 'no-store',
+            },
+          });
+        }
       }
     }
-    // api.xycloud.my.id/admin dan / -> redirect ke dashboard baru (hapus lama)
+    // api.xycloud.my.id/admin dan / -> serve solid login langsung (tanpa redirect) — backend migrasi ke baru tapi tetap ada login di api host
     if (path === '/' || path === '/admin' || path === '/admin/') {
-      // hanya izinkan legacy via ?legacy=1 untuk darurat, tapi default redirect ke Pages
       if (url.searchParams.get('legacy') === '1') {
         const legacyHtml=ADMIN_LEGACY_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\u003c'));
         return new Response(legacyHtml, {
@@ -517,8 +553,17 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
           },
         });
       }
-      // default: redirect ke Pages login (migrasi backend ke baru)
-      return Response.redirect('https://xycloud-dashboard.pages.dev/login', 302);
+      // serve solid login (no redirect) — user bisa pilih buka dashboard Pages/Vercel dari sini
+      return new Response(ADMIN_HTML, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'SAMEORIGIN',
+          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob: https://fonts.googleapis.com https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob: /brand/; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+        },
+      });
     }
     // legacy direct path tetap ada untuk darurat, tapi akan dihapus nanti setelah migrasi full
     if (path === '/admin-legacy' || path === '/admin/legacy') {
