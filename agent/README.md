@@ -3,19 +3,25 @@
 Program kecil yang dijalankan di setiap PC atau VM yang disewakan. Tugasnya menyambungkan mesin itu
 ke server XyCloudStore supaya sesi sewa bisa dinyalakan, dipasangkan, dan ditutup otomatis dari aplikasi.
 
-## Cara paling gampang (Windows): instal otomatis
+## Cara paling gampang (Windows): aplikasi UI + auto-setup
 
-Berkas **`instal_otomatis.ps1`** berperan seperti aplikasi installer:
+**`xy_agent_ui.ps1`** (dikemas jadi `XyCloudStore-Agent.exe` lewat GitHub Actions) adalah
+jendela aplikasi untuk mengatur agen:
 
-- Mengecek & **otomatis memasang Python** (winget) bila belum ada.
-- Mengecek & **otomatis memasang Sunshine** (engine streaming) bila belum ada.
-- Memandu isi **kode unit** (dari dashboard → Unit PC) + kredensial web-UI Sunshine sekali saja
-  (disimpan **terenkripsi DPAPI** akun Windows, bukan teks polos).
-- Menjalankan diagnosis `--cek`, lalu **menjalankan agen** dan **mendaftarkan autostart**
-  (penjadwal `XyAgent` @ saat PC dinyalakan).
+- Isi **kode unit** (dashboard → Unit PC → Daftarkan Unit), kredensial web-UI Sunshine,
+  server API → tombol **Simpan Pengaturan**. Kredensial disimpan **terenkripsi DPAPI**.
+- Tombol **Auto-setup yang belum ada** otomatis: memasang **Python** (winget) dan
+  **Sunshine** (winget) bila tidak ada, lalu **mengunduh `xy_agent.py`** dari GitHub
+  bila tidak ada di folder.
+- **Uji Koneksi Lokal** menjalankan diagnosis `--cek`; **Jalankan / Hentikan Agen**
+  mengendalikan proses; **Mulai otomatis saat Windows menyala** mendaftarkan penjadwal
+  `XyAgent`. Ada panel status + log langsung di jendela.
 
-Cara pakai: letakkan `instal_otomatis.ps1` **di folder yang sama dengan `xy_agent.py`**,
-klik kanan → *Run with PowerShell*. Jalankan ulang kapan saja untuk mengubah konfigurasi.
+Cara pakai: letakkan `XyCloudStore-Agent.exe` di satu folder (boleh berisi `xy_agent.py`
+atau biarkan tombol Auto-setup yang mengunduh), lalu jalankan exe-nya. Kalau dijalankan
+dengan argumen `-Jalankan` (dipakai penjadwal), aplikasi menjalankan agen tanpa jendela.
+
+Versi konsol CLI: **`instal_otomatis.ps1`** tetap tersedia untuk pemasangan non-interaktif.
 
 ## Cara kerja singkat
 

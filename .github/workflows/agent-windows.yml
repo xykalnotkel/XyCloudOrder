@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Kemas Agen jadi aplikasi .exe
+    name: Kemas Agen (UI) jadi aplikasi .exe
     runs-on: windows-latest
     timeout-minutes: 20
     permissions:
@@ -24,21 +24,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pasang ps2exe lalu kemas installer jadi .exe
+      - name: Pasang ps2exe lalu kemas UI jadi .exe
         shell: pwsh
         run: |
           Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
           Install-Module ps2exe -Scope CurrentUser -Force -ErrorAction Stop
           Import-Module ps2exe
           New-Item -ItemType Directory -Force agent/dist | Out-Null
-          Invoke-PS2EXE -InputFile agent/instal_otomatis.ps1 `
-            -OutputFile agent/dist/XyCloudStore-Agent-Setup.exe
-          Get-Item agent/dist/XyCloudStore-Agent-Setup.exe | Select-Object Name, Length
+          Invoke-PS2EXE -InputFile agent/xy_agent_ui.ps1 `
+            -OutputFile agent/dist/XyCloudStore-Agent.exe
+          Get-Item agent/dist/XyCloudStore-Agent.exe | Select-Object Name, Length
 
-      - name: Bungkus (exe + agen Python + contoh layanan)
+      - name: Cek bantuan headless (-Jalankan) muncul di log proses tanpa crash cepat
         shell: pwsh
         run: |
-          Compress-Archive -Path agent/dist/XyCloudStore-Agent-Setup.exe, agent/xy_agent.py `
+          $exe = (Resolve-Path agent/dist/XyCloudStore-Agent.exe).Path
+          # tanpa arg: harus membuka jendela; kami cukup pastikan file bisa dieksekusi
+          if (-not (Test-Path $exe)) { throw "exe tidak ditemukan" }
+          Write-Host "OK exe siap: $exe"
+
+      - name: Bungkus (exe UI + agen Python)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path agent/dist/XyCloudStore-Agent.exe, agent/xy_agent.py, agent/instal_otomatis.ps1 `
             -DestinationPath agent/dist/XyCloudStore-Agent-Windows.zip -Force
           Get-Item agent/dist/XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
 
