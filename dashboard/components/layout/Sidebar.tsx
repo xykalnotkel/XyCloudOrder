@@ -39,6 +39,7 @@ import {
   Smartphone,
   ShieldAlert,
   Wrench,
+  Database,
   LogOut,
 } from "lucide-react";
 import { clearAdminKey } from "@/lib/api";
@@ -77,6 +78,7 @@ const iconMap: Record<MenuIcon, any> = {
   smartphone: Smartphone,
   "shield-alert": ShieldAlert,
   tool: Wrench,
+  database: Database,
 };
 
 export default function Sidebar() {

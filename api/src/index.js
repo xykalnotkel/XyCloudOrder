@@ -489,7 +489,20 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
       return unduhApk(env, ctx, decodeURIComponent(path.slice(7)));
     }
 
+    // v3.3e: gabung hosting — admin.xycloud.my.id langsung ke Pages dashboard baru, hapus legacy dari default
+    // Jika host admin.xycloud.my.id, semua non-API redirect ke Pages (dashboard baru)
+    const isAdminHost = host.startsWith('admin.');
+    if (isAdminHost) {
+      if (!(path.startsWith('/api/') || path.startsWith('/ws/') || path.startsWith('/img/') || path.startsWith('/brand/') || path.startsWith('/unduh/') || path.startsWith('/legal/') || path === '/robots.txt' || path === '/sitemap.xml' || path === '/manifest.webmanifest' || path === '/sw.js' || path === '/health')) {
+        // preserve path, but / -> /login for better UX
+        const destPath = path === '/' ? '/login' : path;
+        const dest = 'https://xycloud-dashboard.pages.dev' + destPath + (url.search || '');
+        return Response.redirect(dest, 302);
+      }
+    }
+    // api.xycloud.my.id/admin dan / -> redirect ke dashboard baru (hapus lama)
     if (path === '/' || path === '/admin' || path === '/admin/') {
+      // hanya izinkan legacy via ?legacy=1 untuk darurat, tapi default redirect ke Pages
       if (url.searchParams.get('legacy') === '1') {
         const legacyHtml=ADMIN_LEGACY_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\u003c'));
         return new Response(legacyHtml, {
@@ -504,17 +517,10 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
           },
         });
       }
-      return new Response(ADMIN_HTML, {
-        headers: {
-          'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'no-store',
-          'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'SAMEORIGIN',
-          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob: https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob:; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
-          'Referrer-Policy': 'strict-origin-when-cross-origin',
-        },
-      });
+      // default: redirect ke Pages login (migrasi backend ke baru)
+      return Response.redirect('https://xycloud-dashboard.pages.dev/login', 302);
     }
+    // legacy direct path tetap ada untuk darurat, tapi akan dihapus nanti setelah migrasi full
     if (path === '/admin-legacy' || path === '/admin/legacy') {
       const legacyHtml=ADMIN_LEGACY_HTML.replace('/*__XY_MEDIA__*/ {"cloud":"","base":""}',()=>JSON.stringify({cloud:env.CLOUDINARY_CLOUD,base:env.PUBLIC_URL||'https://api.xycloud.my.id'}).replace(/</g,'\u003c'));
       return new Response(legacyHtml, {

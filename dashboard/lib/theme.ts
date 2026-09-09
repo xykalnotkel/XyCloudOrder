@@ -47,7 +47,8 @@ export type MenuIcon =
   | "trash"
   | "smartphone"
   | "shield-alert"
-  | "tool";
+  | "tool"
+  | "database";
 
 export const MENU: { id: string; label: string; icon: MenuIcon; path: string; badge?: string }[] = [
   { id: "dash", label: "Dashboard", icon: "layout-dashboard", path: "/" },
@@ -81,6 +82,7 @@ export const MENU: { id: string; label: string; icon: MenuIcon; path: string; ba
   { id: "media", label: "Media", icon: "package", path: "/media" },
   { id: "audit", label: "Audit Log", icon: "file-text", path: "/audit" },
   { id: "sampah", label: "Sampah User", icon: "trash", path: "/sampah" },
+  { id: "cadangan", label: "Cadangan DB", icon: "database", path: "/cadangan" },
   { id: "sistem", label: "Sistem", icon: "settings", path: "/sistem" },
   { id: "peran", label: "Peran Admin", icon: "shield-user", path: "/peran" },
 ] as const;
