@@ -21,3 +21,10 @@ api/.wrangler/
 
 # Pinned streaming sources are fetched reproducibly; included in release source bundles.
 .cache/
+
+# Next.js dashboard
+
+dashboard/.next/
+dashboard/node_modules/
+dashboard/out/
+

@@ -21,6 +21,21 @@ export async function unggahGambar(env, { dataUri, folder = 'xycloudstore' }) {
     return { ok: false, alasan: 'Kredensial Cloudinary belum diatur' };
   }
   if (!dataUri) return { ok: false, alasan: 'Tidak ada berkas' };
+  // v3.3 security: hanya izinkan image/*, tolak text/html, svg berbahaya, dll. Max size cek di pemanggil, tapi di sini juga cek prefix
+  if (typeof dataUri === 'string' && dataUri.startsWith('data:')) {
+    const m = dataUri.match(/^data:([^;]+);base64,/i);
+    const mime = (m ? m[1] : '').toLowerCase();
+    const allowed = ['image/png','image/jpeg','image/jpg','image/webp','image/gif'];
+    if (!allowed.includes(mime)) {
+      return { ok: false, alasan: `Tipe berkas tidak diizinkan: ${mime || 'unknown'}. Hanya png/jpeg/webp/gif` };
+    }
+    // cek ukuran kasar: base64 length * 0.75
+    const b64 = dataUri.split(',')[1] || '';
+    const approxBytes = Math.floor(b64.length * 0.75);
+    if (approxBytes > 5 * 1024 * 1024) {
+      return { ok: false, alasan: 'Berkas terlalu besar, maksimal 5MB' };
+    }
+  }
 
   const timestamp = Math.floor(Date.now() / 1000);
   // parameter yang ikut ditandatangani harus urut abjad

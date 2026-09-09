@@ -28,30 +28,55 @@ import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
 import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, pantauKesehatan } from './sistem.js';
-import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, buatCadangan } from './loyal.js';
+import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, pakaiVoucherStrict, buatCadangan } from './loyal.js';
 import { halamanLegal, isiLegal } from './legal.js';
 import { SKEMA_APLIKASI, providerSiap, urlMulai, ambilProfil, halamanKembali, verifikasiIdTokenGoogle } from './oauth.js';
+
+const _rateMem = new Map();
+function rateMem(key, max, windowSec) {
+  const now = Date.now() / 1000;
+  let arr = _rateMem.get(key) || [];
+  arr = arr.filter((t) => t > now - windowSec);
+  if (arr.length >= max) return false;
+  arr.push(now);
+  _rateMem.set(key, arr);
+  return true;
+}
+// bersihkan map tiap 10 menit biar tidak bocor memori
+setInterval?.(() => {
+  const now = Date.now() / 1000;
+  for (const [k, v] of _rateMem) {
+    const fresh = v.filter((t) => t > now - 3600);
+    if (fresh.length === 0) _rateMem.delete(k);
+    else _rateMem.set(k, fresh);
+  }
+}, 600000);
+
+const securityHeaders = (env) => ({
+  'Content-Type': 'application/json',
+  'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-admin-key, x-xy-device',
+  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' https://res.cloudinary.com https://*.giphy.com https://media.giphy.com data:; script-src 'self' 'unsafe-inline' https://*.onesignal.com; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id https://*.onesignal.com; frame-ancestors 'self'",
+  'Cache-Control': 'no-store',
+});
 
 const json = (data, status = 200, env) =>
   new Response(JSON.stringify({ data }), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
-      'Cache-Control': 'no-store',
-    },
+    headers: securityHeaders(env),
   });
 
 const err = (message, status = 400, env) =>
   new Response(JSON.stringify({ error: message }), {
     status,
     headers: {
+      ...securityHeaders(env),
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': env?.ALLOW_ORIGIN || '*',
     },
   });
 
@@ -449,13 +474,13 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'public, max-age=300',
           'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'SAMEORIGIN',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com https://media.giphy.com https://*.onesignal.com data: blob:; script-src 'self' 'unsafe-inline' https://*.onesignal.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://res.cloudinary.com https://*.giphy.com https://media.giphy.com data: blob:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id https://*.onesignal.com; frame-ancestors 'self'",
           // minta peramban mengirim arsitektur dan lebar bit perangkat.
-          // tanpa ini Chrome tidak pernah mengirimkannya, sehingga
-          // halaman unduh salah menebak 32-bit sebagai 64-bit.
           'Accept-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List',
           'Critical-CH': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness',
-          'Permissions-Policy': 'ch-ua-arch=(self), ch-ua-bitness=(self), ch-ua-model=(self)',
+          'Permissions-Policy': 'ch-ua-arch=(self), ch-ua-bitness=(self), ch-ua-model=(self), geolocation=(), microphone=(), camera=()',
           'Vary': 'Sec-CH-UA-Arch, Sec-CH-UA-Bitness',
         },
       });
@@ -477,7 +502,8 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-store',
           'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'DENY',
+          'X-Frame-Options': 'SAMEORIGIN',
+          'Content-Security-Policy': "default-src 'self' https://api.xycloud.my.id https://res.cloudinary.com https://*.giphy.com data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https://res.cloudinary.com https://*.giphy.com data: blob:; connect-src 'self' https://api.xycloud.my.id wss://*.xycloud.my.id; frame-ancestors 'self'",
           'Referrer-Policy': 'strict-origin-when-cross-origin',
           'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
         },
@@ -666,6 +692,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
     if (!path.startsWith('/api/')) return err('Not found', 404, env);
     const p = path.slice(5);
     const ip = req.headers.get('CF-Connecting-IP') || 'tanpa-ip';
+    // v3.3 global IP rate-limit: 180 req / 60s (D1 atomic)
+    if (!p.startsWith('admin/') && !p.startsWith('agen/') && !p.startsWith('bayar/webhook/')) {
+      try {
+        const ok = await securitySlot(env, 'global-ip', `ip:${ip}`, 180, 60);
+        if (!ok) return err('Terlalu banyak permintaan, tunggu sebentar.', 429, env);
+      } catch (_) {
+        // fail-open kalau D1 batas bermasalah, tapi log
+      }
+    }
 
     // saat mode pemeliharaan bertingkat menyala, hanya admin dan agen yang boleh
     // lewat; admin tetap selalu boleh untuk mematikannya. Cakupan memutuskan
@@ -2501,16 +2536,26 @@ ${halaman.map(([u, p2, f]) => `  <url>
         return json({ ok: true }, 200, env);
       }
 
-      // ---- forum: buat diskusi ----
+      // ---- forum: buat diskusi ---- (v3.3: max 5/jam + anti-spam link)
       if (p === 'forum' && req.method === 'POST') {
+        if (!rateMem(`forum-mem:${me.sub}`, 5, 3600)) {
+          return err('Maks 5 diskusi per jam. Coba lagi nanti.', 429, env);
+        }
         if (!(await bolehLanjut(env, `forum:${me.sub}`, 10, 3600))) {
           return err('Kamu sudah membuat cukup banyak diskusi. Coba lagi nanti.', 429, env);
         }
+        // v3.3: cek DB 1 jam terakhir (anti bypass memory)
+        try {
+          const satuJam = new Date(Date.now() - 3600000).toISOString();
+          const cnt = await env.DB.prepare('SELECT COUNT(*) as c FROM forum_post WHERE user_id=? AND dibuat>?').bind(me.sub, satuJam).first();
+          if ((cnt?.c ?? 0) >= 5) return err('Maks 5 diskusi per jam (DB).', 429, env);
+        } catch (_) {}
         const b = await req.json().catch(() => ({}));
         const judul = String(b.judul || '').trim();
         const isi = String(b.isi || '').trim();
         if (judul.length < 5) return err('Judul minimal 5 karakter', 400, env);
         if (isi.length < 10) return err('Isi diskusi minimal 10 karakter', 400, env);
+        if ((isi.match(/https?:\/\//g) || []).length > 3) return err('Terlalu banyak link, maks 3.', 400, env);
 
         let gambar = null;
         if (b.gambar) {
@@ -2800,6 +2845,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const q=await estimasiSewa(env,me.sub,await req.json());const {plan,...price}=q;return json(price,200,env);
       }
       if(p==='orders' && req.method==='POST') {
+        if (!rateMem(`order:${me.sub}`, 8, 60)) return err('Terlalu banyak order, tunggu.', 429, env);
         await rawatSewa(env);
         const r=await buatSewa(env,me.sub,await req.json());
         if(r.baru){
@@ -2833,6 +2879,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       //  3) pemotongan saldo diguard (harus cukup); kalau gagal, klaim dilepas;
       //  4) pengurangan stok & catatan menyusul HANYA setelah klaim & potong berhasil.
       if (p === 'akun/beli' && req.method === 'POST') {
+        if (!rateMem(`beli:${me.sub}`, 10, 60)) return err('Terlalu banyak percobaan beli, tunggu.', 429, env);
         const { produk_id, metode, voucher } = await req.json();
         if(metode!=='saldo')return err('Gunakan saldo untuk pembelian. Top up terlebih dahulu.',400,env);
         const prod = await env.DB.prepare('SELECT * FROM akun_produk WHERE id = ?').bind(produk_id).first();
@@ -2850,8 +2897,15 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const bayar = Math.max(0, prod.harga - potonganTier - potonganVoucher);
         if ((user?.saldo ?? 0) < bayar) return err('Saldo tidak cukup', 402, env);
 
-        // (1) Klaim satu kredensial secara atomik. Coba beberapa kali karena bisa
-        // kalah lomba sesaat dengan pembeli lain; hasil akhirnya pasti satu pemenang.
+        // (0) Klaim voucher dulu secara atomik jika ada — single-use + kuota guard. Rollback nanti jika langkah selanjutnya gagal.
+        let voucherClaimed = false;
+        if (kodeVoucher) {
+          const vRes = await pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: produk_id, potongan: potonganVoucher });
+          if (!vRes.ok) return err(vRes.alasan || 'Voucher gagal dipakai', 409, env);
+          voucherClaimed = true;
+        }
+
+        // (1) Klaim satu kredensial secara atomik. Coba beberapa kali karena bisa kalah lomba sesaat dengan pembeli lain.
         let stok = null;
         for (let coba = 0; coba < 3 && !stok; coba++) {
           const calon = await env.DB.prepare('SELECT id FROM akun_stok WHERE produk_id=? AND terpakai=0 ORDER BY id LIMIT 1').bind(produk_id).first();
@@ -2862,20 +2916,38 @@ ${halaman.map(([u, p2, f]) => `  <url>
           }
         }
         if (!stok) {
-          // Tidak ada kredensial siap: tolak bersih, jangan potong saldo.
+          if (voucherClaimed) {
+            // rollback voucher karena kredensial tidak ada
+            await env.DB.batch([
+              env.DB.prepare('DELETE FROM voucher_pakai WHERE kode=? AND user_id=? AND ref_id=?').bind(kodeVoucher, me.sub, produk_id),
+              env.DB.prepare('UPDATE voucher SET terpakai=MAX(0,terpakai-1) WHERE kode=?').bind(kodeVoucher),
+            ]);
+          }
           return err('Kredensial produk belum tersedia. Tidak ada saldo yang dipotong — coba lagi beberapa saat.', 409, env);
         }
         if (!stok.email || !stok.password) {
-          await env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id).run();
+          await env.DB.batch([
+            env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id),
+            ...(voucherClaimed ? [
+              env.DB.prepare('DELETE FROM voucher_pakai WHERE kode=? AND user_id=? AND ref_id=?').bind(kodeVoucher, me.sub, produk_id),
+              env.DB.prepare('UPDATE voucher SET terpakai=MAX(0,terpakai-1) WHERE kode=?').bind(kodeVoucher),
+            ] : []),
+          ]);
           return err('Kredensial tidak lengkap. Tidak ada saldo yang dipotong; hubungi CS.', 409, env);
         }
 
-        // (2) Potong saldo dengan pengaman; kalau saldo berubah jadi kurang, lepaskan klaim.
+        // (2) Potong saldo dengan pengaman; kalau gagal, lepaskan klaim kredensial & voucher.
         const potong = await env.DB.prepare(
           'UPDATE users SET saldo=saldo-?, total_belanja=total_belanja+? WHERE id=? AND saldo>=?'
         ).bind(bayar, bayar, me.sub, bayar).run();
         if (!potong.meta?.changes) {
-          await env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id).run();
+          await env.DB.batch([
+            env.DB.prepare('UPDATE akun_stok SET terpakai=0, user_id=NULL WHERE id=?').bind(stok.id),
+            ...(voucherClaimed ? [
+              env.DB.prepare('DELETE FROM voucher_pakai WHERE kode=? AND user_id=? AND ref_id=?').bind(kodeVoucher, me.sub, produk_id),
+              env.DB.prepare('UPDATE voucher SET terpakai=MAX(0,terpakai-1) WHERE kode=?').bind(kodeVoucher),
+            ] : []),
+          ]);
           return err('Saldo tidak cukup', 402, env);
         }
 
@@ -2884,7 +2956,6 @@ ${halaman.map(([u, p2, f]) => `  <url>
         await env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
           .bind(uid('t_'), me.sub, `Beli ${prod.nama}`, 'akun', -bayar).run();
 
-        if (kodeVoucher) ctx.waitUntil(pakaiVoucher(env, { kode: kodeVoucher, userId: me.sub, refId: produk_id, potongan: potonganVoucher }));
         ctx.waitUntil(segarkanTier(env, me.sub));
         ctx.waitUntil(push(env, 'katalog', 'stock.update', { id: produk_id, stok: prod.stok - 1 }));
 
@@ -3013,6 +3084,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
       }
 
       if (p === 'cs/messages' && req.method === 'POST') {
+        if (!rateMem(`cs-mem:${me.sub}`, 30, 60)) {
+          return err('Terlalu banyak pesan, tunggu sebentar.', 429, env);
+        }
         const { teks, gambar, client_id: clientId } = await req.json();
         if(!String(teks||'').trim()&&!gambar)return err('Pesan kosong',400,env);
         if(String(teks||'').length>5000)return err('Pesan maksimal 5.000 karakter',400,env);

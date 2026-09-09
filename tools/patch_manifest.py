@@ -4,6 +4,8 @@
 Yang ditambahkan:
   - nama aplikasi  : XyCloudStore
   - izin internet
+  - izin REQUEST_INSTALL_PACKAGES (untuk update via DownloadManager)
+  - izin POST_NOTIFICATIONS (Android 13+ untuk progress notif)
   - activity penangkap balikan login sosial (skema xycloudstore://)
   - daftar <queries> supaya bisa membuka WhatsApp, browser, dan email
 
@@ -49,17 +51,27 @@ def main() -> int:
     berkas = sys.argv[1] if len(sys.argv) > 1 else 'android/app/src/main/AndroidManifest.xml'
     isi = open(berkas, encoding='utf-8').read()
 
-    isi = re.sub(r'android:label="[^"]*"', 'android:label="XyCloudStore"', isi, count=1)
+    isi = re.sub(r'android:label="[^\"]*"', 'android:label="XyCloudStore"', isi, count=1)
 
+    # Permissions untuk update
+    perms = []
     if 'android.permission.INTERNET' not in isi:
+        perms.append('<uses-permission android:name="android.permission.INTERNET"/>')
+    if 'android.permission.REQUEST_INSTALL_PACKAGES' not in isi:
+        perms.append('<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>')
+    if 'android.permission.POST_NOTIFICATIONS' not in isi:
+        perms.append('<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>')
+
+    if perms:
         isi = isi.replace(
             '<application',
-            '<uses-permission android:name="android.permission.INTERNET"/>\n    <application',
+            '\n    '.join(perms) + '\n    <application',
             1,
         )
 
-    isi = re.sub(r'android:allowBackup="[^"]*"', '', isi)
-    isi = isi.replace('<application', '<application android:allowBackup="false"', 1)
+    isi = re.sub(r'android:allowBackup="[^\"]*"', '', isi)
+    if 'android:allowBackup' not in isi:
+        isi = isi.replace('<application', '<application android:allowBackup="false"', 1)
 
     if 'flutter_web_auth_2.CallbackActivity' not in isi:
         isi = isi.replace('    </application>', ACTIVITY_CALLBACK, 1)
@@ -69,6 +81,7 @@ def main() -> int:
 
     open(berkas, 'w', encoding='utf-8').write(isi)
     print('AndroidManifest.xml diperbarui:', berkas)
+    print('Permissions: INTERNET + REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS + queries')
     return 0
 
 

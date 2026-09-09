@@ -76,17 +76,51 @@ export async function cekVoucher(env, { kode, userId, jenis, total }) {
   return { ok: true, potongan, voucher: v };
 }
 
-/** Catat pemakaian voucher setelah transaksi berhasil. */
+/** Catat pemakaian voucher setelah transaksi berhasil — atomic single-use + kuota guard. */
 export async function pakaiVoucher(env, { kode, userId, refId, potongan }) {
-  if (!kode) return;
+  if (!kode) return { ok: true };
   const k = String(kode).toUpperCase();
   try {
-    await env.DB.batch([
-      env.DB.prepare('INSERT INTO voucher_pakai (id,kode,user_id,ref_id,potongan) VALUES (?,?,?,?,?)')
-        .bind('vp_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12), k, userId, refId || null, potongan || 0),
-      env.DB.prepare('UPDATE voucher SET terpakai = terpakai + 1 WHERE upper(kode) = ?').bind(k),
-    ]);
-  } catch (_) { /* diabaikan */ }
+    // cek sudah pernah pakai (prevent double)
+    const already = await env.DB.prepare('SELECT 1 FROM voucher_pakai WHERE upper(kode)=? AND user_id=?').bind(k, userId).first();
+    if (already) return { ok: false, alasan: 'Voucher sudah dipakai' };
+
+    // klaim kuota atomik: hanya increment jika kuota masih tersedia
+    const claim = await env.DB.prepare(
+      'UPDATE voucher SET terpakai=terpakai+1 WHERE upper(kode)=? AND (kuota=0 OR terpakai < kuota) RETURNING kode'
+    ).bind(k).first();
+
+    if (!claim) {
+      const v = await env.DB.prepare('SELECT kuota, terpakai FROM voucher WHERE upper(kode)=?').bind(k).first();
+      if (!v) return { ok: false, alasan: 'Voucher tidak ditemukan' };
+      if (v.kuota > 0 && v.terpakai >= v.kuota) return { ok: false, alasan: 'Kuota voucher habis' };
+      return { ok: false, alasan: 'Gagal klaim voucher' };
+    }
+
+    // catat pemakaian — jika race insert duplikat, rollback terpakai
+    try {
+      await env.DB.prepare('INSERT INTO voucher_pakai (id,kode,user_id,ref_id,potongan) VALUES (?,?,?,?,?)')
+        .bind('vp_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12), k, userId, refId || null, potongan || 0).run();
+    } catch (e) {
+      // rollback increment karena insert gagal (duplikat)
+      await env.DB.prepare('UPDATE voucher SET terpakai=MAX(0,terpakai-1) WHERE upper(kode)=?').bind(k).run();
+      return { ok: false, alasan: 'Voucher sudah dipakai (race)' };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, alasan: String(e.message || e).slice(0, 120) };
+  }
+}
+
+/** Versi strict yang melempar KontenError jika gagal — untuk dipakai di jalur akun/beli */
+export async function pakaiVoucherStrict(env, { kode, userId, refId, potongan }) {
+  const r = await pakaiVoucher(env, { kode, userId, refId, potongan });
+  if (!r.ok) {
+    const { KontenError } = await import('./engagement.js');
+    throw new KontenError(r.alasan || 'Voucher tidak bisa dipakai', 409);
+  }
+  return r;
 }
 
 /**

@@ -1,4 +1,13 @@
 import 'hapus_akun_screen.dart';
+import 'voucher_screen.dart';
+import 'leaderboard_screen.dart';
+import 'live_unit_screen.dart';
+import 'bantuan_screen.dart';
+import 'pembaruan_screen.dart';
+import 'favorit_screen.dart';
+import 'statistik_screen.dart';
+import 'tier_screen.dart';
+import 'aktivitas_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -202,6 +211,54 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 sub: '$jumlahOrder pesanan tercatat',
                 onTap: () => Navigator.push(context, xyRoute(const OrderListScreen())),
               ),
+              _Menu(
+                ikon: Icons.local_offer_rounded,
+                judul: 'Voucher Saya',
+                sub: 'Klaim & pakai potongan',
+                onTap: () => Navigator.push(context, xyRoute(const VoucherScreen())),
+              ),
+              _Menu(
+                ikon: Icons.leaderboard_rounded,
+                judul: 'Leaderboard',
+                sub: 'Top spender & poin',
+                onTap: () => Navigator.push(context, xyRoute(const LeaderboardScreen())),
+              ),
+              _Menu(
+                ikon: Icons.sensors_rounded,
+                judul: 'Status Unit Live',
+                sub: '${s.orders.isEmpty ? '' : s.plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready — realtime',
+                onTap: () => Navigator.push(context, xyRoute(const LiveUnitScreen())),
+              ),
+              _Menu(
+                ikon: Icons.favorite_rounded,
+                judul: 'Favorit Saya',
+                sub: '${s.favorit.length} produk disukai',
+                onTap: () => Navigator.push(context, xyRoute(const FavoritScreen())),
+              ),
+              _Menu(
+                ikon: Icons.bar_chart_rounded,
+                judul: 'Statistik & Pengeluaran',
+                sub: 'Ringkasan belanja & hemat tier',
+                onTap: () => Navigator.push(context, xyRoute(const StatistikScreen())),
+              ),
+              _Menu(
+                ikon: Icons.diamond_outlined,
+                judul: 'Tier & Benefit',
+                sub: 'Bronze → Platinum benefit',
+                onTap: () => Navigator.push(context, xyRoute(const TierScreen())),
+              ),
+              _Menu(
+                ikon: Icons.security_rounded,
+                judul: 'Aktivitas & Keamanan',
+                sub: 'Device, login history, anti-abuse',
+                onTap: () => Navigator.push(context, xyRoute(const AktivitasScreen())),
+              ),
+              _Menu(
+                ikon: Icons.help_center_rounded,
+                judul: 'Pusat Bantuan',
+                sub: 'FAQ, tutorial, CS',
+                onTap: () => Navigator.push(context, xyRoute(const BantuanScreen())),
+              ),
 
               const SectionHeader('Aplikasi'),
               _Menu(
@@ -217,6 +274,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
               ),
 
+              _Menu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
               _Menu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const TemaScreen()))),
               _Menu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
               const SizedBox(height: 18),

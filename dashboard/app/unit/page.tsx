@@ -1,0 +1,72 @@
+"use client";
+import { useEffect, useState } from "react";
+import { adminFetch } from "@/lib/api";
+
+export default function UnitPage() {
+  const [units, setUnits] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const [form, setForm] = useState({ nama: "", lokasi: "SG", cpu: "i7-12700", gpu: "RTX 4070", ram: "32GB", total: 1 });
+
+  useEffect(() => {
+    adminFetch("/api/admin/unit")
+      .then((d) => setUnits(d.units || d.data || d.plans || []))
+      .catch((e) => setErr(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const create = async () => {
+    try {
+      await adminFetch("/api/admin/unit", { method: "POST", body: form });
+      alert("Unit dibuat");
+      location.reload();
+    } catch (e: any) { alert(e.message); }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-white">Unit PC ⚡</h1>
+          <p className="text-sm text-violet-200/60">Kelola paket PC & unit fisik — dipakai live monitor</p>
+        </div>
+        <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10">{units.length} paket</span>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="xy-card rounded-[16px] p-5">
+          <h3 className="font-bold text-white">Tambah Paket</h3>
+          <div className="mt-4 space-y-3">
+            <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama paket, ex: RTX 4070 SG" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            <div className="grid grid-cols-2 gap-2">
+              <input value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} placeholder="Lokasi" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+              <input type="number" value={form.total} onChange={(e) => setForm({ ...form, total: parseInt(e.target.value) || 1 })} placeholder="Jumlah unit" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            </div>
+            <input value={form.cpu} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="CPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            <input value={form.gpu} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="GPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            <input value={form.ram} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="RAM" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            <button onClick={create} className="w-full py-3 rounded-xl xy-btn font-bold text-white">Simpan Paket</button>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          {loading ? <div className="xy-card rounded-xl p-6 text-center text-white/60">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-300">{err}</div> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {units.map((u: any, i: number) => (
+                <div key={u.id || i} className="xy-card rounded-[14px] p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-white text-[13px]">{u.nama || u.name || `Paket ${i + 1}`}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">{u.unit_tersedia ?? u.tersedia ?? u.total_unit ?? "?"} ready</span>
+                  </div>
+                  <div className="mt-2 text-[11px] text-violet-200/60">{u.cpu || "-"} • {u.gpu || "-"} • {u.ram || "-"}</div>
+                  <div className="mt-2 text-[11px] text-white/40">Lokasi: {u.lokasi || u.region || "-"}</div>
+                </div>
+              ))}
+              {units.length === 0 && <div className="col-span-2 xy-card rounded-xl p-8 text-center text-white/40 text-sm">Belum ada unit — Worker /api/admin/unit</div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

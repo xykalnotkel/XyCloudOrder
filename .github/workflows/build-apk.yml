@@ -83,6 +83,10 @@ jobs:
       - name: Siapkan engine streaming native dalam APK
         run: python3 tools/siapkan_streaming.py
 
+      - name: Siapkan updater native (DownloadManager + notif progress)
+        working-directory: ${{ env.APP_DIR }}
+        run: python3 ../tools/siapkan_pembaruan.py android
+
       - name: Naikkan versi Kotlin (dibutuhkan OneSignal)
         working-directory: ${{ env.APP_DIR }}
         run: |

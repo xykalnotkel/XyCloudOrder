@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --xy-bg: #100030;
+  --xy-violet: #7C3AED;
+  --xy-violet2: #8B5CF6;
+  --xy-card: #1A0A3A;
+}
+
+html, body {
+  background: radial-gradient(120% 120% at 0% 0%, #200050 0%, #100030 38%, #0B001E 100%);
+  min-height: 100vh;
+  color: #EDE9FE;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #7C3AED #100030;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #100030; }
+::-webkit-scrollbar-thumb { background: #7C3AED; border-radius: 999px; }
+
+/* glossy card */
+.xy-card {
+  background: linear-gradient(135deg, rgba(26,10,58,0.96), rgba(45,10,94,0.92));
+  border: 1px solid rgba(124,58,237,0.22);
+  box-shadow: 0 0 0 1px rgba(124,58,237,0.12), 0 8px 32px rgba(124,58,237,0.14);
+  backdrop-filter: blur(12px);
+}
+.xy-btn {
+  background: linear-gradient(135deg,#7C3AED 0%,#8B5CF6 45%,#A855F7 100%);
+  box-shadow: 0 4px 20px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+.xy-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.xy-btn:active { transform: translateY(0); }

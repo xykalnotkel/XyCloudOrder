@@ -1,0 +1,90 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/theme.dart';
+import '../../providers/app_state.dart';
+import '../widgets/common.dart';
+
+class LiveUnitScreen extends StatelessWidget {
+  const LiveUnitScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final plans = context.watch<AppState>().plans;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Status Unit Live')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF100030), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(children: [
+              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Color(0xFF22C55E), blurRadius: 8)])),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Live — update realtime via WebSocket', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+              Text('${plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready', style: TextStyle(color: Colors.white.withOpacity(.75), fontSize: 11.5)),
+            ]),
+          ),
+          const SectionHeader('Unit PC'),
+          if (plans.isEmpty)
+            const Kosong(icon: Icons.desktop_windows_rounded, judul: 'Belum ada data unit', sub: 'Tarik untuk refresh.', ilustrasi: 'pc')
+          else
+            ...plans.map((p) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: XyCard(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
+                        const SizedBox(width: 12),
+                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                          const SizedBox(height: 2),
+                          Text('${p.cpu} • ${p.gpu} • ${p.ram}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+                        ])),
+                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                          Text('${p.unitTersedia}/${p.totalUnit}', style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary)),
+                          Text('ready', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 10)),
+                        ]),
+                      ]),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(value: p.totalUnit == 0 ? 0 : p.unitTersedia / p.totalUnit, minHeight: 6, backgroundColor: XyTheme.of(context).line, valueColor: const AlwaysStoppedAnimation(XyTheme.primary)),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        _Chip('${p.lokasi}', Icons.location_on_rounded),
+                        const SizedBox(width: 6),
+                        _Chip('${p.pingMs}ms', Icons.speed_rounded),
+                        const SizedBox(width: 6),
+                        _Chip(p.unitTersedia > 0 ? 'Online' : 'Penuh', Icons.circle, color: p.unitTersedia > 0 ? const Color(0xFF22C55E) : XyTheme.danger),
+                      ]),
+                    ]),
+                  ),
+                )),
+        ],
+      ),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color? color;
+  const _Chip(this.label, this.icon, {this.color});
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(20)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 12, color: color ?? XyTheme.primary),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: XyTheme.of(context).muted)),
+        ]),
+      );
+}

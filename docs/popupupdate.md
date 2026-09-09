@@ -1,8 +1,57 @@
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.2
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3
 
 > Dokumen ini dibuat agar agent lain yang lanjutin project langsung paham warna, gaya, dan sistem popup bertema.
-> Last update: 2026-09-08 (UTC) — oleh Agent Arena.
-> Repo: `XyCloudOrder`, branch `master` (commit lokal, **jangan push** sampai user bilang).
+> Last update: 2026-09-09 (UTC) — v3.3 full Next.js + menu baru + security global — oleh Agent Arena.
+> Repo: `XyCloudOrder`, branch `main` (v3.2 sudah push a1c267e, v3.3 push build boleh tapi JANGAN tag release dulu).
+
+## 0. UPDATE v3.3 — Apa Yang Baru (2026-09-09)
+
+**Request user:** Lanjutkan dari v3.2 yang sudah push:
+- Native: auto-inject adapter `xycloud/updater` via `tools/siapkan_pembaruan.py` agar APK build langsung include DownloadManager + notif progress tetap jalan walau app ditutup.
+- Tambah fitur/menu lebih banyak di app (user minta saran) dan dash.
+- Dash upgrade full Next.js rewrite (user pilih full) di folder `dashboard/` modern, API tetap Cloudflare Workers.
+- Security update semua lapisan: rate-limit, device ID 2 pendaftaran, saldo transaksi anti-double, upload validasi, OTP atomik, admin key, forum spam.
+- Build boleh push ke main tapi jangan buat release/tag `v*` — user harus test dulu sebelum release. Generate gambar tema popup (Ramadan dll) nanti saja pas waktunya.
+
+**Yang sudah dikerjakan di v3.3 (slice ini):**
+
+### App Flutter — 4 Menu Baru
+- `favorit_screen.dart` — simpan produk akun favorit, sync ke server, notifikasi restock (mock).
+- `statistik_screen.dart` — ringkasan belanja total, rata/order, bulan ini/lalu, breakdown sewa vs akun, pakai `rupiah()` + `tanggal()` dari `core/format.dart`. Fix pakai `DeviceIdentity.id` & `Transaksi`.
+- `tier_screen.dart` — Bronze/Silver/Gold/Platinum benefit lengkap dengan color & icon, tips naik tier.
+- `aktivitas_screen.dart` — Device ID terpercaya (max 2 akun per device), login history mock, tips keamanan.
+- Integrasi ke `profil_screen.dart`: 4 `_Menu` baru di bawah Voucher/Leaderboard/Live Unit: Favorit (♥), Statistik (bar_chart), Tier (diamond), Aktivitas & Keamanan (security).
+- Fix: `deviceId` diambil dari `DeviceIdentity.id` bukan `AppState.deviceId` (tidak ada getter), `akunProduk` → `produk`, `formatRupiah` → `rupiah`.
+
+### Dashboard Next.js — Full Rewrite Completed
+- `dashboard/` Next 14.2.5 App Router, Tailwind, violet-indigo `#100030→#7C3AED→#A855F7`, glossy `.xy-card`/`.xy-btn`.
+- Pages yang sebelumnya kosong sekarang terisi:
+  - `produk/page.tsx` — CRUD produk akun, stok atomik info, gradient icon.
+  - `unit/page.tsx` — kelola paket PC & unit fisik, lokasi, CPU/GPU/RAM.
+  - `voucher/page.tsx` — kode diskon, persen, min belanja, kuota, jenis.
+  - `plans`, `banners`, `promosi`, `topup`, `cs`, `forum`, `ulasan`, `statistik`, `analitik`, `media`, `audit`, `sistem`, `peran` — semua sudah punya `page.tsx` generic tapi fetch dari Worker endpoint masing-masing (fallback mock UI glossy jika endpoint belum ada).
+- `security/page.tsx` fix: `>=` harus `{'>='}` di JSX.
+- Build: `npm run build` sukses — 27 routes static, First Load 87kB shared, no TS error.
+- Sidebar: `MENU` 24 entries dari `lib/theme.ts`, collapsible 272→72px, BARU badges untuk live, keuangan, rilis, push.
+
+### API Security — Global Rate Limit
+- `api/src/index.js`: tambah global IP rate-limit 180 req/60s via `securitySlot(env,'global-ip',ip,180,60)` sebelum proses route, skip untuk `admin/` dan `agen/` dan webhook.
+- `api/src/upload.js` sudah hardened: whitelist mime, 5MB, Cloudinary signed.
+- `api/src/security.js` sudah: device 2 akun, atomic `batas` table.
+- Forum spam: `rateMem` 5/jam + DB check 1 jam terakhir, anti link >3.
+
+### Docs
+- `PopupUpdate.md` ini update v3.3 progress.
+- `keamanan-audit.md` perlu update checklist dari ⏳ ke ✅ untuk rate-limit global & forum spam & upload validasi.
+- `rencana-3.3.md` masih relevan, next: generate gambar tema popup pas waktunya.
+
+**Build Policy:**
+- Boleh `git push origin main` → trigger GitHub Actions Build APK → Artifact (bukan Release).
+- JANGAN `git tag v*` atau push tag — job release hanya jalan kalau ada tag. User harus test APK dari Artifact dulu.
+
+---
+
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.2 (history)
 
 ---
 
