@@ -500,22 +500,33 @@ p{color:#B6A9DF;font-size:15px;line-height:1.7;max-width:430px;margin:0 auto 22p
       return unduhApk(env, ctx, decodeURIComponent(path.slice(7)));
     }
 
-    // v3.3h: admin.xycloud.my.id langsung serve dashboard baru tanpa redirect (proxy ke Pages)
-    // Fix stuck "Memeriksa sesi admin terus" di "/" karena pathname "/" dianggap protected
-    // — AuthGuard sekarang allow "/" & "/login" sebagai public, dan proxy serve binary benar via arrayBuffer
+    // v3.3i: admin.xycloud.my.id proxy ke Vercel (dynamic Next.js) bukan Pages static export
+    // Pages static export kadang bikin Application error client-side exception di menu selain Dashboard
+    // Vercel deployment support dynamic + solid UI no glassmorphism
     const isAdminHost = host.startsWith('admin.');
     if (isAdminHost) {
       if (!(path.startsWith('/api/') || path.startsWith('/ws/') || path.startsWith('/img/') || path.startsWith('/brand/') || path.startsWith('/unduh/') || path.startsWith('/legal/') || path === '/robots.txt' || path === '/sitemap.xml' || path === '/manifest.webmanifest' || path === '/sw.js' || path === '/health')) {
         try {
-          const dest = 'https://xycloud-dashboard.pages.dev' + path + (url.search || '');
-          const proxied = await fetch(dest, {
-            headers: {
-              'User-Agent': req.headers.get('User-Agent') || 'XyCloud-Worker',
-              'Accept': req.headers.get('Accept') || '*/*',
-              'Accept-Language': req.headers.get('Accept-Language') || 'id,en;q=0.9',
-            },
-          });
-          // penting: pakai arrayBuffer biar _next/static/*.js dan font tidak corrupt
+          // coba Vercel dulu (dynamic), fallback ke Pages static
+          const targets = [
+            'https://dashboard-iota-ten-70.vercel.app' + path + (url.search || ''),
+            'https://xycloud-dashboard.pages.dev' + path + (url.search || ''),
+          ];
+          let proxied = null;
+          for (const dest of targets) {
+            try {
+              const r = await fetch(dest, {
+                headers: {
+                  'User-Agent': req.headers.get('User-Agent') || 'XyCloud-Worker',
+                  'Accept': req.headers.get('Accept') || '*/*',
+                  'Accept-Language': req.headers.get('Accept-Language') || 'id,en;q=0.9',
+                  'X-Forwarded-Host': 'admin.xycloud.my.id',
+                },
+              });
+              if (r.status < 500) { proxied = r; break; }
+            } catch (_) { continue; }
+          }
+          if (!proxied) throw new Error('both proxy failed');
           const buf = await proxied.arrayBuffer();
           const ct = proxied.headers.get('Content-Type') || (path.endsWith('.js') ? 'application/javascript' : path.endsWith('.css') ? 'text/css' : 'text/html; charset=utf-8');
           return new Response(buf, {

@@ -15,8 +15,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dateStr, setDateStr] = useState("");
 
   useEffect(() => {
+    setDateStr(new Date().toLocaleDateString("id-ID"));
     const k = getAdminKey();
     if (!k) {
       router.replace("/login");
@@ -56,8 +58,8 @@ export default function DashboardPage() {
           <p className="text-sm text-violet-200/60 font-medium">Ringkasan v3.3 — Next.js full rewrite, glossy violet-indigo, no emoji</p>
         </div>
         <div className="flex gap-2">
-          <span className="px-3 py-1 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-xs text-violet-100 font-semibold flex items-center gap-1"><Activity size={12} /> Live</span>
-          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 font-medium">{new Date().toLocaleDateString("id-ID")}</span>
+          <span className="px-3 py-1 rounded-full bg-[#21114A] border border-[#2D1B5E] text-xs text-white font-semibold flex items-center gap-1"><Activity size={12} /> Live</span>
+          <span className="px-3 py-1 rounded-full bg-[#21114A] border border-[#2D1B5E] text-xs text-[#9A8CBF] font-medium">{dateStr}</span>
         </div>
       </div>
 
@@ -71,7 +73,7 @@ export default function DashboardPage() {
           <div key={c.label} className="xy-card rounded-[18px] p-5">
             <div className="flex items-center justify-between">
               <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${c.grad} grid place-items-center`}><c.Icon size={18} className="text-white" /></div>
-              <div className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 font-medium">v3.3</div>
+              <div className="text-[11px] px-2 py-0.5 rounded-full bg-[#21114A] border border-[#2D1B5E] font-medium">v3.3</div>
             </div>
             <div className="mt-4 text-[12px] text-violet-200/60 font-medium tracking-wide uppercase">{c.label}</div>
             <div className="text-xl font-bold text-white mt-1 tracking-tight">{c.value}</div>
@@ -82,9 +84,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 xy-card rounded-[18px] p-5">
           <h3 className="font-bold text-white tracking-tight flex items-center gap-2"><Rocket size={16} className="text-[#A855F7]" /> Apa yang baru di v3.3?</h3>
-          <ul className="mt-3 space-y-2 text-sm text-violet-100/80 list-disc pl-5 font-medium">
+          <ul className="mt-3 space-y-2 text-sm text-white/80 list-disc pl-5 font-medium">
             <li>Next.js 14 App Router — admin.html lama 1800 baris dipecah jadi komponen, no emoji, Lucide icons konsisten</li>
-            <li>Native updater fix: <code className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-xs">siapkan_pembaruan.py</code> auto-inject DownloadManager + notif progress tetap jalan walau app ditutup</li>
+            <li>Native updater fix: <code className="px-1.5 py-0.5 rounded bg-[#2D1B5E] font-mono text-xs">siapkan_pembaruan.py</code> auto-inject DownloadManager + notif progress tetap jalan walau app ditutup</li>
             <li>Security full audit: global IP rate-limit 180/60s, device 2 akun, saldo anti-double, upload validasi</li>
             <li>Menu baru: Live Monitor, Keuangan, Rilis App (tema popup Ramadan dll), Push Notif Builder — semua pakai Lucide</li>
             <li>Font konsisten: Plus Jakarta Sans di semua platform, icons Lucide (bukan emoji)</li>
@@ -100,8 +102,8 @@ export default function DashboardPage() {
               "Security: global rate-limit middleware — done",
               "Deploy dashboard ke Cloudflare Pages — next",
             ].map((t, i) => (
-              <div key={i} className="flex gap-2 text-[13px] text-violet-100/70 font-medium">
-                <span className="w-5 h-5 rounded-full bg-[#7C3AED]/20 border border-[#7C3AED]/30 grid place-items-center text-[10px] font-bold">{i + 1}</span>
+              <div key={i} className="flex gap-2 text-[13px] text-white/70 font-medium">
+                <span className="w-5 h-5 rounded-full bg-[#21114A] border border-[#2D1B5E] grid place-items-center text-[10px] font-bold">{i + 1}</span>
                 <span>{t}</span>
               </div>
             ))}
@@ -116,7 +118,7 @@ export default function DashboardPage() {
             localStorage.removeItem("xy_admin_key");
             location.reload();
           }}
-          className="text-xs px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 font-medium"
+          className="text-xs px-3 py-1.5 rounded-lg bg-[#21114A] hover:bg-[#2D1B5E] border border-[#2D1B5E] font-medium"
         >
           Logout
         </button>

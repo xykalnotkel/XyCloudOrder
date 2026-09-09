@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MENU, MenuIcon } from "@/lib/theme";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Receipt,
@@ -85,6 +85,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [keyPreview, setKeyPreview] = useState("");
+
+  useEffect(() => {
+    const k = typeof window !== "undefined" ? localStorage.getItem("xy_admin_key") || "" : "";
+    if (k) setKeyPreview(k.slice(0,16)+"...");
+  }, [pathname]);
 
   // hide sidebar on login page
   if (pathname === "/login") return null;
@@ -96,7 +102,7 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="leading-tight">
             <div className="font-bold text-white tracking-tight text-[14px]">XyCloud Console</div>
-            <div className="text-[11px] text-[#9A8CBF] font-medium">v3.3g • {MENU.length} menu • Solid</div>
+            <div className="text-[11px] text-[#9A8CBF] font-medium">v3.3i • {MENU.length} menu • Solid</div>
           </div>
         )}
         <button onClick={() => setCollapsed(!collapsed)} className="ml-auto w-8 h-8 rounded-lg bg-[#21114A] hover:bg-[#2A1A5E] grid place-items-center border border-[#2D1B5E]">
@@ -127,7 +133,7 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="bg-[#21114A] border border-[#2D1B5E] rounded-xl p-3">
             <div className="text-[11px] text-[#9A8CBF] font-bold tracking-wide uppercase">Admin</div>
-            <div className="text-[12px] text-white font-medium mt-1 truncate">{typeof window !== 'undefined' ? (localStorage.getItem('xy_admin_key')||'').slice(0,16)+'...' : ''}</div>
+            <div className="text-[12px] text-white font-medium mt-1 truncate">{keyPreview}</div>
             <button onClick={()=>{ clearAdminKey(); router.push('/login'); }} className="mt-2 w-full h-8 rounded-lg bg-[#2A1A5E] hover:bg-[#3A2A6E] text-[#9A8CBF] hover:text-white text-[12px] font-semibold flex items-center justify-center gap-1.5">
               <LogOut size={14}/> Keluar
             </button>
