@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
+import { Cpu, Plus, Server } from "lucide-react";
 
 export default function UnitPage() {
   const [units, setUnits] = useState<any[]>([]);
@@ -24,45 +25,48 @@ export default function UnitPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 font-[Plus_Jakarta_Sans]">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-white">Unit PC ⚡</h1>
-          <p className="text-sm text-violet-200/60">Kelola paket PC & unit fisik — dipakai live monitor</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Cpu size={18} className="text-white" /></div>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">Unit PC</h1>
+            <p className="text-sm text-violet-200/60 font-medium">Kelola paket PC & unit fisik — dipakai live monitor</p>
+          </div>
         </div>
-        <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10">{units.length} paket</span>
+        <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 font-medium">{units.length} paket</span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="xy-card rounded-[16px] p-5">
-          <h3 className="font-bold text-white">Tambah Paket</h3>
+          <h3 className="font-bold text-white tracking-tight flex items-center gap-2"><Plus size={16} /> Tambah Paket</h3>
           <div className="mt-4 space-y-3">
-            <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama paket, ex: RTX 4070 SG" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+            <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama paket, ex: RTX 4070 SG" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
             <div className="grid grid-cols-2 gap-2">
-              <input value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} placeholder="Lokasi" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
-              <input type="number" value={form.total} onChange={(e) => setForm({ ...form, total: parseInt(e.target.value) || 1 })} placeholder="Jumlah unit" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
+              <input value={form.lokasi} onChange={(e) => setForm({ ...form, lokasi: e.target.value })} placeholder="Lokasi" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
+              <input type="number" value={form.total} onChange={(e) => setForm({ ...form, total: parseInt(e.target.value) || 1 })} placeholder="Jumlah unit" className="px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
             </div>
-            <input value={form.cpu} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="CPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
-            <input value={form.gpu} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="GPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
-            <input value={form.ram} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="RAM" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white" />
-            <button onClick={create} className="w-full py-3 rounded-xl xy-btn font-bold text-white">Simpan Paket</button>
+            <input value={form.cpu} onChange={(e) => setForm({ ...form, cpu: e.target.value })} placeholder="CPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
+            <input value={form.gpu} onChange={(e) => setForm({ ...form, gpu: e.target.value })} placeholder="GPU" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
+            <input value={form.ram} onChange={(e) => setForm({ ...form, ram: e.target.value })} placeholder="RAM" className="w-full px-4 py-2.5 rounded-xl bg-[#100030] border border-white/10 text-sm text-white font-medium" />
+            <button onClick={create} className="w-full py-3 rounded-xl xy-btn font-bold text-white tracking-wide">Simpan Paket</button>
           </div>
         </div>
 
         <div className="lg:col-span-2">
-          {loading ? <div className="xy-card rounded-xl p-6 text-center text-white/60">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-300">{err}</div> : (
+          {loading ? <div className="xy-card rounded-xl p-6 text-center text-white/60 font-medium">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-300 font-medium">{err}</div> : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {units.map((u: any, i: number) => (
                 <div key={u.id || i} className="xy-card rounded-[14px] p-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white text-[13px]">{u.nama || u.name || `Paket ${i + 1}`}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">{u.unit_tersedia ?? u.tersedia ?? u.total_unit ?? "?"} ready</span>
+                    <span className="font-bold text-white text-[13px] tracking-tight flex items-center gap-2"><Server size={14} className="text-[#A78BFA]" /> {u.nama || u.name || `Paket ${i + 1}`}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 font-bold">{u.unit_tersedia ?? u.tersedia ?? u.total_unit ?? "?"} ready</span>
                   </div>
-                  <div className="mt-2 text-[11px] text-violet-200/60">{u.cpu || "-"} • {u.gpu || "-"} • {u.ram || "-"}</div>
-                  <div className="mt-2 text-[11px] text-white/40">Lokasi: {u.lokasi || u.region || "-"}</div>
+                  <div className="mt-2 text-[11px] text-violet-200/60 font-medium">{u.cpu || "-"} • {u.gpu || "-"} • {u.ram || "-"}</div>
+                  <div className="mt-2 text-[11px] text-white/40 font-medium">Lokasi: {u.lokasi || u.region || "-"}</div>
                 </div>
               ))}
-              {units.length === 0 && <div className="col-span-2 xy-card rounded-xl p-8 text-center text-white/40 text-sm">Belum ada unit — Worker /api/admin/unit</div>}
+              {units.length === 0 && <div className="col-span-2 xy-card rounded-xl p-8 text-center text-white/40 text-sm font-medium">Belum ada unit — Worker /api/admin/unit • Icons Lucide, no emoji</div>}
             </div>
           )}
         </div>

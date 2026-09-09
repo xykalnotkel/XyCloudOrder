@@ -7,17 +7,24 @@
   --xy-violet: #7C3AED;
   --xy-violet2: #8B5CF6;
   --xy-card: #1A0A3A;
+  --font-jakarta: 'Plus Jakarta Sans', Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
 
 html, body {
   background: radial-gradient(120% 120% at 0% 0%, #200050 0%, #100030 38%, #0B001E 100%);
   min-height: 100vh;
   color: #EDE9FE;
+  font-family: var(--font-jakarta);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 * {
   scrollbar-width: thin;
   scrollbar-color: #7C3AED #100030;
+  font-family: inherit;
 }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: #100030; }
@@ -33,6 +40,23 @@ html, body {
 .xy-btn {
   background: linear-gradient(135deg,#7C3AED 0%,#8B5CF6 45%,#A855F7 100%);
   box-shadow: 0 4px 20px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.18);
+  font-family: var(--font-jakarta);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 .xy-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .xy-btn:active { transform: translateY(0); }
+
+/* consistent typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-jakarta);
+  letter-spacing: -0.02em;
+}
+code, .font-mono {
+  font-family: var(--font-mono);
+}
+
+/* no emoji fallback — enforce icon font */
+.no-emoji {
+  font-family: var(--font-jakarta);
+}

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
+import { Monitor, Package } from "lucide-react";
 
 export default function PlansPage() {
   const [data, setData] = useState<any[]>([]);
@@ -15,35 +16,38 @@ export default function PlansPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-[Plus_Jakarta_Sans]">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-white">Paket PC 🖥️</h1>
-          <p className="text-sm text-violet-200/60">Kelola paket sewa PC — mirror dari unit, untuk kompatibilitas menu lama</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Monitor size={18} className="text-white" /></div>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">Paket PC</h1>
+            <p className="text-sm text-violet-200/60 font-medium">Kelola paket pc — endpoint /api/admin/plans</p>
+          </div>
         </div>
-        <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10">{data.length} item</span>
+        <span className="text-xs px-3 py-1 rounded-full bg-white/5 border border-white/10 font-medium">{data.length} item</span>
       </div>
-      {loading ? <div className="xy-card rounded-xl p-6 text-center text-white/60">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-300">{err} — endpoint /api/admin/plans mungkin belum ada, fallback mock.</div> : (
+      {loading ? <div className="xy-card rounded-xl p-6 text-center text-white/60 font-medium">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-300 font-medium">{err} — endpoint /api/admin/plans mungkin belum ada, fallback mock.</div> : (
         <div className="xy-card rounded-[16px] overflow-hidden">
-          <div className="p-4 text-[12px] text-white/40">Endpoint: /api/admin/plans • {data.length} data dari Worker. Jika kosong, UI tetap glossy violet-indigo.</div>
+          <div className="p-4 text-[12px] text-white/40 font-medium">Endpoint: /api/admin/plans • {data.length} data dari Worker. Font Plus Jakarta Sans, icons Lucide konsisten.</div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
             {data.slice(0, 30).map((it: any, i: number) => (
               <div key={it.id || i} className="p-3 rounded-xl bg-white/[0.04] border border-white/5">
-                <div className="font-bold text-white text-[13px] truncate">{it.judul || it.nama || it.email || it.kode || it.id || "Item " + (i+1)}</div>
-                <div className="text-[11px] text-violet-200/50 mt-1 line-clamp-2">{JSON.stringify(it).slice(0, 120)}</div>
+                <div className="font-bold text-white text-[13px] truncate tracking-tight">{it.judul || it.nama || it.email || it.kode || it.id || "Item " + (i+1)}</div>
+                <div className="text-[11px] text-violet-200/50 mt-1 line-clamp-2 font-mono">{JSON.stringify(it).slice(0, 120)}</div>
               </div>
             ))}
             {data.length === 0 && (
               <div className="col-span-3 py-12 text-center">
-                <div className="w-12 h-12 mx-auto rounded-xl bg-[#7C3AED]/20 grid place-items-center text-xl">📦</div>
-                <div className="mt-3 text-sm text-white/60">Belum ada data</div>
-                <div className="text-[11px] text-white/30 mt-1">Fetch dari /api/admin/plans — pastikan Worker sudah expose route tersebut.</div>
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#7C3AED]/20 grid place-items-center"><Package size={20} className="text-[#A78BFA]" /></div>
+                <div className="mt-3 text-sm text-white/60 font-semibold tracking-tight">Belum ada data</div>
+                <div className="text-[11px] text-white/30 mt-1 font-medium">Fetch dari /api/admin/plans — pastikan Worker sudah expose route tersebut.</div>
               </div>
             )}
           </div>
         </div>
       )}
-      <div className="xy-card rounded-xl p-3 text-[11px] text-white/30">Palette: #100030 → #7C3AED → #A855F7 • Glossy .xy-card • Next.js 14 full rewrite v3.3</div>
+      <div className="xy-card rounded-xl p-3 text-[11px] text-white/30 font-medium">Palette: #100030 → #7C3AED → #A855F7 • Glossy .xy-card • Next.js 14 full rewrite v3.3 • No emoji</div>
     </div>
   );
 }

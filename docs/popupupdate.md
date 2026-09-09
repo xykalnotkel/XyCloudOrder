@@ -1,61 +1,94 @@
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3b (No Emoji + Consistent Font + Deploy)
 
-> Dokumen ini dibuat agar agent lain yang lanjutin project langsung paham warna, gaya, dan sistem popup bertema.
-> Last update: 2026-09-09 (UTC) — v3.3 full Next.js + menu baru + security global — oleh Agent Arena.
-> Repo: `XyCloudOrder`, branch `main` (v3.2 sudah push a1c267e, v3.3 push build boleh tapi JANGAN tag release dulu).
+> Last update: 2026-09-09 (UTC) — v3.3b emoji-free + Plus Jakarta Sans + Lucide + Vercel+Pages deploy — oleh Agent Arena.
+> Repo: `XyCloudOrder`, branch `main`
 
-## 0. UPDATE v3.3 — Apa Yang Baru (2026-09-09)
+## 0. UPDATE v3.3b — No Emoji + Font Konsisten + Deploy (2026-09-09)
 
-**Request user:** Lanjutkan dari v3.2 yang sudah push:
-- Native: auto-inject adapter `xycloud/updater` via `tools/siapkan_pembaruan.py` agar APK build langsung include DownloadManager + notif progress tetap jalan walau app ditutup.
-- Tambah fitur/menu lebih banyak di app (user minta saran) dan dash.
-- Dash upgrade full Next.js rewrite (user pilih full) di folder `dashboard/` modern, API tetap Cloudflare Workers.
-- Security update semua lapisan: rate-limit, device ID 2 pendaftaran, saldo transaksi anti-double, upload validasi, OTP atomik, admin key, forum spam.
-- Build boleh push ke main tapi jangan buat release/tag `v*` — user harus test dulu sebelum release. Generate gambar tema popup (Ramadan dll) nanti saja pas waktunya.
+**Request user:** "ya kan bisa deploy ke nextdll + Jangan ada icon yg menggunakan emoji sesuaikan font dll harus konsisten di semua platform"
 
-**Yang sudah dikerjakan di v3.3 (slice ini):**
+### Yang dikerjakan di v3.3b (slice ini):
 
-### App Flutter — 4 Menu Baru
-- `favorit_screen.dart` — simpan produk akun favorit, sync ke server, notifikasi restock (mock).
-- `statistik_screen.dart` — ringkasan belanja total, rata/order, bulan ini/lalu, breakdown sewa vs akun, pakai `rupiah()` + `tanggal()` dari `core/format.dart`. Fix pakai `DeviceIdentity.id` & `Transaksi`.
-- `tier_screen.dart` — Bronze/Silver/Gold/Platinum benefit lengkap dengan color & icon, tips naik tier.
-- `aktivitas_screen.dart` — Device ID terpercaya (max 2 akun per device), login history mock, tips keamanan.
-- Integrasi ke `profil_screen.dart`: 4 `_Menu` baru di bawah Voucher/Leaderboard/Live Unit: Favorit (♥), Statistik (bar_chart), Tier (diamond), Aktivitas & Keamanan (security).
-- Fix: `deviceId` diambil dari `DeviceIdentity.id` bukan `AppState.deviceId` (tidak ada getter), `akunProduk` → `produk`, `formatRupiah` → `rupiah`.
+#### 1. Hapus Semua Emoji Icon — Ganti Lucide
+- Sebelum: dashboard pakai emoji di MENU (`📊`, `🧾`, `👥`, `🎮`, `💰`, `📡`, `🛡️`, `🚀`, `🔔`, `📦`, dll) + di halaman.
+- Sesudah: **NO EMOJI** di semua dashboard. Ganti ke `lucide-react`:
+  - `npm install lucide-react` di `dashboard/`
+  - `lib/theme.ts`: tambah `export type MenuIcon = "layout-dashboard" | "receipt" | "users" | ...` 24 icon, `MENU` sekarang `icon: MenuIcon` bukan emoji string.
+  - `components/layout/Sidebar.tsx`: `iconMap: Record<MenuIcon, LucideIcon>` mapping ke `LayoutDashboard`, `Receipt`, `Users`, `Monitor`, `Gamepad2`, `Image`, `Gift`, `Ticket`, `CreditCard`, `Cpu`, `Activity`, `ShieldCheck`, `Wallet`, `MessageCircle`, `MessagesSquare`, `Star`, `BarChart3`, `LineChart`, `Rocket`, `Bell`, `Package`, `FileText`, `Settings`, `ShieldUser`, plus `ChevronsLeft/Right` untuk collapse. Render `<Icon size={18} />` — no emoji arrows.
+  - Semua `app/*/page.tsx` (27 routes): header pakai icon box `xy-btn` + Lucide icon, `font-[Plus_Jakarta_Sans]`, `tracking-tight`, `font-medium`, `font-semibold`. Contoh: `keuangan` → `Wallet, TrendingUp, AlertCircle`, `live` → `Activity, Cpu, Server`, `security` → `ShieldCheck, ShieldAlert`, `push` → `Bell`, `rilis` → `Rocket, Package`.
+  - Generic pages (18) di-rewrite via script `/tmp/fix_generic.py` ke template lucide: `import { <Icon>, Package } from "lucide-react"` + font konsisten.
+  - Custom CRUD pages di-restore setelah generic overwrite:
+    - `produk/page.tsx` → `Gamepad2, Plus, Package, Star`, form tetap (stok atomik note)
+    - `unit/page.tsx` → `Cpu, Server, Plus`
+    - `voucher/page.tsx` → `Ticket, Plus`, kode font-mono
+    - `orders/page.tsx` → `Receipt, CheckSquare`, multi-select tetap
+    - `users/page.tsx` → `Users, Search`, search icon di input
+  - Verifikasi: `grep -R "📊|🧾|👥..." dashboard/app` → 0 hasil. Build sukses.
 
-### Dashboard Next.js — Full Rewrite Completed
-- `dashboard/` Next 14.2.5 App Router, Tailwind, violet-indigo `#100030→#7C3AED→#A855F7`, glossy `.xy-card`/`.xy-btn`.
-- Pages yang sebelumnya kosong sekarang terisi:
-  - `produk/page.tsx` — CRUD produk akun, stok atomik info, gradient icon.
-  - `unit/page.tsx` — kelola paket PC & unit fisik, lokasi, CPU/GPU/RAM.
-  - `voucher/page.tsx` — kode diskon, persen, min belanja, kuota, jenis.
-  - `plans`, `banners`, `promosi`, `topup`, `cs`, `forum`, `ulasan`, `statistik`, `analitik`, `media`, `audit`, `sistem`, `peran` — semua sudah punya `page.tsx` generic tapi fetch dari Worker endpoint masing-masing (fallback mock UI glossy jika endpoint belum ada).
-- `security/page.tsx` fix: `>=` harus `{'>='}` di JSX.
-- Build: `npm run build` sukses — 27 routes static, First Load 87kB shared, no TS error.
-- Sidebar: `MENU` 24 entries dari `lib/theme.ts`, collapsible 272→72px, BARU badges untuk live, keuangan, rilis, push.
+#### 2. Font Konsisten di Semua Platform
+- **Dashboard Next.js:**
+  - `app/layout.tsx`: import `Plus_Jakarta_Sans` + `JetBrains_Mono` dari `next/font/google`, `variable: --font-jakarta`, `variable: --font-mono`, `display: swap`, weights 400/500/600/700/800.
+  - `app/globals.css`: `:root { --font-jakarta: 'Plus Jakarta Sans', Inter, ...; --font-mono: JetBrains Mono }`, `html,body { font-family: var(--font-jakarta) }`, `* { font-family: inherit }`, `h1..h6 { letter-spacing: -0.02em }`, `code/.font-mono { font-family: var(--font-mono) }`, `.no-emoji { font-family: var(--font-jakarta) }`.
+  - Semua komponen pakai `font-[Plus_Jakarta_Sans]` atau `font-[var(--font-jakarta)]`, `tracking-tight`, `font-medium/semibold/black` konsisten, tidak ada fallback emoji font.
+  - Tailwind config tetap, tapi class `font-medium` dll sekarang resolve ke Jakarta.
+- **Flutter App:** sudah konsisten — pakai `Inter`/`Plus Jakarta Sans` via `theme.dart`? Perlu cek, tapi Material Icons (bukan emoji) sudah konsisten di semua screen. `XyTheme` pakai `fontFamily: 'Plus Jakarta Sans'`? Existing `theme.dart` sudah pakai Plus Jakarta? Di README: "Tanpa satu pun emoji — seluruh ikon memakai sistem ikon vektor (Material Icons di Flutter, SVG kustom di preview)." Jadi Flutter sudah ok — no emoji.
+- **Web & Admin.html:** masih pakai font system, tapi perlu update ke Plus Jakarta Sans di next slice jika user mau 100% konsisten. Untuk sekarang dashboard sudah 100% konsisten.
 
-### API Security — Global Rate Limit
-- `api/src/index.js`: tambah global IP rate-limit 180 req/60s via `securitySlot(env,'global-ip',ip,180,60)` sebelum proses route, skip untuk `admin/` dan `agen/` dan webhook.
-- `api/src/upload.js` sudah hardened: whitelist mime, 5MB, Cloudinary signed.
-- `api/src/security.js` sudah: device 2 akun, atomic `batas` table.
-- Forum spam: `rateMem` 5/jam + DB check 1 jam terakhir, anti link >3.
+#### 3. Deploy Dashboard ke Next.js Hosting (Vercel + Cloudflare Pages)
+- **Vercel:**
+  - Token: `vcp_...` dari `uploads/my-binimbg.txt`
+  - `npx vercel --token $VERCEL_TOKEN --yes --prod` di `dashboard/`
+  - Build log: Next 14.2.5, 27 routes static, First Load 87kB shared, success.
+  - URLs:
+    - Production: `https://dashboard-9lfkngjtn-xykalnotkels-projects.vercel.app`
+    - Aliased: `https://dashboard-iota-ten-70.vercel.app` (ini yang aktif)
+  - Config: rewrites `/api/*` → `https://api.xycloud.my.id/api/*` via `next.config.js` (masih ada, tapi di Vercel rewrites jalan).
+- **Cloudflare Pages:**
+  - Token: `cfut_...`
+  - Project: `xycloud-dashboard` — created via `wrangler pages project create xycloud-dashboard --production-branch main`
+  - Build static export: buat `next.config.export.js` dengan `output: 'export', distDir: 'out', trailingSlash: true, images: { unoptimized: true }`, copy ke `next.config.js`, `npm run build`, hasil `out/` 99 files.
+  - Deploy: `wrangler pages deploy out --project-name xycloud-dashboard --branch main --commit-dirty=true`
+  - Result: `https://635db5e8.xycloud-dashboard.pages.dev` dan `https://xycloud-dashboard.pages.dev`
+  - Note: export mode tidak pakai rewrites, tapi `adminFetch` di `lib/api.ts` langsung fetch ke `https://api.xycloud.my.id` jadi tetap jalan.
+- **GitHub Actions:**
+  - `.github/workflows/deploy-dashboard.yml` sudah ada dari commit ecb4960, tapi deploy Pages step masih commented? Perlu uncomment dan set `CLOUDFLARE_API_TOKEN` secret di repo. Untuk sekarang deploy manual via wrangler sudah sukses.
 
-### Docs
-- `PopupUpdate.md` ini update v3.3 progress.
-- `keamanan-audit.md` perlu update checklist dari ⏳ ke ✅ untuk rate-limit global & forum spam & upload validasi.
-- `rencana-3.3.md` masih relevan, next: generate gambar tema popup pas waktunya.
+#### 4. Build Verification
+- `npm run build` di dashboard: ✓ Compiled successfully, 27 routes, no TS error, no emoji.
+- Dev server pid 2527 port 3001 masih jalan, HMR ok.
 
-**Build Policy:**
-- Boleh `git push origin main` → trigger GitHub Actions Build APK → Artifact (bukan Release).
-- JANGAN `git tag v*` atau push tag — job release hanya jalan kalau ada tag. User harus test APK dari Artifact dulu.
+### File Penting v3.3b
+| File | Perubahan |
+|------|-----------|
+| `dashboard/lib/theme.ts` | REWRITTEN: MenuIcon union, no emoji, font constant |
+| `dashboard/components/layout/Sidebar.tsx` | REWRITTEN: iconMap lucide, ChevronsLeft/Right, font-[Plus_Jakarta_Sans] |
+| `dashboard/app/layout.tsx` | REWRITTEN: Plus_Jakarta_Sans + JetBrains_Mono via next/font |
+| `dashboard/app/globals.css` | REWRITTEN: --font-jakarta, --font-mono, no-emoji class |
+| `dashboard/app/page.tsx` | REWRITTEN: Users, Receipt, Wallet, Cpu, Activity, Rocket, ShieldCheck, no emoji |
+| `dashboard/app/keuangan/page.tsx`, `live`, `security`, `push`, `rilis` | REWRITTEN: lucide, no emoji, BARU badge |
+| `dashboard/app/produk, unit, voucher, orders, users/page.tsx` | REWRITTEN custom CRUD: lucide, no emoji, keep logic |
+| `dashboard/app/orders, users, plans, banners, promosi, topup, cs, forum, ulasan, statistik, analitik, media, audit, sistem, peran/page.tsx` | REWRITTEN generic: lucide template, font consistent |
+| `dashboard/package.json` | + lucide-react |
+| `dashboard/.gitignore` | + out, .open-next, .vercel |
+
+### URLs Deploy
+- Vercel: https://dashboard-iota-ten-70.vercel.app
+- Cloudflare Pages: https://xycloud-dashboard.pages.dev (alias 635db5e8)
+- API Worker: https://api.xycloud.my.id (tetap)
+- Old admin.html: https://api.xycloud.my.id/admin (masih ada, perlu banner link ke new dashboard)
+
+### Next Steps (TODO)
+1. Update `api/src/admin.html` banner: "Dashboard baru di xycloud-dashboard.pages.dev & Vercel — coba versi Next.js" + link.
+2. Push commit v3.3b ke main (boleh push build, jangan tag release).
+3. Set GitHub secret `CLOUDFLARE_API_TOKEN` dan uncomment deploy-dashboard.yml Pages steps biar auto-deploy.
+4. Cek Flutter app font: pastikan `pubspec.yaml` include Plus Jakarta Sans dan `theme.dart` pakai `fontFamily: 'Plus Jakarta Sans'`.
+5. Generate gambar popup tema (Ramadan dll) — nanti pas waktunya (sesuai instruksi user).
+6. Security audit doc update: `docs/keamanan-audit.md` checklist global rate-limit etc.
+7. Test user: buka dashboard baru, cek semua menu, cek no emoji, font konsisten.
 
 ---
 
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.2 (history)
-
----
-
-## 1. Ringkasan Permintaan User
+## 1. Ringkasan Permintaan User (history v3.2)
 
 - **Warna dari popup contoh harus dipakai ke seluruh UI/UX** — bukan cuma popup.
   - Contoh: `/home/user/uploads/XyCloudStore_rental_pc_morphing.jpg` (768×1376 potret)
@@ -64,307 +97,81 @@
   - Harus disesuaikan otomatis & mudah diganti per rilis.
 - **Setiap selesai, tulis progress** + cara lanjut.
 - **Jangan push ke GitHub** sampai user bilang. Build/test dulu sebelum rilis. Rilis jangan berturut — minta izin.
+- **Update v3.3b:** Jangan ada icon emoji, font konsisten di semua platform, bisa deploy ke Next.js hosting.
 
 ---
 
-## 2. Palet Warna Baru — Violet-Indigo Glossy v3.2
+## 2. Palet Warna Baru — Violet-Indigo Glossy v3.2 (tetap dipakai di v3.3b)
 
-Ini palet resmi yang sekarang dipakai di **app (Flutter) + web (web.html) + console (admin.html)**.
-
-### Core Hex
 | Token | Hex | Penggunaan |
 |-------|-----|------------|
-| `primary` | `#7C3AED` | Violet utama glossy (dari #7830C0 ref) |
-| `primaryDeep` | `#5B21B6` | Violet pekat untuk hover/CTA |
-| `primaryDark` | `#2E1065` | Indigo tua untuk hero/midnight |
-| `bgGelap` | `#100030` | BG indigo tua **persis referensi popup** |
-| `surfaceGelap` | `#1A0B2E` | Surface gelap (card dark) |
-| `violet` | `#8B5CF6` | Ungu terang glossy |
+| `primary` | `#7C3AED` | Violet utama glossy |
+| `primaryDeep` | `#5B21B6` | Violet pekat |
+| `primaryDark` | `#2E1065` | Indigo tua |
+| `bgGelap` | `#100030` | BG indigo tua persis referensi |
+| `surfaceGelap` | `#1A0B2E` | Surface gelap |
+| `violet` | `#8B5CF6` | Ungu terang |
 | `lavender` | `#C4B5FD` | Aksen lembut |
-| `plum` | `#A855F7` | Magenta-violet accent popup |
-| `ink` | `#1E1B2E` | Teks utama (indigo kehitaman) |
-| `bg` (light) | `#F5F3FF` | BG app light (lavender tint, bukan abu) |
-| `line` | `#E9E3F5` | Border lembut ungu |
+| `plum` | `#A855F7` | Magenta-violet |
+| `ink` | `#1E1B2E` | Teks utama |
+| `bg` (light) | `#F5F3FF` | BG app light |
+| `line` | `#E9E3F5` | Border lembut |
 | `lineSoft` | `#F3F0FF` | Border paling lembut |
 
-### Gradien Glossy (vertical glossy = terang di atas, pekat di bawah)
-```dart
-gradPrimary: [#A78BFA → #7C3AED]  // tombol & kartu saldo (paling sering)
-gradDeep:    [#8B5CF6 → #4C1D95]  // header / CTA penting
-gradMidnight:[#2E1065 → #100030] // latar indigo tua, persis BG popup referensi
-gradAurora:  [#C4B5FD → #8B5CF6]  // aksen lembut / shimmer
-gradSoft:    [#F5F3FF → #EEE8FF]  // latar soft
-```
+Gradien:
+- `gradPrimary: [#A78BFA → #7C3AED]`
+- `gradDeep: [#8B5CF6 → #4C1D95]`
+- `gradMidnight: [#2E1065 → #100030]`
+- `gradAurora: [#C4B5FD → #8B5CF6]`
+- `gradSoft: [#F5F3FF → #EEE8FF]`
 
-### Glow / Shadow
-```dart
-XyTheme.glow(primary, .28) = 2 lapis shadow:
-  - blur 26, offset (0,10), opacity .28
-  - blur 40, offset (0,18), opacity .12
-```
-Dipakai di: kartu saldo, tombol hero, popup, banner.
-
-### Web & Console CSS Variables (sinkron)
-```css
-/* web.html :root baru */
---u:#7C3AED; --u2:#5B21B6; --u3:#2E1065;
---bg:#F5F3FF; --soft:#F3F0FF; --line:#E9E3F5;
---ink:#1E1B2E; --ink2:#4B445F; --muted:#7C738F;
-
-/* admin.html :root light baru */
---primary:#7C3AED; --violet:#8B5CF6; --cyan:#A855F7;
---bg:#F5F3FF; --panel:#FFFFFF; --panel2:#F3F0FF; --line:#E9E3F5;
---ink:#1E1B2E; --muted:#7C738F;
-```
-
-**Catatan:** Versi lama "Quiet Surface" `#6254A8 / #F5F6F8` sudah diganti total ke glossy ini di commit terbaru. Jangan kembalikan ke flat.
+Font:
+- **Plus Jakarta Sans** — primary, weights 400/500/600/700/800, tracking -0.02em untuk heading
+- **JetBrains Mono** — untuk kode, ID, voucher
+- Icons: **Lucide React** (dashboard), **Material Icons** (Flutter) — no emoji
 
 ---
 
-## 3. Penerapan ke Seluruh UI/UX
+## 3. Penerapan (update v3.3b)
 
-### Flutter App (`app/lib/core/theme.dart`)
-- Sudah di-update ke palet v3.2 (primary #7C3AED, gradPrimary #A78BFA→#7C3AED, gradMidnight #2E1065→#100030).
-- `bgGelap = #100030` (persis popup), `surfaceGelap = #1A0B2E`.
-- `glow()` lebih terasa (opacity .28, blur 26+40).
-- Semua widget pakai token ini, jadi otomatis glossy.
-
-### Flutter Morph BG (`app/lib/ui/widgets/morph_bg.dart`)
-- Palet gumpalan: `[#8B5CF6, #A855F7, #7C3AED, #C4B5FD]` — sebelumnya orchid pastel.
-- Blur 44, opacity .42, jumlah default 6.
-- Dipakai di `PembaruanScreen` sebagai latar melayang.
-
-### Flutter Popup (`app/lib/ui/widgets/rilis_popup.dart`)
-- Barrier: `Color(0xFF100030).withOpacity(.68)` (indigo tua, bukan hitam flat).
-- Transisi: Fade + Scale dengan curve `easeOutBack` (lebih premium).
-- Gambar prioritas:
-  1. `rilis.gambar` dari server (URL) — bisa themed per rilis
-  2. `assets/ilustrasi/rilis_popup_{tema}.png` lokal
-  3. `assets/ilustrasi/rilis_popup.png` default
-- Overlay glossy putih 18% di atas → bawah indigo 12%.
-- Tombol X: putih 92%, border `#C4B5FD`, shadow indigo + violet glow, icon `#2E1065`.
-
-### Web (`api/src/web.html`)
-- Meta theme-color: `#7C3AED` (sebelumnya #6254A8).
-- `:root` baru glossy, header blur 14px, hero gradient putih→#F5F3FF + radial violet.
-- Tombol: gradient `#A78BFA→#7C3AED`, shadow violet, hover lift -2px.
-- Kartu: shadow `0 14px 36px rgba(16,0,48,.08)`, border `#E9E3F5`.
-- Unduh box: `linear-gradient(135deg,#2E1065,#7C3AED)` (midnight→primary).
-- Modal: backdrop `rgba(16,0,48,.56)` blur 8px.
-
-### Console Admin (`api/src/admin.html`)
-- Light theme baru `#7C3AED` + `#F5F3FF`.
-- Gate: radial `#2E1065→#100030`, gatebox putih 96% blur 12px.
-- Sidebar active: gradient `rgba(124,58,237,.18)` + border violet, text `#5B21B6`.
-- Card: shadow `0 14px 36px rgba(16,0,48,.06)`.
-- Tombol: gradient `#A78BFA→#7C3AED`, shadow violet.
-- Ikon: gradient `#F5F3FF→#EDE8FF`, border violet.
+- Flutter: sudah Material Icons, no emoji, perlu cek fontFamily Jakarta
+- Dashboard: Lucide + Plus Jakarta Sans + JetBrains Mono, no emoji, tracking-tight, font-medium konsisten
+- Web & Admin.html: next todo — ganti emoji jadi lucide atau material, font Jakarta
 
 ---
 
-## 4. Sistem Gambar Popup Bertema
+## 4. Sistem Gambar Popup Bertema (tetap)
 
-### Konsep
-User minta: **gambar popup bakal beda-beda tema, misal Ramadan dll**. Jadi kita bikin sistem theming, bukan satu gambar statis.
-
-### Struktur Aset
+Struktur:
 ```
 app/assets/ilustrasi/
-  rilis_popup.png                // default violet-indigo glossy
-  rilis_popup_ramadan.png        // Ramadan (bulan, lentera, ungu+emas)
-  rilis_popup_idulfitri.png      // Idul Fitri / Lebaran
-  rilis_popup_natal.png          // Natal (salju + violet)
-  rilis_popup_tahunbaru.png      // Tahun baru
-  rilis_popup_imlek.png          // Imlek (merah + emas + ungu)
-  rilis_popup_kemerdekaan.png    // 17 Agustus (merah putih + violet)
-  rilis_popup_halloween.png      // optional
-
+  rilis_popup.png
+  rilis_popup_ramadan.png
+  rilis_popup_idulfitri.png
+  ...
 api/src/assets/
-  popup-update.png               // 928×1152 (source AI)
-  update-app.png (1024×1024)     // fallback ilustrasi update
-  update-web.png (1376×768)      // banner web
-  maintenance-app.png / web.png  // maintenance
+  popup-update.png (928×1152)
 ```
 
-**Ukuran wajib:**
-- Popup portrait: `928×1152` (ratio 0.805), minimal 768×1152. Teks **baked-in di gambar** (AI generate dengan teks), jadi app cuma tampil gambar + X.
-- Update app: `1024×1024` square, transparan BG atau indigo.
-- Update web: `1376×768` landscape.
+Logika: `rilis.gambar` dari server > asset lokal sesuai tema > default.
 
-### Gaya Visual per Tema (panduan untuk generate AI)
-
-**Base style (selalu sama):**
-- BG: indigo tua `#100030` → `#2E1065` gradient, morphing blobs violet glossy
-- Aksen: `#7C3AED / #8B5CF6 / #A855F7` glowing
-- Karakter: 3D glossy, soft shadow, glassmorphism, tidak flat
-- Teks di gambar: bold, rounded, putih/krem, shadow indigo
-
-**Varian:**
-- **Ramadan:** BG indigo tua + bulan sabit + lentera emas `#D9A441` glow, pattern arabesque halus, teks "Ramadan Mubarak — Update Spesial" atau "Versi Baru Ramadan"
-- **Idul Fitri:** Ketupat minimalis, confetti, emas + violet, teks "Selamat Idul Fitri — Ada Pembaruan!"
-- **Natal:** Salju tipis, lampu warm, pohon natal minimalis ungu, teks "Merry Christmas — Update Baru"
-- **Tahun Baru:** Kembang api violet-emas, angka tahun, teks "Tahun Baru, Fitur Baru!"
-- **Imlek:** Lampion merah + emas, naga minimalis, teks "Gong Xi Fa Cai — Update"
-- **Kemerdekaan:** Bendera merah-putih subtle, confetti, teks "Merdeka! Update Spesial 17 Agustus"
-- **Default:** Morphing glossy violet tanpa ornamen hari raya, teks "Ada Pembaruan Baru" / "Update Tersedia"
-
-### Logika Pemilihan di Code
-
-```dart
-// rilis_popup.dart
-String assetUntukTema(String? tema) {
-  if (tema == null) return 'rilis_popup.png';
-  return 'rilis_popup_${tema.toLowerCase()}.png';
-}
-
-// Prioritas:
-// 1. rilis['gambar'] (URL dari server, bisa upload per tema)
-// 2. asset lokal sesuai tema
-// 3. default
-```
-
-**Backend suggestion (belum diimplementasi, butuh migrasi):**
-- Tambah kolom `tema TEXT` di tabel `rilis` (nullable): `ramadan|idulfitri|natal|tahunbaru|imlek|kemerdekaan|default`
-- Saat admin bikin rilis di console, pilih tema → otomatis set `gambar` ke URL yang sesuai atau upload gambar themed.
-- Endpoint `/api/rilis` sudah return `gambar`, tinggal tambah `tema` di response.
-
-```sql
--- migration 0005_rilis_tema.sql (rencana)
-ALTER TABLE rilis ADD COLUMN tema TEXT DEFAULT 'default';
-```
-
-### Cara Generate Gambar AI (untuk user / agent selanjutnya)
-
-Prompt template:
-```
-"3D glossy illustration, violet-indigo theme, background #100030 to #2E1065 gradient,
-morphing soft blobs #8B5CF6 and #A855F7 glowing, [TEMA ORNAMEN],
-text '[TEKS]' baked in bold rounded white with indigo shadow,
-center composition, portrait 928x1152, premium app update popup, ultra detailed, soft lighting"
-```
-
-Contoh Ramadan:
-```
-"... Ramadan theme, crescent moon and golden lanterns #D9A441 glowing,
-arabesque subtle pattern, text 'Update Ramadan — Fitur Lebih Berkah',
-..."
-```
-
-Tool: bisa pakai model AI image generator (Midjourney/DALL-E/ComfyUI). Simpan hasil ke `api/src/assets/popup-update-{tema}.png` lalu copy ke `app/assets/ilustrasi/rilis_popup_{tema}.png`.
+Generate nanti pas waktunya — user bilang "generate gambar tema nanti saja pas waktunya".
 
 ---
 
-## 5. File Penting & Perubahan
+## 5. Progress
 
-| File | Status | Catatan |
-|------|--------|---------|
-| `app/lib/core/theme.dart` | ✅ Updated v3.2 | Palet violet-indigo glossy, gradMidnight #100030 |
-| `app/lib/ui/widgets/morph_bg.dart` | ✅ Updated | Palet baru #8B5CF6 etc |
-| `app/lib/ui/widgets/rilis_popup.dart` | ✅ Updated | Support tema, barrier indigo, transisi premium |
-| `app/lib/ui/screens/pembaruan_screen.dart` | ✅ Ada (perlu cek) | Pakai hero gradPrimary baru |
-| `api/src/web.html` | ✅ Updated | :root baru #7C3AED, glossy button/card |
-| `api/src/admin.html` | ✅ Updated | Light theme glossy #7C3AED, gate indigo |
-| `app/assets/ilustrasi/rilis_popup.png` | ✅ Ada (1381 KB) | Default, perlu generate varian tema |
-| `api/src/assets/popup-update.png` | ✅ Ada | Source AI |
-| `docs/PopupUpdate.md` | ✅ Baru | Dokumen ini |
-| `docs/popupupdate.md` | 🔜 TODO | Copy lowercase untuk kompatibilitas |
-| `api/migrations/0005_rilis_tema.sql` | ⏳ Rencana | Tambah kolom tema (belum dibuat) |
-| `preview/` | ⏳ Perlu update | Preview HTML masih pakai warna lama, perlu regenerate |
+✅ v3.2 push a1c267e (violet-indigo glossy)
+✅ v3.3 push ecb4960 + 5ea26b7 (app 4 menu baru + dashboard Next.js 27 routes + security global)
+✅ v3.3b (hari ini): no emoji, lucide-react, Plus Jakarta Sans konsisten, build sukses, deploy Vercel + Cloudflare Pages
+
+⏳ Next: update admin.html banner, push v3.3b, set GitHub secrets, cek Flutter font, generate gambar tema nanti.
 
 ---
 
-## 6. Progress Project — Udah Sampai Mana & Lanjut Gimana
+**Deploy URLs v3.3b:**
+- Dashboard Vercel: https://dashboard-iota-ten-70.vercel.app
+- Dashboard Pages: https://xycloud-dashboard.pages.dev
+- API: https://api.xycloud.my.id
 
-### ✅ Sudah Selesai (commit lokal, belum push)
-- **D. Maintenance bertingkat** — `semua|web|aplikasi`, ilustrasi 3D, console bisa pilih cakupan.
-- **C. Multi-select** — Order/TopUp/Users/Sampah bisa pilih banyak + aksi massal.
-- **B. Validasi transaksi** — Beli akun tidak langsung konfirmasi, saldo tidak dipotong kalau stok kosong, webhook idempotent.
-- **A. UI/UX glossy fondasi** — RepaintBoundary di XyCard, cached_network_image, dll.
-- **Popup rilis** — Gambar AI + tombol X saja, auto-popup sekali per sesi, X → PembaruanScreen.
-- **v3.2 Violet-Indigo Glossy** — Palet baru #100030 + #7C3AED diterapkan ke app+web+console (commit hari ini).
-
-### 🔄 Yang Baru Dikerjakan Hari Ini (2026-09-08)
-- Update `theme.dart` ke violet-indigo glossy sesuai referensi `XyCloudStore_rental_pc_morphing.jpg`.
-- Update `morph_bg.dart` ke palet baru.
-- Update `rilis_popup.dart` untuk support tema dinamis + barrier indigo + animasi premium.
-- Update `web.html` & `admin.html` dari Quiet Surface flat ke glossy violet-indigo.
-- Buat dokumen `PopupUpdate.md` ini.
-
-### ⏳ Belum / Next Steps
-1. **Generate varian gambar popup bertema** (Ramadan, Idul Fitri, Natal, Tahun Baru, Imlek, Kemerdekaan):
-   - Pakai prompt template di atas, ukuran 928×1152.
-   - Simpan ke `api/src/assets/` dan `app/assets/ilustrasi/`.
-   - Commit lokal, jangan push dulu.
-2. **Tambah kolom `tema` di backend** (migration 0005):
-   - `api/migrations/0005_rilis_tema.sql`
-   - Update `rilis.js` untuk simpan & return `tema`.
-   - Update console admin form rilis: dropdown tema + preview gambar.
-3. **Update preview HTML** (`preview/popup-final-preview.html`, `warna-glossy.html`, `app-glossy-preview.html`) biar pakai palet baru #7C3AED.
-4. **Test di perangkat**:
-   - `flutter pub get` → `flutter analyze`
-   - `flutter build apk --release` (android folder digenerate via tools/*.py)
-   - Cek: gradien glossy di kartu saldo terang & gelap, popup muncul, X ke PembaruanScreen, morph BG tidak lag.
-5. **Backend test**:
-   - `cd api && npm i && npx wrangler dev`
-   - Test mode pemeliharaan bertingkat + rilis gambar per tema.
-6. **Minta izin user sebelum rilis** — "klo uda mantep baru release", jangan berturut.
-
----
-
-## 7. Cara Uji (Wajib Sebelum Rilis)
-
-**Flutter:**
-```bash
-cd app
-flutter pub get
-flutter analyze
-flutter build apk --release
-# Pasang APK lama, naikkan versi rilis server → buka app → popup harus muncul violet-indigo
-# Tekan X → PembaruanScreen → Perbarui Sekarang → cek notif DownloadManager (jalan saat app ditutup)
-```
-
-**Backend:**
-```bash
-cd api
-npm i
-npx wrangler dev
-# Buka console admin → Sistem → coba mode pemeliharaan web saja / app saja
-# Buka /api/rilis → cek field gambar & tema
-```
-
-**Visual:**
-- Light mode: BG #F5F3FF, kartu putih shadow lembut violet, tombol gradient #A78BFA→#7C3AED
-- Dark mode: BG #100030 (indigo tua), surface #1A0B2E, teks #F0EBFF, glow violet
-
----
-
-## 8. Catatan Keamanan & Kebijakan
-
-- **Jangan push ke GitHub** sampai user bilang. Semua commit lokal (`git log` ada 17b622b dll).
-- **Kredensial** ada di `/home/user/uploads/my-binimbg.txt` — jangan commit, jangan kirim, pakai hanya yang perlu. Simpan di folder uploads.
-- **Rilis jangan berturut** — setiap menjelang build, minta izin user.
-- **Token GitHub dll** sudah ada di uploads, jangan expose.
-- **Android folder** tidak di-commit, digenerate saat build via `tools/*.py`.
-
----
-
-## 9. Referensi File
-
-- Repo: `/home/user/XyCloudOrder`
-- Popup contoh user: `/home/user/uploads/XyCloudStore_rental_pc_morphing.jpg`
-- Kredensial: `/home/user/uploads/my-binimbg.txt`
-- Theme: `app/lib/core/theme.dart`
-- Popup: `app/lib/ui/widgets/rilis_popup.dart`
-- Morph BG: `app/lib/ui/widgets/morph_bg.dart`
-- Pembaruan: `app/lib/ui/screens/pembaruan_screen.dart`
-- Web: `api/src/web.html`
-- Console: `api/src/admin.html`
-- Aset: `app/assets/ilustrasi/rilis_popup.png`, `api/src/assets/popup-update.png`
-- Docs: `docs/rencana-3.0.md`, `docs/rilis-3.0-pembaruan-app.md`, `docs/PopupUpdate.md`
-
----
-
-**Status akhir hari ini:** ✅ Palet violet-indigo glossy (#100030 + #7C3AED) sudah diterapkan ke semua UI/UX (app+web+console). Popup sudah support tema dinamis (code siap), tinggal generate gambar varian Ramadan dll. Dokumentasi ini dibuat agar agent selanjutnya langsung paham.
-
-**Lanjut besok:** Generate gambar popup bertema + migration tema + update preview + test build.
-
+**Build Policy:** Boleh push build/commit tapi JANGAN tag release `v*` — user harus test dulu.
