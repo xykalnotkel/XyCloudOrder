@@ -1,9 +1,69 @@
-# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3c (Hosting Replacement)
+# Popup Update & Tema Violet-Indigo Glossy — XyCloudStore v3.3d (Solid No-Glass + Login Terpisah + 33 Menu)
 
-> Last update: 2026-09-09 (UTC) — v3.3c hosting replacement api.xycloud.my.id/admin → Pages/Vercel — oleh Agent Arena.
+> Last update: 2026-09-09 (UTC) — v3.3d solid UI no glassmorphism, admin.xycloud.my.id login terpisah, www.xycloud.my.id fix, 33 menu, AuthGuard — oleh Agent Arena.
 > Repo: `XyCloudOrder`, branch `main`
 
-## 0. UPDATE v3.3c — Hosting Replacement: api.xycloud.my.id/admin → Next.js Dashboard (2026-09-09)
+## 0. UPDATE v3.3d — Fix: admin.xycloud.my.id login terpisah, www.xycloud.my.id, no glassmorphism, 33 menu (2026-09-09)
+
+**Request user:** "btw url nya bukannya admin.xycloud.my.id? and untuk web pakai www.xycloud.my.id dan dan pastikan ui ux semua jangan glasmorph atau glas dll dan harus dipisah per halaman dan menu dan login admin agar punya halaman sendiri dan knp yini : NetworkError when attempting to fetch resource. dan knp kode warna dan stack disebut di ui sih aneh" + "sabar koreksi untuk pisah halaman maksudku di menu punya halaman masing masing dan Ada halaman buat login dash admin kan harus masukin key admin gitu dan logo dll kenapa dihapus sih semua jadi hilang dan kenu di dash perasaan banyak banget Kok jadi dikit"
+
+### Masalah di v3.3c
+- `admin.html` masih redirect launcher dengan glassmorphism (`backdrop-filter: blur(12px)`, `rgba(26,10,58,0.96)`), info card menampilkan kode warna `#100030` dll + stack — user bilang aneh.
+- `admin.xycloud.my.id` dan `api.xycloud.my.id/admin` sama-sama serve redirect, bukan login terpisah.
+- `www.xycloud.my.id` masih maintenance (mode_pemeliharaan=1).
+- Dashboard Next.js `globals.css` masih `xy-card` dengan `backdrop-filter: blur(12px)` — glassmorphism.
+- Dashboard tidak punya halaman `/login` terpisah — langsung pakai localStorage, jadi logo hilang, NetworkError karena `loginAdmin` fetch `/api/admin/dashboard` yang tidak ada (harus `/api/admin/stats`).
+- Menu terasa dikit — legacy punya 27 menu (dash,orders,plans,produk,banners,promosi,stiker,security,perangkat,sampah,media,audit,cs,statistik,moderasi,galat,analitik,referral,unit,forum,voucher,topup,ulasan,users,alat,sistem,peran). v3.3c baru 28 tapi missing `stiker,sampah,perangkat,moderasi,alat`.
+
+### Fix v3.3d
+1. **Maintenance off:** `wrangler d1 execute xycloud --remote "UPDATE setelan SET nilai='0' WHERE kunci='mode_pemeliharaan'"` — www.xycloud.my.id sekarang serve `web.html` (Sewa PC Cloud) bukan maintenance page. Verified curl.
+2. **Rewrite `api/src/admin.html` 9.1KB solid no-glass:**
+   - Background solid `#100030`, card solid `#1A0A3A`, card2 solid `#21114A`, line solid `#2D1B5E` — **no backdrop-filter, no rgba translucent glass**
+   - Logo XY solid `bg-[#7C3AED]`, no glass
+   - **Login terpisah:** view-login dengan input Admin Key, tombol Masuk, simpan ke localStorage `xy_admin_key`, validasi via `fetch('/api/admin/stats')`
+   - view-ok setelah login: 2 link card solid ke Pages & legacy
+   - **No color codes, no stack** — hapus info palette #100030 etc
+   - Links: Pages `/login`, Vercel `/login`, legacy `?legacy=1`
+   - Deploy Worker `c99f73e4-6f0e-4107-9dd5-a0f4f4141e93` — curl `admin.xycloud.my.id/` now shows solid login.
+3. **Dashboard globals.css solid:**
+   - Before: `background: linear-gradient(135deg, rgba(26,10,58,0.96), rgba(45,10,94,0.92)); border: 1px solid rgba(124,58,237,0.22); backdrop-filter: blur(12px);`
+   - After: `background: var(--xy-card) #1E123F; border: 1px solid var(--xy-line) #2D1B5E; border-radius: 16px;` — no blur
+   - Body background solid `#100030` not radial gradient
+   - `.xy-input` solid `#21114A`
+4. **Login terpisah di Next.js:**
+   - `app/login/page.tsx` client: solid card, logo XY, input key with Eye/EyeOff, `loginAdmin` → `/api/admin/stats`, setAdminKey, router.push("/"), quick links to www & legacy, no glass, no color codes
+   - `app/login/layout.tsx` override root layout — no sidebar on login
+   - `components/layout/AuthGuard.tsx`: check `getAdminKey()`, if not and pathname != "/login" → `router.replace("/login")`, show "Memeriksa sesi admin..."
+   - `app/layout.tsx` wrap children with `<AuthGuard>`
+   - `lib/api.ts`: fix `loginAdmin` to use `/api/admin/stats` not `/dashboard`, add NetworkError catch with clear message `NetworkError: tidak bisa terhubung ke BASE — cek koneksi, CORS, atau adblock`
+   - Sidebar: hide on `/login`, solid bg `#1A0A3A` border `#2D1B5E`, no glass, show admin key truncated + Keluar button, collapsed 272→72px tetap
+5. **Menu lengkap 33:**
+   - `lib/theme.ts`: tambah 5 missing legacy: `stiker` (Sticker), `sampah` (Trash2), `perangkat` (Smartphone), `moderasi` (ShieldAlert), `alat` (Wrench)
+   - IconMap: `Sticker, Trash2, Smartphone, ShieldAlert, Wrench`
+   - MENU now 33 items: dash,orders,users,plans,produk,banners,promosi,stiker,voucher,topup,unit,sesi,live,security,perangkat,keuangan,cs,forum,moderasi,ulasan,statistik,analitik,referral,favorit,galat,rilis,push,alat,media,audit,sampah,sistem,peran
+   - Create pages: `app/stiker/page.tsx`, `app/sampah/page.tsx`, `app/perangkat/page.tsx`, `app/moderasi/page.tsx`, `app/alat/page.tsx` — solid cards, no glass, per-page fetch
+   - Build: 37 routes (33 menu + dash + login + _not-found + etc) — First Load 87kB
+6. **Deploy:**
+   - Pages: `d3a0f857.xycloud-dashboard.pages.dev` (109 files)
+   - Vercel: `dashboard-ikqgcg1mk-...` aliased `dashboard-iota-ten-70.vercel.app`
+   - Worker: `c99f73e4-6f0e-4107-9dd5-a0f4f4141e93` — admin.xycloud.my.id solid login, www.xycloud.my.id web normal
+7. **URLs final:**
+   - **Admin primary:** https://admin.xycloud.my.id/ → solid login → https://xycloud-dashboard.pages.dev/login
+   - **Admin legacy:** https://admin.xycloud.my.id/admin?legacy=1 & /admin-legacy
+   - **Dashboard new:** https://xycloud-dashboard.pages.dev/login (Pages) & https://dashboard-iota-ten-70.vercel.app/login (Vercel) — both have login terpisah, 33 menu per halaman
+   - **Web:** https://www.xycloud.my.id/ & https://xycloud.my.id/ → web.html (Sewa PC)
+   - **API:** https://api.xycloud.my.id
+
+### No Glassmorphism Checklist
+- ✅ `api/src/admin.html`: solid #100030, #1A0A3A, #21114A, no backdrop-filter
+- ✅ `dashboard/app/globals.css`: xy-card solid #1E123F border #2D1B5E no blur
+- ✅ Sidebar solid #1A0A3A
+- ✅ Login pages solid, no color codes displayed
+- ✅ All pages use `xy-card` solid, `xy-input` solid
+
+---
+
+## 0b. UPDATE v3.3c — Hosting Replacement: api.xycloud.my.id/admin → Next.js Dashboard (2026-09-09)
 
 **Request user:** "dash html di hosting dmn kenapa ga diganti yang itu saja"
 
