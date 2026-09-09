@@ -4,12 +4,16 @@ import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 
+/// Status unit PC live — memakai katalog pc_plans (nama, region, spek, stok realtime).
+/// Server Worker mengirim update stok via WebSocket room 'katalog' (event stock.update),
+/// sehingga angka unit tersedia diperbarui otomatis oleh AppState.
 class LiveUnitScreen extends StatelessWidget {
   const LiveUnitScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final plans = context.watch<AppState>().plans;
+    final siap = plans.where((p) => p.unitTersedia > 0).length;
     return Scaffold(
       appBar: AppBar(title: const Text('Status Unit Live')),
       body: ListView(
@@ -28,7 +32,9 @@ class LiveUnitScreen extends StatelessWidget {
               Text('${plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready', style: TextStyle(color: Colors.white.withOpacity(.75), fontSize: 11.5)),
             ]),
           ),
-          const SectionHeader('Unit PC'),
+          const SizedBox(height: 8),
+          Text('$siap dari ${plans.length} paket siap dipakai', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+          const SectionHeader('Paket PC'),
           if (plans.isEmpty)
             const Kosong(icon: Icons.desktop_windows_rounded, judul: 'Belum ada data unit', sub: 'Tarik untuk refresh.', ilustrasi: 'pc')
           else
@@ -43,7 +49,7 @@ class LiveUnitScreen extends StatelessWidget {
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                           const SizedBox(height: 2),
-                          Text('${p.cpu} • ${p.gpu} • ${p.ram}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+                          Text('${p.cpu} • ${p.gpu} • ${p.ramGb}GB RAM', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                         ])),
                         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                           Text('${p.unitTersedia}/${p.totalUnit}', style: const TextStyle(fontWeight: FontWeight.w800, color: XyTheme.primary)),
@@ -57,9 +63,9 @@ class LiveUnitScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Row(children: [
-                        _Chip('${p.lokasi}', Icons.location_on_rounded),
+                        _Chip(p.region, Icons.location_on_rounded),
                         const SizedBox(width: 6),
-                        _Chip('${p.pingMs}ms', Icons.speed_rounded),
+                        _Chip(p.tag.isEmpty ? '${p.storageGb}GB' : p.tag, Icons.sell_rounded),
                         const SizedBox(width: 6),
                         _Chip(p.unitTersedia > 0 ? 'Online' : 'Penuh', Icons.circle, color: p.unitTersedia > 0 ? const Color(0xFF22C55E) : XyTheme.danger),
                       ]),

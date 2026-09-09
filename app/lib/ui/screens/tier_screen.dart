@@ -136,7 +136,7 @@ class TierScreen extends StatelessWidget {
                               decoration: BoxDecoration(color: t['color'] as Color, shape: BoxShape.circle),
                             ),
                             const SizedBox(width: 10),
-                            Expanded(child: Text(b, style: TextStyle(color: XyTheme.of(context).fg.withOpacity(.85), fontSize: 12.5))),
+                            Expanded(child: Text(b, style: TextStyle(color: XyTheme.of(context).inkSoft.withOpacity(.85), fontSize: 12.5))),
                           ]),
                         ))),
                   ]),

@@ -19,7 +19,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
-import 'pengaturan_screen.dart';
+import 'pengaturan_screen.dart' as pengaturan;
 import 'referral_screen.dart';
 import 'tentang_screen.dart';
 import 'wallet_screen.dart';
@@ -185,13 +185,13 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',
                 sub: 'Nama, nomor WhatsApp, dan foto',
-                onTap: () => Navigator.push(context, xyRoute(const UbahProfilScreen())),
+                onTap: () => Navigator.push(context, xyRoute(const pengaturan.UbahProfilScreen())),
               ),
               _Menu(
                 ikon: Icons.lock_outline_rounded,
                 judul: 'Keamanan',
                 sub: 'Ganti password dan info sesi',
-                onTap: () => Navigator.push(context, xyRoute(const KeamananScreen())),
+                onTap: () => Navigator.push(context, xyRoute(const pengaturan.KeamananScreen())),
               ),
               _Menu(
                 ikon: Icons.account_balance_wallet_outlined,
@@ -265,7 +265,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 ikon: Icons.tune_rounded,
                 judul: 'Pengaturan',
                 sub: 'Notifikasi, hemat data, penyimpanan',
-                onTap: () => Navigator.push(context, xyRoute(const PengaturanScreen())),
+                onTap: () => Navigator.push(context, xyRoute(const pengaturan.PengaturanScreen())),
               ),
               _Menu(
                 ikon: Icons.info_outline_rounded,
@@ -275,7 +275,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ),
 
               _Menu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
-              _Menu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const TemaScreen()))),
+              _Menu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const pengaturan.TemaScreen()))),
               _Menu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
               const SizedBox(height: 18),
               OutlinedButton.icon(

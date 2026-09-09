@@ -22,9 +22,7 @@ class _XyMorphBgState extends State<XyMorphBg>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 9),
-      repeat: true,
-      repeatReverse: true);
+      duration: const Duration(seconds: 9));
   late final List<_Gumpal> _b;
 
   @override
@@ -41,13 +39,13 @@ class _XyMorphBgState extends State<XyMorphBg>
     _b = List.generate(widget.jumlah, (i) {
       return _Gumpal(
         warna: pal[i % pal.length],
-        r: 60 + rnd.nextInt(90),
+        r: (60 + rnd.nextInt(90)).toDouble(),
         dx: rnd.nextDouble() * 1.2,
         dy: rnd.nextDouble() * 1.2,
         base: (i * 0.37 + rnd.nextDouble() * .3),
       );
     });
-    _c.forward();
+    _c.repeat(reverse: true); // repeat+reverse via method, bukan parameter konstruktor
   }
 
   @override

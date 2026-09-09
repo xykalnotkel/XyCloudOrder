@@ -107,7 +107,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.favorite_rounded, color: XyTheme.danger, size: 20),
-                        onPressed: () => context.read<AppState>().toggleFavorit(p.id),
+                        onPressed: () => context.read<AppState>().ubahFavorit(p.id),
                       ),
                     ]),
                   ),

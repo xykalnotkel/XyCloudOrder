@@ -149,7 +149,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                                 Text(_fmtWaktu(a['waktu'] as DateTime), style: TextStyle(color: XyTheme.of(context).muted, fontSize: 10.5)),
                               ]),
                               const SizedBox(height: 3),
-                              Text(a['detail'] as String, style: TextStyle(color: XyTheme.of(context).fg.withOpacity(.85), fontSize: 12.5)),
+                              Text(a['detail'] as String, style: TextStyle(color: XyTheme.of(context).inkSoft.withOpacity(.85), fontSize: 12.5)),
                               if ((a['ip'] as String) != '-')
                                 Padding(
                                   padding: const EdgeInsets.only(top: 3),
