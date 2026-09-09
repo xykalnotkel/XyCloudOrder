@@ -32,7 +32,7 @@ jobs:
           Import-Module ps2exe
           New-Item -ItemType Directory -Force agent/dist | Out-Null
           Invoke-PS2EXE -InputFile agent/instal_otomatis.ps1 `
-            -OutputFile agent/dist/XyCloudStore-Agent-Setup.exe -NoProfile
+            -OutputFile agent/dist/XyCloudStore-Agent-Setup.exe
           Get-Item agent/dist/XyCloudStore-Agent-Setup.exe | Select-Object Name, Length
 
       - name: Bungkus (exe + agen Python + contoh layanan)
