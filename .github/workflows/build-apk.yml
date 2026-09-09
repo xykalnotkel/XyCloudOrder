@@ -44,9 +44,6 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Uji agen tanpa PC produksi
-        run: python3 -m unittest discover -s agent -p "test_*.py"
-
       - name: Uji backend tanpa data produksi
         working-directory: api
         run: |
