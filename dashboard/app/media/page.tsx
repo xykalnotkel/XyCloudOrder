@@ -1,53 +1,64 @@
 "use client";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
-import { Package } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
+import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+
+function formatBytes(n: number) {
+  if (!n) return "—";
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+  return (n / (1024 * 1024)).toFixed(1) + " MB";
+}
 
 export default function MediaPage() {
-  const [data, setData] = useState<any[]>([]);
+  const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   useEffect(() => {
     adminFetch("/api/admin/media")
-      .then((d) => setData(d.data || d.media || d.items || []))
+      .then((d) => setRows(Array.isArray(d) ? d : []))
       .catch((e) => setErr(e.message))
       .finally(() => setLoading(false));
   }, []);
 
   return (
     <div className="space-y-4 font-[Plus_Jakarta_Sans]">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Package size={18} className="text-white" /></div>
-          <div>
-            <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Media</h1>
-            <p className="text-sm text-[#7C738F] font-medium">Kelola media — endpoint /api/admin/media</p>
-          </div>
-        </div>
-        <span className="text-xs px-3 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{data.length} item</span>
-      </div>
-      {loading ? <div className="xy-card rounded-xl p-6 text-center text-[#7C738F] font-medium">Memuat...</div> : err ? <div className="xy-card rounded-xl p-4 text-red-600 font-medium">{err} — endpoint /api/admin/media mungkin belum ada, fallback mock.</div> : (
-        <div className="xy-card rounded-[16px] overflow-hidden">
-          <div className="p-4 text-[12px] text-[#7C738F] font-medium">Endpoint: /api/admin/media • {data.length} data dari Worker. Font Plus Jakarta Sans, icons Lucide konsisten.</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
-            {data.slice(0, 30).map((it: any, i: number) => (
-              <div key={it.id || i} className="p-3 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5]">
-                <div className="font-bold text-[#1E1B2E] text-[13px] truncate tracking-tight">{it.judul || it.nama || it.email || it.kode || it.id || "Item " + (i+1)}</div>
-                <div className="text-[11px] text-[#7C738F] mt-1 line-clamp-2 font-mono">{JSON.stringify(it).slice(0, 120)}</div>
+      <Header icon={ImageIcon} title="Media" sub="Aset unggahan Cloudinary (hanya pemilik) — 200 terakhir"
+        right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} aset</span>} />
+      {loading ? <Load /> : err ? <ErrBox msg={err} /> : rows.length === 0 ? (
+        <div className="xy-card rounded-[20px] p-10 text-center text-[#7C738F] font-medium">Belum ada aset media.</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+          {rows.map((m) => (
+            <div key={m.id} className="xy-card rounded-[18px] overflow-hidden">
+              <div className="h-32 bg-[#F3F0FF] flex items-center justify-center overflow-hidden">
+                {m.preview || m.url ? (
+                  <img src={m.preview || m.url} alt={m.id} loading="lazy" className="w-full h-full object-cover" />
+                ) : (
+                  <ImageIcon size={20} className="text-[#C4B5FD]" />
+                )}
               </div>
-            ))}
-            {data.length === 0 && (
-              <div className="col-span-3 py-12 text-center">
-                <div className="w-12 h-12 mx-auto rounded-xl bg-[#F3F0FF] grid place-items-center"><Package size={20} className="text-[#7C3AED]" /></div>
-                <div className="mt-3 text-sm text-[#7C738F] font-semibold tracking-tight">Belum ada data</div>
-                <div className="text-[11px] text-[#7C738F] mt-1 font-medium">Fetch dari /api/admin/media — pastikan Worker sudah expose route tersebut.</div>
+              <div className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-bold text-[#1E1B2E] font-mono truncate">{m.id.slice(0, 12)}</span>
+                  <Chip tone="netral">{m.format || "-"}</Chip>
+                </div>
+                <div className="mt-1 text-[10.5px] text-[#7C738F] font-medium">
+                  {m.width && m.height ? `${m.width}×${m.height}` : ""}{m.width ? " • " : ""}{formatBytes(m.bytes)}{m.animated ? " • GIF" : ""}
+                </div>
+                <div className="text-[10.5px] text-[#7C738F] mt-0.5">folder: {m.folder || "-"} • {jam(m.created_at)}</div>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(m.url || "")}
+                  className="mt-2 text-[11px] w-full py-1.5 rounded-full bg-[#F5F3FF] border border-[#E9E3F5] font-semibold text-[#6B5A8A] hover:text-[#7C3AED] hover:border-[#C4B5FD]">
+                  Salin URL
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
       )}
-      <div className="xy-card rounded-xl p-3 text-[11px] text-[#7C738F] font-medium">Palette: #100030 → #7C3AED → #A855F7 • Glossy .xy-card • Next.js 14 full rewrite v3.3 • No emoji</div>
     </div>
   );
 }
