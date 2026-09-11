@@ -47,7 +47,7 @@ html, body {
 .xy-card {
   background: var(--xy-card);
   border: 1px solid var(--xy-line);
-  border-radius: 14px;
+  border-radius: 18px;
   box-shadow: var(--xy-shadow);
 }
 .xy-card-hover:hover {
@@ -55,24 +55,29 @@ html, body {
   background: #FBFAFF;
 }
 
-/* Tombol utama: solid ungu, radius tipis, border, tanpa gradient/glow */
+/* Tombol 3D tipis ala xydesk: gradient + inset + hard bottom edge */
 .xy-btn {
-  background: var(--xy-violet);
-  border-radius: 10px;
-  box-shadow: none;
+  background: linear-gradient(160deg, #8b5cf6 0%, #7C3AED 45%, #5B21B6 100%);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(38,18,92,0.10), 0 4px 0 #4C1D95, inset 0 1px 0 rgba(255,255,255,0.28);
   font-family: var(--font-inter);
   font-weight: 600;
   letter-spacing: -0.01em;
   color: #fff;
   border: 1px solid #6D28D9;
+  transition: transform .1s ease, box-shadow .15s ease, background .15s ease;
 }
 .xy-btn:hover {
-  background: #6D28D9;
-  box-shadow: none;
-  transform: none;
+  background: linear-gradient(160deg, #9d70ff 0%, #8447f5 45%, #5B21B6 100%);
+  box-shadow: 0 4px 14px rgba(38,18,92,0.16), 0 4px 0 #4C1D95, inset 0 1px 0 rgba(255,255,255,0.32);
+  transform: translateY(-1px);
 }
-.xy-btn:active { filter: brightness(0.97); }
-.xy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.xy-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 2px rgba(38,18,92,0.10), 0 1px 0 #4C1D95, inset 0 1px 0 rgba(255,255,255,0.2);
+  filter: none;
+}
+.xy-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; transform: none; filter: grayscale(.15); }
 
 .xy-input {
   background: #FFFFFF;
@@ -207,4 +212,61 @@ input[type="checkbox"], input[type="radio"] {
   width: 15px; height: 15px;
   accent-color: #7C3AED;
   cursor: pointer;
+}
+
+
+/* Toggle switch custom */
+.xy-toggle {
+  width: 44px; height: 26px; appearance: none;
+  background: #E9E3F5; border-radius: 999px; position: relative;
+  cursor: pointer; transition: .15s ease; border: 1px solid #D6CBF5; flex-shrink: 0;
+}
+.xy-toggle::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; border-radius: 50%; background: #fff;
+  box-shadow: 0 2px 4px rgba(16,0,48,.15); transition: .15s ease;
+}
+.xy-toggle:checked { background: linear-gradient(160deg,#8b5cf6,#7C3AED); border-color: #7C3AED; }
+.xy-toggle:checked::after { left: 20px; }
+
+.xy-btn-ghost {
+  background: #fff; border: 1px solid var(--xy-line); border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(38,18,92,0.08), 0 3px 0 #E9E3F5;
+  color: #4B445F; font-weight: 600;
+  transition: transform .1s ease, box-shadow .15s ease;
+}
+.xy-btn-ghost:hover { background: #F5F3FF; transform: translateY(-1px); }
+.xy-btn-ghost:active { transform: translateY(2px); box-shadow: 0 1px 0 #E9E3F5; }
+.xy-btn-danger {
+  background: linear-gradient(160deg, #fb7185 0%, #e11d48 55%, #be123c 100%);
+  border-radius: 12px; color: #fff; font-weight: 600; border: 1px solid #be123c;
+  box-shadow: 0 1px 2px rgba(190,18,60,0.12), 0 4px 0 #9F1239, inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.xy-btn-danger:hover { transform: translateY(-1px); }
+.xy-btn-danger:active { transform: translateY(2px); box-shadow: 0 1px 0 #9F1239; }
+.xy-btn-ok {
+  background: linear-gradient(160deg, #34d399 0%, #059669 55%, #047857 100%);
+  border-radius: 12px; color: #fff; font-weight: 600; border: 1px solid #047857;
+  box-shadow: 0 1px 2px rgba(4,120,87,0.12), 0 4px 0 #065F46, inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.xy-btn-ok:hover { transform: translateY(-1px); }
+.xy-btn-ok:active { transform: translateY(2px); box-shadow: 0 1px 0 #065F46; }
+.xy-file { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.xy-file-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
+  border-radius: 12px; background: #F3F0FF; border: 1px solid var(--xy-line);
+  font-size: 12.5px; font-weight: 600; color: #5B21B6; cursor: pointer;
+}
+
+input.xy-check {
+  appearance: none; -webkit-appearance: none;
+  width: 18px; height: 18px; border-radius: 6px;
+  border: 2px solid #C4B5FD; background: #fff;
+  display: inline-grid; place-items: center; cursor: pointer; vertical-align: middle;
+}
+input.xy-check:checked {
+  background: linear-gradient(160deg,#8b5cf6,#7C3AED);
+  border-color: #7C3AED;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size: 12px; background-repeat: no-repeat; background-position: center;
 }

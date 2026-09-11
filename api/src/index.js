@@ -1,6 +1,6 @@
 import { adminSecurity, ownerProtected } from './admin_security.js';
 import { SecurityError, securityConfig, securityHash, securitySlot, auditSecurity, requireRate, deviceFromRequest, linkDevice, beforeRegistration, translateRegistrationError, assertAccountEnabled, otpAllowed, otpDigest, newOAuthState, consumeOAuthState, saveSecurityConfig } from './security.js';
-import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa } from './sewa.js';
+import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa, normalisasiHostStream} from './sewa.js';
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
 import { periksaTeks, periksaGabungan } from './moderasi.js';
@@ -881,12 +881,13 @@ ${halaman.map(([u, p2, f]) => `  <url>
           await rawatSewa(env);
           const b = await req.json().catch(() => ({}));
           await env.DB.prepare(
-            "UPDATE agen SET status = ?, spec = COALESCE(?, spec), versi = COALESCE(?, versi), host = COALESCE(?, host), terakhir = ? WHERE id = ?"
+            "UPDATE agen SET status = ?, spec = COALESCE(?, spec), versi = COALESCE(?, versi), host = CASE WHEN ? IS NOT NULL THEN ? ELSE host END, terakhir = ? WHERE id = ?"
           ).bind(
             b.status || 'online',
             b.spec ? JSON.stringify(b.spec) : null,
             b.versi || null,
-            b.host || null,
+            (() => { const h = normalisasiHostStream(b.host, null); return h; })(),
+            (() => { const h = normalisasiHostStream(b.host, null); return h; })(),
             new Date().toISOString(),
             agen.id
           ).run();
@@ -2256,6 +2257,31 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         if (a.startsWith('agen/') && req.method === 'DELETE') {
           await env.DB.prepare('DELETE FROM agen WHERE id = ?').bind(a.split('/')[1]).run();
           return json({ ok: true }, 200, env);
+        }
+
+        if (a.startsWith('agen/') && req.method === 'PATCH') {
+          const id = a.split('/')[1];
+          const b = await req.json().catch(() => ({}));
+          const row = await env.DB.prepare('SELECT * FROM agen WHERE id=?').bind(id).first();
+          if (!row) return err('Unit tidak ditemukan', 404, env);
+          let host = row.host;
+          if (b.host !== undefined) {
+            const h = String(b.host || '').trim();
+            if (!h) host = null;
+            else {
+              const n = normalisasiHostStream(h, null);
+              if (!n) return err('Host harus IP publik (x.x.x.x) atau domain (pc.contoh.com), bukan nama PC Windows.', 400, env);
+              host = n;
+            }
+          }
+          const nama = b.nama != null ? String(b.nama).trim() || row.nama : row.nama;
+          const plan = b.plan_id !== undefined ? (b.plan_id || null) : row.plan_id;
+          await env.DB.prepare('UPDATE agen SET nama=?, plan_id=?, host=? WHERE id=?').bind(nama, plan, host, id).run();
+          // sesi aktif ikut host baru
+          if (host) {
+            await env.DB.prepare("UPDATE sesi SET host=? WHERE agen_id=? AND status IN ('siap','pairing','berjalan','menyiapkan')").bind(host, id).run();
+          }
+          return json({ ok: true, id, host, nama, plan_id: plan }, 200, env);
         }
 
         if (a === 'sesi' && req.method === 'GET') {

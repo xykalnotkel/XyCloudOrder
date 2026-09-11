@@ -23,6 +23,7 @@ class UserProfile {
   /// Lencana khusus dari admin, contohnya XySpace.
   final String? badge;
   final bool diblokir;
+  final String? alasanBlokir;
   final int peringatan;
   final String? kodeReferral;
   final String? diundangOleh;
@@ -39,6 +40,7 @@ class UserProfile {
     this.notifForum = true,
     this.badge,
     this.diblokir = false,
+    this.alasanBlokir,
     this.peringatan = 0,
     this.kodeReferral,
     this.diundangOleh,
@@ -56,6 +58,7 @@ class UserProfile {
         notifForum: (j['notif_forum'] ?? 1) == 1,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         diblokir: (j['diblokir'] ?? 0) == 1,
+        alasanBlokir: j['alasan_blokir'] as String?,
         peringatan: j['peringatan'] ?? 0,
         kodeReferral: j['kode_referral'],
         diundangOleh: j['diundang_oleh'],
@@ -74,7 +77,7 @@ class UserProfile {
         'badge': badge,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
@@ -85,8 +88,11 @@ class UserProfile {
         avatar: avatar,
         notifForum: notifForum,
         badge: badge,
-        diblokir: diblokir,
-        peringatan: peringatan,
+        diblokir: diblokir ?? this.diblokir,
+        alasanBlokir: alasanBlokir ?? this.alasanBlokir,
+        peringatan: peringatan ?? this.peringatan,
+        kodeReferral: kodeReferral,
+        diundangOleh: diundangOleh,
       );
 }
 

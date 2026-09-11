@@ -1,3 +1,21 @@
+
+/** Host streaming harus IP/DNS publik — tolak COMPUTERNAME Windows tanpa titik. */
+export function normalisasiHostStream(raw, fallback){
+  const h=String(raw||'').trim();
+  const fb=String(fallback||'').trim();
+  const ok=v=>{
+    if(!v)return false;
+    if(/^\d{1,3}(\.\d{1,3}){3}$/.test(v))return true; // IPv4
+    if(v.includes(':')&&v.includes('.'))return false;
+    if(/^[a-fA-F0-9:]+$/.test(v)&&v.includes(':'))return true; // bare IPv6 rough
+    if(v.includes('.')&&!/\s/.test(v)&&v.length<253)return true; // FQDN
+    return false;
+  };
+  if(ok(h))return h;
+  if(ok(fb))return fb;
+  return null;
+}
+
 import { cekVoucher, diskonTier } from './loyal.js';
 import { KontenError } from './engagement.js';
 const id=p=>p+crypto.randomUUID().replace(/-/g,'').slice(0,20);
@@ -88,6 +106,9 @@ export async function bacaSewa(env,userId,key){
     await env.DB.prepare("UPDATE orders SET status='batal' WHERE id=? AND status='provisioning'").bind(s.order_id).run();
     return antreAkhir(env,s,'Persiapan terlalu lama; pembayaran saldo dikembalikan dan unit sedang dibersihkan.');
   }
+  if(s.host && !normalisasiHostStream(s.host,null)){
+    s.catatan=(s.catatan?s.catatan+' · ':'')+'Host "'+s.host+'" bukan IP/DNS publik. Admin harus isi host unit (IP publik / domain).';
+  }
   return s;
 }
 export async function konfirmasiAgen(env,agent,command,b){
@@ -105,10 +126,20 @@ export async function konfirmasiAgen(env,agent,command,b){
     if(ok){
       status='siap';const o=await env.DB.prepare('SELECT mulai,berakhir FROM orders WHERE id=?').bind(s.order_id).first();
       const mulai=o.mulai||waktu,sampai=o.berakhir||new Date(Date.now()+s.durasi_menit*60000).toISOString();
-      await env.DB.batch([
-        env.DB.prepare("UPDATE sesi SET status='siap',mulai=?,berakhir=?,host=COALESCE(?,host),catatan='Host siap untuk koneksi streaming' WHERE id=?").bind(mulai,sampai,b.host||null,s.id),
-        env.DB.prepare("UPDATE orders SET status='aktif',progress=100,mulai=?,berakhir=?,host=COALESCE(?,host) WHERE id=? AND status IN ('dibayar','provisioning','aktif')").bind(mulai,sampai,b.host||null,s.order_id),
-      ]);
+      const hostStream=normalisasiHostStream(b.host, agent.host);
+      if(hostStream){
+        await env.DB.batch([
+          env.DB.prepare("UPDATE sesi SET status='siap',mulai=?,berakhir=?,host=?,catatan='Host siap untuk koneksi streaming' WHERE id=?").bind(mulai,sampai,hostStream,s.id),
+          env.DB.prepare("UPDATE orders SET status='aktif',progress=100,mulai=?,berakhir=?,host=? WHERE id=? AND status IN ('dibayar','provisioning','aktif')").bind(mulai,sampai,hostStream,s.order_id),
+          env.DB.prepare('UPDATE agen SET host=? WHERE id=?').bind(hostStream, agent.id),
+        ]);
+      } else {
+        await env.DB.batch([
+          env.DB.prepare("UPDATE sesi SET status='siap',mulai=?,berakhir=?,host=COALESCE(host, ?),catatan=? WHERE id=?").bind(mulai,sampai,agent.host||null,'Host siap. Set IP/host publik di Unit (bukan nama PC Windows).',s.id),
+          env.DB.prepare("UPDATE orders SET status='aktif',progress=100,mulai=?,berakhir=?,host=COALESCE(host, ?) WHERE id=? AND status IN ('dibayar','provisioning','aktif')").bind(mulai,sampai,agent.host||null,s.order_id),
+        ]);
+      }
+    
     }else{
       status='gagal';await env.DB.batch([
         env.DB.prepare("UPDATE sesi SET status='gagal',catatan=? WHERE id=?").bind(String(b.catatan||'Host gagal disiapkan'),s.id),

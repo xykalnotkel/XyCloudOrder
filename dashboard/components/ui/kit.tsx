@@ -192,15 +192,15 @@ type BtnProps = {
 };
 
 export function Btn({ children, onClick, disabled, type = "button", className = "", title, tone = "utama" }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-[10px] text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition border";
+  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-[12px] text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
   const map: Record<string, string> = {
-    utama: "xy-btn text-white border-[#6D28D9]",
-    ghost: "bg-white border-[#E9E3F5] text-[#4B445F] hover:bg-[#F5F3FF]",
-    bahaya: "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100",
-    ok: "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100",
+    utama: "xy-btn text-white",
+    ghost: "xy-btn-ghost",
+    bahaya: "xy-btn-danger",
+    ok: "xy-btn-ok",
   };
   return (
-    <button type={type} title={title} disabled={disabled} onClick={onClick} className={`${base} ${map[tone]} ${className}`}>
+    <button type={type} title={title} disabled={disabled} onClick={onClick} className={`${base} ${map[tone] || map.utama} ${className}`}>
       {children}
     </button>
   );
@@ -446,6 +446,39 @@ export function Select({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+
+export function Toggle({
+  checked, onChange, disabled, label, className = "",
+}: {
+  checked: boolean; onChange?: (v: boolean) => void; disabled?: boolean; label?: ReactNode; className?: string;
+}) {
+  return (
+    <label className={`inline-flex items-center gap-2.5 cursor-pointer ${disabled ? "opacity-50 pointer-events-none" : ""} ${className}`}>
+      <input type="checkbox" className="xy-toggle" checked={checked} disabled={disabled}
+        onChange={(e) => onChange?.(e.target.checked)} />
+      {label != null && <span className="text-[13px] font-medium text-[#1E1B2E]">{label}</span>}
+    </label>
+  );
+}
+
+export function FileField({
+  label, accept, onFile, hint, disabled,
+}: {
+  label?: string; accept?: string; onFile: (f: File | null) => void; hint?: string; disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {label && <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">{label}</div>}
+      <label className={`xy-file ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+        <span className="xy-file-btn">Pilih berkas</span>
+        <input type="file" accept={accept} disabled={disabled} className="text-[12px]"
+          onChange={(e) => onFile(e.target.files?.[0] || null)} />
+      </label>
+      {hint && <p className="text-[11px] text-[#7C738F] font-medium">{hint}</p>}
     </div>
   );
 }

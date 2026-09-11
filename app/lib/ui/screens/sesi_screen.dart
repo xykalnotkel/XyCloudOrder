@@ -160,9 +160,16 @@ class _SesiScreenState extends State<SesiScreen> {
           return;
         }
       }
-      if (mounted)
-        setState(
-            () => _error = msg.replaceFirst('PlatformException(', ''));
+      var clean = msg.replaceFirst('PlatformException(', '');
+      if (clean.contains('Unable to resolve host') ||
+          clean.contains('EAI_NODATA') ||
+          clean.contains('No address associated')) {
+        clean =
+            'Alamat host PC tidak bisa dijangkau dari HP (bukan IP/DNS publik). '
+            'Minta admin isi IP publik unit di Dashboard → Unit PC, atau perbarui agen ke 1.3.3+. '
+            'Detail: $clean';
+      }
+      if (mounted) setState(() => _error = clean);
     } finally {
       if (mounted) setState(() => _connecting = false);
     }

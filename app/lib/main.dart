@@ -13,6 +13,7 @@ import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
 import 'ui/screens/splash_screen.dart';
 import 'ui/screens/shell.dart';
+import 'ui/screens/blokir_screen.dart';
 import 'ui/widgets/perawatan_screen.dart';
 
 Future<void> main() async {
@@ -97,7 +98,11 @@ class _Root extends StatelessWidget {
         opacity: a,
         child: ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(a), child: child),
       ),
-      child: masuk ? const XyShell(key: ValueKey('shell')) : const FlowGate(key: ValueKey('flow')),
+      child: !masuk
+          ? const FlowGate(key: ValueKey('flow'))
+          : (s.user?.diblokir == true
+              ? const BlokirScreen(key: ValueKey('blokir'))
+              : const XyShell(key: ValueKey('shell'))),
     );
   }
 }

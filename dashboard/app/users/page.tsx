@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import {
   asList, Btn, Chip, EmptyBox, ErrBox, Field, Header, Input, jam, Load, MsgOk,
-  Panel, rupiah, runBatch, SelectBar, TextArea, useSelection,
+  Panel, rupiah, runBatch, Select, SelectBar, TextArea, useSelection,
 } from "@/components/ui/kit";
 
 type User = any;
@@ -131,6 +131,29 @@ export default function UsersPage() {
     setAktif(null);
   }
 
+  async function massalSampah() {
+    const target = sel.list.filter((id) => {
+      const u = rows.find((x) => x.id === id);
+      return u && !u.owner_protected;
+    });
+    if (!target.length) { setErr("Tidak ada akun cocok (pemilik dilindungi)."); return; }
+    const kunci = prompt(`Ketik HAPUS untuk memindahkan ${target.length} akun ke Sampah:`);
+    if (kunci !== "HAPUS") return;
+    if (!confirm(`Pindah ${target.length} akun ke Sampah? Login dinonaktifkan.`)) return;
+    setBusy(true); setErr(""); setOk("");
+    try {
+      const msg = await runBatch(target, (id) =>
+        adminFetch(`/api/admin/users/${id}/trash`, {
+          method: "POST", body: { konfirmasi: "HAPUS" },
+        }), "dipindah ke Sampah");
+      setOk(msg);
+      sel.clear();
+      if (aktif && target.includes(aktif.id)) setAktif(null);
+      await muat();
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  }
+
   async function massalBlokir(blokir: boolean) {
     const target = sel.list.filter((id) => {
       const u = rows.find((x) => x.id === id);
@@ -191,6 +214,9 @@ export default function UsersPage() {
         <Btn tone="ok" disabled={busy} onClick={() => massalBlokir(false)}>
           <CheckCircle2 size={13} /> Buka blokir
         </Btn>
+        <Btn tone="ghost" disabled={busy} onClick={() => massalSampah()}>
+          <Trash2 size={13} /> Ke Sampah
+        </Btn>
       </SelectBar>
 
       {ok && <MsgOk msg={ok} />}
@@ -203,7 +229,7 @@ export default function UsersPage() {
             <thead>
               <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
                 <th className="px-3 py-2.5 w-10">
-                  <input type="checkbox" checked={sel.allSelected} onChange={sel.toggleAll} />
+                  <input type="checkbox" className="xy-check" checked={sel.allSelected} onChange={sel.toggleAll} />
                 </th>
                 {["Pengguna", "Saldo", "Tier", "Status", "Daftar", ""].map((h) => (
                   <th key={h || "a"} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
@@ -214,7 +240,7 @@ export default function UsersPage() {
               {filtered.map((u) => (
                 <tr key={u.id} className="border-b border-[#F0EDFB] last:border-0 hover:bg-[#FBFAFF]">
                   <td className="px-3 py-3">
-                    <input type="checkbox" checked={sel.selected.has(u.id)} onChange={() => sel.toggle(u.id)} disabled={!!u.owner_protected} />
+                    <input type="checkbox" className="xy-check" checked={sel.selected.has(u.id)} onChange={() => sel.toggle(u.id)} disabled={!!u.owner_protected} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-semibold text-[#1E1B2E]">{u.nama || "—"}</div>
@@ -286,7 +312,16 @@ export default function UsersPage() {
               <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Lencana & tier</div>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Tier">
-                  <Input value={tier} onChange={(e) => setTier(e.target.value)} placeholder="basic / pro / elite" />
+                  <Select
+                    value={tier || "basic"}
+                    onChange={setTier}
+                    options={[
+                      { value: "basic", label: "basic" },
+                      { value: "pro", label: "pro" },
+                      { value: "elite", label: "elite" },
+                      { value: "vip", label: "vip" },
+                    ]}
+                  />
                 </Field>
                 <Field label="Badge">
                   <Input value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="VIP / Creator" />

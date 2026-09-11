@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-pub const VERSI: &str = "1.3.2-rust";
+pub const VERSI: &str = "1.3.3-rust";
 const SUNSHINE_BAWAAN: &str = "https://127.0.0.1:47990";
 /// MSI resmi LizardByte (fallback bila winget hang / tidak ada).
 const SUNSHINE_MSI_URL: &str =
@@ -258,6 +258,58 @@ fn tunggu_api_siap(k: &Konfig, log: &Logger, detik: u64) -> Value {
     terakhir
 }
 
+
+/// Alamat yang bisa dijangkau HP penyewa (bukan COMPUTERNAME Windows).
+/// Prioritas: STREAM_HOST / XY_STREAM_HOST env → config stream_host → IP publik.
+fn alamat_stream(k: &Konfig) -> String {
+    for key in ["STREAM_HOST", "XY_STREAM_HOST", "SUNSHINE_HOST"] {
+        if let Ok(v) = std::env::var(key) {
+            let t = v.trim().to_string();
+            if !t.is_empty() {
+                return t;
+            }
+        }
+    }
+    // Optional field in config.json (ignored by older agents)
+    if let Ok(teks) = std::fs::read_to_string(jalur_config()) {
+        if let Ok(v) = serde_json::from_str::<Value>(&teks) {
+            if let Some(h) = v.get("stream_host").and_then(|x| x.as_str()) {
+                let t = h.trim();
+                if !t.is_empty() {
+                    return t.to_string();
+                }
+            }
+        }
+    }
+    // IP publik via layanan ringan (timeout pendek)
+    for url in [
+        "https://api.ipify.org",
+        "https://ifconfig.me/ip",
+        "https://icanhazip.com",
+    ] {
+        if let Ok((status, j)) = minta(url, None, "GET", None) {
+            if (200..300).contains(&status) {
+                let ip = match j {
+                    Value::String(t) => t.trim().to_string(),
+                    other => other.as_str().unwrap_or("").trim().to_string(),
+                };
+                // ipify returns plain text which minta wraps as String
+                let ip = ip.lines().next().unwrap_or("").trim().to_string();
+                if !ip.is_empty()
+                    && ip.len() < 64
+                    && !ip.contains(' ')
+                    && (ip.contains('.') || ip.contains(':'))
+                {
+                    return ip;
+                }
+            }
+        }
+    }
+    // Last resort: keep computer name only if nothing else (will fail DNS — better log)
+    let _ = k; // konfig reserved for future
+    std::env::var("COMPUTERNAME").unwrap_or_else(|_| "127.0.0.1".into())
+}
+
 fn spesifikasi() -> Value {
     let host = std::env::var("COMPUTERNAME").unwrap_or_else(|_| "PC-XY".into());
     let cpu = std::env::var("PROCESSOR_IDENTIFIER").unwrap_or_default();
@@ -305,9 +357,11 @@ fn kerjakan(k: &Konfig, perintah: &Value, log: &Logger) {
             if cek.get("siap").and_then(|x| x.as_bool()).unwrap_or(false) {
                 let _ = minta(&format!("{sunshine}/api/clients/unpair-all"), Some(json!({})), "POST", Some(header_basic(k)));
                 let _ = minta(&format!("{sunshine}/api/apps/close"), Some(json!({})), "POST", Some(header_basic(k)));
+                let stream = alamat_stream(k);
+                log(&format!("Host streaming untuk penyewa: {stream}"));
                 balas(json!({
                     "ok": true, "sesi_id": sesi_id, "status": "siap",
-                    "host": std::env::var("COMPUTERNAME").unwrap_or_default(),
+                    "host": stream,
                     "catatan": "Sunshine siap menerima sambungan",
                 }));
             } else {
@@ -357,11 +411,14 @@ fn detak(k: &Konfig, log: &Logger) {
     let cek = periksa_sunshine(k);
     let mut spec = spesifikasi();
     spec["sunshine"] = cek;
+    let stream = alamat_stream(k);
+    spec["stream_host"] = json!(stream);
     let muatan = json!({
         "status": "online",
         "versi": VERSI,
         "spec": spec,
-        "host": std::env::var("COMPUTERNAME").unwrap_or_default(),
+        "host": stream,
+        "hostname": std::env::var("COMPUTERNAME").unwrap_or_default(),
     });
     let url = format!("{}/api/agen/heartbeat", k.server.trim_end_matches('/'));
     match minta(&url, Some(muatan), "POST", Some(vec![("x-agen-kode".into(), k.kode.clone())])) {
