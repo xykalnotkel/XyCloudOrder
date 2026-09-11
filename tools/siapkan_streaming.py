@@ -36,6 +36,34 @@ s=http.read_text().replace('.readTimeout(0, TimeUnit.MILLISECONDS)', '.readTimeo
 s=s.replace('this.uniqueId = "0123456789ABCDEF";', 'this.uniqueId = uniqueId;')
 s=s.replace('"devicename=roth&updateState=1&" + additionalArguments', '"devicename=XyCloudStore-" + uniqueId + "&updateState=1&" + additionalArguments')
 http.write_text(s)
+# Android ships a stripped "BC" provider. Moonlight pairing needs full BouncyCastle RSA.
+# Force-install the app-bundled BC before any KeyPairGenerator("RSA", BC) call.
+crypto=vendor/'app/src/main/java/com/limelight/binding/crypto/AndroidCryptoProvider.java'
+if crypto.exists():
+ s=crypto.read_text()
+ if 'XyCloudStore BC bootstrap' not in s:
+  needle='private static final Provider bcProvider = new BouncyCastleProvider();'
+  inject='''private static final Provider bcProvider = new BouncyCastleProvider();
+
+    // XyCloudStore BC bootstrap: Android registers a truncated BC under the same name.
+    // Replace it with the full bcprov we ship, otherwise KeyPairGenerator("RSA","BC") fails
+    // with NoSuchAlgorithmException during Sunshine pairing.
+    static {
+        try {
+            final Provider existing = java.security.Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+            if (existing == null || !existing.getClass().equals(BouncyCastleProvider.class)) {
+                java.security.Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+                java.security.Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            }
+        } catch (Throwable ignored) {
+            try {
+                java.security.Security.insertProviderAt(new BouncyCastleProvider(), 1);
+            } catch (Throwable ignored2) {}
+        }
+    }'''
+  if needle in s:
+   s=s.replace(needle, inject, 1)
+   crypto.write_text(s)
 mk=vendor/'app/src/main/jni/moonlight-core/Android.mk'
 s=mk.read_text().replace('LOCAL_LDFLAGS += -Wl,--exclude-libs,ALL','LOCAL_LDFLAGS += -Wl,--exclude-libs,ALL -Wl,-z,max-page-size=16384');mk.write_text(s)
 # Flutter regenerates android/, so changes must be recreated on each build.
@@ -63,10 +91,13 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import id.xycloud.stream.NativeStreaming
 import id.xycloud.stream.NotificationSettings
+import id.xycloud.stream.XyCrypto
 class MainActivity: FlutterActivity() {
     private lateinit var stream: NativeStreaming
     override fun configureFlutterEngine(engine: FlutterEngine) {
         super.configureFlutterEngine(engine)
+        // Full BouncyCastle before any GameStream pairing / cert generation
+        XyCrypto.ensure()
         stream = NativeStreaming(this)
         val channel = MethodChannel(engine.dartExecutor.binaryMessenger, "xycloud/stream")
         stream.setEvents { event -> channel.invokeMethod("event", event) }

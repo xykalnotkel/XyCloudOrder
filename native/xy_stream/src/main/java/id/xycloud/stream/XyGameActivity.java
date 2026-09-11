@@ -17,6 +17,7 @@ public class XyGameActivity extends Game {
     private LinearLayout hud;
     private boolean connected;
     @Override public void onCreate(Bundle state) {
+        XyCrypto.ensure();
         super.onCreate(state);
         FrameLayout root=findViewById(android.R.id.content);
         hud=new LinearLayout(this);hud.setOrientation(LinearLayout.HORIZONTAL);

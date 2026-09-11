@@ -130,9 +130,39 @@ class _SesiScreenState extends State<SesiScreen> {
         _stage = 'Host terhubung. Pilih aplikasi untuk ditampilkan.';
       });
     } catch (e) {
+      final msg = e.toString();
+      // Cert klien / BC rusak — bersihkan pairing lokal lalu coba sekali lagi
+      if (msg.contains('NoSuchAlgorithm') ||
+          msg.contains('provider BC') ||
+          msg.contains('RSA for provider')) {
+        try {
+          await NativeStream.resetPairing();
+          setState(() => _stage = 'Memperbarui kunci pairing… coba lagi');
+          final apps = await NativeStream.hubungkan(
+              host: sesi!.host ?? '',
+              session: sesi!.id,
+              hostKey: sesi!.agenId ?? sesi!.host ?? '');
+          if (!mounted) return;
+          setState(() {
+            _apps = apps;
+            _appId = (apps
+                    .where((x) => '${x['name']}'.toLowerCase() == 'desktop')
+                    .firstOrNull ??
+                apps.first)['id'] as int;
+            _stage = 'Host terhubung. Pilih aplikasi untuk ditampilkan.';
+            _error = null;
+          });
+          return;
+        } catch (e2) {
+          if (mounted)
+            setState(() => _error =
+                e2.toString().replaceFirst('PlatformException(', ''));
+          return;
+        }
+      }
       if (mounted)
         setState(
-            () => _error = e.toString().replaceFirst('PlatformException(', ''));
+            () => _error = msg.replaceFirst('PlatformException(', ''));
     } finally {
       if (mounted) setState(() => _connecting = false);
     }

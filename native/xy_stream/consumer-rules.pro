@@ -1,2 +1,4 @@
 -keep class com.limelight.nvstream.jni.** { *; }
 -keep class id.xycloud.stream.** { *; }
+-keep class org.bouncycastle.** { *; }
+-dontwarn org.bouncycastle.**

@@ -99,9 +99,21 @@ public final class NativeStreaming {
         String hostKey=text(args,"hostKey",host);
         task=executor.submit(() -> {
             try {
+                // Wajib sebelum IdentityManager / PairingManager menyentuh RSA+BC
+                XyCrypto.ensure();
                 emit("stage","Menghubungkan host streaming…");
                 ComputerDetails.AddressTuple address=address(host);
-                uniqueId=new IdentityManager(activity).getUniqueId();
+                try {
+                    uniqueId=new IdentityManager(activity).getUniqueId();
+                } catch (Throwable cryptoBoot) {
+                    // Sertifikat klien rusak / BC lama — hapus & buat ulang
+                    emit("stage","Memperbarui identitas klien streaming…");
+                    activity.deleteFile("uniqueid");
+                    activity.deleteFile("client.crt");
+                    activity.deleteFile("client.key");
+                    XyCrypto.ensure();
+                    uniqueId=new IdentityManager(activity).getUniqueId();
+                }
                 X509Certificate pinned=certificate(hostKey);
                 NvHTTP http=new NvHTTP(address,0,uniqueId,pinned,PlatformBinding.getCryptoProvider(activity));
                 String info=http.getServerInfo(true);
@@ -113,7 +125,24 @@ public final class NativeStreaming {
                     emit("stage","Memasangkan perangkat dengan host…");
                     emitPin(pin,request);
                     PairingManager pm=http.getPairingManager();
-                    PairingManager.PairState state=pm.pair(info,pin);
+                    PairingManager.PairState state;
+                    try {
+                        state=pm.pair(info,pin);
+                    } catch (java.security.NoSuchAlgorithmException nsa) {
+                        // BC Android vs app — reset identity + provider, minta user coba lagi dengan PIN baru
+                        XyCrypto.ensure();
+                        activity.deleteFile("uniqueid");
+                        activity.deleteFile("client.crt");
+                        activity.deleteFile("client.key");
+                        saved.edit().remove(hostKey).apply();
+                        uniqueId=new IdentityManager(activity).getUniqueId();
+                        http=new NvHTTP(address,0,uniqueId,null,PlatformBinding.getCryptoProvider(activity));
+                        info=http.getServerInfo(true);
+                        pin=PairingManager.generatePinString();
+                        emitPin(pin,request);
+                        pm=http.getPairingManager();
+                        state=pm.pair(info,pin);
+                    }
                     if(state!=PairingManager.PairState.PAIRED)throw new IllegalStateException("Pairing belum berhasil ("+state+"). Pastikan agen berjalan dan coba lagi.");
                     details.serverCert=pm.getPairedCert();
                     if(details.serverCert!=null)saved.edit().putString(hostKey,Base64.encodeToString(details.serverCert.getEncoded(),Base64.NO_WRAP)).apply();
@@ -131,6 +160,11 @@ public final class NativeStreaming {
             } catch(Exception e) {
                 String message=e.getMessage();
                 if(message==null||message.isEmpty())message=e.getClass().getSimpleName();
+                // Sertakan cause BC agar diagnosa jelas di UI
+                Throwable c=e.getCause();
+                if(c!=null&&c.getMessage()!=null&&!c.getMessage().isEmpty()&&!message.contains(c.getMessage())){
+                    message=message+" ("+c.getMessage()+")";
+                }
                 final String result=request!=generation?"Penyambungan dibatalkan.":
                     "Tidak bisa menyambung ke host: "+message+". Periksa port streaming, layar/encoder VM, dan koneksi internet.";
                 main.post(()->reply.fail("STREAM_CONNECT",result));
