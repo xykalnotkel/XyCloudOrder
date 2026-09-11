@@ -30,20 +30,20 @@ jobs:
         working-directory: dashboard
         run: npm ci
 
-      - name: Build Next.js (output: export → out/)
+      - name: Build Next.js static export
         working-directory: dashboard
         env:
           NEXT_PUBLIC_API_BASE: https://api.xycloud.my.id
         run: npm run build
 
-      - name: Upload out/
+      - name: Upload out artifact
         uses: actions/upload-artifact@v4
         with:
           name: dashboard-out
           path: dashboard/out
           retention-days: 14
 
-  # Aktifkan dengan repo variable ENABLE_CF_PAGES=true + secrets CLOUDFLARE_*
+  # Set repo variable ENABLE_CF_PAGES=true + secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
   deploy-cloudflare:
     name: Cloudflare Pages
     needs: build
@@ -60,7 +60,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dashboard/out --project-name=xycloud-dashboard --commit-dirty=true
 
-  # Aktifkan dengan repo variable ENABLE_VERCEL=true + secrets VERCEL_*
+  # Set repo variable ENABLE_VERCEL=true + secrets VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
   deploy-vercel:
     name: Vercel production
     needs: build
@@ -82,9 +82,9 @@ jobs:
           npx vercel build --prod --token="$VERCEL_TOKEN"
           npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
-  # Aktifkan dengan repo variable ENABLE_WORKER_DEPLOY=true + secrets CLOUDFLARE_*
+  # Set repo variable ENABLE_WORKER_DEPLOY=true + secrets CLOUDFLARE_*
   deploy-worker:
-    name: Cloudflare Worker (API)
+    name: Cloudflare Worker API
     runs-on: ubuntu-latest
     if: ${{ vars.ENABLE_WORKER_DEPLOY == 'true' }}
     steps:

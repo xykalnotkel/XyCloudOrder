@@ -262,7 +262,7 @@ class _GradientButtonState extends State<GradientButton> {
 // ============================================================
 
 class Pill extends StatelessWidget {
-  Pill(this.Pill, {super.key, this.warna = XyTheme.primary, this.icon, this.solid = false});
+  Pill(this.teks, {super.key, this.warna = XyTheme.primary, this.icon, this.solid = false});
   final String teks;
   final Color warna;
   final IconData? icon;
