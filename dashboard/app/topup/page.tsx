@@ -61,7 +61,7 @@ export default function TopupPage() {
       <Header icon={CreditCard} title="TopUp" sub="Permintaan top up saldo + bukti transfer"
         right={
           <div className="flex gap-2 flex-wrap">
-            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-bold">{n("menunggu") + n("diperiksa")} pending</span>
+            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-semibold">{n("menunggu") + n("diperiksa")} pending</span>
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} total</span>
           </div>
         } />
@@ -69,7 +69,7 @@ export default function TopupPage() {
       <div className="flex flex-wrap gap-1.5">
         {["pending", "menunggu", "diperiksa", "disetujui", "ditolak", "semua"].map((f) => (
           <button key={f} type="button" onClick={() => setFilter(f)}
-            className={`text-[11px] px-3 py-1.5 rounded-full border font-bold ${filter === f ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white border-[#E9E3F5] text-[#6B5A8A]"}`}>
+            className={`text-[11px] px-3 py-1.5 rounded-full border font-semibold ${filter === f ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white border-[#E9E3F5] text-[#6B5A8A]"}`}>
             {f}
           </button>
         ))}
@@ -92,7 +92,7 @@ export default function TopupPage() {
               <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
                 <th className="px-3 py-2.5 w-10"><input type="checkbox" checked={sel.allSelected} onChange={sel.toggleAll} /></th>
                 {["ID / User", "Nominal", "Total", "Bukti", "Status", "Waktu", "Aksi"].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -105,17 +105,17 @@ export default function TopupPage() {
                   <td className="px-3 py-3"><input type="checkbox" checked={sel.selected.has(r.id)} onChange={() => sel.toggle(r.id)} /></td>
                   <td className="px-4 py-3">
                     <div className="font-mono text-[11px] text-[#7C738F]">{r.id}</div>
-                    <div className="font-bold">{r.nama || "—"}</div>
+                    <div className="font-semibold">{r.nama || "—"}</div>
                     <div className="text-[10.5px] text-[#7C738F]">{r.email || r.phone || ""}</div>
                   </td>
-                  <td className="px-4 py-3 font-bold">{rupiah(r.nominal)}</td>
+                  <td className="px-4 py-3 font-semibold">{rupiah(r.nominal)}</td>
                   <td className="px-4 py-3">
-                    <div className="font-bold">{rupiah(r.total || Number(r.nominal || 0) + Number(r.kode_unik || 0))}</div>
+                    <div className="font-semibold">{rupiah(r.total || Number(r.nominal || 0) + Number(r.kode_unik || 0))}</div>
                     <div className="text-[10.5px] text-[#7C738F]">{r.metode || "—"}</div>
                   </td>
                   <td className="px-4 py-3">
                     {r.bukti ? (
-                      <a href={r.bukti} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#7C3AED] font-bold text-[12px]">
+                      <a href={r.bukti} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#7C3AED] font-semibold text-[12px]">
                         <ExternalLink size={12} /> Bukti
                       </a>
                     ) : "—"}

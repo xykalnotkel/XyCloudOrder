@@ -121,20 +121,20 @@ export default function SistemPage() {
             {/* jumlah baris */}
             <div className="xy-card rounded-[20px] p-5 lg:col-span-2">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Server size={15} className="text-[#7C3AED]" /> Jumlah Baris per Tabel</h3>
+                <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Server size={15} className="text-[#7C3AED]" /> Jumlah Baris per Tabel</h3>
                 <Chip tone="info">D1</Chip>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {Object.entries(baris as any).map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between p-2.5 rounded-xl bg-[#F5F3FF] border border-[#E9E3F5]">
                     <span className="text-[12px] text-[#6B5A8A] font-semibold">{k}</span>
-                    <span className="font-mono font-bold text-[#1E1B2E]">{Number(v || 0).toLocaleString("id-ID")}</span>
+                    <span className="font-mono font-semibold text-[#1E1B2E]">{Number(v || 0).toLocaleString("id-ID")}</span>
                   </div>
                 ))}
               </div>
               {pm.versi_minimal && (
                 <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-[12px] font-medium text-amber-800">
-                  Versi minimal aplikasi: <code className="font-mono font-bold">{pm.versi_minimal}</code>
+                  Versi minimal aplikasi: <code className="font-mono font-semibold">{pm.versi_minimal}</code>
                 </div>
               )}
             </div>
@@ -142,7 +142,7 @@ export default function SistemPage() {
             {/* pengatur pemeliharaan */}
             <div className="xy-card rounded-[20px] p-5 lg:col-span-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Activity size={15} className="text-[#7C3AED]" /> Mode Pemeliharaan</h3>
+                <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Activity size={15} className="text-[#7C3AED]" /> Mode Pemeliharaan</h3>
                 <div className="flex items-center gap-2">
                   <Chip tone={pm.aktif ? "warn" : "ok"}>{pm.aktif ? "AKTIF" : "OFF"}</Chip>
                   {pm.aktif && pm.sampai && <Chip tone="info"><Clock size={9} className="inline mr-1" /> auto-mati {jamNow(pm.sampai)}</Chip>}
@@ -153,19 +153,19 @@ export default function SistemPage() {
                 {Object.entries(LABEL_CAKUPAN).map(([k, label]) => (
                   <button key={k} onClick={() => setCakupan(k)}
                     className={`rounded-2xl border px-3 py-2.5 text-left transition ${cakupan === k ? "border-[#7C3AED] bg-[#F3F0FF] ring-2 ring-[#7C3AED]/20" : "border-[#E9E3F5] bg-white hover:bg-[#FAF8FF]"}`}>
-                    <div className="text-[10.5px] font-black text-[#7C3AED] uppercase tracking-wide">{k}</div>
-                    <div className={`text-[11.5px] font-bold mt-0.5 ${cakupan === k ? "text-[#1E1B2E]" : "text-[#6B5A8A]"}`}>{label}</div>
+                    <div className="text-[10.5px] font-semibold text-[#7C3AED] uppercase tracking-wide">{k}</div>
+                    <div className={`text-[11.5px] font-semibold mt-0.5 ${cakupan === k ? "text-[#1E1B2E]" : "text-[#6B5A8A]"}`}>{label}</div>
                   </button>
                 ))}
               </div>
 
               {cakupan === "halaman" && (
                 <div className="mt-3 rounded-2xl bg-[#F5F3FF] border border-[#E9E3F5] p-3">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#6B5A8A] uppercase tracking-wide"><LayoutList size={12} /> Halaman web yang diblokir</div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B5A8A] uppercase tracking-wide"><LayoutList size={12} /> Halaman web yang diblokir</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {PRASET_HALAMAN.map((h) => (
                       <button key={h.path} onClick={() => toggleHalaman(h.path)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition ${halaman.includes(h.path) ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white border-[#E9E3F5] text-[#6B5A8A] hover:border-[#C4B5FD]"}`}>
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition ${halaman.includes(h.path) ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white border-[#E9E3F5] text-[#6B5A8A] hover:border-[#C4B5FD]"}`}>
                         {h.label} <span className="font-mono opacity-70">{h.path}</span>
                       </button>
                     ))}
@@ -173,7 +173,7 @@ export default function SistemPage() {
                   {halaman.filter((h) => !PRASET_HALAMAN.some((p) => p.path === h)).length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {halaman.filter((h) => !PRASET_HALAMAN.some((p) => p.path === h)).map((h) => (
-                        <span key={h} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-[#E9E3F5] text-[11px] font-bold text-[#1E1B2E] font-mono">
+                        <span key={h} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-[#E9E3F5] text-[11px] font-semibold text-[#1E1B2E] font-mono">
                           {h}
                           <button onClick={() => toggleHalaman(h)} className="text-[#9A8CBF] hover:text-rose-500"><Trash2 size={10} /></button>
                         </span>
@@ -183,7 +183,7 @@ export default function SistemPage() {
                   <div className="mt-2 flex gap-1.5">
                     <input value={inputH} onChange={(e) => setInputH(e.target.value)} onKeyDown={(e) => e.key === "Enter" && tambahHalaman()}
                       placeholder="/path-halaman" className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-[#E9E3F5] text-[12px] font-mono focus:border-[#7C3AED] outline-none" />
-                    <button onClick={tambahHalaman} className="px-3 py-1.5 rounded-xl bg-white border border-[#E9E3F5] hover:border-[#7C3AED] text-[12px] font-bold text-[#7C3AED]">Tambah</button>
+                    <button onClick={tambahHalaman} className="px-3 py-1.5 rounded-xl bg-white border border-[#E9E3F5] hover:border-[#7C3AED] text-[12px] font-semibold text-[#7C3AED]">Tambah</button>
                   </div>
                   <p className="mt-2 text-[10.5px] text-[#7C738F] font-medium">Mode ini hanya menutup halaman web publik yang dipilih — API & aplikasi Android tetap berjalan.</p>
                 </div>
@@ -193,7 +193,7 @@ export default function SistemPage() {
                 <textarea value={pesan} onChange={(e) => setPesan(e.target.value)} rows={2}
                   placeholder="Pesan yang tampil ke pengguna…" className="px-3.5 py-2.5 rounded-xl bg-white border border-[#E9E3F5] text-[12.5px] focus:border-[#7C3AED] outline-none resize-none" />
                 <div>
-                  <label className="text-[10px] font-bold text-[#7C738F] uppercase tracking-wide">Durasi (menit, 0=tak hingga)</label>
+                  <label className="text-[10px] font-semibold text-[#7C738F] uppercase tracking-wide">Durasi (menit, 0=tak hingga)</label>
                   <input value={menit} onChange={(e) => setMenit(e.target.value.replace(/\D/g, ""))} type="text" inputMode="numeric"
                     className="mt-1 w-full px-3 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[12.5px] font-mono focus:border-[#7C3AED] outline-none" />
                 </div>
@@ -202,17 +202,17 @@ export default function SistemPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 {pm.aktif ? (
                   <button onClick={() => simpanMaint(false)} disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#16A34A] to-[#22C55E] text-white text-[12.5px] font-bold disabled:opacity-60">
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#16A34A] to-[#22C55E] text-white text-[12.5px] font-semibold disabled:opacity-60">
                     <Save size={13} /> {saving ? "Menyimpan…" : "Matikan Pemeliharaan"}
                   </button>
                 ) : (
                   <button onClick={() => simpanMaint(true)} disabled={saving}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] text-white text-[12.5px] font-bold disabled:opacity-60 shadow-[0_8px_18px_rgba(124,58,237,.3)]">
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#5B21B6] text-white text-[12.5px] font-semibold disabled:opacity-60 shadow-[0_8px_18px_rgba(124,58,237,.3)]">
                     <Shield size={13} /> {saving ? "Menyimpan…" : "Nyalakan Pemeliharaan"}
                   </button>
                 )}
                 {pm.aktif && pm.cakupan && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-2 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-bold text-[#6B5A8A]">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] px-3 py-2 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-semibold text-[#6B5A8A]">
                     {pm.cakupan === "web" ? <Globe size={12} /> : pm.cakupan === "aplikasi" ? <Smartphone size={12} /> : pm.cakupan === "halaman" ? <MonitorSmartphone size={12} /> : <Shield size={12} />}
                     sekarang: {LABEL_CAKUPAN[pm.cakupan] || pm.cakupan}
                   </span>
@@ -226,7 +226,7 @@ export default function SistemPage() {
           </div>
 
           <div className="xy-card rounded-[20px] p-5">
-            <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Database size={15} className="text-[#7C3AED]" /> Integrasi Layanan</h3>
+            <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Database size={15} className="text-[#7C3AED]" /> Integrasi Layanan</h3>
             <div className="mt-3 flex flex-wrap gap-3">
               {integrasi.map((x) => (
                 <div key={x.l} className="flex items-center gap-2 p-3 rounded-xl bg-[#F5F3FF] border border-[#E9E3F5]">

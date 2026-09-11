@@ -51,7 +51,7 @@ export default function ModerasiPage() {
         sub="Laporan konten forum / spam / sensitif"
         right={
           <div className="flex gap-2">
-            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-bold">{open.length} terbuka</span>
+            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-semibold">{open.length} terbuka</span>
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} total</span>
           </div>
         }
@@ -67,7 +67,7 @@ export default function ModerasiPage() {
             <div key={l.id} className="xy-card rounded-[16px] p-4 flex flex-wrap gap-3 justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-[#1E1B2E]">{l.jenis || l.tipe || "laporan"}</span>
+                  <span className="font-semibold text-[#1E1B2E]">{l.jenis || l.tipe || "laporan"}</span>
                   <Chip tone={toneStatus(l.status)}>{l.status || "baru"}</Chip>
                   {l.ref_id && <span className="font-mono text-[10.5px] text-[#7C738F]">ref {l.ref_id}</span>}
                 </div>

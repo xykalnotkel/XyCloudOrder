@@ -108,7 +108,7 @@ export default function SampahPage() {
                   <input type="checkbox" checked={sel.allSelected} onChange={sel.toggleAll} />
                 </th>
                 {["Akun", "Saldo", "Dihapus", "Aksi"].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -119,7 +119,7 @@ export default function SampahPage() {
                     <input type="checkbox" checked={sel.selected.has(u.id)} onChange={() => sel.toggle(u.id)} disabled={!!u.owner_protected} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-bold text-[#1E1B2E]">{u.nama || "—"}</div>
+                    <div className="font-semibold text-[#1E1B2E]">{u.nama || "—"}</div>
                     <div className="text-[11px] text-[#7C738F]">{u.email}</div>
                     <div className="font-mono text-[10px] text-[#9A8CBF]">{u.id}</div>
                   </td>

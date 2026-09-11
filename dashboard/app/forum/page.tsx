@@ -105,7 +105,7 @@ export default function ForumPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-[#1E1B2E] tracking-tight text-[15px]">{p.judul}</h3>
+                    <h3 className="font-semibold text-[#1E1B2E] tracking-tight text-[15px]">{p.judul}</h3>
                     {p.disematkan ? <Chip tone="info"><Pin size={9} className="inline mr-0.5" /> semat</Chip> : null}
                     {p.sensitif ? <Chip tone="bad"><ShieldAlert size={9} className="inline mr-0.5" /> sensitif</Chip> : null}
                   </div>
@@ -134,7 +134,7 @@ export default function ForumPage() {
                   <MessagesSquare size={11} className="text-[#7C3AED]" /> {p.balasan || 0} balasan
                 </span>
                 <button type="button" onClick={() => setBukaId(bukaId === p.id ? null : p.id)}
-                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full xy-btn text-white font-bold ml-auto">
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full xy-btn text-white font-semibold ml-auto">
                   <Reply size={11} /> Balas
                 </button>
               </div>
@@ -144,7 +144,7 @@ export default function ForumPage() {
                     placeholder="Balas sebagai Kirana - XyCloudStore…"
                     className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
                   <button type="button" onClick={() => kirimBalas(p.id)} disabled={proses === "b_" + p.id}
-                    className="px-4 py-2 rounded-full xy-btn text-white font-bold text-[13px] h-fit disabled:opacity-50">
+                    className="px-4 py-2 rounded-full xy-btn text-white font-semibold text-[13px] h-fit disabled:opacity-50">
                     {proses === "b_" + p.id ? "…" : "Kirim"}
                   </button>
                 </div>

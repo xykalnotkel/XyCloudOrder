@@ -76,7 +76,7 @@ export default function OrdersPage() {
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={`text-[11px] px-3 py-1.5 rounded-full border font-bold ${
+            className={`text-[11px] px-3 py-1.5 rounded-full border font-semibold ${
               filter === f
                 ? "bg-[#7C3AED] text-white border-[#7C3AED]"
                 : "bg-white text-[#6B5A8A] border-[#E9E3F5] hover:bg-[#F5F3FF]"
@@ -107,7 +107,7 @@ export default function OrdersPage() {
                   <input type="checkbox" checked={sel.allSelected} onChange={sel.toggleAll} />
                 </th>
                 {["ID", "Pengguna", "Paket / Produk", "Total", "Status", "Waktu", "Aksi"].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -122,14 +122,14 @@ export default function OrdersPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-[11px] text-[#7C738F]">{String(o.id).slice(0, 14)}</td>
                   <td className="px-4 py-3">
-                    <div className="font-bold text-[#1E1B2E]">{o.user_nama || o.nama || "—"}</div>
+                    <div className="font-semibold text-[#1E1B2E]">{o.user_nama || o.nama || "—"}</div>
                     <div className="text-[11px] text-[#7C738F]">{o.user_email || o.email || o.user_id}</div>
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {o.plan_name || o.paket || o.produk_nama || o.plan_id || o.produk_id || "—"}
                     {o.durasi ? <div className="text-[10.5px] text-[#7C738F]">{o.durasi} menit</div> : null}
                   </td>
-                  <td className="px-4 py-3 font-bold">{rupiah(o.total ?? o.harga ?? o.nominal)}</td>
+                  <td className="px-4 py-3 font-semibold">{rupiah(o.total ?? o.harga ?? o.nominal)}</td>
                   <td className="px-4 py-3"><Chip tone={toneStatus(o.status)}>{o.status}</Chip></td>
                   <td className="px-4 py-3 text-[11px] font-mono text-[#7C738F]">{jam(o.created_at || o.dibuat)}</td>
                   <td className="px-4 py-3">

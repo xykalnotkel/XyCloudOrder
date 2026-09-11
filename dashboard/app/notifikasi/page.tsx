@@ -27,7 +27,7 @@ export default function NotifikasiPage() {
         right={
           <div className="flex items-center gap-2 flex-wrap">
             {!loading && <>
-              <span className="text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-700 font-bold">{belum} belum dibaca</span>
+              <span className="text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-700 font-semibold">{belum} belum dibaca</span>
               <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} total</span>
             </>}
           </div>
@@ -39,7 +39,7 @@ export default function NotifikasiPage() {
             onKeyDown={(e) => e.key === "Enter" && setCari(q)}
             placeholder="Cari user / judul / isi…" className="w-full pl-9 pr-3 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[12.5px] focus:border-[#7C3AED] outline-none" />
         </div>
-        <button onClick={() => setCari(q)} className="px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-bold">Cari</button>
+        <button onClick={() => setCari(q)} className="px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-semibold">Cari</button>
       </div>
       {loading ? <Load /> : err ? <ErrBox msg={err} /> : rows.length === 0 ? (
         <EmptyBox msg="Belum ada notifikasi." sub="Notifikasi muncul saat pengguna menerima info dari Worker." />
@@ -53,7 +53,7 @@ export default function NotifikasiPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[13px] font-bold text-[#1E1B2E]">{n.judul}</span>
+                    <span className="text-[13px] font-semibold text-[#1E1B2E]">{n.judul}</span>
                     <Chip tone="netral">{n.jenis}</Chip>
                     {!Number(n.dibaca) && <Chip tone="info">baru</Chip>}
                   </div>

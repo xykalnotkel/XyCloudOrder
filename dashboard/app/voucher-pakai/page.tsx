@@ -23,16 +23,16 @@ export default function VoucherPakaiPage() {
       <Header icon={ReceiptText} title="Voucher Terpakai" sub="Riwayat pemakaian kode voucher di pesanan"
         right={
           <div className="flex gap-2">
-            <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 font-bold">{rupiah(potongan)} dipotong</span>
+            <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 font-semibold">{rupiah(potongan)} dipotong</span>
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} pemakaian</span>
           </div>
         } />
       {loading ? <Load /> : err ? <ErrBox msg={err} /> : (
         <Tabel kosong="Belum ada pemakaian voucher."
           kolom={[
-            { k: "kode", label: "Kode", render: (r) => <span className="font-mono font-bold text-[#1E1B2E]">{r.kode}</span> },
-            { k: "user", label: "Pengguna", render: (r) => <div><div className="font-bold text-[#1E1B2E]">{r.user_nama || "—"}</div><div className="text-[10.5px] font-mono text-[#7C738F]">{r.user_email || r.user_id}</div></div> },
-            { k: "potongan", label: "Potongan", render: (r) => <span className="font-bold text-emerald-600">-{rupiah(r.potongan)}</span> },
+            { k: "kode", label: "Kode", render: (r) => <span className="font-mono font-semibold text-[#1E1B2E]">{r.kode}</span> },
+            { k: "user", label: "Pengguna", render: (r) => <div><div className="font-semibold text-[#1E1B2E]">{r.user_nama || "—"}</div><div className="text-[10.5px] font-mono text-[#7C738F]">{r.user_email || r.user_id}</div></div> },
+            { k: "potongan", label: "Potongan", render: (r) => <span className="font-semibold text-emerald-600">-{rupiah(r.potongan)}</span> },
             { k: "ref", label: "Ref pesanan", render: (r) => <span className="font-mono text-[11px] text-[#7C738F]">{r.ref_id || "—"}</span> },
             { k: "waktu", label: "Waktu", render: (r) => <span className="text-[11px] font-mono text-[#7C738F]">{jam(r.waktu)}</span> },
             { k: "id", label: "Id", render: (r) => <Chip tone="netral">{String(r.id).slice(0, 14)}</Chip> },

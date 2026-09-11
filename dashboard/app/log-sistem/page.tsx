@@ -35,7 +35,7 @@ export default function LogSistemPage() {
         right={
           <div className="flex items-center gap-2">
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} entri • {jenis.length} jenis</span>
-            <button onClick={bersihkan} disabled={busy} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-[#E9E3F5] hover:border-rose-300 text-[12px] font-bold text-rose-600 disabled:opacity-50">
+            <button onClick={bersihkan} disabled={busy} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-[#E9E3F5] hover:border-rose-300 text-[12px] font-semibold text-rose-600 disabled:opacity-50">
               <Eraser size={13} /> Bersihkan &gt;24 jam
             </button>
           </div>

@@ -206,7 +206,7 @@ export default function UsersPage() {
                   <input type="checkbox" checked={sel.allSelected} onChange={sel.toggleAll} />
                 </th>
                 {["Pengguna", "Saldo", "Tier", "Status", "Daftar", ""].map((h) => (
-                  <th key={h || "a"} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                  <th key={h || "a"} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -217,11 +217,11 @@ export default function UsersPage() {
                     <input type="checkbox" checked={sel.selected.has(u.id)} onChange={() => sel.toggle(u.id)} disabled={!!u.owner_protected} />
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-bold text-[#1E1B2E]">{u.nama || "—"}</div>
+                    <div className="font-semibold text-[#1E1B2E]">{u.nama || "—"}</div>
                     <div className="text-[11px] text-[#7C738F] truncate max-w-[220px]">{u.email}</div>
                     <div className="font-mono text-[10px] text-[#9A8CBF]">{u.id}</div>
                   </td>
-                  <td className="px-4 py-3 font-bold">{rupiah(u.saldo)}</td>
+                  <td className="px-4 py-3 font-semibold">{rupiah(u.saldo)}</td>
                   <td className="px-4 py-3">
                     <Chip tone="info">{u.tier || "basic"}</Chip>
                     {u.badge ? <div className="mt-1"><Chip>{u.badge}</Chip></div> : null}
@@ -252,27 +252,27 @@ export default function UsersPage() {
           <>
             <div className="grid grid-cols-2 gap-2 text-[12px]">
               <div className="xy-card rounded-xl p-3">
-                <div className="text-[10px] uppercase text-[#7C738F] font-bold">Email</div>
+                <div className="text-[10px] uppercase text-[#7C738F] font-semibold">Email</div>
                 <div className="font-semibold break-all">{aktif.email}</div>
               </div>
               <div className="xy-card rounded-xl p-3">
-                <div className="text-[10px] uppercase text-[#7C738F] font-bold">Saldo</div>
-                <div className="font-black text-[#7C3AED]">{rupiah(aktif.saldo)}</div>
+                <div className="text-[10px] uppercase text-[#7C738F] font-semibold">Saldo</div>
+                <div className="font-semibold text-[#7C3AED]">{rupiah(aktif.saldo)}</div>
               </div>
               <div className="xy-card rounded-xl p-3">
-                <div className="text-[10px] uppercase text-[#7C738F] font-bold">Status</div>
+                <div className="text-[10px] uppercase text-[#7C738F] font-semibold">Status</div>
                 <div className="font-semibold">
                   {aktif.owner_protected ? "Pemilik dilindungi" : aktif.diblokir ? "Diblokir" : "Aktif"}
                 </div>
               </div>
               <div className="xy-card rounded-xl p-3">
-                <div className="text-[10px] uppercase text-[#7C738F] font-bold">Peringatan</div>
+                <div className="text-[10px] uppercase text-[#7C738F] font-semibold">Peringatan</div>
                 <div className="font-semibold">{aktif.peringatan || 0}</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">Saldo</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Saldo</div>
               <Field label="Nominal (+ tambah / − potong)">
                 <Input type="number" value={saldoDelta} onChange={(e) => setSaldoDelta(e.target.value)} placeholder="50000 atau -10000" />
               </Field>
@@ -283,7 +283,7 @@ export default function UsersPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">Lencana & tier</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Lencana & tier</div>
               <div className="grid grid-cols-2 gap-2">
                 <Field label="Tier">
                   <Input value={tier} onChange={(e) => setTier(e.target.value)} placeholder="basic / pro / elite" />
@@ -298,7 +298,7 @@ export default function UsersPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">Keamanan akun</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Keamanan akun</div>
               {aktif.diblokir ? (
                 <Btn tone="ok" disabled={busy || aktif.owner_protected} onClick={() => simpanKelola({ diblokir: false }, "Blokir dibuka")}>
                   <CheckCircle2 size={13} /> Buka blokir
@@ -320,7 +320,7 @@ export default function UsersPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">Peringatan</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Peringatan</div>
               <TextArea rows={3} value={peringatan} onChange={(e) => setPeringatan(e.target.value)} />
               <Btn tone="ghost" disabled={busy} onClick={kirimPeringatan}>
                 <ShieldAlert size={13} /> Kirim peringatan
@@ -329,7 +329,7 @@ export default function UsersPage() {
 
             {!aktif.owner_protected && (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 space-y-2">
-                <div className="text-[12px] font-bold text-rose-800">Zona berbahaya</div>
+                <div className="text-[12px] font-semibold text-rose-800">Zona berbahaya</div>
                 <p className="text-[11.5px] text-rose-700/90 leading-relaxed">
                   Pindah ke Sampah menonaktifkan login. Hapus permanen hanya dari menu Sampah setelah soft-delete.
                 </p>

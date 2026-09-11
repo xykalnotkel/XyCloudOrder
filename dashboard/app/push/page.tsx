@@ -69,7 +69,7 @@ export default function PushPage() {
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Bell size={18} className="text-white" /></div>
         <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Push Notif Builder <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-bold">BARU</span></h1>
+          <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">Push Notif Builder <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-semibold">BARU</span></h1>
           <p className="text-sm text-[#7C738F] font-medium">Compose & kirim push OneSignal — semua user atau per pengguna (hanya pemilik)</p>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function PushPage() {
         )}
 
         <button onClick={kirim} disabled={loading}
-          className="w-full py-3 rounded-xl xy-btn font-bold tracking-wide text-white disabled:opacity-50 flex items-center justify-center gap-2">
+          className="w-full py-3 rounded-xl xy-btn font-semibold tracking-wide text-white disabled:opacity-50 flex items-center justify-center gap-2">
           {loading ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> : <Send size={15} />}
           {loading ? "Mengirim…" : "Kirim Sekarang"}
         </button>

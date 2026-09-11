@@ -107,7 +107,7 @@ export default function UnitPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="xy-card rounded-[18px] p-5 space-y-3">
-          <h3 className="font-bold text-[#1E1B2E] flex items-center gap-2"><Plus size={16} className="text-[#7C3AED]" /> Daftarkan unit</h3>
+          <h3 className="font-semibold text-[#1E1B2E] flex items-center gap-2"><Plus size={16} className="text-[#7C3AED]" /> Daftarkan unit</h3>
           <Field label="Nama unit">
             <Input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Cloud RTX 4090 — Jakarta" />
           </Field>
@@ -120,7 +120,7 @@ export default function UnitPage() {
           <Btn className="w-full" disabled={busy} onClick={buat}>Simpan & buat kode</Btn>
           {baru && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-              <div className="text-[11px] font-bold text-emerald-800 uppercase">Kode agen</div>
+              <div className="text-[11px] font-semibold text-emerald-800 uppercase">Kode agen</div>
               <code className="block text-[12px] font-mono break-all text-[#1E1B2E]">{baru.kode}</code>
               <Btn tone="ghost" className="w-full" onClick={() => salin(baru.kode)}>
                 <Copy size={13} /> Salin kode
@@ -139,13 +139,13 @@ export default function UnitPage() {
             <div key={u.id} className="xy-card rounded-[16px] p-4 flex flex-wrap items-start gap-3 justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-[#1E1B2E] text-[14px]">{u.nama}</span>
+                  <span className="font-semibold text-[#1E1B2E] text-[14px]">{u.nama}</span>
                   <Chip tone={hidup(u) ? "ok" : "netral"}>{hidup(u) ? "online" : (u.status || "offline")}</Chip>
                 </div>
                 <div className="mt-1 text-[11px] text-[#7C738F] font-mono space-y-0.5">
                   <div>id: {u.id}</div>
                   {u.kode && <div className="flex items-center gap-2">kode: {u.kode}
-                    <button type="button" className="text-[#7C3AED] font-bold" onClick={() => salin(u.kode)}>salin</button>
+                    <button type="button" className="text-[#7C3AED] font-semibold" onClick={() => salin(u.kode)}>salin</button>
                   </div>}
                   {u.host && <div>host: {u.host}</div>}
                   {u.plan_id && <div>plan: {u.plan_id}</div>}

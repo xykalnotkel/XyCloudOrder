@@ -22,7 +22,7 @@
   --xy-shadow: 0 14px 36px rgba(16, 0, 48, 0.08);  /* web --sh */
   --xy-btn-glow: 0 12px 26px rgba(124, 58, 237, 0.32);
   --xy-btn-glow-hover: 0 18px 34px rgba(124, 58, 237, 0.4);
-  --font-inter: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-inter: Inter, 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
 

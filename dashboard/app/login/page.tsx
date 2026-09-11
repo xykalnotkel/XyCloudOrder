@@ -41,17 +41,17 @@ export default function LoginPage() {
               <img src="/brand/logo-icon.png" alt="XyCloud" className="w-11 h-11 object-contain" />
             </div>
             <div>
-              <div className="font-black text-[#1E1B2E] text-[18px] tracking-tight leading-tight">XyCloud Admin</div>
+              <div className="font-semibold text-[#1E1B2E] text-[18px] tracking-tight leading-tight">XyCloud Admin</div>
               <div className="text-[11px] text-[#7C738F] font-semibold tracking-wide mt-0.5">ADMIN.XYCLOUD.MY.ID • CONSOLE</div>
             </div>
           </div>
 
-          <h1 className="text-[20px] font-black text-[#1E1B2E] tracking-tight">Masuk Dashboard</h1>
+          <h1 className="text-[20px] font-semibold text-[#1E1B2E] tracking-tight">Masuk Dashboard</h1>
           <p className="text-[13px] text-[#7C738F] font-medium leading-[1.5] mt-1.5">Masukkan Admin Key. Key disimpan lokal di browser, tidak dikirim ke pihak ketiga.</p>
 
           <div className="mt-5 space-y-4">
             <div>
-              <label className="block text-[11px] font-bold tracking-wide uppercase text-[#7C738F] mb-2">Admin Key</label>
+              <label className="block text-[11px] font-semibold tracking-wide uppercase text-[#7C738F] mb-2">Admin Key</label>
               <div className="relative">
                 <input
                   type={show ? "text" : "password"}
@@ -78,14 +78,14 @@ export default function LoginPage() {
             <div className="h-px bg-[#E9E3F5] my-1" />
 
             <div className="space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">Tautan Cepat</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Tautan Cepat</div>
               <a href="https://www.xycloud.my.id" className="flex items-center gap-3 p-3 rounded-[16px] border border-[#E9E3F5] bg-[#F5F3FF] hover:border-[#7C3AED] hover:bg-[#F3F0FF] transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-white border border-[#E9E3F5] grid place-items-center"><ExternalLink size={16} className="text-[#7C3AED]" /></div>
-                <div className="flex-1"><div className="text-[13px] font-bold text-[#1E1B2E]">www.xycloud.my.id</div><div className="text-[11px] text-[#7C738F]">Situs utama</div></div>
+                <div className="flex-1"><div className="text-[13px] font-semibold text-[#1E1B2E]">www.xycloud.my.id</div><div className="text-[11px] text-[#7C738F]">Situs utama</div></div>
               </a>
               <a href="https://api.xycloud.my.id/admin?legacy=1" className="flex items-center gap-3 p-3 rounded-[16px] border border-[#E9E3F5] bg-[#F5F3FF] hover:border-[#7C3AED] hover:bg-[#F3F0FF] transition-colors">
                 <div className="w-9 h-9 rounded-xl bg-white border border-[#E9E3F5] grid place-items-center"><ShieldCheck size={16} className="text-[#7C3AED]" /></div>
-                <div className="flex-1"><div className="text-[13px] font-bold text-[#1E1B2E]">Console Lama (Legacy)</div><div className="text-[11px] text-[#7C738F]">Fallback darurat</div></div>
+                <div className="flex-1"><div className="text-[13px] font-semibold text-[#1E1B2E]">Console Lama (Legacy)</div><div className="text-[11px] text-[#7C738F]">Fallback darurat</div></div>
               </a>
             </div>
 

@@ -45,14 +45,14 @@ export default function PromosiPage() {
     <div className="space-y-4 font-[var(--font-inter)]">
       <Header icon={Gift} title="Promosi" sub="Pop-up & floating promo lintas platform (promo_overlay)"
         right={
-          <button onClick={() => setBuka(!buka)} className="text-xs px-3.5 py-2 rounded-full xy-btn text-white font-bold flex items-center gap-1.5">
+          <button onClick={() => setBuka(!buka)} className="text-xs px-3.5 py-2 rounded-full xy-btn text-white font-semibold flex items-center gap-1.5">
             <Plus size={13} /> Tambah Promo
           </button>
         } />
 
       {buka && (
         <div className="xy-card rounded-[20px] p-5">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight">Promo Baru</h3>
+          <h3 className="font-semibold text-[#1E1B2E] tracking-tight">Promo Baru</h3>
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama promo" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
             <input value={form.gambar} onChange={(e) => setForm({ ...form, gambar: e.target.value })} placeholder="URL gambar (https://)" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
@@ -68,7 +68,7 @@ export default function PromosiPage() {
             </select>
           </div>
           {err && <div className="mt-2 text-[12px] text-red-600 font-semibold">{err}</div>}
-          <button onClick={simpan} disabled={saving} className="mt-3 px-5 py-2.5 rounded-full xy-btn text-white font-bold text-[13px] disabled:opacity-50">
+          <button onClick={simpan} disabled={saving} className="mt-3 px-5 py-2.5 rounded-full xy-btn text-white font-semibold text-[13px] disabled:opacity-50">
             {saving ? "Menyimpan…" : "Simpan Promo"}
           </button>
         </div>
@@ -86,7 +86,7 @@ export default function PromosiPage() {
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-[13.5px] font-bold text-[#1E1B2E] truncate">{p.nama}</div>
+                    <div className="text-[13.5px] font-semibold text-[#1E1B2E] truncate">{p.nama}</div>
                     <div className="text-[10.5px] text-[#7C738F] font-mono mt-0.5">{p.id}</div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -100,7 +100,7 @@ export default function PromosiPage() {
                   <span>revisi {p.revisi || 1} • {jam(p.dibuat)}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-2">
-                  <button onClick={() => hapus(p.id)} className="text-[11px] px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-600 font-bold flex items-center gap-1"><Trash2 size={11} /> Hapus</button>
+                  <button onClick={() => hapus(p.id)} className="text-[11px] px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/25 text-rose-600 font-semibold flex items-center gap-1"><Trash2 size={11} /> Hapus</button>
                   {p.target && <span className="text-[10px] text-[#7C738F] font-mono truncate flex-1">{p.target}</span>}
                 </div>
               </div>

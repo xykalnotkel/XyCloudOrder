@@ -51,7 +51,7 @@ export default function PlansPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="xy-card rounded-[20px] p-5 h-fit">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Plus size={15} className="text-[#7C3AED]" /> Tambah / Ubah Paket</h3>
+          <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Plus size={15} className="text-[#7C3AED]" /> Tambah / Ubah Paket</h3>
           <div className="mt-3 space-y-2.5">
             <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama, ex: RTX 4090 Ultra" className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
             <div className="grid grid-cols-2 gap-2">
@@ -68,7 +68,7 @@ export default function PlansPage() {
               <input type="number" value={String(form.harga_per_hari)} onChange={(e) => setForm({ ...form, harga_per_hari: Number(e.target.value) || 0 })} placeholder="Harga/hari" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
             </div>
             <input value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} placeholder="Region" className="w-full px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
-            <button onClick={simpan} disabled={saving} className="w-full py-2.5 rounded-full xy-btn text-white font-bold text-[13px] disabled:opacity-50">
+            <button onClick={simpan} disabled={saving} className="w-full py-2.5 rounded-full xy-btn text-white font-semibold text-[13px] disabled:opacity-50">
               {saving ? "Menyimpan…" : "Simpan Paket"}
             </button>
             {err && <div className="text-[12px] text-red-600 font-semibold">{err}</div>}
@@ -79,11 +79,11 @@ export default function PlansPage() {
           {loading ? <Load /> : err && rows.length === 0 ? <ErrBox msg={err} /> : (
             <Tabel kosong="Belum ada paket PC."
               kolom={[
-                { k: "nama", label: "Paket", render: (r) => <div className="min-w-0"><div className="font-bold text-[#1E1B2E]">{r.nama}</div><div className="text-[11px] text-[#7C738F]">{r.tag || "—"} • {r.region}</div></div> },
+                { k: "nama", label: "Paket", render: (r) => <div className="min-w-0"><div className="font-semibold text-[#1E1B2E]">{r.nama}</div><div className="text-[11px] text-[#7C738F]">{r.tag || "—"} • {r.region}</div></div> },
                 { k: "spec", label: "Spesifikasi", render: (r) => <div className="text-[11.5px] text-[#1E1B2E]/85"><b>{r.gpu}</b> • {r.cpu} • {r.ram_gb}GB • {r.storage_gb}GB</div> },
-                { k: "harga", label: "Harga", render: (r) => <div><div className="font-bold text-[#1E1B2E]">{rupiah(r.harga_per_jam)}<span className="text-[10px] text-[#7C738F] font-medium">/jam</span></div><div className="text-[11px] text-[#7C738F]">{rupiah(r.harga_per_hari)}/hari</div></div> },
+                { k: "harga", label: "Harga", render: (r) => <div><div className="font-semibold text-[#1E1B2E]">{rupiah(r.harga_per_jam)}<span className="text-[10px] text-[#7C738F] font-medium">/jam</span></div><div className="text-[11px] text-[#7C738F]">{rupiah(r.harga_per_hari)}/hari</div></div> },
                 { k: "stok", label: "Unit", render: (r) => <div className="flex items-center gap-1.5">{r.unit_tersedia}/{r.total_unit} {Number(r.unit_tersedia) > 0 ? <Chip tone="ok">ready</Chip> : <Chip tone="bad">habis</Chip>}</div> },
-                { k: "rating", label: "Rating", render: (r) => <span className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1E1B2E]"><Star size={12} className="text-amber-500" /> {Number(r.rating || 0).toFixed(1)} <span className="text-[#7C738F] font-medium">({r.jumlah_ulasan || 0})</span></span> },
+                { k: "rating", label: "Rating", render: (r) => <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#1E1B2E]"><Star size={12} className="text-amber-500" /> {Number(r.rating || 0).toFixed(1)} <span className="text-[#7C738F] font-medium">({r.jumlah_ulasan || 0})</span></span> },
                 { k: "id", label: "", render: (r) => <button onClick={() => hapus(r.id)} className="p-2 rounded-lg bg-white border border-[#E9E3F5] hover:border-rose-300"><Trash2 size={13} className="text-rose-500" /></button> },
               ]}
               rows={rows} />

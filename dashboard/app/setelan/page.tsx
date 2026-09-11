@@ -52,11 +52,11 @@ export default function SetelanPage() {
       {hasil && <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 text-[12.5px] font-semibold">{hasil}</div>}
 
       <div className="xy-card rounded-[20px] p-4">
-        <div className="flex items-center gap-2 mb-3"><KeySquare size={15} className="text-[#7C3AED]" /><span className="text-[12px] font-bold text-[#1E1B2E]">Tambah / ubah setelan</span></div>
+        <div className="flex items-center gap-2 mb-3"><KeySquare size={15} className="text-[#7C3AED]" /><span className="text-[12px] font-semibold text-[#1E1B2E]">Tambah / ubah setelan</span></div>
         <div className="grid sm:grid-cols-[minmax(0,240px)_1fr_auto] gap-2">
           <input value={kunci} onChange={(e) => setKunci(e.target.value)} placeholder="nama.kunci (a-z,0-9,._-)" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[12.5px] font-mono focus:border-[#7C3AED] outline-none" />
           <input value={nilai} onChange={(e) => setNilai(e.target.value)} placeholder="nilai" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[12.5px] focus:border-[#7C3AED] outline-none" />
-          <button onClick={simpan} disabled={busy} className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-bold disabled:opacity-50"><Plus size={13} /> Simpan</button>
+          <button onClick={simpan} disabled={busy} className="inline-flex items-center justify-center gap-1.5 px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-semibold disabled:opacity-50"><Plus size={13} /> Simpan</button>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ export default function SetelanPage() {
             <div key={r.kunci} className="xy-card rounded-[14px] px-4 py-3 flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <code className="text-[12px] font-mono font-bold text-[#1E1B2E]">{r.kunci}</code>
+                  <code className="text-[12px] font-mono font-semibold text-[#1E1B2E]">{r.kunci}</code>
                   {String(r.nilai || "").length > 0 && <Chip tone="netral">{String(r.nilai).length} karakter</Chip>}
                 </div>
                 <div className="text-[12px] text-[#6B5A8A] mt-0.5 font-mono break-all">{r.nilai}</div>

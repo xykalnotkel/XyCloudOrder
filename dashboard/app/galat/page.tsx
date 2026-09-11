@@ -53,7 +53,7 @@ export default function GalatPage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-[#1E1B2E]">{g.judul || g.pesan?.slice?.(0, 60) || g.id}</span>
+                    <span className="font-semibold text-[#1E1B2E]">{g.judul || g.pesan?.slice?.(0, 60) || g.id}</span>
                     <Chip tone={toneStatus(g.status)}>{g.status || "baru"}</Chip>
                   </div>
                   <div className="text-[11px] text-[#7C738F] mt-0.5">

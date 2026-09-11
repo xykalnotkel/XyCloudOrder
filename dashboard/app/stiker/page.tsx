@@ -59,25 +59,25 @@ export default function StikerPage() {
         <>
           <div className="grid md:grid-cols-3 gap-3">
             <div className="xy-card rounded-[14px] p-4">
-              <div className="text-[11px] uppercase text-[#7C738F] font-bold">Status</div>
+              <div className="text-[11px] uppercase text-[#7C738F] font-semibold">Status</div>
               <div className="mt-1">
                 {data?.siap ? <Chip tone="ok">Terhubung</Chip> : <Chip tone="warn">Belum aktif</Chip>}
               </div>
             </div>
             <div className="xy-card rounded-[14px] p-4">
-              <div className="text-[11px] uppercase text-[#7C738F] font-bold">Sumber key</div>
+              <div className="text-[11px] uppercase text-[#7C738F] font-semibold">Sumber key</div>
               <div className="mt-1 font-semibold text-[#1E1B2E]">
                 {data?.dari_env ? "Secret Worker (env)" : data?.siap ? "Disimpan di D1 (terenkripsi)" : "—"}
               </div>
             </div>
             <div className="xy-card rounded-[14px] p-4">
-              <div className="text-[11px] uppercase text-[#7C738F] font-bold">Endpoint</div>
+              <div className="text-[11px] uppercase text-[#7C738F] font-semibold">Endpoint</div>
               <div className="mt-1 font-mono text-[11px] text-[#7C738F]">/api/admin/integrasi/giphy</div>
             </div>
           </div>
 
           <div className="xy-card rounded-[18px] p-5 space-y-3 max-w-xl">
-            <div className="flex items-center gap-2 font-bold text-[#1E1B2E]">
+            <div className="flex items-center gap-2 font-semibold text-[#1E1B2E]">
               <KeyRound size={16} className="text-[#7C3AED]" /> Simpan / ganti API key
             </div>
             <p className="text-[12px] text-[#7C738F] leading-relaxed">

@@ -1,3 +1,23 @@
+
+/** Token terang — kanonik sama app (XyTheme) + web + globals.css */
+export const xyLight = {
+  bg: "#F5F3FF",
+  card: "#FFFFFF",
+  soft: "#F3F0FF",
+  line: "#E9E3F5",
+  ink: "#1E1B2E",
+  ink2: "#4B445F",
+  muted: "#7C738F",
+  violet: "#7C3AED",
+  violet2: "#5B21B6",
+  violet3: "#A855F7",
+  indigo: "#2E1065",
+  midnight: "#100030",
+  gold: "#D9A441",
+  font: "Inter, 'Plus Jakarta Sans', system-ui, sans-serif",
+  weightMax: 600 as const,
+};
+
 export const xyTheme = {
   bg: "#100030",
   bg2: "#200050",

@@ -51,7 +51,7 @@ export default function StatistikPage() {
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><BarChart3 size={18} className="text-white" /></div>
         <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Statistik</h1>
+          <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">Statistik</h1>
           <p className="text-sm text-[#7C738F] font-medium">Ringkasan bisnis dari /api/admin/statistik (D1 agregat)</p>
         </div>
       </div>
@@ -69,7 +69,7 @@ export default function StatistikPage() {
                   <div className="w-8 h-8 rounded-lg bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center"><c.Icon size={15} className="text-[#7C3AED]" /></div>
                   <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium text-[#7C738F]">{c.l}</span>
                 </div>
-                <div className="mt-3 text-lg font-bold text-[#1E1B2E] tracking-tight truncate">{c.v}</div>
+                <div className="mt-3 text-lg font-semibold text-[#1E1B2E] tracking-tight truncate">{c.v}</div>
                 <div className="text-[10px] text-[#7C738F] font-medium mt-0.5">{c.s}</div>
               </div>
             ))}
@@ -77,7 +77,7 @@ export default function StatistikPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="xy-card rounded-[16px] p-5">
-              <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Flame size={15} className="text-[#7C3AED]" /> Pesanan per Hari (30 hari)</h3>
+              <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Flame size={15} className="text-[#7C3AED]" /> Pesanan per Hari (30 hari)</h3>
               <div className="mt-4 space-y-1.5 max-h-[260px] overflow-auto pr-1">
                 {(d?.harian || []).slice(-14).map((r: any) => (
                   <TrenBaris key={r.d} d={r.d} v={k(r.n)} total={Math.max(1, (d?.harian || []).reduce((s2: number, x: any) => s2 + k(x.n), 0))} />
@@ -87,7 +87,7 @@ export default function StatistikPage() {
             </div>
 
             <div className="xy-card rounded-[16px] p-5">
-              <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Users size={15} className="text-[#7C3AED]" /> Pengguna Baru per Hari</h3>
+              <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Users size={15} className="text-[#7C3AED]" /> Pengguna Baru per Hari</h3>
               <div className="mt-4 space-y-1.5 max-h-[260px] overflow-auto pr-1">
                 {(d?.penggunaHarian || []).slice(-14).map((r: any) => (
                   <TrenBaris key={r.d} d={r.d} v={k(r.n)} total={totPengguna || 1} />
@@ -99,7 +99,7 @@ export default function StatistikPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="xy-card rounded-[16px] p-5">
-              <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Star size={15} className="text-amber-600" /> Produk Terlaris</h3>
+              <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Star size={15} className="text-amber-600" /> Produk Terlaris</h3>
               <div className="mt-3 space-y-2">
                 {(d?.produkTeratas || []).map((p: any, i: number) => (
                   <div key={p.nama + i} className="flex items-center justify-between p-2.5 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5]">
@@ -111,7 +111,7 @@ export default function StatistikPage() {
               </div>
             </div>
             <div className="xy-card rounded-[16px] p-5">
-              <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Wallet size={15} className="text-emerald-600" /> Paket PC Terlaris</h3>
+              <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Wallet size={15} className="text-emerald-600" /> Paket PC Terlaris</h3>
               <div className="mt-3 space-y-2">
                 {(d?.paketTeratas || []).map((p: any, i: number) => (
                   <div key={p.nama + i} className="flex items-center justify-between p-2.5 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5]">

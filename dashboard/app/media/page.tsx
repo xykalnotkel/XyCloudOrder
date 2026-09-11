@@ -44,7 +44,7 @@ export default function MediaPage() {
                   {m.content_type || m.tipe || "file"}
                 </div>
               )}
-              <div className="font-bold text-[13px] text-[#1E1B2E] truncate">{m.nama || m.key || m.id || "media"}</div>
+              <div className="font-semibold text-[13px] text-[#1E1B2E] truncate">{m.nama || m.key || m.id || "media"}</div>
               <div className="text-[11px] text-[#7C738F] font-mono">
                 {formatBytes(m.ukuran || m.size)} · {jam(m.dibuat || m.uploaded_at)}
               </div>

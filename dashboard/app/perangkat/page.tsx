@@ -68,7 +68,7 @@ export default function PerangkatPage() {
             <thead>
               <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
                 {["Device", "Model", "Akun", "Daftar", "Terakhir", "Status", "Aksi"].map((h) => (
-                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -76,13 +76,13 @@ export default function PerangkatPage() {
               {rows.map((d) => (
                 <tr key={d.id} className="border-b border-[#F0EDFB] last:border-0 hover:bg-[#FBFAFF]">
                   <td className="px-4 py-3">
-                    <button type="button" className="font-mono text-[11px] text-[#7C3AED] font-bold" onClick={() => buka(d)}>
+                    <button type="button" className="font-mono text-[11px] text-[#7C3AED] font-semibold" onClick={() => buka(d)}>
                       {String(d.id).slice(0, 12)}…
                     </button>
                     <div className="text-[10px] text-[#9A8CBF]">{d.kind || "—"}</div>
                   </td>
                   <td className="px-4 py-3 font-medium">{d.model || "—"}</td>
-                  <td className="px-4 py-3 font-bold">{d.linked_accounts ?? "—"}</td>
+                  <td className="px-4 py-3 font-semibold">{d.linked_accounts ?? "—"}</td>
                   <td className="px-4 py-3">{d.registrations ?? 0}</td>
                   <td className="px-4 py-3 text-[11px] font-mono text-[#7C738F]">{jam(d.last_seen)}</td>
                   <td className="px-4 py-3">
@@ -114,18 +114,18 @@ export default function PerangkatPage() {
           <>
             <div className="font-mono text-[11px] break-all text-[#7C738F]">{detail.id}</div>
             <div className="grid grid-cols-2 gap-2 text-[12px]">
-              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-bold">Kind</div>{detail.kind || "—"}</div>
-              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-bold">Model</div>{detail.model || "—"}</div>
-              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-bold">Registrations</div>{detail.registrations ?? 0}</div>
-              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-bold">Reason</div>{detail.reason || "—"}</div>
+              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-semibold">Kind</div>{detail.kind || "—"}</div>
+              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-semibold">Model</div>{detail.model || "—"}</div>
+              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-semibold">Registrations</div>{detail.registrations ?? 0}</div>
+              <div className="xy-card rounded-xl p-3"><div className="text-[10px] uppercase text-[#7C738F] font-semibold">Reason</div>{detail.reason || "—"}</div>
             </div>
-            <div className="text-[12px] font-bold text-[#1E1B2E]">Akun tertaut ({akun.length})</div>
+            <div className="text-[12px] font-semibold text-[#1E1B2E]">Akun tertaut ({akun.length})</div>
             <div className="space-y-2">
               {akun.length === 0 && <div className="text-[12px] text-[#7C738F]">Tidak ada / gagal dimuat.</div>}
               {akun.map((u) => (
                 <div key={u.id} className="flex justify-between gap-2 py-2 border-b border-[#E9E3F5] text-[12px]">
                   <div>
-                    <div className="font-bold">{u.nama}</div>
+                    <div className="font-semibold">{u.nama}</div>
                     <div className="text-[#7C738F]">{u.email}</div>
                   </div>
                   <div className="text-right text-[11px] text-[#7C738F]">

@@ -73,7 +73,7 @@ export default function LivePage() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Activity size={18} className="text-white" /></div>
           <div>
-            <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Live Monitor <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-bold">BARU</span></h1>
+            <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">Live Monitor <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-semibold">BARU</span></h1>
             <p className="text-sm text-[#7C738F] font-medium">Status agen PC realtime — CPU/RAM/GPU dari heartbeat agen, refresh tiap 8 detik</p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export default function LivePage() {
             <div className="w-9 h-9 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center"><c.Icon size={16} className={c.t} /></div>
             <div>
               <div className="text-[11px] text-[#7C738F] font-medium tracking-wide uppercase">{c.l}</div>
-              <div className="text-lg font-bold text-[#1E1B2E] mt-0.5 tracking-tight">{c.v}</div>
+              <div className="text-lg font-semibold text-[#1E1B2E] mt-0.5 tracking-tight">{c.v}</div>
             </div>
           </div>
         ))}
@@ -118,17 +118,17 @@ export default function LivePage() {
             return (
               <div key={a.id} className={`xy-card rounded-[14px] p-4 border ${hidupFlag ? "border-[#E9E3F5]" : "border-[#3A1A3A]"}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[#1E1B2E] text-[13px] tracking-tight flex items-center gap-2 truncate">
+                  <span className="font-semibold text-[#1E1B2E] text-[13px] tracking-tight flex items-center gap-2 truncate">
                     <Server size={14} className="text-[#7C3AED] shrink-0" /> {a.nama || a.kode || a.id}
                   </span>
-                  <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide ${hidupFlag ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-600" : "bg-rose-500/15 border border-rose-500/30 text-rose-600"}`}>
+                  <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-wide ${hidupFlag ? "bg-emerald-500/20 border border-emerald-500/30 text-emerald-600" : "bg-rose-500/15 border border-rose-500/30 text-rose-600"}`}>
                     {hidupFlag ? "ONLINE" : "OFFLINE"}
                   </span>
                 </div>
                 <div className="mt-1 text-[11px] text-[#7C738F] font-mono truncate">{a.host || a.plan_id || "—"}{a.versi ? ` • agen ${a.versi}` : ""}</div>
 
                 {a.sesi_aktif && (
-                  <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-bold text-amber-600">
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-semibold text-amber-600">
                     <Radio size={10} /> Sesi aktif
                   </div>
                 )}

@@ -42,7 +42,7 @@ export default function KeamananPage() {
       {perJenis.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {perJenis.map((p) => (
-            <span key={p.kind} className="text-[11px] px-2.5 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-bold text-[#6B5A8A]">{p.kind} <span className="text-[#7C3AED]">{p.n}</span></span>
+            <span key={p.kind} className="text-[11px] px-2.5 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-semibold text-[#6B5A8A]">{p.kind} <span className="text-[#7C3AED]">{p.n}</span></span>
           ))}
         </div>
       )}
@@ -58,7 +58,7 @@ export default function KeamananPage() {
                 <div className={`w-8 h-8 shrink-0 rounded-lg grid place-items-center ${warn ? "bg-rose-500/10 text-rose-600" : "bg-[#F3F0FF] text-[#7C3AED]"}`}><Ico size={14} /></div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12.5px] font-bold text-[#1E1B2E]">{e.kind}</span>
+                    <span className="text-[12.5px] font-semibold text-[#1E1B2E]">{e.kind}</span>
                     <Chip tone={warn ? "bad" : "info"}>{Number(e.count || 0)}x</Chip>
                     {e.subject && <span className="font-mono text-[10.5px] text-[#7C738F]">{e.subject}</span>}
                     {e.route && <span className="font-mono text-[10.5px] text-[#9A8CBF]">{e.route}</span>}

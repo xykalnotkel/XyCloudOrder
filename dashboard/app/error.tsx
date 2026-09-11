@@ -9,7 +9,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <div className="min-h-[60vh] grid place-items-center p-6">
       <div className="xy-card rounded-[16px] p-6 max-w-[600px] w-full">
-        <h2 className="text-[16px] font-black text-[#1E1B2E] tracking-tight">Terjadi kesalahan di halaman ini</h2>
+        <h2 className="text-[16px] font-semibold text-[#1E1B2E] tracking-tight">Terjadi kesalahan di halaman ini</h2>
         <p className="text-[13px] text-[#7C738F] mt-2 font-medium">Buka console browser (F12) untuk detail. Pesan error:</p>
         <pre className="mt-3 p-3 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-[11px] text-[#BE123C] overflow-auto whitespace-pre-wrap break-all">
           {error.message}

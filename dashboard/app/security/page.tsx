@@ -66,7 +66,7 @@ export default function SecurityPage() {
           </div>
 
           <div className="xy-card rounded-[18px] p-5 space-y-4 max-w-2xl">
-            <h3 className="font-bold text-[#1E1B2E]">Kebijakan</h3>
+            <h3 className="font-semibold text-[#1E1B2E]">Kebijakan</h3>
             <div className="grid sm:grid-cols-2 gap-3">
               {Object.keys(LABELS).map((k) => (
                 <Field key={k} label={LABELS[k]}>

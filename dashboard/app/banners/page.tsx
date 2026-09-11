@@ -51,13 +51,13 @@ export default function BannersPage() {
               <div key={b.id} className="xy-card rounded-[20px] overflow-hidden">
                 <div className="h-28 flex items-center justify-center overflow-hidden" style={style}>
                   {b.gambar ? <img src={b.gambar} alt={b.judul} className="w-full h-full object-cover" /> : (
-                    <span className="text-white font-black text-[16px] px-4 text-center">{b.judul}</span>
+                    <span className="text-white font-semibold text-[16px] px-4 text-center">{b.judul}</span>
                   )}
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="text-[13.5px] font-bold text-[#1E1B2E] truncate">{b.judul}</div>
+                      <div className="text-[13.5px] font-semibold text-[#1E1B2E] truncate">{b.judul}</div>
                       {b.subjudul && <div className="text-[11px] text-[#7C738F] truncate">{b.subjudul}</div>}
                       <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                         <Chip tone="netral">{b.label || "no label"}</Chip>

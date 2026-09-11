@@ -13,7 +13,7 @@ function Badge({ status }: { status: string }) {
     disetujui: "bg-emerald-500/15 border border-emerald-500/30 text-emerald-600",
     ditolak: "bg-rose-500/15 border border-rose-500/30 text-rose-600",
   };
-  return <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wide ${map[status] || map.menunggu}`}>{status}</span>;
+  return <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold tracking-wide ${map[status] || map.menunggu}`}>{status}</span>;
 }
 
 export default function KeuanganPage() {
@@ -81,11 +81,11 @@ export default function KeuanganPage() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Wallet size={18} className="text-white" /></div>
           <div>
-            <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Keuangan <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-bold">BARU</span></h1>
+            <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">Keuangan <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-semibold">BARU</span></h1>
             <p className="text-sm text-[#7C738F] font-medium">Pendapatan, top up, dan tren pesanan — langsung dari D1</p>
           </div>
         </div>
-        <button onClick={unduhCSV} className="text-xs px-3 py-2 rounded-xl xy-btn font-bold text-white flex items-center gap-1.5">
+        <button onClick={unduhCSV} className="text-xs px-3 py-2 rounded-xl xy-btn font-semibold text-white flex items-center gap-1.5">
           <Download size={13} /> Export CSV
         </button>
       </div>
@@ -102,7 +102,7 @@ export default function KeuanganPage() {
                 <div className="w-9 h-9 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center"><c.Icon size={16} className={c.t} /></div>
                 <div className="min-w-0">
                   <div className="text-[11px] text-[#7C738F] font-medium tracking-wide uppercase">{c.l}</div>
-                  <div className="text-base font-bold text-[#1E1B2E] mt-0.5 tracking-tight truncate">{c.v}</div>
+                  <div className="text-base font-semibold text-[#1E1B2E] mt-0.5 tracking-tight truncate">{c.v}</div>
                 </div>
               </div>
             ))}
@@ -111,7 +111,7 @@ export default function KeuanganPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="xy-card rounded-[16px] p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><TrendingUp size={15} className="text-[#7C3AED]" /> Tren Pesanan 30 Hari</h3>
+                <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><TrendingUp size={15} className="text-[#7C3AED]" /> Tren Pesanan 30 Hari</h3>
                 <span className="text-[11px] text-[#7C738F] font-mono">{harian.length} hari</span>
               </div>
               {harian.length === 0 ? (
@@ -136,7 +136,7 @@ export default function KeuanganPage() {
 
             <div className="xy-card rounded-[16px] p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><AlertCircle size={15} className="text-amber-600" /> Top up Tertunda ({pending.length})</h3>
+                <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><AlertCircle size={15} className="text-amber-600" /> Top up Tertunda ({pending.length})</h3>
                 <Banknote size={15} className="text-[#7C738F]" />
               </div>
               {pending.length === 0 ? (
@@ -150,7 +150,7 @@ export default function KeuanganPage() {
                         <div className="text-[10px] text-[#7C738F] font-mono truncate">{t.id} • {t.metode || "-"}</div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-[12px] font-mono font-bold text-[#1E1B2E]">{rupiah(Number(t.total || t.nominal || 0))}</div>
+                        <div className="text-[12px] font-mono font-semibold text-[#1E1B2E]">{rupiah(Number(t.total || t.nominal || 0))}</div>
                         <Badge status={t.status} />
                       </div>
                     </div>

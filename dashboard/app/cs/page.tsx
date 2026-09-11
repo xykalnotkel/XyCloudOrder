@@ -93,12 +93,12 @@ export default function CsPage() {
             <MessageCircle size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">CS Realtime</h1>
+            <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">CS Realtime</h1>
             <p className="text-sm text-[#7C738F] font-medium">Balas chat pengguna langsung • refresh 5 detik</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <span className="text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-700 font-bold">{rooms.length} room</span>
+          <span className="text-xs px-3 py-1.5 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-700 font-semibold">{rooms.length} room</span>
           <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{totalPesan} pesan</span>
         </div>
       </div>
@@ -124,13 +124,13 @@ export default function CsPage() {
                 <button key={r.room} onClick={() => buka(r.room)}
                   className={`w-full text-left rounded-[14px] px-3 py-2.5 transition-all border ${isAktif ? "bg-gradient-to-r from-[#7C3AED] to-[#6D28D9] text-white border-transparent shadow-[0_8px_16px_rgba(124,58,237,.22)]" : "hover:bg-[#F5F3FF] border-transparent"}`}>
                   <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12px] font-black ${isAktif ? "bg-white/20 text-white" : "bg-[#F3F0FF] text-[#7C3AED]"}`}>
+                    <div className={`w-8 h-8 shrink-0 rounded-full grid place-items-center text-[12px] font-semibold ${isAktif ? "bg-white/20 text-white" : "bg-[#F3F0FF] text-[#7C3AED]"}`}>
                       {(r.nama || r.email || "?")[0].toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className={`flex items-center justify-between gap-1`}>
-                        <span className={`truncate text-[12.5px] font-bold ${isAktif ? "text-white" : "text-[#1E1B2E]"}`}>{r.nama || r.email || r.room}</span>
-                        {menit < 60 && <span className={`text-[9px] px-1.5 rounded-full font-bold ${isAktif ? "bg-white/25 text-white" : "bg-emerald-500/15 text-emerald-600"}`}>{Math.max(1, Math.round(menit))}m</span>}
+                        <span className={`truncate text-[12.5px] font-semibold ${isAktif ? "text-white" : "text-[#1E1B2E]"}`}>{r.nama || r.email || r.room}</span>
+                        {menit < 60 && <span className={`text-[9px] px-1.5 rounded-full font-semibold ${isAktif ? "bg-white/25 text-white" : "bg-emerald-500/15 text-emerald-600"}`}>{Math.max(1, Math.round(menit))}m</span>}
                       </div>
                       <div className={`truncate text-[11px] mt-0.5 ${isAktif ? "text-white/75" : "text-[#7C738F]"}`}>{r.preview || "Belum ada pesan teks"}</div>
                     </div>
@@ -148,7 +148,7 @@ export default function CsPage() {
             <div className="flex-1 grid place-items-center p-10 text-center">
               <div>
                 <MessageCircle size={28} className="mx-auto text-[#C4B5FD]" />
-                <p className="mt-3 text-[#7C738F] font-bold text-sm">Pilih percakapan di kiri</p>
+                <p className="mt-3 text-[#7C738F] font-semibold text-sm">Pilih percakapan di kiri</p>
                 <p className="text-[11.5px] text-[#9A8CBF]">Room akan muncul saat ada pengguna membuka chat dukungan.</p>
               </div>
             </div>
@@ -156,9 +156,9 @@ export default function CsPage() {
             <>
               {/* header room */}
               <div className="px-4 py-3 border-b border-[#E9E3F5] bg-[#F5F3FF]/70 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center text-white font-black text-[13px]">{(ruangAktif?.nama || ruangAktif?.email || "?")[0].toUpperCase()}</div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center text-white font-semibold text-[13px]">{(ruangAktif?.nama || ruangAktif?.email || "?")[0].toUpperCase()}</div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-[#1E1B2E] text-[13.5px] truncate">{ruangAktif?.nama || "Pengguna"}</div>
+                  <div className="font-semibold text-[#1E1B2E] text-[13.5px] truncate">{ruangAktif?.nama || "Pengguna"}</div>
                   <div className="font-mono text-[10.5px] text-[#7C738F] truncate">{ruangAktif?.email || aktif} {ruangAktif?.phone ? "• " + ruangAktif.phone : ""}</div>
                 </div>
                 <div className="text-[11px] text-[#7C738F] font-medium text-right shrink-0">
@@ -180,7 +180,7 @@ export default function CsPage() {
                       <div className={`max-w-[82%] min-w-[120px] ${tipe !== "gambar" ? "rounded-[18px] px-3.5 py-2.5" : "rounded-[14px] overflow-hidden bg-transparent border-0"} text-[13px] leading-relaxed shadow-sm whitespace-pre-line ${dariCs ? "bg-gradient-to-br from-[#7C3AED] to-[#6D28D9] text-white rounded-br-md" : "bg-white border border-[#E9E3F5] text-[#1E1B2E] rounded-bl-md"}`}>
                         {(m.reply_teks || m.reply_to) && (
                           <div className={`mb-1.5 rounded-lg px-2 py-1 border-l-[3px] ${dariCs ? "bg-white/15 border-white/70" : "bg-[#F5F3FF] border-[#7C3AED]"}`}>
-                            <div className={`text-[10px] font-bold ${dariCs ? "text-white/85" : "text-[#7C3AED]"}`}>
+                            <div className={`text-[10px] font-semibold ${dariCs ? "text-white/85" : "text-[#7C3AED]"}`}>
                               {labelTipe} · {dariCs ? "balasan kamu" : "balasan CS"}
                             </div>
                             {m.reply_teks && <div className={`text-[11px] truncate ${dariCs ? "text-white/80" : "text-[#7C738F]"}`}>{m.reply_teks}</div>}
@@ -216,7 +216,7 @@ export default function CsPage() {
                 <div className="flex gap-1.5 overflow-x-auto pb-1.5 scrollbar-thin">
                   {BALASAN_CEPAT.map((b, i) => (
                     <button key={i} onClick={() => kirim(b)} disabled={kirimBusy}
-                      className="shrink-0 text-[10.5px] px-2.5 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] text-[#6B5A8A] hover:border-[#C4B5FD] hover:text-[#7C3AED] font-bold whitespace-nowrap">
+                      className="shrink-0 text-[10.5px] px-2.5 py-1 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] text-[#6B5A8A] hover:border-[#C4B5FD] hover:text-[#7C3AED] font-semibold whitespace-nowrap">
                       {b.length > 34 ? b.slice(0, 34) + "…" : b}
                     </button>
                   ))}

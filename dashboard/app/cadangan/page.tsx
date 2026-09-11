@@ -50,10 +50,10 @@ export default function CadanganPage() {
       <Header icon={Database} title="Cadangan DB" sub="Snapshot database D1 (otomatis tiap hari 19 UTC) — unduh atau impor kembali"
         right={
           <div className="flex gap-2">
-            <a href="/impor-cadangan" className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl bg-white border border-[#E9E3F5] hover:border-[#C4B5FD] text-[12px] font-bold text-[#7C3AED]">
+            <a href="/impor-cadangan" className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl bg-white border border-[#E9E3F5] hover:border-[#C4B5FD] text-[12px] font-semibold text-[#7C3AED]">
               <Link2 size={13} /> Tarik DB lama
             </a>
-            <button onClick={buat} disabled={busy} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-bold disabled:opacity-50">
+            <button onClick={buat} disabled={busy} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-xl xy-btn text-white text-[12px] font-semibold disabled:opacity-50">
               <RefreshCw size={13} className={busy ? "animate-spin" : ""} /> Buat sekarang
             </button>
           </div>
@@ -73,13 +73,13 @@ export default function CadanganPage() {
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 shrink-0 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center"><HardDrive size={15} className="text-[#7C3AED]" /></div>
                 <div className="min-w-0">
-                  <div className="font-bold text-[#1E1B2E] text-[12.5px] font-mono truncate">{c.id}</div>
+                  <div className="font-semibold text-[#1E1B2E] text-[12.5px] font-mono truncate">{c.id}</div>
                   <div className="text-[11px] text-[#7C738F] font-medium">{c.jumlah_baris.toLocaleString("id-ID")} baris • {(Number(c.ukuran) / 1024).toFixed(1)} KB • {jam(c.dibuat)}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <Chip tone="ok">terbaru ke-{list.indexOf(c) + 1}</Chip>
-                <button onClick={() => unduh(c.id)} disabled={busy} className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] text-[#7C3AED] font-bold disabled:opacity-50">
+                <button onClick={() => unduh(c.id)} disabled={busy} className="inline-flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] text-[#7C3AED] font-semibold disabled:opacity-50">
                   <Download size={12} /> Unduh JSON
                 </button>
               </div>

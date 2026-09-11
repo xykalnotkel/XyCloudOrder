@@ -54,7 +54,7 @@ export function Header({ icon: Icon, title, sub, right }: {
           <Icon size={18} className="text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">{title}</h1>
+          <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">{title}</h1>
           {sub && <p className="text-sm text-[#7C738F] font-medium">{sub}</p>}
         </div>
       </div>
@@ -86,7 +86,7 @@ export function EmptyBox({ msg, sub }: { msg: string; sub?: string }) {
       <div className="w-12 h-12 mx-auto rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center">
         <Package size={20} className="text-[#7C3AED]" />
       </div>
-      <div className="mt-3 text-sm text-[#6B5A8A] font-bold tracking-tight">{msg}</div>
+      <div className="mt-3 text-sm text-[#6B5A8A] font-semibold tracking-tight">{msg}</div>
       {sub && <div className="text-[12px] text-[#7C738F] mt-1 font-medium">{sub}</div>}
     </div>
   );
@@ -101,7 +101,7 @@ export function Chip({ children, tone = "netral" }: { children: ReactNode; tone?
     netral: "bg-[#F3F0FF] border-[#E9E3F5] text-[#6B5A8A]",
   };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold tracking-wide whitespace-nowrap ${map[tone]}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold tracking-wide whitespace-nowrap ${map[tone]}`}>
       {children}
     </span>
   );
@@ -118,7 +118,7 @@ export function Stat({ label, value, sub, tone }: { label: string; value: ReactN
   return (
     <div className="xy-card rounded-[14px] p-4">
       <div className="text-[11px] text-[#7C738F] font-semibold tracking-wide uppercase">{label}</div>
-      <div className={`text-xl font-black tracking-tight mt-1 ${TONE_TEKS[tone || ""] || "text-[#1E1B2E]"}`}>{value}</div>
+      <div className={`text-xl font-semibold tracking-tight mt-1 ${TONE_TEKS[tone || ""] || "text-[#1E1B2E]"}`}>{value}</div>
       {sub && <div className="text-[11px] text-[#7C738F] mt-0.5 font-medium">{sub}</div>}
     </div>
   );
@@ -144,7 +144,7 @@ export function Tabel({ kolom, rows, kosong, leading }: {
           <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
             {leading && <th className="px-3 py-2.5 w-10" />}
             {kolom.map((c) => (
-              <th key={c.k} className={`px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold ${c.className || ""}`}>
+              <th key={c.k} className={`px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-semibold ${c.className || ""}`}>
                 {c.label}
               </th>
             ))}
@@ -180,7 +180,7 @@ type BtnProps = {
 };
 
 export function Btn({ children, onClick, disabled, type = "button", className = "", title, tone = "utama" }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-full text-[12.5px] font-bold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
+  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-full text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
   const map: Record<string, string> = {
     utama: "xy-btn text-white",
     ghost: "bg-white border border-[#E9E3F5] text-[#4B445F] hover:bg-[#F5F3FF]",
@@ -235,7 +235,7 @@ export function SelectBar({ count, onClear, children }: { count: number; onClear
   if (count === 0) return null;
   return (
     <div className="xy-card rounded-2xl px-4 py-2.5 flex items-center gap-2 flex-wrap sticky top-2 z-10 bg-white/95 backdrop-blur-sm">
-      <span className="text-[12px] font-bold text-[#7C3AED]">{count} dipilih</span>
+      <span className="text-[12px] font-semibold text-[#7C3AED]">{count} dipilih</span>
       <button type="button" onClick={onClear} className="text-[11px] text-[#7C738F] hover:text-[#1E1B2E] font-semibold underline">
         kosongkan
       </button>
@@ -299,8 +299,8 @@ export function Panel({ open, title, onClose, children, width = "max-w-md" }: {
       <button type="button" aria-label="Tutup" className="absolute inset-0 bg-[#100030]/35" onClick={onClose} />
       <div className={`relative h-full w-full ${width} bg-white shadow-2xl border-l border-[#E9E3F5] overflow-y-auto p-5 space-y-4`}>
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-black text-[#1E1B2E] tracking-tight">{title}</h2>
-          <button type="button" onClick={onClose} className="text-[12px] font-bold text-[#7C738F] hover:text-[#1E1B2E]">Tutup</button>
+          <h2 className="text-lg font-semibold text-[#1E1B2E] tracking-tight">{title}</h2>
+          <button type="button" onClick={onClose} className="text-[12px] font-semibold text-[#7C738F] hover:text-[#1E1B2E]">Tutup</button>
         </div>
         {children}
       </div>
@@ -311,7 +311,7 @@ export function Panel({ open, title, onClose, children, width = "max-w-md" }: {
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-wide text-[#7C738F]">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">{label}</span>
       {children}
     </label>
   );

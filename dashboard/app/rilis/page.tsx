@@ -28,14 +28,14 @@ export default function RilisPage() {
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><Rocket size={18} className="text-white" /></div>
         <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Manajemen Rilis App <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-bold">BARU</span></h1>
+          <h1 className="text-xl font-semibold text-[#1E1B2E] tracking-tight">Manajemen Rilis App <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-semibold">BARU</span></h1>
           <p className="text-sm text-[#7C738F] font-medium">Kelola versi APK, catatan, dan gambar tema popup (Ramadan, Lebaran, dll) — glossy violet-indigo #7C3AED</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="xy-card rounded-[18px] p-5">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight">Buat Rilis Baru</h3>
+          <h3 className="font-semibold text-[#1E1B2E] tracking-tight">Buat Rilis Baru</h3>
           <div className="mt-4 space-y-3">
             <input value={form.versi} onChange={(e) => setForm({ ...form, versi: e.target.value })} placeholder="Versi, mis: 3.3.0" className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             <input value={form.url_apk} onChange={(e) => setForm({ ...form, url_apk: e.target.value })} placeholder="URL APK https://..." className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
@@ -49,18 +49,18 @@ export default function RilisPage() {
               <option value="merdeka">merdeka — merah putih</option>
             </select>
             <label className="flex items-center gap-2 text-sm text-[#1E1B2E]/70 font-medium"><input type="checkbox" checked={form.wajib} onChange={(e) => setForm({ ...form, wajib: e.target.checked })} /> Wajib update?</label>
-            <button onClick={handleCreate} className="w-full py-3 rounded-xl xy-btn font-bold tracking-wide">Simpan Rilis</button>
+            <button onClick={handleCreate} className="w-full py-3 rounded-xl xy-btn font-semibold tracking-wide">Simpan Rilis</button>
             <div className="text-[11px] text-[#7C738F] font-medium">Gambar tema: file `rilis_popup_{"{tema}"}.png` 928x1152 — generate nanti pas waktunya. Icons Lucide, no emoji.</div>
           </div>
         </div>
 
         <div className="xy-card rounded-[18px] p-5">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Package size={16} className="text-[#7C3AED]" /> Rilis Terakhir</h3>
+          <h3 className="font-semibold text-[#1E1B2E] tracking-tight flex items-center gap-2"><Package size={16} className="text-[#7C3AED]" /> Rilis Terakhir</h3>
           {loading ? <div className="mt-4 text-[#7C738F] font-medium">Memuat...</div> : (
             <div className="mt-4 space-y-2">
               {rilis.length === 0 ? <div className="text-sm text-[#7C738F] font-medium">Belum ada rilis di DB. Release GitHub ada di <code className="font-mono">a1c267e</code> (v3.2)</div> : rilis.slice(0, 10).map((r: any) => (
                 <div key={r.id || r.versi} className="p-3 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5]">
-                  <div className="flex items-center justify-between"><span className="font-bold text-[#1E1B2E] tracking-tight">v{r.versi}</span><span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-medium">{r.gambar_tema || "default"}</span></div>
+                  <div className="flex items-center justify-between"><span className="font-semibold text-[#1E1B2E] tracking-tight">v{r.versi}</span><span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-medium">{r.gambar_tema || "default"}</span></div>
                   <div className="text-[12px] text-[#7C738F] mt-1 line-clamp-2 font-medium">{r.catatan}</div>
                 </div>
               ))}
