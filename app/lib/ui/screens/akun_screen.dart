@@ -153,7 +153,7 @@ class _KartuProduk extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, height: 1.25)),
         const SizedBox(height: 6),
         Row(children: [
-          const Icon(Icons.star_rounded, size: 13, color: XyTheme.gold),
+          Icon(Icons.star_rounded, size: 13, color: XyTheme.gold),
           Text(' ${produk.rating}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
           Text(' (${produk.jumlahUlasan})', style:  TextStyle(fontSize: 10.5, color: XyTheme.of(context).muted)),
           Text(' · ${produk.terjual}x', style:  TextStyle(fontSize: 11, color: XyTheme.of(context).muted)),
@@ -317,7 +317,7 @@ class _SheetDetailState extends State<_SheetDetail> {
               ...p.fitur.map((f) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(children: [
-                      const Icon(Icons.check_circle_rounded, size: 17, color: XyTheme.success),
+                      Icon(Icons.check_circle_rounded, size: 17, color: XyTheme.success),
                       const SizedBox(width: 9),
                       Expanded(child: Text(f, style: const TextStyle(fontSize: 13.5))),
                     ]),
@@ -378,7 +378,7 @@ class _SheetDetailState extends State<_SheetDetail> {
                   label: p.stok == 0 ? 'Stok Habis' : 'Beli Sekarang',
                   icon: p.stok == 0 ? Icons.block_rounded : Icons.shopping_bag_rounded,
                   loading: proses,
-                  gradient: const LinearGradient(colors: [XyTheme.violet, XyTheme.primary]),
+                  gradient: LinearGradient(colors: [XyTheme.violet, XyTheme.primary]),
                   glowColor: XyTheme.violet,
                   onPressed: p.stok == 0 || proses ? null : _beli,
                 ),

@@ -270,7 +270,7 @@ class _SheetTopupState extends State<_SheetTopup> {
             width: 42,
             height: 42,
             decoration:  BoxDecoration(color: XyTheme.of(context).primarySoft, shape: BoxShape.circle),
-            child: const Icon(Icons.bolt_rounded, color: XyTheme.primary, size: 22),
+            child: Icon(Icons.bolt_rounded, color: XyTheme.primary, size: 22),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -339,7 +339,7 @@ class _SheetTopupState extends State<_SheetTopup> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, shape: BoxShape.circle),
-          child: const Icon(Icons.receipt_long_rounded, color: XyTheme.primary, size: 21),
+          child: Icon(Icons.receipt_long_rounded, color: XyTheme.primary, size: 21),
         ),
         const SizedBox(width: 12),
         const Expanded(
@@ -488,7 +488,7 @@ class _SheetTopupState extends State<_SheetTopup> {
                 const SnackBar(content: Text('Nomor rekening disalin'), duration: Duration(seconds: 1)),
               );
             },
-            child: const Icon(Icons.copy_rounded, size: 16, color: XyTheme.primary),
+            child: Icon(Icons.copy_rounded, size: 16, color: XyTheme.primary),
           ),
         ],
       ]);

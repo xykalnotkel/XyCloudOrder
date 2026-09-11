@@ -58,8 +58,8 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                 Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF100030), Color(0xFF7C3AED)],
+                    gradient: LinearGradient(
+                      colors: [XyTheme.bgGelap, XyTheme.primary],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -91,8 +91,8 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                       Container(
                         width: 40,
                         height: 40,
-                        decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(.12), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.smartphone_rounded, color: Color(0xFF22C55E)),
+                        decoration: BoxDecoration(color: XyTheme.okBright.withOpacity(.12), borderRadius: BorderRadius.circular(10)),
+                        child: Icon(Icons.smartphone_rounded, color: XyTheme.okBright),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -104,8 +104,8 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(.15), borderRadius: BorderRadius.circular(20)),
-                        child: const Text('Aktif', style: TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w700, fontSize: 10)),
+                        decoration: BoxDecoration(color: XyTheme.okBright.withOpacity(.15), borderRadius: BorderRadius.circular(20)),
+                        child: Text('Aktif', style: TextStyle(color: XyTheme.okBright, fontWeight: FontWeight.w700, fontSize: 10)),
                       ),
                     ]),
                     const SizedBox(height: 12),
@@ -113,7 +113,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(10)),
                       child: Row(children: [
-                        const Icon(Icons.info_outline_rounded, size: 14, color: XyTheme.primary),
+                        Icon(Icons.info_outline_rounded, size: 14, color: XyTheme.primary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -179,13 +179,13 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
   Color _colorAksi(String aksi) {
     switch (aksi) {
       case 'LOGIN':
-        return const Color(0xFF7C3AED);
+        return XyTheme.primary;
       case 'SEWA':
-        return const Color(0xFF22C55E);
+        return XyTheme.okBright;
       case 'BELI_AKUN':
-        return const Color(0xFFA855F7);
+        return XyTheme.plum;
       case 'OTP':
-        return const Color(0xFFE8C07A);
+        return XyTheme.goldSoft;
       default:
         return XyTheme.muted;
     }

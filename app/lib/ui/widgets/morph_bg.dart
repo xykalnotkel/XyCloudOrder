@@ -31,10 +31,10 @@ class _XyMorphBgState extends State<XyMorphBg>
     final rnd = math.Random(7);
     // Palet baru: violet-indigo glossy (sesuai PopupUpdate.md)
     const pal = [
-      Color(0xFF8B5CF6), // violet terang #8B5CF6
-      Color(0xFFA855F7), // plum/magenta-violet #A855F7
-      Color(0xFF7C3AED), // primary #7C3AED
-      Color(0xFFC4B5FD), // lavender lembut
+      XyTheme.violet, // violet terang #8B5CF6
+      XyTheme.plum, // plum/magenta-violet #A855F7
+      XyTheme.primary, // primary #7C3AED
+      XyTheme.lavender, // lavender lembut
     ];
     _b = List.generate(widget.jumlah, (i) {
       return _Gumpal(

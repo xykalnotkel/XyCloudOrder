@@ -280,7 +280,7 @@ class _CsScreenState extends State<CsScreen> {
                 borderRadius: BorderRadius.circular(10)),
           ),
           ListTile(
-            leading: const Icon(Icons.reply_rounded, color: XyTheme.primary),
+            leading: Icon(Icons.reply_rounded, color: XyTheme.primary),
             title: const Text('Balas',
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
             onTap: () {
@@ -298,7 +298,7 @@ class _CsScreenState extends State<CsScreen> {
           ),
           if (m.teks.isNotEmpty)
             ListTile(
-              leading: const Icon(Icons.copy_rounded, color: XyTheme.primary),
+              leading: Icon(Icons.copy_rounded, color: XyTheme.primary),
               title: const Text('Salin pesan',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               onTap: () {
@@ -312,7 +312,7 @@ class _CsScreenState extends State<CsScreen> {
           if (m.milikSaya)
             ListTile(
               leading:
-                  const Icon(Icons.delete_outline_rounded, color: XyTheme.danger),
+                  Icon(Icons.delete_outline_rounded, color: XyTheme.danger),
               title: const Text('Hapus pesan',
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
@@ -643,7 +643,7 @@ class _BarInput extends StatelessWidget {
           child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
             IconButton(
               onPressed: rekam ? null : onGambar,
-              icon: const Icon(Icons.image_outlined, color: XyTheme.primary),
+              icon: Icon(Icons.image_outlined, color: XyTheme.primary),
               tooltip: 'Kirim gambar',
             ),
             Expanded(
@@ -1008,7 +1008,7 @@ class _Gelembung extends StatelessWidget {
             color: msg.gagal
                 ? XyTheme.danger
                 : msg.dibaca
-                    ? const Color(0xFF7DD3FC)
+                    ? XyTheme.csRead
                     : XyTheme.of(context).muted,
           ),
         ],
@@ -1032,9 +1032,9 @@ class _Gelembung extends StatelessWidget {
                   : Icons.schedule_rounded,
           size: 13,
           color: msg.gagal
-              ? const Color(0xFFFCA5A5)
+              ? XyTheme.csFail
               : msg.dibaca
-                  ? const Color(0xFF7DD3FC)
+                  ? XyTheme.csRead
                   : Colors.white70,
         ),
       ],

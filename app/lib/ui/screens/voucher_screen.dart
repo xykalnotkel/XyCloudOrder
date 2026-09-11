@@ -58,7 +58,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF100030), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: [XyTheme.bgGelap, XyTheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(20),
               boxShadow: XyTheme.glow(XyTheme.primary, .22),
             ),

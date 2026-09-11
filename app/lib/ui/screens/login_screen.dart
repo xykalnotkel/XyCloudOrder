@@ -207,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           border: Border.all(color: XyTheme.danger.withOpacity(.22)),
                         ),
                         child: Row(children: [
-                          const Icon(Icons.error_outline_rounded, color: XyTheme.danger, size: 19),
+                          Icon(Icons.error_outline_rounded, color: XyTheme.danger, size: 19),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(

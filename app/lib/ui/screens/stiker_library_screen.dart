@@ -25,7 +25,7 @@ class _StikerLibraryScreenState extends State<StikerLibraryScreen>{
   Future<void> add()async{final choice=await pilihStiker(context);if(choice==null)return;try{await store.simpan(choice.stiker,bytes:choice.bytes);await load();}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('$e')));}}
   Future<void> remove(StikerLokal item)async{if(!await konfirmasi(context,judul:'Hapus dari koleksi?',pesan:'Pesan/stiker yang sudah dibagikan tidak ikut dihapus.',tombolYa:'Hapus',bahaya:true))return;await store.hapus(item);images.remove(item.id);await load();}
   String size(num? n)=>n==null?'—':n>1024*1024?'${(n/(1024*1024)).toStringAsFixed(1)} MB':'${(n/1024).ceil()} KB';
-  @override Widget build(BuildContext context){final pal=XyTheme.of(context);return Scaffold(appBar:AppBar(title:const Text('Stiker & Penyimpanan'),actions:[IconButton(tooltip:'Tambah stiker',onPressed:add,icon:const Icon(Icons.add_rounded))]),
+  @override Widget build(BuildContext context){final pal=XyTheme.of(context);return Scaffold(appBar:AppBar(title:Text('Stiker & Penyimpanan'),actions:[IconButton(tooltip:'Tambah stiker',onPressed:add,icon:Icon(Icons.add_rounded))]),
     body:RefreshIndicator(onRefresh:load,child:ListView(padding:const EdgeInsets.all(20),children:[
       XyCard(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
         const Text('Tersimpan di aplikasi ini',style:TextStyle(fontSize:19,fontWeight:FontWeight.w700)),const SizedBox(height:8),

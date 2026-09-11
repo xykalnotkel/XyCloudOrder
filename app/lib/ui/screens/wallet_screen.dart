@@ -22,19 +22,19 @@ class WalletScreen extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                colors: [Color(0xFF4B1DA6), Color(0xFF2E1065), Color(0xFF130236)],
+              gradient: LinearGradient(
+                colors: [XyTheme.violetDeep2, XyTheme.primaryDark, XyTheme.midnightDeep],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 stops: [0, .52, 1],
               ),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFF2E1065).withOpacity(.34),
+                    color: XyTheme.primaryDark.withOpacity(.34),
                     blurRadius: 26,
                     offset: const Offset(0, 14)),
                 BoxShadow(
-                    color: const Color(0xFF12042E).withOpacity(.9),
+                    color: XyTheme.midnightInk.withOpacity(.9),
                     blurRadius: 0,
                     offset: const Offset(0, 2)),
               ],
@@ -68,7 +68,7 @@ class WalletScreen extends StatelessWidget {
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
                         colors: [
-                          const Color(0xFFA78BFA).withOpacity(.22),
+                          XyTheme.lilac.withOpacity(.22),
                           Colors.transparent,
                         ],
                       ),

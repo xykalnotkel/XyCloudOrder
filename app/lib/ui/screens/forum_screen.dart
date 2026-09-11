@@ -234,7 +234,7 @@ class _AjakanTulis extends StatelessWidget {
                 style: TextStyle(
                     color: XyTheme.of(context).muted, fontSize: 13.2)),
           ),
-          const Icon(Icons.edit_rounded, size: 18, color: XyTheme.primary),
+          Icon(Icons.edit_rounded, size: 18, color: XyTheme.primary),
         ]),
       ),
     );
@@ -254,7 +254,7 @@ class LencanaTier extends StatelessWidget {
     final (warna, label, ikon) = switch (t) {
       'admin' => (XyTheme.primary, 'ADMIN', Icons.verified_rounded),
       'vip' => (
-          const Color(0xFFC08A2E),
+          XyTheme.vipAmber,
           'VIP',
           Icons.workspace_premium_rounded
         ),

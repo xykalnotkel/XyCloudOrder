@@ -88,7 +88,7 @@ class KartuUlasan extends StatelessWidget {
             Container(
               width: 36,
               height: 36,
-              decoration: const BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
+              decoration: BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
               child: Center(
                 child: Text(inisial,
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),

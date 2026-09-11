@@ -34,8 +34,8 @@ class _FavoritScreenState extends State<FavoritScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF100030), Color(0xFF7C3AED)],
+              gradient: LinearGradient(
+                colors: [XyTheme.bgGelap, XyTheme.primary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -86,7 +86,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                           color: XyTheme.of(context).primarySoft,
                           child: p.gambar.isNotEmpty
                               ? Image.network(p.gambar, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image_rounded))
-                              : const Icon(Icons.storefront_rounded, color: XyTheme.primary),
+                              : Icon(Icons.storefront_rounded, color: XyTheme.primary),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -97,7 +97,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                           Text('${p.kategori} • Rp ${p.harga}', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                           const SizedBox(height: 6),
                           Row(children: [
-                            const Icon(Icons.star_rounded, size: 13, color: Color(0xFFE8C07A)),
+                            Icon(Icons.star_rounded, size: 13, color: XyTheme.goldSoft),
                             const SizedBox(width: 3),
                             Text('${p.rating}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                             const SizedBox(width: 8),
@@ -106,7 +106,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                         ]),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.favorite_rounded, color: XyTheme.danger, size: 20),
+                        icon: Icon(Icons.favorite_rounded, color: XyTheme.danger, size: 20),
                         onPressed: () => context.read<AppState>().ubahFavorit(p.id),
                       ),
                     ]),

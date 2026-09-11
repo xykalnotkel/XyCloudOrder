@@ -82,7 +82,7 @@ class PengaturanScreen extends StatelessWidget {
           ),
           const _Judul('Sesi dan akun'),
           XyBarisMenu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Konfirmasi identitas sebelum menghapus', tujuan: const HapusAkunScreen()),
-          ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 8), leading: const Icon(Icons.logout_rounded, color: XyTheme.danger), title: const Text('Keluar dari Akun'),
+          ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 8), leading: Icon(Icons.logout_rounded, color: XyTheme.danger), title: Text('Keluar dari Akun'),
             onTap: () async { if (await konfirmasi(context, judul:'Keluar dari akun?', pesan:'Data sesi di HP akan dibersihkan. Akunmu tidak dihapus.', tombolYa:'Keluar', bahaya:true) && context.mounted) { await context.read<AppState>().logout(); } }),
           const _Judul('Lainnya'),
           XyBarisMenu(
@@ -211,7 +211,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
                  Icon(Icons.mail_outline_rounded, size: 19, color: XyTheme.of(context).muted),
                 const SizedBox(width: 12),
                 Expanded(child: Text(u!.email, style: const TextStyle(fontWeight: FontWeight.w600))),
-                const Icon(Icons.verified_rounded, size: 17, color: XyTheme.success),
+                Icon(Icons.verified_rounded, size: 17, color: XyTheme.success),
               ]),
             ),
             const SizedBox(height: 6),
@@ -296,7 +296,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(color: XyTheme.success.withOpacity(.10), shape: BoxShape.circle),
-                child: const Icon(Icons.shield_rounded, color: XyTheme.success, size: 21),
+                child: Icon(Icons.shield_rounded, color: XyTheme.success, size: 21),
               ),
               const SizedBox(width: 13),
                Expanded(
@@ -376,7 +376,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _hapusAkun(context),
                   style: OutlinedButton.styleFrom(side: const BorderSide(color: XyTheme.danger)),
-                  icon: const Icon(Icons.delete_forever_rounded, size: 18, color: XyTheme.danger),
+                  icon: Icon(Icons.delete_forever_rounded, size: 18, color: XyTheme.danger),
                   label: const Text('Hapus Akun Saya',
                       style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),
                 ),
@@ -419,7 +419,7 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-                child: const Icon(Icons.groups_2_outlined, size: 20, color: XyTheme.primary),
+                child: Icon(Icons.groups_2_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
                Expanded(
@@ -504,7 +504,7 @@ class _DataScreenState extends State<DataScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-                child: const Icon(Icons.data_saver_on_rounded, size: 20, color: XyTheme.primary),
+                child: Icon(Icons.data_saver_on_rounded, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
                Expanded(
@@ -522,7 +522,7 @@ class _DataScreenState extends State<DataScreen> {
           XyCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Icon(Icons.sd_storage_outlined, size: 19, color: XyTheme.primary),
+                Icon(Icons.sd_storage_outlined, size: 19, color: XyTheme.primary),
                 const SizedBox(width: 10),
                 const Expanded(
                   child: Text('Data tersimpan di perangkat',
@@ -602,7 +602,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-                child: const Icon(Icons.shield_moon_outlined, size: 20, color: XyTheme.primary),
+                child: Icon(Icons.shield_moon_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
                Expanded(
@@ -799,7 +799,7 @@ class _KotakGalat extends StatelessWidget {
           border: Border.all(color: XyTheme.danger.withOpacity(.22)),
         ),
         child: Row(children: [
-          const Icon(Icons.error_outline_rounded, size: 18, color: XyTheme.danger),
+          Icon(Icons.error_outline_rounded, size: 18, color: XyTheme.danger),
           const SizedBox(width: 10),
           Expanded(
             child: Text(pesan,

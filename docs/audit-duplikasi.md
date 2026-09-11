@@ -65,3 +65,11 @@ Efek samping positif: di `profil_screen.dart` ikon sebelumnya memakai `primarySo
 
 
 Lihat juga: `docs/migrasi-dashboard.md`, `docs/konsistensi-platform.md`.
+
+## Gelombang 2 (lanjutan 2026-09-11) — tanpa build
+
+1. **Worker `index.js`**: blok CS rooms duplikat (`cs` alias + `cs/rooms`) digabung jadi satu handler `(a === 'cs' || a === 'cs/rooms')`.
+2. **Konsistensi warna app**: hardcode `Color(0xFF…)` di luar `theme.dart` diganti ke token `XyTheme.*` (72+ ganti). Token baru: `bgGelap2`, `lilac`, `goldSoft`, `okBright`, `csRead`, dll. Sisa 1 hex merek Facebook di `brand_logos.dart` (sengaja).
+3. **Dashboard filter tanggal**: tidak ada komponen rentang tanggal yang disalin massal (false positive kata “dari/sampai”); hanya `keuangan` yang punya Export CSV lokal — dibiarkan.
+4. **Lint info 328**: tidak disentuh (bukan error/warning).
+

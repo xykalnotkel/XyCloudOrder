@@ -1523,7 +1523,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
 
         // ---- inbox CS ----
-        if (a === 'cs/rooms' && req.method === 'GET') {
+        // cs + cs/rooms: daftar room CS (alias dash v3.3)
+        if ((a === 'cs' || a === 'cs/rooms') && req.method === 'GET') {
           const { results } = await env.DB.prepare(
             `SELECT m.room, u.nama, u.email, u.phone, COUNT(*) total,
                     MAX(m.waktu) terakhir,
@@ -2402,18 +2403,6 @@ ${halaman.map(([u, p2, f]) => `  <url>
         // ---- alias & missing endpoints for dashboard v3.3 full migration ----
         if (a === 'audit' && req.method === 'GET') {
           const { results } = await env.DB.prepare('SELECT * FROM log_admin ORDER BY waktu DESC LIMIT 120').all();
-          return json(results, 200, env);
-        }
-        if (a === 'cs' && req.method === 'GET') {
-          const { results } = await env.DB.prepare(
-            `SELECT m.room, u.nama, u.email, u.phone, COUNT(*) total,
-                    MAX(m.waktu) terakhir,
-                    (SELECT COALESCE(NULLIF(x.teks,''), CASE WHEN x.audio IS NOT NULL THEN '[Pesan suara]' WHEN x.gambar IS NOT NULL THEN '[Foto]' ELSE '' END)
-                       FROM cs_messages x WHERE x.room = m.room AND x.dari!='system' ORDER BY waktu DESC LIMIT 1) preview
-             FROM cs_messages m LEFT JOIN users u ON u.id = m.user_id
-             WHERE m.dihapus=0 AND datetime(m.waktu)>=datetime('now','-7 days')
-             GROUP BY m.room ORDER BY terakhir DESC LIMIT 50`
-          ).all();
           return json(results, 200, env);
         }
         if ((a === 'unit' || a === 'units') && req.method === 'GET') {

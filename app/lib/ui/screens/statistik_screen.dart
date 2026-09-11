@@ -40,8 +40,8 @@ class StatistikScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF100030), Color(0xFF200050), Color(0xFF7C3AED)],
+              gradient: LinearGradient(
+                colors: [XyTheme.bgGelap, XyTheme.bgGelap2, XyTheme.primary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -87,8 +87,8 @@ class StatistikScreen extends StatelessWidget {
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(color: const Color(0xFF7C3AED).withOpacity(.12), borderRadius: BorderRadius.circular(14)),
-                    child: const Icon(Icons.desktop_windows_rounded, color: XyTheme.primary),
+                    decoration: BoxDecoration(color: XyTheme.primary.withOpacity(.12), borderRadius: BorderRadius.circular(14)),
+                    child: Icon(Icons.desktop_windows_rounded, color: XyTheme.primary),
                   ),
                   const SizedBox(height: 10),
                   Text('$totalSewa', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
@@ -105,8 +105,8 @@ class StatistikScreen extends StatelessWidget {
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(color: const Color(0xFFA855F7).withOpacity(.12), borderRadius: BorderRadius.circular(14)),
-                    child: const Icon(Icons.account_circle_rounded, color: Color(0xFFA855F7)),
+                    decoration: BoxDecoration(color: XyTheme.plum.withOpacity(.12), borderRadius: BorderRadius.circular(14)),
+                    child: Icon(Icons.account_circle_rounded, color: XyTheme.plum),
                   ),
                   const SizedBox(height: 10),
                   Text('$totalAkun', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 22)),
@@ -123,8 +123,8 @@ class StatistikScreen extends StatelessWidget {
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(color: const Color(0xFF22C55E).withOpacity(.12), borderRadius: BorderRadius.circular(14)),
-                    child: const Icon(Icons.savings_rounded, color: Color(0xFF22C55E)),
+                    decoration: BoxDecoration(color: XyTheme.okBright.withOpacity(.12), borderRadius: BorderRadius.circular(14)),
+                    child: Icon(Icons.savings_rounded, color: XyTheme.okBright),
                   ),
                   const SizedBox(height: 10),
                   Text('${s.user?.tier ?? "-"}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
@@ -147,8 +147,8 @@ class StatistikScreen extends StatelessWidget {
                         Container(
                           width: 40,
                           height: 40,
-                          decoration: BoxDecoration(color: const Color(0xFF7C3AED).withOpacity(.12), borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.desktop_windows_rounded, size: 18, color: Color(0xFF7C3AED)),
+                          decoration: BoxDecoration(color: XyTheme.primary.withOpacity(.12), borderRadius: BorderRadius.circular(10)),
+                          child: Icon(Icons.desktop_windows_rounded, size: 18, color: XyTheme.primary),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -170,8 +170,8 @@ class StatistikScreen extends StatelessWidget {
                         Container(
                           width: 40,
                           height: 40,
-                          decoration: BoxDecoration(color: const Color(0xFFA855F7).withOpacity(.12), borderRadius: BorderRadius.circular(10)),
-                          child: const Icon(Icons.account_circle_rounded, size: 18, color: Color(0xFFA855F7)),
+                          decoration: BoxDecoration(color: XyTheme.plum.withOpacity(.12), borderRadius: BorderRadius.circular(10)),
+                          child: Icon(Icons.account_circle_rounded, size: 18, color: XyTheme.plum),
                         ),
                         const SizedBox(width: 12),
                         Expanded(

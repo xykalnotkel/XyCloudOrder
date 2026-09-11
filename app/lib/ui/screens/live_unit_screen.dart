@@ -22,11 +22,11 @@ class LiveUnitScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF100030), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: [XyTheme.bgGelap, XyTheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(children: [
-              Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Color(0xFF22C55E), blurRadius: 8)])),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: XyTheme.okBright, shape: BoxShape.circle, boxShadow: [BoxShadow(color: XyTheme.okBright, blurRadius: 8)])),
               const SizedBox(width: 10),
               const Expanded(child: Text('Live — update realtime via WebSocket', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
               Text('${plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready', style: TextStyle(color: Colors.white.withOpacity(.75), fontSize: 11.5)),
@@ -44,7 +44,7 @@ class LiveUnitScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
+                        Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
@@ -67,7 +67,7 @@ class LiveUnitScreen extends StatelessWidget {
                         const SizedBox(width: 6),
                         _Chip(p.tag.isEmpty ? '${p.storageGb}GB' : p.tag, Icons.sell_rounded),
                         const SizedBox(width: 6),
-                        _Chip(p.unitTersedia > 0 ? 'Online' : 'Penuh', Icons.circle, color: p.unitTersedia > 0 ? const Color(0xFF22C55E) : XyTheme.danger),
+                        _Chip(p.unitTersedia > 0 ? 'Online' : 'Penuh', Icons.circle, color: p.unitTersedia > 0 ? XyTheme.okBright : XyTheme.danger),
                       ]),
                     ]),
                   ),

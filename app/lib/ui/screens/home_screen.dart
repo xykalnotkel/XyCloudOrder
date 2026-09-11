@@ -263,19 +263,19 @@ class _KartuSaldoState extends State<_KartuSaldo> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
           // Kartu member premium: indigo malam yang tenang (bukan neon/glass).
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4B1DA6), Color(0xFF2E1065), Color(0xFF130236)],
+          gradient: LinearGradient(
+            colors: [XyTheme.violetDeep2, XyTheme.primaryDark, XyTheme.midnightDeep],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             stops: [0, .52, 1],
           ),
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFF2E1065).withOpacity(.34),
+                color: XyTheme.primaryDark.withOpacity(.34),
                 blurRadius: 26,
                 offset: const Offset(0, 14)),
             BoxShadow(
-                color: const Color(0xFF12042E).withOpacity(.9),
+                color: XyTheme.midnightInk.withOpacity(.9),
                 blurRadius: 0,
                 offset: const Offset(0, 2)),
           ],
@@ -311,7 +311,7 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFA78BFA).withOpacity(.22),
+                      XyTheme.lilac.withOpacity(.22),
                       Colors.transparent,
                     ],
                   ),
@@ -329,8 +329,8 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                     height: 32,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(7),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFF0D28A), Color(0xFFC9A227), Color(0xFFEBD08C)],
+                      gradient: LinearGradient(
+                        colors: [XyTheme.goldBright, XyTheme.goldMid, XyTheme.goldPale],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -461,7 +461,7 @@ class _CipPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cat = Paint()
-      ..color = const Color(0xFF8A6A12).withOpacity(.55)
+      ..color = XyTheme.goldDeep.withOpacity(.55)
       ..strokeWidth = .9;
     canvas.drawLine(Offset(0, size.height * .34), Offset(size.width, size.height * .34), cat);
     canvas.drawLine(Offset(0, size.height * .66), Offset(size.width, size.height * .66), cat);
@@ -660,7 +660,7 @@ class _KartuOrderAktif extends StatelessWidget {
               borderRadius: BorderRadius.circular(XyRadius.sm),
             ),
             child: Row(children: [
-              const Icon(Icons.timer_outlined, size: 17, color: XyTheme.primary),
+              Icon(Icons.timer_outlined, size: 17, color: XyTheme.primary),
               const SizedBox(width: 9),
                Text('Sisa waktu sesi', style: TextStyle(fontSize: 12.5, color: XyTheme.of(context).muted, fontWeight: FontWeight.w600)),
               const Spacer(),
@@ -751,7 +751,7 @@ class _BarisProduk extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8)),
             const SizedBox(height: 5),
             Row(children: [
-              const Icon(Icons.star_rounded, size: 13.5, color: XyTheme.gold),
+              Icon(Icons.star_rounded, size: 13.5, color: XyTheme.gold),
               Text(' ${produk.rating}',
                   style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
               Text('  ·  ${produk.terjual} terjual',

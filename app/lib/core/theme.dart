@@ -57,6 +57,26 @@ class XyTheme {
   static const Color warning = Color(0xFFD9880F);
   static const Color danger = Color(0xFFB54450);
   static const Color gold = Color(0xFFD9A441);
+  static const Color goldSoft = Color(0xFFE8C07A); // aksen emas lembut (tier/medal)
+  static const Color goldBright = Color(0xFFF0D28A);
+  static const Color goldMid = Color(0xFFC9A227);
+  static const Color goldPale = Color(0xFFEBD08C);
+  static const Color goldDeep = Color(0xFF8A6A12);
+  static const Color lilac = Color(0xFFA78BFA); // atas grad tombol glossy
+  static const Color violetDeep2 = Color(0xFF4B1DA6);
+  static const Color midnightDeep = Color(0xFF130236);
+  static const Color midnightInk = Color(0xFF12042E);
+  static const Color okBright = Color(0xFF22C55E); // indikator online (tailwind green-500)
+  static const Color bronze = Color(0xFF9A6B4A);
+  static const Color graySoft = Color(0xFF9CA3AF);
+  static const Color csRead = Color(0xFF7DD3FC); // centang dibaca (chat)
+  static const Color csFail = Color(0xFFFCA5A5); // gagal kirim
+  static const Color vipAmber = Color(0xFFC08A2E);
+  static const Color shimmerA = Color(0xFFF1EAFF);
+  static const Color shimmerB = Color(0xFFFBF8FF);
+  static const Color warnInk = Color(0xFF8A5A08);
+  static const Color dangerBright = Color(0xFFE05B5B);
+  static const Color dangerDeep = Color(0xFFC81E1E);
 
   // ---------- gradien (VIOLET-INDIGO GLOSSY) ----------
   // Glossy vertikal: terang di atas (efek kaca) → pekat di bawah.
@@ -137,6 +157,7 @@ class XyTheme {
 
   // ---------- palet gelap — INDIGO TUA dari referensi ----------
   static const Color bgGelap = Color(0xFF100030); // #100030 persis referensi popup
+  static const Color bgGelap2 = Color(0xFF200050); // indigo tengah (hero/grad)
   static const Color surfaceGelap = Color(0xFF1A0B2E); // #200050-ish
   static const Color surfaceGelap2 = Color(0xFF25183E);
   static const Color lineGelap = Color(0xFF2E1A4E);

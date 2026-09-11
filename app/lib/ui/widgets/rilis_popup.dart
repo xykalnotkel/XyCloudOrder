@@ -21,7 +21,7 @@ Future<void> tampilkanRilisPopup(BuildContext context, AppState s) async {
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Rilis',
-    barrierColor: const Color(0xFF100030).withOpacity(.68), // indigo tua barrier
+    barrierColor: XyTheme.bgGelap.withOpacity(.68), // indigo tua barrier
     transitionDuration: const Duration(milliseconds: 260),
     transitionBuilder: (_, anim, __, child) => FadeTransition(
       opacity: anim,
@@ -85,7 +85,7 @@ class RilisPopup extends StatelessWidget {
         loadingBuilder: (_, child, prog) => prog == null
             ? child
             : Container(
-                decoration: const BoxDecoration(gradient: XyTheme.gradMidnight),
+                decoration: BoxDecoration(gradient: XyTheme.gradMidnight),
                 child: const Center(
                   child: CircularProgressIndicator(
                     color: XyTheme.lavender,
@@ -100,7 +100,7 @@ class RilisPopup extends StatelessWidget {
             'assets/ilustrasi/rilis_popup.png',
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
-              decoration: const BoxDecoration(gradient: XyTheme.gradPrimary),
+              decoration: BoxDecoration(gradient: XyTheme.gradPrimary),
             ),
           ),
         ),
@@ -113,7 +113,7 @@ class RilisPopup extends StatelessWidget {
           'assets/ilustrasi/rilis_popup.png',
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => Container(
-            decoration: const BoxDecoration(gradient: XyTheme.gradPrimary),
+            decoration: BoxDecoration(gradient: XyTheme.gradPrimary),
           ),
         ),
       );
@@ -142,7 +142,7 @@ class RilisPopup extends StatelessWidget {
                           Colors.white.withOpacity(.18),
                           Colors.transparent,
                           Colors.transparent,
-                          const Color(0xFF100030).withOpacity(.12),
+                          XyTheme.bgGelap.withOpacity(.12),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -166,11 +166,11 @@ class RilisPopup extends StatelessWidget {
                       color: Colors.white.withOpacity(.92),
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: const Color(0xFFC4B5FD).withOpacity(.6),
+                          color: XyTheme.lavender.withOpacity(.6),
                           width: 1),
                       boxShadow: [
                         BoxShadow(
-                            color: const Color(0xFF100030).withOpacity(.22),
+                            color: XyTheme.bgGelap.withOpacity(.22),
                             blurRadius: 14,
                             offset: const Offset(0, 4)),
                         BoxShadow(
@@ -180,7 +180,7 @@ class RilisPopup extends StatelessWidget {
                       ],
                     ),
                     child: const Icon(Icons.close_rounded,
-                        size: 22, color: Color(0xFF2E1065)),
+                        size: 22, color: XyTheme.primaryDark),
                   ),
                 ),
               ),

@@ -340,7 +340,7 @@ class SectionHeader extends StatelessWidget {
               child: Row(children: [
                 Text(aksi!,
                     style: const TextStyle(color: XyTheme.primary, fontWeight: FontWeight.w700, fontSize: 13)),
-                const Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.primary),
+                Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.primary),
               ]),
             ),
           ),
@@ -432,7 +432,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
           gradient: LinearGradient(
             begin: Alignment(-1 + c.value * 3, 0),
             end: Alignment(c.value * 3, 0),
-            colors: const [Color(0xFFF1EAFF), Color(0xFFFBF8FF), Color(0xFFF1EAFF)],
+            colors: [XyTheme.shimmerA, XyTheme.shimmerB, XyTheme.shimmerA],
           ),
         ),
       ),

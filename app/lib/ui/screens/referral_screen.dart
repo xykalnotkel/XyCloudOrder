@@ -242,7 +242,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                           if (galat != null) ...[
                             const SizedBox(height: 10),
                             Row(children: [
-                              const Icon(Icons.error_outline_rounded, size: 16, color: XyTheme.danger),
+                              Icon(Icons.error_outline_rounded, size: 16, color: XyTheme.danger),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(galat!,
@@ -276,7 +276,7 @@ class _ReferralScreenState extends State<ReferralScreen> {
                                 width: 38,
                                 height: 38,
                                 decoration:
-                                    const BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
+                                    BoxDecoration(gradient: XyTheme.gradPrimary, shape: BoxShape.circle),
                                 child: Center(
                                   child: Text(
                                     '${m['nama_diundang'] ?? 'X'}'.characters.first.toUpperCase(),

@@ -22,11 +22,11 @@ class LeaderboardScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF100030), Color(0xFF200050), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: LinearGradient(colors: [XyTheme.bgGelap, XyTheme.bgGelap2, XyTheme.primary], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(children: [
-              const Icon(Icons.emoji_events_rounded, color: Color(0xFFE8C07A), size: 42),
+              Icon(Icons.emoji_events_rounded, color: XyTheme.goldSoft, size: 42),
               const SizedBox(height: 10),
               const Text('Top Spender Bulan Ini', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
               const SizedBox(height: 6),
@@ -42,7 +42,7 @@ class LeaderboardScreen extends StatelessWidget {
               child: XyCard(
                 padding: const EdgeInsets.all(14),
                 child: Row(children: [
-                  Container(width: 36, height: 36, decoration: BoxDecoration(color: i == 0 ? const Color(0xFFE8C07A) : XyTheme.of(context).primarySoft, shape: BoxShape.circle), child: Center(child: Text('${i+1}', style: TextStyle(fontWeight: FontWeight.w700, color: i==0? Colors.black: XyTheme.primary)))),
+                  Container(width: 36, height: 36, decoration: BoxDecoration(color: i == 0 ? XyTheme.goldSoft : XyTheme.of(context).primarySoft, shape: BoxShape.circle), child: Center(child: Text('${i+1}', style: TextStyle(fontWeight: FontWeight.w700, color: i==0? Colors.black: XyTheme.primary)))),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
@@ -55,7 +55,7 @@ class LeaderboardScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text('${m['poin']} poin', style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
                   ])),
-                  const Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.muted),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: XyTheme.muted),
                 ]),
               ),
             );

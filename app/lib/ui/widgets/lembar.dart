@@ -58,7 +58,7 @@ Future<bool> konfirmasi(
               label: tombolYa,
               height: 50,
               gradient: bahaya
-                  ? const LinearGradient(colors: [Color(0xFFE05B5B), Color(0xFFC81E1E)])
+                  ? LinearGradient(colors: [XyTheme.dangerBright, XyTheme.dangerDeep])
                   : XyTheme.gradPrimary,
               glowColor: bahaya ? XyTheme.danger : XyTheme.primary,
               onPressed: () => Navigator.pop(d, true),

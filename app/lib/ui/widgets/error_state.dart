@@ -110,13 +110,13 @@ class BilahOffline extends StatelessWidget {
               color: XyTheme.warning.withOpacity(.12),
               padding: const EdgeInsets.fromLTRB(16, 9, 10, 9),
               child: Row(children: [
-                const Icon(Icons.cloud_off_rounded, size: 16, color: XyTheme.warning),
+                Icon(Icons.cloud_off_rounded, size: 16, color: XyTheme.warning),
                 const SizedBox(width: 9),
                 Expanded(
                   child: Text(
                     keterangan ?? 'Sedang offline, menampilkan data tersimpan',
                     style: const TextStyle(
-                        fontSize: 11.8, fontWeight: FontWeight.w700, color: Color(0xFF8A5A08)),
+                        fontSize: 11.8, fontWeight: FontWeight.w700, color: XyTheme.warnInk),
                   ),
                 ),
                 if (onCoba != null)

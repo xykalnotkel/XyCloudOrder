@@ -45,3 +45,6 @@ Satu sumber kebenaran visual untuk **App Flutter**, **Web** (`api/src/web.html`)
 ## Cek cepat
 - App light: `XyTheme.bg` == web `--bg` == dash `--xy-bg`.
 - Primary sama di tombol isi saldo (app), CTA web, tombol `xy-btn` dash.
+
+## Batch tokenisasi app (lanjutan)
+Screen/widget memakai `XyTheme.*` alih-alih hex mentah. Lihat token baru di `app/lib/core/theme.dart` (goldSoft, lilac, okBright, csRead, …).

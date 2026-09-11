@@ -107,7 +107,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           shape: BoxShape.circle,
                           boxShadow: XyTheme.shadowSm,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, size: 14, color: XyTheme.primary),
+                        child: Icon(Icons.camera_alt_rounded, size: 14, color: XyTheme.primary),
                       ),
                     ),
                   ),
@@ -134,7 +134,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                           borderRadius: BorderRadius.circular(XyRadius.pill),
                         ),
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          const Icon(Icons.workspace_premium_rounded, size: 13, color: Color(0xFFE8C07A)),
+                          Icon(Icons.workspace_premium_rounded, size: 13, color: XyTheme.goldSoft),
                           const SizedBox(width: 5),
                           Text('Member ${u.tier.toUpperCase()}',
                               style: const TextStyle(
@@ -149,7 +149,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                             borderRadius: BorderRadius.circular(XyRadius.pill),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.verified_rounded, size: 13, color: XyTheme.primary),
+                            Icon(Icons.verified_rounded, size: 13, color: XyTheme.primary),
                             const SizedBox(width: 5),
                             Text(u.badge!.toUpperCase(),
                                 style: const TextStyle(
@@ -290,7 +290,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                   );
                   if (yakin && context.mounted) context.read<AppState>().logout();
                 },
-                icon: const Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
+                icon: Icon(Icons.logout_rounded, size: 18, color: XyTheme.danger),
                 label: const Text('Keluar',
                     style: TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700)),
               ),

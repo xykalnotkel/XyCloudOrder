@@ -12,28 +12,28 @@ class TierScreen extends StatelessWidget {
         'nama': 'Bronze',
         'min': 'Rp 0',
         'benefit': ['Akses semua PC', 'Support standar', '1 device'],
-        'color': const Color(0xFF9A6B4A),
+        'color': XyTheme.bronze,
         'icon': Icons.military_tech_outlined,
       },
       {
         'nama': 'Silver',
         'min': 'Rp 500.000',
         'benefit': ['Cashback 2%', 'Prioritas antrian', '2 device', 'Voucher bulanan'],
-        'color': const Color(0xFF9CA3AF),
+        'color': XyTheme.graySoft,
         'icon': Icons.workspace_premium_outlined,
       },
       {
         'nama': 'Gold',
         'min': 'Rp 2.000.000',
         'benefit': ['Cashback 5%', 'Support prioritas 1 jam', '3 device', 'Akses unit premium', 'Badge Gold di forum'],
-        'color': const Color(0xFFE8C07A),
+        'color': XyTheme.goldSoft,
         'icon': Icons.emoji_events_outlined,
       },
       {
         'nama': 'Platinum',
         'min': 'Rp 5.000.000',
         'benefit': ['Cashback 8%', 'Unit prioritas & reserved', '5 device', 'Voucher eksklusif', 'Undangan beta fitur', 'Badge Platinum + glow'],
-        'color': const Color(0xFFA855F7),
+        'color': XyTheme.plum,
         'icon': Icons.diamond_outlined,
       },
     ];
@@ -46,8 +46,8 @@ class TierScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF100030), Color(0xFF200050), Color(0xFF7C3AED), Color(0xFFA855F7)],
+              gradient: LinearGradient(
+                colors: [XyTheme.bgGelap, XyTheme.bgGelap2, XyTheme.primary, XyTheme.plum],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

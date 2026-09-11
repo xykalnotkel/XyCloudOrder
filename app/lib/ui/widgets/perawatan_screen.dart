@@ -55,7 +55,7 @@ class PerawatanScreen extends StatelessWidget {
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.engineering_rounded,
                       size: 60,
-                      color: Color(0xFF7C3AED),
+                      color: XyTheme.primary,
                     ),
                   ),
                 ]),

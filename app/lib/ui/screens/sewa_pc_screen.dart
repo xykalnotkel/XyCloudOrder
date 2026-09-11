@@ -68,7 +68,7 @@ class _SewaPcScreenState extends State<SewaPcScreen> {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Row(children: [
-                const Icon(Icons.bolt_rounded, color: XyTheme.cyan, size: 18),
+                Icon(Icons.bolt_rounded, color: XyTheme.cyan, size: 18),
                 const SizedBox(width: 8),
                  Expanded(
                   child: Text('Stok unit diperbarui otomatis setiap detik dari server XyCloud.',

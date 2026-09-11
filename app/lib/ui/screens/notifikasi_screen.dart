@@ -156,7 +156,7 @@ class _Baris extends StatelessWidget {
                     width: 8,
                     height: 8,
                     margin: const EdgeInsets.only(left: 8, top: 4),
-                    decoration: const BoxDecoration(color: XyTheme.primary, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: XyTheme.primary, shape: BoxShape.circle),
                   ),
               ]),
               if (notif.pesan.isNotEmpty) ...[
