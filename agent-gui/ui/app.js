@@ -1,14 +1,24 @@
 /* XyCloudStore Agen — wizard UI (Tauri withGlobalTauri) */
-const T = window.__TAURI__?.core;
+const CORE = window.__TAURI__?.core;
+const EVENT = window.__TAURI__?.event;
+
 async function panggil(nama, args = {}) {
-  if (!T) throw new Error("Jalankan lewat XyCloudStore-Agent.exe (bukan browser biasa)");
-  return T.invoke(nama, args);
+  if (!CORE) throw new Error("Jalankan lewat XyCloudStore-Agent.exe (bukan browser biasa)");
+  return CORE.invoke(nama, args);
+}
+
+async function dengar(nama, handler) {
+  // Tauri 2: event di window.__TAURI__.event, bukan core
+  if (EVENT?.listen) return EVENT.listen(nama, handler);
+  if (CORE?.listen) return CORE.listen(nama, handler);
+  throw new Error("tauri event API tidak tersedia");
 }
 
 const $ = (id) => document.getElementById(id);
 const logBox = $("log");
 let langkah = 1;
 let engineSiap = false;
+let setupJalan = false;
 
 function tulis(teks, jenis = "") {
   const baris = document.createElement("div");
@@ -16,7 +26,11 @@ function tulis(teks, jenis = "") {
   if (jenis === "err") baris.className = "err-line";
   const t = document.createElement("span");
   t.className = "t";
-  t.textContent = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  t.textContent = new Date().toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
   baris.appendChild(t);
   baris.appendChild(document.createTextNode(String(teks)));
   logBox.appendChild(baris);
@@ -56,6 +70,16 @@ function setLangkah(n) {
   });
 }
 
+function setSetupBusy(on) {
+  setupJalan = on;
+  const b = $("setup");
+  if (b) {
+    b.disabled = on;
+    b.textContent = on ? "Setup berjalan…" : "Pasang & kunci otomatis";
+  }
+  if ($("uji")) $("uji").disabled = on;
+}
+
 async function muatStatus() {
   try {
     const s = await panggil("status");
@@ -65,7 +89,7 @@ async function muatStatus() {
     $("auto").checked = !!s.autostart;
     if (s.user) $("sandi").placeholder = "•••••••• (tersimpan)";
     if (s.versi) $("versi-tag").textContent = `Agen PC Host · v${s.versi}`;
-    perbaruiLencana(!!s.berjalan);
+    if (!setupJalan) perbaruiLencana(!!s.berjalan);
     $("status").innerHTML =
       `Unit     : <span class="${s.kode ? "ok" : "jelek"}">${s.kode || "(belum)"}</span>\n` +
       `Server   : ${s.server || "-"}\n` +
@@ -73,20 +97,16 @@ async function muatStatus() {
       `Agen     : ${s.berjalan ? '<span class="ok">berjalan</span>' : '<span class="jelek">berhenti</span>'} · v${s.versi || "?"}\n` +
       `Autostart: ${s.autostart ? "ya" : "tidak"}`;
 
-    if (s.sunshine) {
-      terapkanHasilSunshine(s.sunshine);
-    }
-    // auto-route
+    if (s.sunshine) terapkanHasilSunshine(s.sunshine, false);
     if (!s.kode) setLangkah(1);
-    else if (!engineSiap && !s.berjalan) setLangkah(langkah === 1 ? 2 : langkah);
+    else if (!engineSiap && !s.berjalan && !setupJalan) setLangkah(langkah === 1 ? 2 : langkah);
   } catch (e) {
     tulis("Gagal ambil status: " + e, "err");
   }
 }
 
-function terapkanHasilSunshine(hasil) {
+function terapkanHasilSunshine(hasil, tulisSiap = true) {
   const status = (hasil && hasil.status) || "-";
-  // siap bisa null (= belum diuji live)
   const siapRaw = hasil && hasil.siap;
   const siap = siapRaw === true;
   const belumUji = siapRaw === null || siapRaw === undefined;
@@ -112,11 +132,10 @@ function terapkanHasilSunshine(hasil) {
     setStat("st-api", status, "jelek");
   }
   $("lanjut-3").disabled = !engineSiap;
-  // izinkan lanjut juga kalau kredensial tersimpan (user bisa uji nanti)
   if (!engineSiap && (belumUji || status === "TERSIMPAN")) {
     $("lanjut-3").disabled = false;
   }
-  if (siap) tulis("Sunshine API siap — boleh jalankan agen.", "ok");
+  if (siap && tulisSiap) tulis("Sunshine API siap — boleh jalankan agen.", "ok");
 }
 
 async function simpanCfg({ lanjut = false } = {}) {
@@ -143,7 +162,6 @@ async function simpanCfg({ lanjut = false } = {}) {
   }
 }
 
-// --- events ---
 $("simpan-lanjut").onclick = () => simpanCfg({ lanjut: true });
 
 $("tempel").onclick = async () => {
@@ -167,15 +185,26 @@ document.querySelectorAll(".step").forEach((s) => {
 });
 
 $("setup").onclick = async () => {
+  if (setupJalan) return;
   try {
-    // simpan dulu bila user isi opsi lanjutan
     await simpanCfg({ lanjut: false });
+    setLangkah(2);
     perbaruiLencana(false, true);
-    tulis("Menjalankan auto-setup Sunshine (install + creds + service)…");
+    setSetupBusy(true);
+    tulis("Menjalankan auto-setup Sunshine (winget → MSI · maks ~3 mnt)…");
+    tulis("Log berikutnya muncul di sini. Jangan tutup jendela.");
     setStat("st-sunshine", "setup…", "warn");
     setStat("st-api", "…", "warn");
+    // Safety: jika event setup-selesai hilang, lepas busy setelah 4 menit
+    window.__setupTimer = setTimeout(() => {
+      if (setupJalan) {
+        setSetupBusy(false);
+        tulis("Setup masih berjalan lama / log event hilang. Cek apakah Sunshine sudah terpasang, lalu Uji koneksi.", "err");
+      }
+    }, 240000);
     await panggil("setup_otomatis");
   } catch (e) {
+    setSetupBusy(false);
     tulis("Gagal setup: " + e, "err");
   }
 };
@@ -223,29 +252,41 @@ $("bersih-log").onclick = () => {
   logBox.innerHTML = "";
 };
 
-if (T) {
-  T.listen("log", (e) => {
-    const msg = String(e.payload ?? "");
-    const jenis = /gagal|error|tolak|tidak/i.test(msg) ? "err" : /siap|berhasil|selesai|API_SIAP|tersimpan|aktif/i.test(msg) ? "ok" : "";
-    tulis(msg, jenis);
-  });
-  T.listen("uji-selesai", (e) => {
-    if (e?.payload) terapkanHasilSunshine(e.payload);
-    muatStatus();
-  });
-  T.listen("setup-selesai", (e) => {
-    if (e?.payload) terapkanHasilSunshine(e.payload);
-    if (e?.payload?.siap) setLangkah(3);
-    muatStatus();
-  });
-} else {
-  tulis("Preview browser — fitur Tauri nonaktif. Pakai XyCloudStore-Agent.exe di Windows.", "err");
-  setStat("st-sunshine", "preview", "warn");
-  setStat("st-service", "—", "");
-  setStat("st-api", "—", "");
-}
+(async function initEvents() {
+  if (!CORE) {
+    tulis("Preview browser — fitur Tauri nonaktif. Pakai XyCloudStore-Agent.exe di Windows.", "err");
+    setStat("st-sunshine", "preview", "warn");
+    return;
+  }
+  try {
+    await dengar("log", (e) => {
+      const msg = String(e?.payload ?? "");
+      const jenis = /gagal|error|tolak|timeout|GAGAL/i.test(msg)
+        ? "err"
+        : /siap|berhasil|selesai|API_SIAP|tersimpan|aktif|SETUP OK|OK —/i.test(msg)
+          ? "ok"
+          : "";
+      tulis(msg, jenis);
+    });
+    await dengar("uji-selesai", (e) => {
+      if (e?.payload) terapkanHasilSunshine(e.payload);
+      muatStatus();
+    });
+    await dengar("setup-selesai", (e) => {
+      if (window.__setupTimer) clearTimeout(window.__setupTimer);
+      setSetupBusy(false);
+      if (e?.payload) terapkanHasilSunshine(e.payload);
+      if (e?.payload?.siap) setLangkah(3);
+      else setLangkah(2);
+      muatStatus();
+    });
+    tulis("Siap. Tempel kode unit → Pasang & kunci otomatis.", "ok");
+  } catch (e) {
+    tulis("Gagal pasang listener log: " + e + " — log setup mungkin tidak tampil real-time.", "err");
+  }
+  muatStatus();
+})();
 
-muatStatus();
 setInterval(() => {
-  if (T) muatStatus().catch(() => {});
+  if (CORE && !setupJalan) muatStatus().catch(() => {});
 }, 15000);

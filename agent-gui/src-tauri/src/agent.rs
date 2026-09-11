@@ -12,8 +12,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-pub const VERSI: &str = "1.3.1-rust";
+pub const VERSI: &str = "1.3.2-rust";
 const SUNSHINE_BAWAAN: &str = "https://127.0.0.1:47990";
+/// MSI resmi LizardByte (fallback bila winget hang / tidak ada).
+const SUNSHINE_MSI_URL: &str =
+    "https://github.com/LizardByte/Sunshine/releases/latest/download/Sunshine-Windows-AMD64-installer.msi";
+const SUNSHINE_EXE_URL: &str =
+    "https://github.com/LizardByte/Sunshine/releases/latest/download/Sunshine-Windows-AMD64-installer.exe";
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Konfig {
@@ -190,35 +195,33 @@ fn acak_sandi(n: usize) -> String {
 
 fn set_creds_sunshine(exe: &PathBuf, user: &str, sandi: &str, log: &Logger) -> bool {
     log(&format!("Menyetel kredensial Sunshine otomatis (user={user}) lewat --creds …"));
-    // Hentikan service sebentar agar file state bisa ditulis.
-    let _ = std::process::Command::new("powershell")
-        .args([
+    // Hentikan service sebentar agar file state bisa ditulis (timeout 15s).
+    let _ = jalankan_timeout(
+        "powershell",
+        &[
             "-NoProfile",
             "-Command",
             "Stop-Service -Name 'SunshineService' -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1",
-        ])
-        .output();
+        ],
+        15,
+        log,
+    );
 
-    let out = std::process::Command::new(exe)
-        .args(["--creds", user, sandi])
-        .output();
-    match out {
-        Ok(o) => {
-            let msg = format!(
-                "{}{}",
-                String::from_utf8_lossy(&o.stdout),
-                String::from_utf8_lossy(&o.stderr)
-            );
+    let exe_s = exe.to_string_lossy().to_string();
+    match jalankan_timeout(
+        &exe_s,
+        &["--creds", user, sandi],
+        30,
+        log,
+    ) {
+        Ok((code, msg)) => {
             for baris in msg.lines().filter(|x| !x.trim().is_empty()).take(6) {
                 log(baris);
             }
-            if o.status.success() {
+            if code == 0 {
                 log("Kredensial Sunshine diset tanpa buka web UI.");
             } else {
-                log(&format!(
-                    "sunshine --creds selesai dengan kode {:?}. Mencoba lanjut.",
-                    o.status.code()
-                ));
+                log(&format!("sunshine --creds selesai dengan kode {code}. Mencoba lanjut."));
             }
         }
         Err(e) => {
@@ -227,14 +230,16 @@ fn set_creds_sunshine(exe: &PathBuf, user: &str, sandi: &str, log: &Logger) -> b
         }
     }
 
-    // Nyalakan lagi service / proses.
-    let _ = std::process::Command::new("powershell")
-        .args([
+    let _ = jalankan_timeout(
+        "powershell",
+        &[
             "-NoProfile",
             "-Command",
             "Start-Service -Name 'SunshineService' -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2",
-        ])
-        .output();
+        ],
+        20,
+        log,
+    );
     true
 }
 
@@ -396,40 +401,236 @@ pub fn jalankan_loop(k: Konfig, log: Logger, stop: Arc<AtomicBool>) {
     log("Agen dihentikan.");
 }
 
+/// Jalankan perintah dengan batas waktu (detik). Kill bila lewat.
+fn jalankan_timeout(program: &str, args: &[&str], detik: u64, log: &Logger) -> Result<(i32, String), String> {
+    use std::io::Read;
+    log(&format!("> {program} {}", args.join(" ")));
+    let mut child = std::process::Command::new(program)
+        .args(args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("gagal spawn {program}: {e}"))?;
+    let mulai = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let mut stdout = String::new();
+                let mut stderr = String::new();
+                if let Some(mut o) = child.stdout.take() {
+                    let _ = o.read_to_string(&mut stdout);
+                }
+                if let Some(mut e) = child.stderr.take() {
+                    let _ = e.read_to_string(&mut stderr);
+                }
+                return Ok((status.code().unwrap_or(-1), stdout + &stderr));
+            }
+            Ok(None) => {
+                if mulai.elapsed() >= Duration::from_secs(detik) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    return Err(format!("{program} timeout setelah {detik}s — dibatalkan"));
+                }
+                std::thread::sleep(Duration::from_millis(400));
+            }
+            Err(e) => return Err(format!("gagal pantau {program}: {e}")),
+        }
+    }
+}
+
+fn unduh_berkas(url: &str, tujuan: &PathBuf, log: &Logger) -> Result<(), String> {
+    log(&format!("Mengunduh {url} …"));
+    let c = reqwest::blocking::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .timeout(Duration::from_secs(180))
+        .user_agent(format!("XyAgent/{VERSI}"))
+        .redirect(reqwest::redirect::Policy::limited(8))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let mut resp = c.get(url).send().map_err(|e| format!("unduh gagal: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(format!("HTTP {} saat unduh installer", resp.status()));
+    }
+    if let Some(parent) = tujuan.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let mut f = std::fs::File::create(tujuan).map_err(|e| e.to_string())?;
+    let n = resp
+        .copy_to(&mut f)
+        .map_err(|e| format!("tulis berkas gagal: {e}"))?;
+    log(&format!("Installer tersimpan ({n} byte) → {}", tujuan.display()));
+    Ok(())
+}
+
+fn pasang_sunshine_winget(log: &Logger) -> bool {
+    log("Mencoba winget install LizardByte.Sunshine (maks 90 dtk)…");
+    match jalankan_timeout(
+        "winget",
+        &[
+            "install",
+            "--id",
+            "LizardByte.Sunshine",
+            "-e",
+            "--silent",
+            "--disable-interactivity",
+            "--accept-source-agreements",
+            "--accept-package-agreements",
+        ],
+        90,
+        log,
+    ) {
+        Ok((code, teks)) => {
+            for baris in teks.lines().filter(|x| !x.trim().is_empty()).take(12) {
+                log(baris);
+            }
+            log(&format!("winget selesai (kode {code})."));
+            // 0 = ok, -1978335189 often already installed
+            code == 0 || code == -1978335189 || cari_sunshine_exe().is_some()
+        }
+        Err(e) => {
+            log(&format!("winget: {e}"));
+            false
+        }
+    }
+}
+
+fn pasang_sunshine_msi(log: &Logger) -> bool {
+    let tmp = std::env::temp_dir().join("xycloud-sunshine-setup");
+    let _ = std::fs::create_dir_all(&tmp);
+    // Coba MSI dulu, lalu EXE NSIS
+    let targets = [
+        (SUNSHINE_MSI_URL, tmp.join("Sunshine-setup.msi"), true),
+        (SUNSHINE_EXE_URL, tmp.join("Sunshine-setup.exe"), false),
+    ];
+    for (url, path, is_msi) in targets {
+        if let Err(e) = unduh_berkas(url, &path, log) {
+            log(&format!("Gagal unduh: {e}"));
+            continue;
+        }
+        let ok = if is_msi {
+            log("Memasang MSI diam-diam (msiexec /qn)…");
+            let msi = path.to_string_lossy().to_string();
+            match jalankan_timeout(
+                "msiexec",
+                &["/i", &msi, "/qn", "/norestart"],
+                180,
+                log,
+            ) {
+                Ok((code, teks)) => {
+                    for baris in teks.lines().filter(|x| !x.trim().is_empty()).take(8) {
+                        log(baris);
+                    }
+                    // 0 success, 3010 reboot required but installed
+                    code == 0 || code == 3010
+                }
+                Err(e) => {
+                    log(&format!("msiexec: {e}"));
+                    false
+                }
+            }
+        } else {
+            log("Memasang EXE silent (/S)…");
+            let path_s = path.to_string_lossy().to_string();
+            match jalankan_timeout(&path_s, &["/S"], 180, log) {
+                Ok((code, teks)) => {
+                    for baris in teks.lines().filter(|x| !x.trim().is_empty()).take(8) {
+                        log(baris);
+                    }
+                    code == 0
+                }
+                Err(e) => {
+                    log(&format!("installer exe: {e}"));
+                    false
+                }
+            }
+        };
+        if ok || cari_sunshine_exe().is_some() {
+            return true;
+        }
+    }
+    false
+}
+
+fn pastikan_service_sunshine(log: &Logger) {
+    log("Memastikan layanan SunshineService…");
+    // Jangan -Verb RunAs -Wait (bisa macet di UAC tanpa log). Coba start dulu.
+    let _ = jalankan_timeout(
+        "powershell",
+        &[
+            "-NoProfile",
+            "-Command",
+            "Start-Service -Name 'SunshineService' -ErrorAction SilentlyContinue; \
+             $s=(Get-Service SunshineService -EA SilentlyContinue).Status; \
+             if($s){Write-Output \"status=$s\"}else{Write-Output 'status=tidak-ada'}",
+        ],
+        20,
+        log,
+    );
+    // Kalau belum ada service, coba install-service.bat tanpa elevasi hang
+    if service_sunshine().is_none() {
+        let bat = PathBuf::from(r"C:\Program Files\Sunshine\install-service.bat");
+        if bat.is_file() {
+            log("Menjalankan install-service.bat (tanpa tunggu UAC)…");
+            let bat_s = bat.to_string_lossy().to_string();
+            let _ = std::process::Command::new("cmd")
+                .args(["/C", &bat_s])
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+            std::thread::sleep(Duration::from_secs(3));
+            let _ = std::process::Command::new("powershell")
+                .args([
+                    "-NoProfile",
+                    "-Command",
+                    "Start-Service -Name 'SunshineService' -ErrorAction SilentlyContinue",
+                ])
+                .output();
+        }
+    }
+    // Fallback: jalankan sunshine.exe langsung jika service belum ada
+    if service_sunshine().is_none() {
+        if let Some(exe) = cari_sunshine_exe() {
+            log("Service belum ada — mencoba jalankan sunshine.exe di background…");
+            let _ = std::process::Command::new(&exe)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn();
+            std::thread::sleep(Duration::from_secs(3));
+        }
+    }
+    log(&format!("Service: {}", status_service_sunshine()));
+}
+
 /// Hasil setup: (konfig yang mungkin diperbarui + diagnosa Sunshine).
 pub fn setup_otomatis(k: &Konfig, log: Logger) -> (Konfig, Value) {
     let mut k = k.clone();
+    log(&format!("=== Auto-setup Sunshine · Agen {VERSI} ==="));
+    log("Langkah 1/4: deteksi engine…");
 
     // 1) Pastikan engine terpasang
     let sudah_exe = cari_sunshine_exe().is_some();
     let sudah_svc = service_sunshine().is_some();
     if sudah_exe || sudah_svc {
-        log("Sunshine (engine streaming) terdeteksi di PC ini.");
-    } else {
-        log("Sunshine belum terpasang — mengunduh & memasang otomatis via winget…");
-        match std::process::Command::new("winget")
-            .args([
-                "install",
-                "--id",
-                "LizardByte.Sunshine",
-                "-e",
-                "--silent",
-                "--accept-source-agreements",
-                "--accept-package-agreements",
-            ])
-            .output()
-        {
-            Ok(o) => {
-                let pesan = String::from_utf8_lossy(&o.stdout).to_string()
-                    + &String::from_utf8_lossy(&o.stderr);
-                for baris in pesan.lines().filter(|x| !x.trim().is_empty()).take(10) {
-                    log(baris);
-                }
-            }
-            Err(e) => log(&format!("Gagal menjalankan winget: {e}")),
+        log("Sunshine sudah terdeteksi di PC ini.");
+        if let Some(p) = cari_sunshine_exe() {
+            log(&format!("Path: {}", p.display()));
         }
-        // Tunggu installer menulis file.
-        std::thread::sleep(Duration::from_secs(4));
+    } else {
+        log("Sunshine belum ada — pasang otomatis (winget → MSI GitHub)…");
+        let mut ok = pasang_sunshine_winget(&log);
+        if !ok && cari_sunshine_exe().is_none() {
+            log("Winget gagal/hang — fallback unduh installer resmi GitHub…");
+            ok = pasang_sunshine_msi(&log);
+        }
+        if !ok && cari_sunshine_exe().is_none() {
+            log("GAGAL pasang otomatis. Opsi manual:");
+            log("  1) winget install --id LizardByte.Sunshine -e");
+            log("  2) https://github.com/LizardByte/Sunshine/releases/latest");
+            log("  3) Jalankan Agent sebagai Administrator lalu ulangi setup.");
+            let cek = periksa_sunshine(&k);
+            return (k, cek);
+        }
+        std::thread::sleep(Duration::from_secs(3));
     }
 
     let exe = match cari_sunshine_exe() {
@@ -438,14 +639,14 @@ pub fn setup_otomatis(k: &Konfig, log: Logger) -> (Konfig, Value) {
             p
         }
         None => {
-            log("Sunshine.exe belum ketemu setelah setup. Pasang manual lalu ulangi.");
+            log("Sunshine.exe masih belum ketemu setelah install.");
             let cek = periksa_sunshine(&k);
             return (k, cek);
         }
     };
 
-    // 2) Kredensial: pakai yang ada, atau auto-generate + sunshine --creds
-    //    → tidak perlu buka https://127.0.0.1:47990 / login manual.
+    // 2) Kredensial
+    log("Langkah 2/4: kredensial API lokal…");
     let perlu_set_creds = k.user.is_empty() || k.sandi.is_empty();
     if perlu_set_creds {
         if k.user.is_empty() {
@@ -454,7 +655,7 @@ pub fn setup_otomatis(k: &Konfig, log: Logger) -> (Konfig, Value) {
         if k.sandi.is_empty() {
             k.sandi = acak_sandi(18);
         }
-        log("Membuat kredensial lokal otomatis (hanya untuk API 127.0.0.1).");
+        log("Membuat user/sandi otomatis (hanya 127.0.0.1)…");
         let _ = set_creds_sunshine(&exe, &k.user, &k.sandi, &log);
         if let Err(e) = simpan_konfig(&k) {
             log(&format!("Gagal simpan konfig setelah creds: {e}"));
@@ -462,33 +663,27 @@ pub fn setup_otomatis(k: &Konfig, log: Logger) -> (Konfig, Value) {
             log("Kredensial tersimpan di %APPDATA%\\XyCloudStore\\Agent\\config.json");
         }
     } else {
-        // Pastikan state cocok dengan yang tersimpan (reset aman bila user ganti sandi).
-        log("Memakai kredensial tersimpan — menyelaraskan lewat --creds …");
+        log("Menyelaraskan kredensial tersimpan lewat --creds …");
         let _ = set_creds_sunshine(&exe, &k.user, &k.sandi, &log);
     }
 
-    // 3) Pastikan service jalan
-    let _ = std::process::Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-Command",
-            "if (-not (Get-Service SunshineService -ErrorAction SilentlyContinue)) { \
-               if (Test-Path 'C:\\Program Files\\Sunshine\\install-service.bat') { \
-                 Start-Process -FilePath 'C:\\Program Files\\Sunshine\\install-service.bat' -Verb RunAs -Wait -ErrorAction SilentlyContinue \
-               } \
-             }; \
-             Start-Service -Name 'SunshineService' -ErrorAction SilentlyContinue; \
-             Start-Sleep -Seconds 2",
-        ])
-        .output();
+    // 3) Service
+    log("Langkah 3/4: layanan…");
+    pastikan_service_sunshine(&log);
 
-    // 4) Tunggu API siap
-    log("Menunggu API Sunshine merespons…");
-    let cek = tunggu_api_siap(&k, &log, 40);
+    // 4) Tunggu API
+    log("Langkah 4/4: tunggu API 47990 (maks 45 dtk)…");
+    let cek = tunggu_api_siap(&k, &log, 45);
     if cek.get("siap").and_then(|x| x.as_bool()).unwrap_or(false) {
-        log("Setup selesai. Tidak perlu login web UI Sunshine secara manual.");
+        log("SETUP OK — Sunshine siap. Tidak perlu login web UI manual.");
     } else {
-        log("Setup selesai sebagian. Coba 'Uji koneksi' atau jalankan Agent sebagai Administrator.");
+        let pesan = cek
+            .get("pesan")
+            .and_then(|x| x.as_str())
+            .unwrap_or("API belum merespons");
+        log(&format!("SETUP SEBAGIAN — {pesan}"));
+        log("Tips: jalankan Agent sebagai Admin, atau buka https://127.0.0.1:47990 sekali.");
+        log("Lalu klik 'Uji koneksi' / ulangi Pasang & kunci.");
     }
     (k, cek)
 }
