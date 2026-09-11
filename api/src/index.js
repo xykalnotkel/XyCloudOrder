@@ -3541,6 +3541,10 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         const durasi = Number.isFinite(Number(b.durasi)) ? Math.max(0, Number(b.durasi)) : null;
         if(!teks.trim()&&!gambar&&!audio)return err('Pesan kosong',400,env);
         if(teks.length>5000)return err('Pesan maksimal 5.000 karakter',400,env);
+        if (teks.trim()) {
+          const cek = periksaTeks(teks, { maksUrl: 3 });
+          if (!cek.ok) return err(cek.alasan, 400, env);
+        }
         if(tipe==='audio'&&(!audio||!durasi||durasi>600))return err('Pesan suara tidak valid',400,env);
         const reply_to = String(b.reply_to ?? '').slice(0,64) || null;
         const reply_teks = String(b.reply_teks ?? '').slice(0,300) || null;
