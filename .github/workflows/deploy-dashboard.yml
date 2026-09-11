@@ -58,9 +58,13 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # packageManager npm + npx yes menghindari gagal "npx canceled due to missing packages"
+          packageManager: npm
           command: pages deploy dashboard/out --project-name=xycloud-dashboard --commit-dirty=true
 
   # Set repo variable ENABLE_VERCEL=true + secrets VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+  # Catatan: rootDirectory project Vercel = "dashboard", jadi CLI harus dijalankan
+  # dari root monorepo (bukan working-directory: dashboard) supaya path tidak jadi dashboard/dashboard.
   deploy-vercel:
     name: Vercel production
     needs: build
@@ -71,8 +75,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Deploy
-        working-directory: dashboard
+      - name: Deploy from monorepo root
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
