@@ -1,7 +1,7 @@
 # Audit duplikasi & kode mati — XyCloudStore
 
 Tanggal: 11 September 2026 · Lingkup: `app/` (Flutter), `api/` (Worker), `dashboard/` (Next.js)
-Status: **gelombang 1 selesai & terkirim** (`9ffc7ab`), gelombang 2 masih tersisa (daftar di bawah).
+Status: **gelombang 1** `9ffc7ab` · **migrasi dash** `47f8804` · **konsistensi platform** `bf5eed0` (lokal, menunggu push).
 
 ## Ringkasan
 
@@ -62,3 +62,6 @@ Efek samping positif: di `profil_screen.dart` ikon sebelumnya memakai `primarySo
 - `flutter analyze lib` → **0 error, 0 warning**.
 - `flutter pub get` + `flutter build bundle --release` lolos lokal (Flutter 3.27.4).
 - CI: workflow `Build Android APK` untuk commit `9ffc7ab` menjalankan Analyze → Test → build APK; dashboard deploy dijalankan workflow terpisah.
+
+
+Lihat juga: `docs/migrasi-dashboard.md`, `docs/konsistensi-platform.md`.
