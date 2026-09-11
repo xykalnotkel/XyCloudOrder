@@ -128,8 +128,14 @@ public final class NativeStreaming {
                     PairingManager.PairState state;
                     try {
                         state=pm.pair(info,pin);
-                    } catch (java.security.NoSuchAlgorithmException nsa) {
-                        // BC Android vs app — reset identity + provider, minta user coba lagi dengan PIN baru
+                    } catch (Exception nsa) {
+                        // pair() membungkus NoSuchAlgorithmException RSA/BC sebagai RuntimeException
+                        String why=String.valueOf(nsa.getMessage());
+                        Throwable c=nsa.getCause();
+                        if(c!=null&&c.getMessage()!=null) why+=" "+c.getMessage();
+                        boolean cryptoFail=why.contains("NoSuchAlgorithm")||why.contains("provider BC")||why.contains("RSA");
+                        if(!cryptoFail) throw nsa;
+                        // BC Android vs app — reset identity + provider, PIN baru
                         XyCrypto.ensure();
                         activity.deleteFile("uniqueid");
                         activity.deleteFile("client.crt");
