@@ -3,6 +3,7 @@ import { SecurityError, securityConfig, securityHash, securitySlot, auditSecurit
 import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa } from './sewa.js';
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
+import { periksaTeks, periksaGabungan } from './moderasi.js';
 /**
  * ============================================================
  *  XyCloud API — Cloudflare Worker
@@ -1928,7 +1929,21 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json({ id, kunci, peran: b.peran || 'cs' }, 201, env);
         }
 
-        if (a.startsWith('peran/') && req.method === 'DELETE') {
+        
+        // ---- putar kunci admin tambahan (bukan secret env ADMIN_KEY) ----
+        if (a.startsWith('peran/') && a.endsWith('/rotate') && req.method === 'POST') {
+          if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh memutar kunci admin', 403, env);
+          const idK = a.split('/')[1];
+          const lama = await env.DB.prepare('SELECT * FROM admin_kunci WHERE id = ?').bind(idK).first();
+          if (!lama) return err('Kunci tidak ditemukan', 404, env);
+          const kunciBaru = `xya_${crypto.randomUUID().replace(/-/g, '')}`;
+          await env.DB.prepare('UPDATE admin_kunci SET kunci = ?, terakhir = ? WHERE id = ?')
+            .bind(kunciBaru, new Date().toISOString(), idK).run();
+          ctx.waitUntil(catatAdmin(env, admin, 'rotate kunci admin', idK));
+          return json({ ok: true, id: idK, nama: lama.nama, peran: lama.peran, kunci: kunciBaru }, 200, env);
+        }
+
+if (a.startsWith('peran/') && req.method === 'DELETE') {
           if (admin.peran !== 'pemilik') return err('Hanya pemilik yang boleh menghapus admin', 403, env);
           const idA = a.split('/')[1];
           await env.DB.prepare('DELETE FROM admin_kunci WHERE id = ?').bind(idA).run();
@@ -2979,6 +2994,10 @@ ${halaman.map(([u, p2, f]) => `  <url>
         if (judul.length < 5) return err('Judul minimal 5 karakter', 400, env);
         if (isi.length < 10) return err('Isi diskusi minimal 10 karakter', 400, env);
         if ((isi.match(/https?:\/\//g) || []).length > 3) return err('Terlalu banyak link, maks 3.', 400, env);
+        {
+          const cek = periksaGabungan(judul, isi);
+          if (!cek.ok) return err(cek.alasan, 400, env);
+        }
 
         let gambar = null;
         if (b.gambar) {
@@ -3010,6 +3029,10 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const balasKe = b.balas_ke ? String(b.balas_ke) : null;
         if (!isi && !b.stiker) return err('Tulis pesan atau pilih stiker terlebih dahulu.', 400, env);
         if (isi.length > 4000) return err('Komentar maksimal 4.000 karakter.', 400, env);
+        if (isi) {
+          const cek = periksaTeks(isi, { maksUrl: 2 });
+          if (!cek.ok) return err(cek.alasan, 400, env);
+        }
         const post = await env.DB.prepare('SELECT id FROM forum_post WHERE id = ?').bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
         if (balasKe && !(await env.DB.prepare('SELECT id FROM forum_balasan WHERE id = ? AND post_id = ?').bind(balasKe, id).first())) {

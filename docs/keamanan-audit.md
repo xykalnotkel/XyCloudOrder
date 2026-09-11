@@ -12,7 +12,8 @@
 > | Atomic topup / saldo / claim kredensial | ✅ (v3.0+) |
 > | Dashboard Next.js shell + aksi admin | ✅ migrasi 2026-09-11 |
 > | Admin key httpOnly cookie (Next proxy) | ⏳ ditunda (static export Pages) |
-> | Filter kata kasar otomatis | ⏳ backlog |
+> | Filter kata kasar otomatis | ✅ `api/src/moderasi.js` (forum post/balas) |
+> | Admin key rotate (kunci tambahan) | ✅ `POST /api/admin/peran/:id/rotate` |
 > | Admin key rotate endpoint | ⏳ backlog |
 >
 > Detail historis checklist tetap di bawah untuk jejak audit.

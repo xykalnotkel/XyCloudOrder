@@ -109,7 +109,7 @@ class _Gumpal {
 
 /// Dot glow kecil untuk aksen.
 class XyGlowDot extends StatelessWidget {
-  const XyGlowDot({super.key, this.size = 6, this.color = XyTheme.lavender});
+  XyGlowDot({super.key, this.size = 6, this.color = XyTheme.lavender});
   final double size;
   final Color color;
   @override

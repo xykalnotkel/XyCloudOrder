@@ -150,7 +150,7 @@ class _PressableState extends State<Pressable> {
 // ============================================================
 
 class GradientButton extends StatefulWidget {
-  const GradientButton({
+  GradientButton({
     super.key,
     required this.label,
     this.onPressed,
@@ -262,7 +262,7 @@ class _GradientButtonState extends State<GradientButton> {
 // ============================================================
 
 class Pill extends StatelessWidget {
-  const Pill(this.teks, {super.key, this.warna = XyTheme.primary, this.icon, this.solid = false});
+  Pill(this.Pill, {super.key, this.warna = XyTheme.primary, this.icon, this.solid = false});
   final String teks;
   final Color warna;
   final IconData? icon;
@@ -655,7 +655,7 @@ class AnimatedRupiah extends StatelessWidget {
 
 /// Ring progres melingkar untuk provisioning.
 class ProgressRing extends StatelessWidget {
-  const ProgressRing({super.key, required this.value, this.size = 74, this.color = XyTheme.primary, this.label});
+  ProgressRing({super.key, required this.value, this.size = 74, this.color = XyTheme.primary, this.label});
   final double value;
   final double size;
   final Color color;

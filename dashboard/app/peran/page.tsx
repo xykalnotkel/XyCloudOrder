@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
-import { Copy, KeyRound, Plus, ShieldUser, Trash2, UserPlus } from "lucide-react";
+import { Copy, KeyRound, Plus, RefreshCw, ShieldUser, Trash2, UserPlus } from "lucide-react";
 import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
 
 export default function PeranPage() {
@@ -37,6 +37,16 @@ export default function PeranPage() {
     if (!confirm(`Hapus admin key ${kunci.slice(0, 10)}…?`)) return;
     try {
       await adminFetch("/api/admin/peran/" + id, { method: "DELETE" });
+      await muat();
+    } catch (e: any) { setErr(e.message); }
+  }
+
+  async function putar(id: string, nama: string) {
+    if (!confirm(`Putar kunci untuk "${nama}"? Kunci lama langsung mati.`)) return;
+    setErr(""); setBaru(null);
+    try {
+      const hasil = await adminFetch(`/api/admin/peran/${id}/rotate`, { method: "POST", body: {} });
+      if (hasil?.kunci) setBaru({ kunci: hasil.kunci, peran: hasil.peran || "" });
       await muat();
     } catch (e: any) { setErr(e.message); }
   }
@@ -97,8 +107,9 @@ export default function PeranPage() {
                   <div className="mt-3 flex items-center gap-2 p-2 rounded-xl bg-[#F5F3FF] border border-[#E9E3F5]">
                     <KeyRound size={13} className="text-[#7C3AED] shrink-0" />
                     <code className="flex-1 text-[11px] font-mono text-[#1E1B2E] truncate">{a.kunci}</code>
-                    <button onClick={() => salin(a.kunci)} className="p-1.5 rounded-lg bg-white border border-[#E9E3F5] hover:border-[#C4B5FD]"><Copy size={12} className="text-[#7C3AED]" /></button>
-                    <button onClick={() => hapus(a.id, a.kunci)} className="p-1.5 rounded-lg bg-white border border-[#E9E3F5] hover:border-rose-300"><Trash2 size={12} className="text-rose-500" /></button>
+                    <button onClick={() => salin(a.kunci)} className="p-1.5 rounded-lg bg-white border border-[#E9E3F5] hover:border-[#C4B5FD]" title="Salin"><Copy size={12} className="text-[#7C3AED]" /></button>
+                    <button onClick={() => putar(a.id, a.nama)} className="p-1.5 rounded-lg bg-white border border-[#E9E3F5] hover:border-[#C4B5FD]" title="Putar kunci"><RefreshCw size={12} className="text-[#7C3AED]" /></button>
+                    <button onClick={() => hapus(a.id, a.kunci)} className="p-1.5 rounded-lg bg-white border border-[#E9E3F5] hover:border-rose-300" title="Hapus"><Trash2 size={12} className="text-rose-500" /></button>
                   </div>
                 </div>
               ))}
