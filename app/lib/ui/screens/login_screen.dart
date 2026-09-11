@@ -221,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
 
                     if (daftar) ...[
-                      const _Label('Nama Lengkap'),
+                      const XyLabel('Nama Lengkap'),
                       FadeInUp(
                         delay: const Duration(milliseconds: 180),
                         child: TextFormField(
@@ -235,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const _Label('Nomor WhatsApp'),
+                      const XyLabel('Nomor WhatsApp'),
                       FadeInUp(
                         delay: const Duration(milliseconds: 200),
                         child: TextFormField(
@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 18),
                     ],
 
-                    const _Label('Email'),
+                    const XyLabel('Email'),
                     FadeInUp(
                       delay: const Duration(milliseconds: 220),
                       child: TextFormField(
@@ -272,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 18),
-                    const _Label('Password'),
+                    const XyLabel('Password'),
                     FadeInUp(
                       delay: const Duration(milliseconds: 280),
                       child: TextFormField(
@@ -408,15 +408,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-class _Label extends StatelessWidget {
-  const _Label(this.teks);
-  final String teks;
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 9, left: 2),
-        child: Text(teks, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, letterSpacing: -.1)),
-      );
-}
 
 class _SosialBtn extends StatelessWidget {
   const _SosialBtn({required this.logo, required this.label, required this.onTap});

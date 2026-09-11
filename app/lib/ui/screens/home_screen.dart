@@ -497,55 +497,6 @@ class _NirsentuhPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
-/// Garis halus diagonal supaya kartu terasa seperti kartu member.
-class _GarisKartu extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cat = Paint()
-      ..color = Colors.white.withOpacity(.05)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke;
-    for (var x = -size.height; x < size.width; x += 26) {
-      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), cat);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-class _MiniBtn extends StatelessWidget {
-  const _MiniBtn({required this.icon, required this.label, required this.onTap, this.utama = false});
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool utama;
-
-  @override
-  Widget build(BuildContext context) {
-    return Pressable(
-      onTap: onTap,
-      child: Container(
-        height: 44,
-        decoration: BoxDecoration(
-          gradient: utama ? XyTheme.gradPrimary : null,
-          color: utama ? null : Colors.white.withOpacity(.10),
-          borderRadius: BorderRadius.circular(XyRadius.sm),
-          border: utama ? null : Border.all(color: Colors.white.withOpacity(.14)),
-        ),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: Colors.white, size: 17),
-          const SizedBox(width: 7),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5)),
-        ]),
-      ),
-    );
-  }
-}
-
-// ------------------------------------------------------------------
-// v3.3c: expanded quick menu — 8 items (2 rows) + jelajahi section
-// No emoji, Material icons, Plus Jakarta Sans consistent
 class _MenuCepat extends StatelessWidget {
   const _MenuCepat();
 

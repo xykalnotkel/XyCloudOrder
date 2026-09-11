@@ -57,7 +57,6 @@ class SvgPathMini {
         if (cmd == 'M') cmd = 'L';
         if (cmd == 'm') cmd = 'l';
       }
-      if (cmd == null) break;
 
       final rel = cmd.toLowerCase() == cmd;
       final key = cmd.toUpperCase();

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../core/motion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme.dart';
 import '../../data/realtime_service.dart';
@@ -396,28 +397,6 @@ class GradientThumb extends StatelessWidget {
   );
 }
 
-class _MeshPainter extends CustomPainter {
-  _MeshPainter(this.hue);
-  final double hue;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()..color = Colors.white.withOpacity(.10);
-    canvas.drawCircle(Offset(size.width * .82, size.height * .18), size.shortestSide * .42, p);
-    canvas.drawCircle(Offset(size.width * .12, size.height * .92), size.shortestSide * .34,
-        Paint()..color = Colors.black.withOpacity(.07));
-    final path = Path()
-      ..moveTo(0, size.height * .74)
-      ..quadraticBezierTo(size.width * .4, size.height * .5, size.width, size.height * .88)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(path, Paint()..color = Colors.white.withOpacity(.06));
-  }
-
-  @override
-  bool shouldRepaint(covariant _MeshPainter old) => old.hue != hue;
-}
 
 // ============================================================
 //  Skeleton / shimmer
@@ -730,4 +709,79 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter old) => old.v != v;
+}
+
+/// ------------------------------------------------------------
+///  XyBarisMenu — baris menu berkartu (ikon bulat + judul + sub).
+/// ------------------------------------------------------------
+///  Sebelumnya disalin tiga kali sebagai `_Baris`/`_Menu` di berkas
+///  pengaturan, tentang, dan profil dengan ukuran teks yang berbeda-beda.
+///  Sekarang satu widget supaya jarak, ukuran ikon, dan tipografinya sama.
+class XyBarisMenu extends StatelessWidget {
+  const XyBarisMenu({
+    super.key,
+    required this.ikon,
+    required this.judul,
+    required this.sub,
+    this.onTap,
+    this.tujuan,
+    this.ikonWarna,
+  }) : assert(onTap != null || tujuan != null, 'Isi onTap atau tujuan.');
+
+  final IconData ikon;
+  final String judul;
+  final String sub;
+  final VoidCallback? onTap;
+  final Widget? tujuan;
+  final Color? ikonWarna;
+
+  @override
+  Widget build(BuildContext context) {
+    final warna = ikonWarna ?? XyTheme.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: XyCard(
+        padding: const EdgeInsets.all(15),
+        onTap: onTap ?? () => Navigator.push(context, xyRoute(tujuan!)),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: warna.withOpacity(.11),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(ikon, size: 20, color: warna),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 3),
+              Text(sub,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
+        ]),
+      ),
+    );
+  }
+}
+
+/// ------------------------------------------------------------
+///  XyLabel — judul kecil di atas bidang input atau kelompok.
+/// ------------------------------------------------------------
+class XyLabel extends StatelessWidget {
+  const XyLabel(this.teks, {super.key});
+  final String teks;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 9, left: 2),
+        child: Text(teks,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, letterSpacing: -.1)),
+      );
 }

@@ -181,79 +181,79 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // supaya selalu terlihat dan cepat dijangkau dari mana pun.
 
               const SectionHeader('Akun'),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',
                 sub: 'Nama, nomor WhatsApp, dan foto',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.UbahProfilScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.lock_outline_rounded,
                 judul: 'Keamanan',
                 sub: 'Ganti password dan info sesi',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.KeamananScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.account_balance_wallet_outlined,
                 judul: 'Dompet dan Riwayat',
                 sub: 'Saldo ${rupiah(u.saldo)}',
                 onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.card_giftcard_rounded,
                 judul: 'Undang Teman',
                 sub: 'Bagi kode, kalian berdua dapat saldo',
                 onTap: () => Navigator.push(context, xyRoute(const ReferralScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.receipt_long_outlined,
                 judul: 'Pesanan Saya',
                 sub: '$jumlahOrder pesanan tercatat',
                 onTap: () => Navigator.push(context, xyRoute(const OrderListScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.local_offer_rounded,
                 judul: 'Voucher Saya',
                 sub: 'Klaim & pakai potongan',
                 onTap: () => Navigator.push(context, xyRoute(const VoucherScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.leaderboard_rounded,
                 judul: 'Leaderboard',
                 sub: 'Top spender & poin',
                 onTap: () => Navigator.push(context, xyRoute(const LeaderboardScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.sensors_rounded,
                 judul: 'Status Unit Live',
                 sub: '${s.orders.isEmpty ? '' : s.plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready — realtime',
                 onTap: () => Navigator.push(context, xyRoute(const LiveUnitScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.favorite_rounded,
                 judul: 'Favorit Saya',
                 sub: '${s.favorit.length} produk disukai',
                 onTap: () => Navigator.push(context, xyRoute(const FavoritScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.bar_chart_rounded,
                 judul: 'Statistik & Pengeluaran',
                 sub: 'Ringkasan belanja & hemat tier',
                 onTap: () => Navigator.push(context, xyRoute(const StatistikScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.diamond_outlined,
                 judul: 'Tier & Benefit',
                 sub: 'Bronze → Platinum benefit',
                 onTap: () => Navigator.push(context, xyRoute(const TierScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.security_rounded,
                 judul: 'Aktivitas & Keamanan',
                 sub: 'Device, login history, anti-abuse',
                 onTap: () => Navigator.push(context, xyRoute(const AktivitasScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.help_center_rounded,
                 judul: 'Pusat Bantuan',
                 sub: 'FAQ, tutorial, CS',
@@ -261,22 +261,22 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ),
 
               const SectionHeader('Aplikasi'),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.tune_rounded,
                 judul: 'Pengaturan',
                 sub: 'Notifikasi, hemat data, penyimpanan',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.PengaturanScreen())),
               ),
-              _Menu(
+              XyBarisMenu(
                 ikon: Icons.info_outline_rounded,
                 judul: 'Tentang Aplikasi',
                 sub: 'Versi, syarat, privasi, lisensi',
                 onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
               ),
 
-              _Menu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
-              _Menu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const pengaturan.TemaScreen()))),
-              _Menu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
+              XyBarisMenu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
+              XyBarisMenu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const pengaturan.TemaScreen()))),
+              XyBarisMenu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
               const SizedBox(height: 18),
               OutlinedButton.icon(
                 onPressed: () async {
@@ -327,35 +327,3 @@ class _Pemisah extends StatelessWidget {
       Container(width: 1, height: 26, color: Colors.white.withOpacity(.16));
 }
 
-class _Menu extends StatelessWidget {
-  const _Menu({required this.ikon, required this.judul, required this.sub, required this.onTap});
-  final IconData ikon;
-  final String judul, sub;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: XyCard(
-          padding: const EdgeInsets.all(15),
-          onTap: onTap,
-          child: Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-              child: Icon(ikon, size: 20, color: XyTheme.primary),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                const SizedBox(height: 3),
-                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
-              ]),
-            ),
-             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
-          ]),
-        ),
-      );
-}

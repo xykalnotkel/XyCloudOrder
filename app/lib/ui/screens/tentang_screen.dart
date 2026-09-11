@@ -53,19 +53,19 @@ class _TentangScreenState extends State<TentangScreen> {
 
           ListTile(leading:const Icon(Icons.code_rounded),title:const Text('Source & lisensi streaming'),subtitle:const Text('XyCloudStore memakai engine Moonlight GPLv3'),onTap:()=>launchUrl(Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/tag/v2.6.0'),mode:LaunchMode.externalApplication)),
           const SectionHeader('Legal'),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.description_outlined,
             judul: 'Syarat dan Ketentuan',
             sub: 'Aturan pemakaian layanan',
             onTap: () => Navigator.push(context, xyRoute(const _LegalScreen(jenis: 'syarat'))),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.privacy_tip_outlined,
             judul: 'Kebijakan Privasi',
             sub: 'Data apa yang kami simpan dan untuk apa',
             onTap: () => Navigator.push(context, xyRoute(const _LegalScreen(jenis: 'privasi'))),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.workspace_premium_outlined,
             judul: 'Lisensi Pihak Ketiga',
             sub: 'Perangkat lunak sumber terbuka yang kami pakai',
@@ -73,7 +73,7 @@ class _TentangScreenState extends State<TentangScreen> {
           ),
 
           const SectionHeader('Bantuan'),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.forum_outlined,
             judul: 'Chat Admin',
             sub: 'Tanya langsung lewat aplikasi, dijawab tim CS',
@@ -108,39 +108,6 @@ class _TentangScreenState extends State<TentangScreen> {
   }
 }
 
-class _Baris extends StatelessWidget {
-  const _Baris({required this.ikon, required this.judul, required this.sub, required this.onTap});
-  final IconData ikon;
-  final String judul;
-  final String sub;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: XyCard(
-          padding: const EdgeInsets.all(15),
-          onTap: onTap,
-          child: Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-              child: Icon(ikon, size: 20, color: XyTheme.primary),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                const SizedBox(height: 3),
-                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.4)),
-              ]),
-            ),
-             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
-          ]),
-        ),
-      );
-}
 
 /// Menampilkan Syarat dan Ketentuan atau Kebijakan Privasi dari server.
 class _LegalScreen extends StatefulWidget {

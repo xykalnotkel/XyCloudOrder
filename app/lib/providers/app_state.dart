@@ -7,7 +7,6 @@ import '../core/config.dart';
 import '../core/prefs.dart';
 import '../core/pengaturan.dart';
 import '../data/api_client.dart';
-import '../data/mock_data.dart';
 import '../data/lapor_galat.dart';
 import '../data/login_sosial.dart';
 import '../data/push_service.dart';

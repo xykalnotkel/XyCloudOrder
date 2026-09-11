@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:android_intent_plus/flag.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +10,7 @@ import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
+import 'bantuan_screen.dart';
 import 'pembaruan_screen.dart';
 import 'tentang_screen.dart';
 import 'opsi_screen.dart';
@@ -34,65 +33,65 @@ class PengaturanScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
         children: [
           const _Judul('Akun'),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.badge_outlined,
             judul: 'Ubah Profil',
             sub: 'Nama, nomor WhatsApp, dan foto',
             tujuan: const UbahProfilScreen(),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.lock_outline_rounded,
             judul: 'Keamanan',
             sub: 'Ganti password dan info sesi',
             tujuan: const KeamananScreen(),
           ),
           const _Judul('Tampilan'),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.dark_mode_outlined,
             judul: 'Tema Aplikasi',
             sub: 'Terang, gelap, atau ikut sistem',
             tujuan: const TemaScreen(),
           ),
-          _Baris(ikon:Icons.text_fields_rounded,judul:'Teks & Gerakan',sub:'Ukuran teks dan animasi halaman',tujuan:const OpsiTampilanScreen()),
-          _Baris(ikon:Icons.sports_esports_rounded,judul:'Streaming & Kontrol',sub:'Resolusi, FPS, bitrate, gamepad, dan keyboard',tujuan:const OpsiStreamingScreen()),
+          XyBarisMenu(ikon:Icons.text_fields_rounded,judul:'Teks & Gerakan',sub:'Ukuran teks dan animasi halaman',tujuan:const OpsiTampilanScreen()),
+          XyBarisMenu(ikon:Icons.sports_esports_rounded,judul:'Streaming & Kontrol',sub:'Resolusi, FPS, bitrate, gamepad, dan keyboard',tujuan:const OpsiStreamingScreen()),
           const _Judul('Aplikasi'),
-          _Baris(ikon:Icons.emoji_emotions_outlined,judul:'Stiker & Penyimpanan',sub:'Koleksi otomatis, folder internal, dan cache',tujuan:const StikerLibraryScreen()),
-          _Baris(
+          XyBarisMenu(ikon:Icons.emoji_emotions_outlined,judul:'Stiker & Penyimpanan',sub:'Koleksi otomatis, folder internal, dan cache',tujuan:const StikerLibraryScreen()),
+          XyBarisMenu(
             ikon: Icons.notifications_none_rounded,
             judul: 'Notifikasi',
             sub: 'Atur pemberitahuan komunitas',
             tujuan: const OpsiNotifikasiScreen(),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.data_saver_on_rounded,
             judul: 'Data dan Penyimpanan',
             sub: 'Mode hemat data dan data tersimpan',
             tujuan: const DataScreen(),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.shield_moon_outlined,
             judul: 'Privasi dan Konten',
             sub: 'Saringan konten dewasa dan laporan',
             tujuan: const PrivasiScreen(),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.system_update_alt_rounded,
             judul: 'Cek Pembaruan',
             sub: 'Pastikan aplikasimu versi terbaru',
             tujuan: const PembaruanScreen(),
           ),
           const _Judul('Sesi dan akun'),
-          _Baris(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Konfirmasi identitas sebelum menghapus', tujuan: const HapusAkunScreen()),
+          XyBarisMenu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Konfirmasi identitas sebelum menghapus', tujuan: const HapusAkunScreen()),
           ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 8), leading: const Icon(Icons.logout_rounded, color: XyTheme.danger), title: const Text('Keluar dari Akun'),
             onTap: () async { if (await konfirmasi(context, judul:'Keluar dari akun?', pesan:'Data sesi di HP akan dibersihkan. Akunmu tidak dihapus.', tombolYa:'Keluar', bahaya:true) && context.mounted) { await context.read<AppState>().logout(); } }),
           const _Judul('Lainnya'),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.help_outline_rounded,
             judul: 'Pusat Bantuan',
             sub: 'Pertanyaan yang sering ditanyakan',
             tujuan: const BantuanScreen(),
           ),
-          _Baris(
+          XyBarisMenu(
             ikon: Icons.info_outline_rounded,
             judul: 'Tentang Aplikasi',
             sub: 'Versi, legal, dan lisensi',
@@ -117,38 +116,6 @@ class _Judul extends StatelessWidget {
       );
 }
 
-class _Baris extends StatelessWidget {
-  const _Baris({required this.ikon, required this.judul, required this.sub, required this.tujuan});
-  final IconData ikon;
-  final String judul, sub;
-  final Widget tujuan;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: XyCard(
-          padding: const EdgeInsets.all(15),
-          onTap: () => Navigator.push(context, xyRoute(tujuan)),
-          child: Row(children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
-              child: Icon(ikon, size: 20, color: XyTheme.primary),
-            ),
-            const SizedBox(width: 13),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(judul, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-                const SizedBox(height: 3),
-                Text(sub, style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
-              ]),
-            ),
-             Icon(Icons.chevron_right_rounded, color: XyTheme.of(context).muted),
-          ]),
-        ),
-      );
-}
 
 // ============================================================
 //  Ubah profil
@@ -209,7 +176,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
         children: [
           Center(child: XyIlustrasi('profil', tinggi: 150)),
           const SizedBox(height: 18),
-          const _Label('Nama Lengkap'),
+          const XyLabel('Nama Lengkap'),
           TextField(
             controller: _nama,
             textCapitalization: TextCapitalization.words,
@@ -219,7 +186,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          const _Label('Nomor WhatsApp'),
+          const XyLabel('Nomor WhatsApp'),
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
@@ -233,7 +200,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
               style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.5)),
           if (u?.email != null) ...[
             const SizedBox(height: 18),
-            const _Label('Email'),
+            const XyLabel('Email'),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
@@ -351,7 +318,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
           const SizedBox(height: 18),
           Text('Setelah password disimpan, semua sesi dicabut dan kamu perlu masuk lagi.',style:TextStyle(color:XyTheme.of(context).muted,height:1.5)),
           TextButton(onPressed:()async{final e=await context.read<AppState>().kodePasswordSosial();if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e??'Kode dikirim. Masukkan pada kolom password lama.')));},child:const Text('Akun Google tanpa password? Kirim kode email')),
-          const _Label('Password Lama'),
+          const XyLabel('Password Lama'),
           TextField(
             controller: _lama,
             obscureText: !lihat,
@@ -365,7 +332,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          const _Label('Password Baru'),
+          const XyLabel('Password Baru'),
           TextField(
             controller: _baru,
             obscureText: !lihat,
@@ -375,7 +342,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          const _Label('Ulangi Password Baru'),
+          const XyLabel('Ulangi Password Baru'),
           TextField(
             controller: _ulang,
             obscureText: !lihat,
@@ -742,69 +709,6 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
 // ============================================================
 //  Pusat bantuan
 // ============================================================
-class BantuanScreen extends StatelessWidget {
-  const BantuanScreen({super.key});
-
-  static const _tanya = [
-    ('Bagaimana cara mengisi saldo?',
-      'Buka Dompet lalu Isi Saldo, pilih nominal, transfer sesuai instruksi, dan unggah bukti. '
-      'Kalau pembayaran otomatis aktif, saldo masuk sendiri dalam hitungan detik.'),
-    ('Berapa lama pesanan sewa PC diproses?',
-      'Unit disiapkan otomatis begitu pembayaran masuk, biasanya kurang dari satu menit. '
-      'Kamu akan menerima pemberitahuan saat PC siap.'),
-    ('Akun digital saya bermasalah, bagaimana?',
-      'Buka Chat Kirana dan sebutkan kode pesanannya. Selama masih dalam masa garansi, akun diganti gratis.'),
-    ('Kenapa kode verifikasi tidak masuk?',
-      'Cek folder spam atau promosi. Kalau masih belum ada, tekan Kirim ulang kode setelah 60 detik.'),
-    ('Bisakah saya menghapus akun?',
-      'Bisa. Hubungi admin lewat Chat Kirana, akun dan datanya kami hapus paling lambat tujuh hari kerja.'),
-    ('Apakah aman menyimpan saldo di sini?',
-      'Saldo tersimpan di server kami dan setiap perubahan tercatat di riwayat transaksi. '
-      'Password disimpan terenkripsi dan sesi kedaluwarsa otomatis.'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pusat Bantuan')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
-        children: [
-          const Center(child: XyIlustrasi('cs', tinggi: 150)),
-          const SizedBox(height: 8),
-          const Text('Pertanyaan yang sering ditanyakan',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: -.3)),
-          const SizedBox(height: 14),
-          ..._tanya.map((t) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: XyCard(
-                  padding: EdgeInsets.zero,
-                  child: Theme(
-                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                      iconColor: XyTheme.primary,
-                      collapsedIconColor: XyTheme.of(context).muted,
-                      title: Text(t.$1,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.8, height: 1.4)),
-                      children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(t.$2,
-                              style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.65)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-}
-
 // ============================================================
 //  Tema tampilan
 // ============================================================
@@ -878,114 +782,9 @@ class _TemaScreenState extends State<TemaScreen> {
 // ============================================================
 //  Cek pembaruan aplikasi
 // ============================================================
-class PembaruanScreen extends StatefulWidget {
-  const PembaruanScreen({super.key});
-
-  @override
-  State<PembaruanScreen> createState() => _PembaruanScreenState();
-}
-
-class _PembaruanScreenState extends State<PembaruanScreen> {
-  bool memeriksa = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _periksa();
-  }
-
-  Future<void> _periksa() async {
-    setState(() => memeriksa = true);
-    await context.read<AppState>().periksaPembaruan();
-    if (mounted) setState(() => memeriksa = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = context.watch<AppState>();
-    final ada = s.adaPembaruan;
-    final rilis = s.rilisTerbaru;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Cek Pembaruan')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-        children: [
-          Center(
-            child: Column(children: [
-              const XyLogo(size: 84, radius: 26),
-              const SizedBox(height: 16),
-              Text('Versi terpasang ${s.versiSekarang.isEmpty ? '-' : s.versiSekarang}',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-              const SizedBox(height: 6),
-              if (memeriksa)
-                 Text('Memeriksa versi terbaru...',
-                    style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5))
-              else
-                Text(
-                  ada
-                      ? 'Versi baru ${rilis?['versi'] ?? ''} sudah tersedia'
-                      : 'Aplikasimu sudah versi terbaru',
-                  style: TextStyle(
-                    color: ada ? XyTheme.primary : XyTheme.success,
-                    fontSize: 12.8,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-            ]),
-          ),
-          const SizedBox(height: 24),
-          if (ada && rilis != null) ...[
-            XyCard(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const Icon(Icons.new_releases_rounded, size: 19, color: XyTheme.primary),
-                  const SizedBox(width: 9),
-                  Text('Pembaruan ${rilis['versi']}',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
-                ]),
-                const SizedBox(height: 10),
-                 Text(
-                  'Unduh berkas terbaru lalu pasang menimpa aplikasi yang sekarang. '
-                  'Datamu tetap aman karena ditandatangani kunci yang sama.',
-                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.6),
-                ),
-                const SizedBox(height: 16),
-                GradientButton(
-                  label: 'Lihat & Perbarui Sekarang',
-                  icon: Icons.system_update_alt_rounded,
-                  onPressed: () => Navigator.push(
-                      context, xyRoute(const PembaruanScreen())),
-                ),
-              ]),
-            ),
-          ],
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
-            onPressed: memeriksa ? null : _periksa,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Periksa Lagi'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ============================================================
 //  Potongan kecil
 // ============================================================
-class _Label extends StatelessWidget {
-  const _Label(this.teks);
-  final String teks;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 9, left: 2),
-        child: Text(teks,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, letterSpacing: -.1)),
-      );
-}
 
 class _KotakGalat extends StatelessWidget {
   const _KotakGalat(this.pesan);
