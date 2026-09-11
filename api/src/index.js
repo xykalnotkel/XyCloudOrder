@@ -2471,8 +2471,37 @@ ${halaman.map(([u, p2, f]) => `  <url>
           return json(results, 200, env);
         }
         if (a === 'favorit' && req.method === 'GET') {
-          const { results } = await env.DB.prepare('SELECT COUNT(*) as c FROM favorit').first().then(r=>({results:[r]})).catch(()=>({results:[]}));
-          return json({ total: results[0]?.c||0 }, 200, env);
+          let total = 0;
+          let top = [];
+          try {
+            const t = await env.DB.prepare('SELECT COUNT(*) AS c FROM favorit').first();
+            total = Number(t?.c || 0);
+          } catch (_) { total = 0; }
+          try {
+            // Agregasi wishlist per produk (akun_produk / pc_plans / generic)
+            const { results } = await env.DB.prepare(
+              `SELECT f.ref_jenis AS jenis, f.ref_id AS ref_id,
+                      COUNT(*) AS jumlah,
+                      COALESCE(p.nama, pl.nama, f.ref_id) AS nama,
+                      COALESCE(p.gambar, pl.gambar, NULL) AS gambar
+               FROM favorit f
+               LEFT JOIN akun_produk p ON f.ref_jenis IN ('produk','akun','akun_produk') AND p.id = f.ref_id
+               LEFT JOIN pc_plans pl ON f.ref_jenis IN ('plan','paket','pc') AND pl.id = f.ref_id
+               GROUP BY f.ref_jenis, f.ref_id
+               ORDER BY jumlah DESC
+               LIMIT 50`
+            ).all();
+            top = results || [];
+          } catch (e) {
+            // Skema lama mungkin beda kolom — fallback count-only
+            try {
+              const { results } = await env.DB.prepare(
+                `SELECT ref_id AS ref_id, COUNT(*) AS jumlah FROM favorit GROUP BY ref_id ORDER BY jumlah DESC LIMIT 50`
+              ).all();
+              top = (results || []).map((r) => ({ ...r, jenis: 'item', nama: r.ref_id }));
+            } catch (_) { top = []; }
+          }
+          return json({ total, top, produk_top: top[0]?.nama || null }, 200, env);
         }
         // brand logos for new dash (admin path fallback)
         if (a === 'brand/logo-full' && req.method === 'GET') {

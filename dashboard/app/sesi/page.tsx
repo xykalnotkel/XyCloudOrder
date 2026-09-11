@@ -1,43 +1,52 @@
 "use client";
-import { MonitorSmartphone, Activity, Timer, Cpu } from "lucide-react";
-import { useEffect, useState } from "react";
-import { adminFetch } from "@/lib/api";
-export default function SesiPage(){
-  const [sesi,setSesi]=useState<any[]>([]);
-  useEffect(()=>{ adminFetch('/api/admin/sesi').then((r:any)=>setSesi(Array.isArray(r)?r:r.data??[])).catch(()=>{}); },[]);
+import { MonitorSmartphone } from "lucide-react";
+import {
+  Chip, EmptyBox, ErrBox, Header, jam, Load, toneStatus, useAdminList,
+} from "@/components/ui/kit";
+
+export default function SesiPage() {
+  const { rows, loading, err } = useAdminList("/api/admin/sesi");
+
   return (
     <div className="space-y-4 font-[var(--font-inter)]">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><MonitorSmartphone size={18} className="text-white"/></div>
-        <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Sesi PC <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#F3F0FF] font-bold">BARU</span></h1>
-          <p className="text-sm text-[#7C738F] font-medium">Monitoring sesi aktif, agen, durasi, status siap/berjalan/selesai</p>
+      <Header
+        icon={MonitorSmartphone}
+        title="Sesi PC"
+        sub="Sesi sewa aktif & riwayat (100 terakhir)"
+        right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} sesi</span>}
+      />
+      {err && <ErrBox msg={err} />}
+      {loading ? <Load /> : rows.length === 0 ? (
+        <EmptyBox msg="Belum ada sesi." sub="Muncul saat user mulai main di unit PC." />
+      ) : (
+        <div className="xy-card rounded-[20px] overflow-x-auto">
+          <table className="w-full text-left text-[12.5px] min-w-[720px]">
+            <thead>
+              <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
+                {["Sesi", "User", "Unit", "Order", "Status", "Mulai", "Catatan"].map((h) => (
+                  <th key={h} className="px-4 py-2.5 text-[10.5px] uppercase tracking-wider text-[#7C738F] font-bold">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((s) => (
+                <tr key={s.id} className="border-b border-[#F0EDFB] last:border-0 hover:bg-[#FBFAFF]">
+                  <td className="px-4 py-3 font-mono text-[11px] text-[#7C738F]">{String(s.id).slice(0, 12)}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-bold">{s.nama || "—"}</div>
+                    <div className="text-[11px] text-[#7C738F]">{s.email || s.user_id}</div>
+                  </td>
+                  <td className="px-4 py-3 font-medium">{s.unit || s.agen_id || "—"}</td>
+                  <td className="px-4 py-3 font-mono text-[11px]">{s.order_id ? String(s.order_id).slice(0, 10) : "—"}</td>
+                  <td className="px-4 py-3"><Chip tone={toneStatus(s.status)}>{s.status}</Chip></td>
+                  <td className="px-4 py-3 text-[11px] font-mono text-[#7C738F]">{jam(s.mulai || s.dibuat)}</td>
+                  <td className="px-4 py-3 text-[11.5px] text-[#6B5A8A] max-w-[180px] truncate">{s.catatan || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        {[
-          {l:"Aktif", v: sesi.filter((s:any)=>['siap','berjalan','pairing'].includes(s.status)).length, Icon: Activity},
-          {l:"Provisioning", v: sesi.filter((s:any)=>s.status==='provisioning').length, Icon: Timer},
-          {l:"Selesai Hari Ini", v: sesi.filter((s:any)=>s.status==='selesai').length, Icon: Cpu},
-          {l:"Total", v: sesi.length, Icon: MonitorSmartphone},
-        ].map(c=>(
-          <div key={c.l} className="xy-card rounded-[14px] p-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center"><c.Icon size={16} className="text-[#7C3AED]"/></div>
-            <div><div className="text-[11px] text-[#7C738F] font-medium uppercase">{c.l}</div><div className="text-lg font-bold text-[#1E1B2E] mt-0.5">{c.v}</div></div>
-          </div>
-        ))}
-      </div>
-      <div className="xy-card rounded-xl p-4">
-        <div className="space-y-2 max-h-[560px] overflow-auto">
-          {sesi.slice(0,50).map((s:any)=>(
-            <div key={s.id} className="flex items-center justify-between py-2 border-b border-[#E9E3F5] text-[12px]">
-              <div><div className="font-bold text-[#1E1B2E]">{s.id} • {s.nama} ({s.email})</div><div className="text-[#7C738F] text-[11px]">{s.unit} • {s.status} • {s.dibuat?.slice(0,19)}</div></div>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-[#F3F0FF] text-[#7C3AED] font-bold">{s.status}</span>
-            </div>
-          ))}
-          {sesi.length===0 && <div className="text-[12px] text-[#7C738F]">Belum ada sesi — endpoint /api/admin/sesi</div>}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,60 +1,58 @@
 "use client";
-import { useEffect, useState } from "react";
-import { adminFetch } from "@/lib/api";
-import { Image as ImageIcon } from "lucide-react";
-import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { useState } from "react";
+import { Copy, Package } from "lucide-react";
+import {
+  Btn, EmptyBox, ErrBox, Header, jam, Load, MsgOk, useAdminList,
+} from "@/components/ui/kit";
 
-function formatBytes(n: number) {
-  if (!n) return "—";
-  if (n < 1024) return n + " B";
-  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
-  return (n / (1024 * 1024)).toFixed(1) + " MB";
+function formatBytes(n?: number) {
+  const v = Number(n || 0);
+  if (v < 1024) return `${v} B`;
+  if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
+  return `${(v / 1024 / 1024).toFixed(2)} MB`;
 }
 
 export default function MediaPage() {
-  const [rows, setRows] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const { rows, loading, err } = useAdminList("/api/admin/media");
+  const [ok, setOk] = useState("");
 
-  useEffect(() => {
-    adminFetch("/api/admin/media")
-      .then((d) => setRows(Array.isArray(d) ? d : []))
-      .catch((e) => setErr(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+  function salin(url: string) {
+    navigator.clipboard?.writeText(url).then(() => setOk("URL disalin")).catch(() => setOk(url));
+  }
 
   return (
     <div className="space-y-4 font-[var(--font-inter)]">
-      <Header icon={ImageIcon} title="Media" sub="Aset unggahan Cloudinary (hanya pemilik) — 200 terakhir"
-        right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} aset</span>} />
-      {loading ? <Load /> : err ? <ErrBox msg={err} /> : rows.length === 0 ? (
-        <div className="xy-card rounded-[20px] p-10 text-center text-[#7C738F] font-medium">Belum ada aset media.</div>
+      <Header
+        icon={Package}
+        title="Media"
+        sub="File terunggah (R2 / storage) — pemilik"
+        right={<span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} file</span>}
+      />
+      {ok && <MsgOk msg={ok} />}
+      {err && <ErrBox msg={err} />}
+      {loading ? <Load /> : rows.length === 0 ? (
+        <EmptyBox msg="Belum ada media tercatat." sub="Upload banner/produk/CS akan muncul di sini bila diindeks." />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-          {rows.map((m) => (
-            <div key={m.id} className="xy-card rounded-[18px] overflow-hidden">
-              <div className="h-32 bg-[#F3F0FF] flex items-center justify-center overflow-hidden">
-                {m.preview || m.url ? (
-                  <img src={m.preview || m.url} alt={m.id} loading="lazy" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon size={20} className="text-[#C4B5FD]" />
-                )}
-              </div>
-              <div className="p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-bold text-[#1E1B2E] font-mono truncate">{m.id.slice(0, 12)}</span>
-                  <Chip tone="netral">{m.format || "-"}</Chip>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {rows.map((m: any, i: number) => (
+            <div key={m.id || m.key || m.url || i} className="xy-card rounded-[16px] p-4 space-y-2">
+              {m.url && /\.(png|jpe?g|gif|webp)(\?|$)/i.test(m.url) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={m.url} alt="" className="w-full h-36 object-cover rounded-xl border border-[#E9E3F5] bg-[#F5F3FF]" />
+              ) : (
+                <div className="h-36 rounded-xl bg-[#F5F3FF] border border-[#E9E3F5] grid place-items-center text-[#7C738F] text-[12px] font-medium">
+                  {m.content_type || m.tipe || "file"}
                 </div>
-                <div className="mt-1 text-[10.5px] text-[#7C738F] font-medium">
-                  {m.width && m.height ? `${m.width}×${m.height}` : ""}{m.width ? " • " : ""}{formatBytes(m.bytes)}{m.animated ? " • GIF" : ""}
-                </div>
-                <div className="text-[10.5px] text-[#7C738F] mt-0.5">folder: {m.folder || "-"} • {jam(m.created_at)}</div>
-                <button
-                  onClick={() => navigator.clipboard?.writeText(m.url || "")}
-                  className="mt-2 text-[11px] w-full py-1.5 rounded-full bg-[#F5F3FF] border border-[#E9E3F5] font-semibold text-[#6B5A8A] hover:text-[#7C3AED] hover:border-[#C4B5FD]">
-                  Salin URL
-                </button>
+              )}
+              <div className="font-bold text-[13px] text-[#1E1B2E] truncate">{m.nama || m.key || m.id || "media"}</div>
+              <div className="text-[11px] text-[#7C738F] font-mono">
+                {formatBytes(m.ukuran || m.size)} · {jam(m.dibuat || m.uploaded_at)}
               </div>
+              {m.url && (
+                <Btn tone="ghost" className="w-full !h-8" onClick={() => salin(m.url)}>
+                  <Copy size={12} /> Salin URL
+                </Btn>
+              )}
             </div>
           ))}
         </div>

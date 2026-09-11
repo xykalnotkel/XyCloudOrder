@@ -1,28 +1,93 @@
 "use client";
-import { ShieldAlert, Flag, Eye } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { adminFetch } from "@/lib/api";
-export default function ModerasiPage(){
-  const [laporan,setLaporan]=useState<any[]>([]);
-  useEffect(()=>{ adminFetch('/api/admin/laporan').then((r:any)=>setLaporan(Array.isArray(r)?r:r.data??[])).catch(()=>{}); },[]);
+import { CheckCheck, Flag, Trash2 } from "lucide-react";
+import {
+  Btn, Chip, EmptyBox, ErrBox, Header, jam, Load, MsgOk, toneStatus, useAdminList,
+} from "@/components/ui/kit";
+
+export default function ModerasiPage() {
+  const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/laporan");
+  const [ok, setOk] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function selesai(id: string) {
+    setBusy(true); setErr(""); setOk("");
+    try {
+      await adminFetch(`/api/admin/laporan/${id}`, { method: "PATCH", body: { status: "selesai" } });
+      setOk("Laporan ditutup");
+      await reload();
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  }
+
+  async function hapusKonten(l: any) {
+    if (!confirm("Hapus konten terkait laporan ini? Permanen.")) return;
+    setBusy(true); setErr(""); setOk("");
+    try {
+      const jenis = String(l.jenis || l.tipe || "");
+      const ref = l.ref_id || l.target_id;
+      if (jenis.includes("balasan")) {
+        await adminFetch(`/api/admin/forum/balasan/${ref}`, { method: "DELETE" });
+      } else if (jenis.includes("forum") || jenis.includes("post")) {
+        await adminFetch(`/api/admin/forum/${ref}`, { method: "DELETE" });
+      } else if (l.konten_path) {
+        await adminFetch(`/api/admin/konten/${l.konten_path}`, { method: "DELETE" });
+      }
+      await adminFetch(`/api/admin/laporan/${l.id}`, { method: "PATCH", body: { status: "selesai" } });
+      setOk("Konten dihapus & laporan ditutup");
+      await reload();
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  }
+
+  const open = rows.filter((r) => !["selesai", "ditutup", "closed"].includes(String(r.status || "").toLowerCase()));
+
   return (
     <div className="space-y-4 font-[var(--font-inter)]">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#7C3AED] grid place-items-center"><ShieldAlert size={18} className="text-white"/></div>
-        <div><h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Moderasi</h1><p className="text-sm text-[#7C738F]">Laporan konten, sensitif, spam forum</p></div>
-      </div>
-      <div className="xy-card p-4">
-        <div className="text-[12px] font-bold text-[#1E1B2E] mb-3">{laporan.length} laporan</div>
-        <div className="space-y-2 max-h-[560px] overflow-auto">
-          {laporan.slice(0,50).map((l:any)=>(
-            <div key={l.id} className="flex items-center justify-between py-2 border-b border-[#E9E3F5] text-[12px]">
-              <div><div className="font-bold text-[#1E1B2E]">{l.jenis} • {l.ref_id}</div><div className="text-[#7C738F] text-[11px]">{l.alasan} • {l.status} • {l.dibuat}</div></div>
-              <span className="text-[10px] px-2 py-1 rounded-full bg-[#F3F0FF] text-[#7C3AED] font-bold">{l.status}</span>
+      <Header
+        icon={Flag}
+        title="Moderasi"
+        sub="Laporan konten forum / spam / sensitif"
+        right={
+          <div className="flex gap-2">
+            <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-700 font-bold">{open.length} terbuka</span>
+            <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} total</span>
+          </div>
+        }
+      />
+
+      {ok && <MsgOk msg={ok} />}
+      {err && <ErrBox msg={err} />}
+      {loading ? <Load /> : rows.length === 0 ? (
+        <EmptyBox msg="Belum ada laporan." sub="User melapor dari app → masuk ke sini." />
+      ) : (
+        <div className="space-y-3">
+          {rows.map((l) => (
+            <div key={l.id} className="xy-card rounded-[16px] p-4 flex flex-wrap gap-3 justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-[#1E1B2E]">{l.jenis || l.tipe || "laporan"}</span>
+                  <Chip tone={toneStatus(l.status)}>{l.status || "baru"}</Chip>
+                  {l.ref_id && <span className="font-mono text-[10.5px] text-[#7C738F]">ref {l.ref_id}</span>}
+                </div>
+                <p className="mt-1 text-[13px] text-[#4B445F] leading-relaxed">{l.alasan || l.pesan || "—"}</p>
+                <div className="mt-1 text-[11px] text-[#7C738F]">
+                  pelapor: {l.pelapor_nama || l.user_id || "—"} · {jam(l.dibuat || l.created_at)}
+                </div>
+              </div>
+              <div className="flex gap-1.5 items-start">
+                <Btn tone="ok" className="!h-8" disabled={busy || String(l.status) === "selesai"} onClick={() => selesai(l.id)}>
+                  <CheckCheck size={13} /> Selesai
+                </Btn>
+                <Btn tone="bahaya" className="!h-8" disabled={busy} onClick={() => hapusKonten(l)}>
+                  <Trash2 size={13} /> Hapus konten
+                </Btn>
+              </div>
             </div>
           ))}
-          {laporan.length===0 && <div className="text-[12px] text-[#7C738F]">Belum ada laporan — endpoint /api/admin/laporan</div>}
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -96,11 +96,11 @@ export default function DashboardPage() {
           <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><ShieldCheck size={16} className="text-[#7C3AED]" /> Next Steps</h3>
           <div className="mt-3 space-y-2">
             {[
-              "Port Orders + Users (multi-select v3.0b) — done",
-              "Port Rilis App (kelola versi + gambar tema) — done",
-              "Tambah Flutter: Favorit, Statistik, Tier, Aktivitas — done",
-              "Security: global rate-limit middleware — done",
-              "Deploy dashboard ke Cloudflare Pages — next",
+              "Users / Orders / TopUp / Sampah — aksi penuh + massal",
+              "Unit agen, GIPHY, Perangkat, Moderasi, Security",
+              "Favorit agregasi, Galat, Audit, Sesi, Media, Referral",
+              "Legacy admin.html hanya fallback darurat",
+              "Deploy dashboard ke Cloudflare Pages / Vercel",
             ].map((t, i) => (
               <div key={i} className="flex gap-2 text-[13px] text-[#1E1B2E]/70 font-medium">
                 <span className="w-5 h-5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center text-[10px] font-bold">{i + 1}</span>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="xy-card rounded-[18px] p-4 flex items-center justify-between">
-        <div className="text-[12px] text-[#1E1B2E]/50 font-medium">Fallback: admin lama masih jalan di <a href="/api/admin" className="text-[#8B5CF6] underline">/api/admin</a> sampai migrasi 100% • Icons Lucide, no emoji</div>
+        <div className="text-[12px] text-[#1E1B2E]/50 font-medium">Migrasi Next.js tuntas — legacy hanya darurat di <a href="https://api.xycloud.my.id/admin?legacy=1" className="text-[#8B5CF6] underline">/admin?legacy=1</a> • Lucide, Inter</div>
         <button
           onClick={() => {
             localStorage.removeItem("xy_admin_key");

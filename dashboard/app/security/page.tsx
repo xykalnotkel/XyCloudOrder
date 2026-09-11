@@ -1,49 +1,91 @@
 "use client";
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
-import { ShieldCheck, ShieldAlert } from "lucide-react";
+import { Save, ShieldCheck } from "lucide-react";
+import {
+  Btn, ErrBox, Field, Header, Input, Load, MsgOk, Stat,
+} from "@/components/ui/kit";
+
+const LABELS: Record<string, string> = {
+  device_accounts: "Maks akun per perangkat",
+  register_ip_hour: "Daftar / IP / jam",
+  otp_email_hour: "OTP email / jam",
+  otp_email_day: "OTP email / hari",
+  email_daily: "Email sistem / hari",
+};
 
 export default function SecurityPage() {
   const [data, setData] = useState<any>(null);
+  const [cfg, setCfg] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [ok, setOk] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    adminFetch("/api/admin/security").then(setData).catch((e) => setErr(e.message));
-  }, []);
+  async function muat() {
+    setLoading(true); setErr("");
+    try {
+      const d = await adminFetch("/api/admin/security");
+      setData(d);
+      setCfg({ ...(d?.config || {}) });
+    } catch (e: any) { setErr(e.message); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { muat(); }, []);
+
+  async function simpan() {
+    setBusy(true); setErr(""); setOk("");
+    try {
+      const d = await adminFetch("/api/admin/security", { method: "POST", body: cfg });
+      setData((prev: any) => ({ ...prev, config: d.config || cfg }));
+      setOk("Kebijakan keamanan disimpan");
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  }
+
+  const stats = data?.stats || {};
 
   return (
     <div className="space-y-4 font-[var(--font-inter)]">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl xy-btn grid place-items-center"><ShieldCheck size={18} className="text-white" /></div>
-        <div>
-          <h1 className="text-xl font-black text-[#1E1B2E] tracking-tight">Security Full Audit</h1>
-          <p className="text-sm text-[#7C738F] font-medium">Checklist semua lapisan — rate limit, device 2 akun, saldo anti-double, upload validasi, OTP atomik</p>
-        </div>
-      </div>
+      <Header
+        icon={ShieldCheck}
+        title="Security"
+        sub="Kuota anti-abuse, OTP, email harian (pemilik)"
+        right={<Btn tone="ghost" onClick={muat}>Muat ulang</Btn>}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="xy-card rounded-[16px] p-5">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><ShieldCheck size={16} className="text-[#7C3AED]" /> Checklist (dari docs/rencana-3.3.md)</h3>
-          <ul className="mt-3 space-y-2 text-[13px] text-[#7C738F] font-medium">
-            <li>✓ Atomic claim kredensial (v3.0c) — WHERE status=tersedia</li>
-            <li>✓ Saldo WHERE saldo {'>='} ? + check semua jalur</li>
-            <li>✓ Device limit 2 akun per device + IP limit + global 180/60s</li>
-            <li>✓ OTP digest + expiry 10m + max 3 percobaan</li>
-            <li>✓ Upload max 5MB, whitelist image/png jpeg webp gif</li>
-            <li>✓ esc() di innerHTML — audit ulang</li>
-            <li>✓ Validasi URL update hanya xycloud.my.id</li>
-            <li>✓ Rate limit middleware global di index.js (v3.3 done)</li>
-            <li>✓ Icons Lucide, font Plus Jakarta Sans konsisten — no emoji</li>
-          </ul>
-        </div>
-        <div className="xy-card rounded-[16px] p-5">
-          <h3 className="font-bold text-[#1E1B2E] tracking-tight flex items-center gap-2"><ShieldAlert size={16} className="text-[#7C3AED]" /> Data Security Terkini</h3>
-          {err ? <div className="mt-3 text-red-600 text-sm font-medium">{err}</div> : !data ? <div className="mt-3 text-[#7C738F] text-sm">Memuat...</div> : (
-            <pre className="mt-3 text-[11px] bg-[#FFFFFF] p-3 rounded-xl overflow-x-auto text-[#7C738F] font-mono">{JSON.stringify(data, null, 2).slice(0, 4000)}</pre>
-          )}
-          <div className="mt-4 p-3 rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] text-[11px] font-medium">File audit lengkap: <code className="font-mono">docs/keamanan-audit.md</code> + <code className="font-mono">docs/rencana-3.3.md</code></div>
-        </div>
-      </div>
+      {ok && <MsgOk msg={ok} />}
+      {err && <ErrBox msg={err} />}
+      {loading ? <Load /> : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Stat label="Devices" value={stats.devices ?? "—"} />
+            <Stat label="Diblokir" value={stats.blocked ?? "—"} tone="bad" />
+            <Stat label="Event 24 jam" value={stats.events ?? "—"} tone="warn" />
+            <Stat label="Email hari ini" value={`${stats.emails ?? 0} / ${data?.email_max ?? "—"}`} />
+          </div>
+
+          <div className="xy-card rounded-[18px] p-5 space-y-4 max-w-2xl">
+            <h3 className="font-bold text-[#1E1B2E]">Kebijakan</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {Object.keys(LABELS).map((k) => (
+                <Field key={k} label={LABELS[k]}>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={cfg[k] ?? ""}
+                    onChange={(e) => setCfg({ ...cfg, [k]: Number(e.target.value) })}
+                  />
+                </Field>
+              ))}
+            </div>
+            <Btn disabled={busy} onClick={simpan}><Save size={14} /> Simpan kebijakan</Btn>
+            <p className="text-[11px] text-[#7C738F] leading-relaxed">
+              Event detail ada di menu <b>Log Keamanan</b>. Perangkat & blokir di menu <b>Perangkat</b>.
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
