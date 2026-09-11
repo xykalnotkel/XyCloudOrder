@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use tauri::{Emitter, State};
 
 struct St {
-    cfg: Mutex<Konfig>,
+    cfg: Arc<Mutex<Konfig>>,
     stop: Arc<AtomicBool>,
     berjalan: Arc<Mutex<bool>>,
 }
@@ -22,20 +22,35 @@ fn buat_log(app: tauri::AppHandle) -> Logger {
 }
 
 #[tauri::command]
-fn simpan(kode: String, user: String, sandi: String, server: String, st: State<St>) -> Result<String, String> {
-    let k = Konfig {
+fn simpan(
+    kode: String,
+    user: String,
+    sandi: String,
+    server: String,
+    st: State<St>,
+) -> Result<String, String> {
+    let sandi_lama = st.cfg.lock().unwrap().sandi.clone();
+    let user_lama = st.cfg.lock().unwrap().user.clone();
+
+    let mut k = Konfig {
         kode: kode.trim().into(),
-        user: if user.trim().is_empty() { "admin".into() } else { user.trim().into() },
+        // kosong = biarkan auto-setup yang mengisi (jangan paksa "admin")
+        user: user.trim().into(),
         sandi: sandi.trim().into(),
-        server: if server.trim().is_empty() { "https://api.xycloud.my.id".into() } else { server.trim().into() },
+        server: if server.trim().is_empty() {
+            "https://api.xycloud.my.id".into()
+        } else {
+            server.trim().into()
+        },
     };
     if k.kode.is_empty() {
         return Err("Kode unit wajib diisi.".into());
     }
-    let sandi_lama = st.cfg.lock().unwrap().sandi.clone();
-    let mut k = k;
     if k.sandi.is_empty() {
         k.sandi = sandi_lama;
+    }
+    if k.user.is_empty() {
+        k.user = user_lama;
     }
     agent::simpan_konfig(&k).map_err(|e| e.to_string())?;
     *st.cfg.lock().unwrap() = k.clone();
@@ -46,6 +61,22 @@ fn simpan(kode: String, user: String, sandi: String, server: String, st: State<S
 fn status(st: State<St>) -> serde_json::Value {
     let cfg = st.cfg.lock().unwrap().clone();
     let jalan = *st.berjalan.lock().unwrap();
+    // Jangan panggil HTTP Sunshine di sini (blocking) — UI pakai uji_cek / setup-selesai.
+    let sunshine = if cfg.user.is_empty() || cfg.sandi.is_empty() {
+        json!({
+            "siap": false,
+            "status": "KREDENSIAL_KOSONG",
+            "pesan": "Belum di-setup",
+            "service": "-"
+        })
+    } else {
+        json!({
+            "siap": serde_json::Value::Null,
+            "status": "TERSIMPAN",
+            "pesan": "Kredensial ada — klik Uji koneksi untuk cek live",
+            "service": "-"
+        })
+    };
     json!({
         "kode": cfg.kode,
         "server": cfg.server,
@@ -53,6 +84,7 @@ fn status(st: State<St>) -> serde_json::Value {
         "autostart": agent::autostart_aktif(),
         "berjalan": jalan,
         "versi": agent::VERSI,
+        "sunshine": sunshine,
     })
 }
 
@@ -84,17 +116,55 @@ fn setup_otomatis(app: tauri::AppHandle, st: State<St>) -> Result<(), String> {
         return Err("Simpan pengaturan (kode unit) dulu.".into());
     }
     let log = buat_log(app.clone());
+    let cfg_arc = st.cfg.clone();
     std::thread::spawn(move || {
-        agent::setup_otomatis(&cfg, log);
+        let (k_baru, hasil) = agent::setup_otomatis(&cfg, log);
+        if let Ok(mut g) = cfg_arc.lock() {
+            *g = k_baru.clone();
+        }
+        let _ = app.emit("setup-selesai", hasil.clone());
+        let _ = app.emit(
+            "log",
+            format!(
+                "Setup selesai · unit={} · sunshine_user={} · siap={}",
+                k_baru.kode,
+                k_baru.user,
+                hasil
+                    .get("siap")
+                    .and_then(|x| x.as_bool())
+                    .unwrap_or(false)
+            ),
+        );
     });
     Ok(())
 }
 
 #[tauri::command]
 fn mulai(app: tauri::AppHandle, st: State<St>) -> Result<(), String> {
-    let cfg = st.cfg.lock().unwrap().clone();
+    // Ambil konfig terbaru (setelah auto-creds) — prefer memori, fallback disk.
+    let cfg = {
+        let mem = st.cfg.lock().unwrap().clone();
+        if !mem.kode.is_empty() {
+            mem
+        } else {
+            agent::muat_konfig()
+        }
+    };
+    // Reload disk juga jika sandi baru saja di-auto-generate di thread lain.
+    let cfg = {
+        let disk = agent::muat_konfig();
+        if !disk.sandi.is_empty() && disk.kode == cfg.kode {
+            *st.cfg.lock().unwrap() = disk.clone();
+            disk
+        } else {
+            cfg
+        }
+    };
     if cfg.kode.is_empty() {
         return Err("Simpan pengaturan (kode unit) dulu.".into());
+    }
+    if cfg.user.is_empty() || cfg.sandi.is_empty() {
+        return Err("Sunshine belum di-setup. Jalankan langkah Engine dulu.".into());
     }
     {
         let mut b = st.berjalan.lock().unwrap();
@@ -152,7 +222,7 @@ fn main() {
     let cfg = agent::muat_konfig();
     tauri::Builder::default()
         .manage(St {
-            cfg: Mutex::new(cfg),
+            cfg: Arc::new(Mutex::new(cfg)),
             stop: Arc::new(AtomicBool::new(false)),
             berjalan: Arc::new(Mutex::new(false)),
         })

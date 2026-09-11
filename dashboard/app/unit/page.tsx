@@ -93,7 +93,7 @@ export default function UnitPage() {
       <Header
         icon={Cpu}
         title="Unit PC"
-        sub="Daftarkan agen Rust/Tauri di tiap PC sewa — salin kode ke Agent"
+        sub="Daftarkan unit → salin kode → tempel di Agent v1.3 (auto Sunshine, tanpa login web UI)"
         right={
           <div className="flex gap-2">
             <Btn tone="ghost" onClick={() => muatAman()}>Muat ulang</Btn>
@@ -126,7 +126,8 @@ export default function UnitPage() {
                 <Copy size={13} /> Salin kode
               </Btn>
               <p className="text-[11px] text-emerald-800/80 leading-relaxed">
-                Di PC: buka XyCloudStore-Agent → tempel kode → Simpan → Jalankan Agen.
+                Di PC: buka <b>XyCloudStore-Agent</b> → tempel kode → <b>Pasang &amp; kunci otomatis</b> → Jalankan Agen.
+                Sunshine di-set sendiri (tidak perlu buka web UI / login manual).
               </p>
             </div>
           )}

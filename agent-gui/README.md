@@ -1,9 +1,10 @@
-# Agen PC Host XyCloudStore (Rust + Tauri, tanpa Python)
+# Agen PC Host XyCloudStore (Rust + Tauri, v1.3)
 
-Program kecil yang dijalankan di setiap PC/VM yang disewakan untuk menyambungkan mesin
-ke server XyCloudStore: sesi sewa bisa **dinyalakan, dipasangkan, dan ditutup** otomatis
-dari aplikasi. Ditulis dalam **Rust + Tauri v2** — tidak ada runtime Python, tidak ada
-ps2exe. Pengganti `xy_agent_ui.ps1` / `xy_agent.py` versi lama.
+Program kecil di setiap PC/VM sewa. Menyambungkan mesin ke server XyCloudStore supaya
+sesi **dinyalakan, dipasangkan, dan ditutup otomatis** dari aplikasi HP.
+
+**v1.3** — wizard UI + **auto kredensial Sunshine** (`sunshine --creds`).  
+Tidak perlu buka `https://127.0.0.1:47990` / login web UI manual.
 
 ```
 Aplikasi (HP)          Server Cloudflare            Agen (Rust) di PC        Sunshine
@@ -19,63 +20,56 @@ Aplikasi (HP)          Server Cloudflare            Agen (Rust) di PC        Sun
      |  status: berjalan <--  |  <-- lapor berhasil      |                       |
 ```
 
-Agen hanya menghubungi keluar (server) + API lokal Sunshine; PC tidak perlu membuka
-port apa pun untuk pengendalian. Port streaming Sunshine (47984/47989 TCP, 48010 TCP,
-47998–48002 UDP) tetap yang dibuka ke internet bila diperlukan.
+Agen hanya keluar ke server + API lokal Sunshine. Port streaming Sunshine
+(47984/47989 TCP, 48010 TCP, 47998–48002 UDP) tetap dibuka ke internet bila perlu.
 
 ## Struktur
 
 | Path | Isi |
 |---|---|
 | `agent-gui/src-tauri/src/main.rs` | Komando Tauri (simpan/status/uji/setup/mulai/henti/autostart) |
-| `agent-gui/src-tauri/src/agent.rs` | Inti agen: heartbeat, eksekusi perintah, kontrol API Sunshine, autostart registry |
-| `agent-gui/ui/` | Frontend WebView (HTML/CSS/JS) |
-| `agent-gui/src-tauri/Cargo.toml` | Dependensi: tauri v2, reqwest (rustls, ignore self-signed), serde |
+| `agent-gui/src-tauri/src/agent.rs` | Heartbeat, perintah, `sunshine --creds`, winget, autostart |
+| `agent-gui/ui/` | Wizard 3 langkah (Unit → Engine → Jalan) |
 
-## Fitur
+## Setup di PC (3 klik)
 
-- **Jendela pengaturan** (`XyCloudStore-Agent.exe`): isi kode unit, kredensial web-UI
-  Sunshine, server API → **Simpan Pengaturan** (tersimpan di `%APPDATA%\XyCloudStore\Agent\config.json`).
-- **Auto-setup**: mendeteksi Sunshine; bila belum ada, memasang lewat `winget` otomatis.
-- **Uji Koneksi Lokal**: diagnosis setara `--cek` lama — hanya membaca API Sunshine,
-  tidak mengirim heartbeat/pairing/penutupan.
-- **Jalankan / Hentikan Agen**: mengendalikan loop heartbeat (interval 20 detik).
-- **Mulai otomatis saat Windows menyala**: autostart lewat registry `HKCU\...\Run` → menjalankan
-  agen mode `-Jalankan` tanpa jendela.
-- **Kode asli Rust**: tanpa runtime Python, tanpa dependensi ps2exe.
+1. **Admin** → [Unit PC](https://admin.xycloud.my.id/unit) → Daftarkan unit → **salin kode**.
+2. Unduh `XyCloudStore-Agent.exe` (artifact CI / rilis) → jalankan.
+3. Wizard:
+   - **1 · Unit** — tempel kode → Simpan & lanjut  
+   - **2 · Engine** — *Pasang & kunci otomatis* (winget + `sunshine --creds`, tanpa web UI)  
+   - **3 · Jalan** — *Jalankan Agen* (+ opsional autostart Windows)
 
-## Yang perlu disiapkan di PC
+Opsi lanjutan (username/password Sunshine) hanya jika mau pakai akun yang sudah ada.
 
-1. **Sunshine** (atau **Apollo**, fork layar virtual untuk PC headless).
-2. Akun web UI Sunshine saat pertama dibuka di `https://127.0.0.1:47990`.
-3. Buka dashboard admin → menu **Unit PC** → **Daftarkan Unit**, salin kode agen.
-
-## Penggunaan
+## CLI
 
 ```powershell
-# 1) buka UI, isi: kode unit, username/password web UI Sunshine, server API
-#    lalu klik: Simpan Pengaturan → Uji Koneksi → (Setup bila perlu) → Jalankan Agen
-
-# 2) verifikasi versi dari CLI:
-.\XyCloudStore-Agent.exe --veri
-
-# 3) mode headless (autostart / penjadwal):
-.\XyCloudStore-Agent.exe -Jalankan
+.\XyCloudStore-Agent.exe --veri          # cek versi
+.\XyCloudStore-Agent.exe -Jalankan       # headless (autostart)
 ```
 
-| Hasil uji | Arti dan tindakan |
+## Hasil uji Engine
+
+| Status | Arti |
 |---|---|
-| `API_SIAP` | Kredensial diterima API Sunshine. Encoder/layar/streaming dari HP masih perlu diuji. |
-| `API_TIDAK_SESUAI` / HTTP 401–403 | Sunshine merespons tetapi akses API ditolak; cocokkan akun web UI. |
-| `KREDENSIAL_KOSONG` | Username/password Sunshine belum diisi. |
-| `TIDAK_TERHUBUNG` | Sunshine tidak merespons di 127.0.0.1:47990; jalankan auto-setup atau periksa service. |
+| `API_SIAP` | Kredensial OK, API 47990 merespons |
+| `API_TIDAK_SESUAI` | Sunshine hidup tapi auth ditolak — ulang auto-setup |
+| `KREDENSIAL_KOSONG` | Belum setup — klik *Pasang & kunci otomatis* |
+| `TIDAK_TERHUBUNG` | Service/exe belum jalan |
 
-## Catatan keamanan
+## Keamanan
 
-- Akses ke Sunshine memakai `https://127.0.0.1:47990` dengan sertifikat self-signed
-  yang diterima longgar — hal yang sama dilakukan versi Python lama; hanya proses lokal
-  yang dapat menjangkaunya karena web UI tidak dibuka ke internet.
-- Server XyCloud hanya bisa memerintahkan agen yang sudah punya **kode unit** yang valid.
-- Sebelum menyimpan sandi, konfirmasi: sandi tetap disimpan **plaintext di
-  `%APPDATA%`** milik akun Windows pengguna (versi baru tidak lagi memakai Python/DPAPI
-  wrapper; folder `%APPDATA%\XyCloudStore\Agent` hanya bisa dibaca oleh akun itu).
+- API Sunshine hanya `127.0.0.1:47990` (self-signed, diterima longgar).
+- Server hanya memerintahkan agen dengan **kode unit** valid.
+- Sandi lokal di `%APPDATA%\XyCloudStore\Agent\config.json` (akun Windows itu saja).
+
+## Build
+
+CI: `.github/workflows/agent-windows.yml` → artifact `XyCloudStore-Agent-Windows.zip`.
+
+```powershell
+cd agent-gui/src-tauri
+cargo build --release --locked
+# hasil: target/release/xycloud-agent.exe
+```

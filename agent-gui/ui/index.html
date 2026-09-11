@@ -7,49 +7,167 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <div class="judul">
-    <div class="logo">XyCloudStore</div>
-    <div class="tag">Agen PC Host · Rust/Tauri · tanpa Python</div>
+  <div class="shell">
+    <header class="top">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#A78BFA"/>
+                <stop offset="100%" stop-color="#7C3AED"/>
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="9" fill="url(#g)"/>
+            <path d="M8 17.5c3.2-6 5.6-9 8-9s4.8 3 8 9c-3.2 6-5.6 9-8 9s-4.8-3-8-9z" fill="#fff" opacity=".95"/>
+            <circle cx="16" cy="17.5" r="3.2" fill="#7C3AED"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nama">XyCloudStore Agent</div>
+          <div class="sub" id="versi-tag">Agen PC Host · Rust/Tauri</div>
+        </div>
+      </div>
+      <div id="lencana" class="lencana off" title="Status agen">Berhenti</div>
+    </header>
+
+    <!-- Stepper -->
+    <nav class="stepper" id="stepper" aria-label="Langkah setup">
+      <button type="button" class="step aktif" data-step="1">
+        <span class="n">1</span><span class="l">Unit</span>
+      </button>
+      <div class="garis"></div>
+      <button type="button" class="step" data-step="2">
+        <span class="n">2</span><span class="l">Engine</span>
+      </button>
+      <div class="garis"></div>
+      <button type="button" class="step" data-step="3">
+        <span class="n">3</span><span class="l">Jalan</span>
+      </button>
+    </nav>
+
+    <main>
+      <!-- STEP 1: Unit -->
+      <section class="panel" id="panel-1" data-panel="1">
+        <div class="panel-head">
+          <h2>Hubungkan unit</h2>
+          <p>Salin kode dari Admin → <b>Unit PC</b> → Daftarkan unit. Agen memakai kode itu untuk heartbeat ke server.</p>
+        </div>
+
+        <div class="kartu">
+          <label for="kode">Kode unit <span class="wajib">wajib</span></label>
+          <div class="input-row">
+            <input id="kode" placeholder="xya_…" autocomplete="off" spellcheck="false">
+            <button type="button" class="ghost" id="tempel" title="Tempel dari clipboard">Tempel</button>
+          </div>
+
+          <label for="server">Server API <span class="dim">biasanya biarkan default</span></label>
+          <input id="server" placeholder="https://api.xycloud.my.id" autocomplete="off" spellcheck="false">
+
+          <div class="tips">
+            <div class="tips-judul">Cara ambil kode</div>
+            <ol>
+              <li>Buka <code>https://admin.xycloud.my.id/unit</code></li>
+              <li>Daftarkan unit → salin <b>kode agen</b></li>
+              <li>Tempel di sini, lalu lanjut</li>
+            </ol>
+          </div>
+
+          <div class="aksi">
+            <button type="button" id="simpan-lanjut" class="utama">Simpan & lanjut →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: Engine Sunshine -->
+      <section class="panel sembunyi" id="panel-2" data-panel="2">
+        <div class="panel-head">
+          <h2>Engine streaming</h2>
+          <p>Sunshine dipasang & dikunci otomatis. <b>Tidak perlu buka web UI / login manual</b> — agen set kredensial sendiri lewat <code>sunshine --creds</code>.</p>
+        </div>
+
+        <div class="kartu">
+          <div class="status-grid" id="status-engine">
+            <div class="stat">
+              <div class="stat-l">Sunshine</div>
+              <div class="stat-v" id="st-sunshine">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-l">Service</div>
+              <div class="stat-v" id="st-service">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-l">API 47990</div>
+              <div class="stat-v" id="st-api">—</div>
+            </div>
+          </div>
+
+          <details class="lanjut">
+            <summary>Opsi lanjutan (opsional)</summary>
+            <p class="dim-p">Kosongkan untuk auto-generate. Isi hanya jika mau pakai akun Sunshine yang sudah ada.</p>
+            <label for="user">Username Sunshine</label>
+            <input id="user" placeholder="xycloud (otomatis)" autocomplete="off">
+            <label for="sandi">Password Sunshine</label>
+            <input id="sandi" type="password" placeholder="•••••••• (otomatis)" autocomplete="new-password">
+          </details>
+
+          <div class="aksi baris">
+            <button type="button" id="kembali-1" class="ghost">← Kembali</button>
+            <button type="button" id="setup" class="utama">Pasang & kunci otomatis</button>
+          </div>
+          <div class="aksi baris">
+            <button type="button" id="uji" class="sekunder">Uji koneksi saja</button>
+            <button type="button" id="lanjut-3" class="hijau" disabled>Lanjut jalankan →</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: Run -->
+      <section class="panel sembunyi" id="panel-3" data-panel="3">
+        <div class="panel-head">
+          <h2>Jalankan agen</h2>
+          <p>Heartbeat tiap 20 detik. Saat penyewa mulai sewa, server mengirim perintah mulai/pairing/akhiri — agen eksekusi ke Sunshine tanpa sentuhan manual.</p>
+        </div>
+
+        <div class="kartu">
+          <div id="status" class="status mono">Memuat…</div>
+
+          <div class="aksi baris">
+            <button type="button" id="mulai" class="hijau">▶ Jalankan Agen</button>
+            <button type="button" id="henti" class="merah">■ Hentikan</button>
+          </div>
+
+          <label class="cek">
+            <input type="checkbox" id="auto">
+            <span>Mulai otomatis saat Windows menyala</span>
+          </label>
+          <button type="button" id="autostart" class="sekunder">Terapkan autostart</button>
+
+          <div class="tips soft">
+            <div class="tips-judul">Alur nyata (tanpa login Sunshine manual)</div>
+            <ol>
+              <li>HP: Mulai Main → server antre <code>mulai_sesi</code></li>
+              <li>Agen: cek API Sunshine → unpair/close → lapor <b>siap</b></li>
+              <li>HP: kirim PIN → agen <code>POST /api/pin</code> → status berjalan</li>
+            </ol>
+          </div>
+
+          <div class="aksi">
+            <button type="button" id="kembali-2" class="ghost">← Engine</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="log-head">
+        <span>Log</span>
+        <button type="button" id="bersih-log" class="mini">Bersihkan</button>
+      </div>
+      <div id="log" class="log" role="log" aria-live="polite"></div>
+    </footer>
   </div>
-  <div id="lencana" class="lencana off">Berhenti</div>
-</header>
 
-<main>
-  <section class="kiri">
-    <h2>Pengaturan Unit</h2>
-    <label>Kode unit XyCloud <span class="dim">(dashboard → Unit PC → Daftarkan Unit)</span></label>
-    <input id="kode" placeholder="xya_…" autocomplete="off">
-    <label>Username web-UI Sunshine</label>
-    <input id="user" placeholder="admin" autocomplete="off">
-    <label>Password web-UI Sunshine</label>
-    <input id="sandi" type="password" placeholder="••••••••" autocomplete="off">
-    <label>Server API <span class="dim">(opsional)</span></label>
-    <input id="server" placeholder="https://api.xycloud.my.id" autocomplete="off">
-    <button id="simpan" class="utama">Simpan Pengaturan</button>
-  </section>
-
-  <section class="kanan">
-    <h2>Status</h2>
-    <div id="status" class="status">Memuat…</div>
-    <button id="setup" class="utama">Auto-setup yang belum ada (Sunshine engine)</button>
-    <div class="baris">
-      <button id="uji" class="sekunder">Uji Koneksi (–cek)</button>
-    </div>
-    <div class="baris">
-      <button id="mulai" class="hijau">Jalankan Agen</button>
-      <button id="henti" class="merah">Hentikan</button>
-    </div>
-    <label class="cek"><input type="checkbox" id="auto"> Mulai otomatis saat Windows menyala</label>
-    <button id="autostart" class="sekunder">Terapkan Autostart</button>
-  </section>
-</main>
-
-<footer>
-  <div class="logjudul">LOG</div>
-  <div id="log" class="log"></div>
-</footer>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
