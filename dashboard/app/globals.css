@@ -3,25 +3,23 @@
 @tailwind utilities;
 
 /* ============================================================
-   XyCloud Console — light theme (ikut gaya web xycloud.my.id)
-   Tokens diambil dari api/src/web.html (:root storefront).
+   XyCloud Console — light theme
+   Tombol: 3D-tapi-2D (solid + radius tipis + border, tanpa glow)
    ============================================================ */
 :root {
-  --xy-bg: #F5F3FF;        /* latar halaman (web --bg) */
-  --xy-card: #FFFFFF;      /* kartu (web --putih) */
-  --xy-soft: #F3F0FF;      /* sub-kartu/inset (web --soft) */
-  --xy-line: #E9E3F5;      /* garis (web --line) */
-  --xy-ink: #1E1B2E;       /* teks utama (web --ink) */
-  --xy-ink2: #4B445F;      /* teks sekunder (web --ink2) */
-  --xy-muted: #7C738F;     /* teks redup (web --muted) */
-  --xy-violet: #7C3AED;    /* ungu utama (web --u) */
-  --xy-violet2: #5B21B6;   /* ungu pekat (web --u2) */
-  --xy-violet3: #2E1065;   /* indigo (web --u3) */
+  --xy-bg: #F5F3FF;
+  --xy-card: #FFFFFF;
+  --xy-soft: #F3F0FF;
+  --xy-line: #E9E3F5;
+  --xy-ink: #1E1B2E;
+  --xy-ink2: #4B445F;
+  --xy-muted: #7C738F;
+  --xy-violet: #7C3AED;
+  --xy-violet2: #6D28D9;
+  --xy-violet3: #2E1065;
   --xy-soft-violet: #A78BFA;
-  --xy-gold: #D9A441;      /* emas (web --emas) */
-  --xy-shadow: 0 14px 36px rgba(16, 0, 48, 0.08);  /* web --sh */
-  --xy-btn-glow: 0 12px 26px rgba(124, 58, 237, 0.32);
-  --xy-btn-glow-hover: 0 18px 34px rgba(124, 58, 237, 0.4);
+  --xy-gold: #D9A441;
+  --xy-shadow: 0 1px 2px rgba(16, 0, 48, 0.04), 0 8px 24px rgba(16, 0, 48, 0.05);
   --font-inter: Inter, 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
 }
@@ -31,6 +29,7 @@ html, body {
   min-height: 100vh;
   color: var(--xy-ink);
   font-family: var(--font-inter);
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -45,11 +44,10 @@ html, body {
 ::-webkit-scrollbar-track { background: #F5F3FF; }
 ::-webkit-scrollbar-thumb { background: #C4B5FD; border-radius: 999px; }
 
-/* kartu putih — persis .kartu di web.html */
 .xy-card {
   background: var(--xy-card);
   border: 1px solid var(--xy-line);
-  border-radius: 22px;
+  border-radius: 14px;
   box-shadow: var(--xy-shadow);
 }
 .xy-card-hover:hover {
@@ -57,42 +55,54 @@ html, body {
   background: #FBFAFF;
 }
 
-/* tombol pill gradient ungu — persis .btn di web.html */
+/* Tombol utama: solid ungu, radius tipis, border, tanpa gradient/glow */
 .xy-btn {
-  background: linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%);
-  border-radius: 999px;
-  box-shadow: var(--xy-btn-glow);
+  background: var(--xy-violet);
+  border-radius: 10px;
+  box-shadow: none;
   font-family: var(--font-inter);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: #fff;
-  border: none;
+  border: 1px solid #6D28D9;
 }
 .xy-btn:hover {
-  background: linear-gradient(135deg, #B5A0FF 0%, #6D28D9 100%);
-  box-shadow: var(--xy-btn-glow-hover);
-  transform: translateY(-1px);
+  background: #6D28D9;
+  box-shadow: none;
+  transform: none;
 }
 .xy-btn:active { filter: brightness(0.97); }
+.xy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .xy-input {
   background: #FFFFFF;
   border: 1px solid var(--xy-line);
-  border-radius: 14px;
+  border-radius: 10px;
   color: var(--xy-ink);
   font-family: var(--font-inter);
-  height: 44px;
-  padding: 0 14px;
+  font-weight: 500;
+  height: 42px;
+  padding: 0 12px;
   outline: none;
 }
 .xy-input:focus {
   border-color: #7C3AED;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.14);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+.xy-input:disabled {
+  background: #F8F7FC;
+  color: var(--xy-muted);
+  cursor: not-allowed;
+}
+.xy-input[aria-invalid="true"],
+.xy-input.xy-invalid {
+  border-color: #FCA5A5;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-/* konsisten typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-inter);
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--xy-ink);
 }
@@ -100,12 +110,101 @@ code, .font-mono {
   font-family: var(--font-mono);
 }
 
-/* chip lembut untuk label kecil */
 .xy-chip {
   background: var(--xy-soft);
   border: 1px solid var(--xy-line);
   color: var(--xy-ink2);
+  border-radius: 999px;
 }
-.no-emoji {
-  font-family: var(--font-inter);
+
+/* Custom checkbox look when paired with kit Check */
+.xy-check {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid #D6CBF5;
+  background: #fff;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background .12s, border-color .12s;
+}
+.xy-check[data-on="1"] {
+  background: var(--xy-violet);
+  border-color: #6D28D9;
+  color: #fff;
+}
+
+/* Select trigger */
+.xy-select-trigger {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 36px 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--xy-line);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237C738F' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") right 12px center / 12px no-repeat;
+  color: var(--xy-ink);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.xy-select-trigger:hover { border-color: #D6CBF5; }
+.xy-select-trigger:focus {
+  outline: none;
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+.xy-select-trigger[aria-invalid="true"] {
+  border-color: #FCA5A5;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.xy-select-menu {
+  position: absolute;
+  z-index: 40;
+  left: 0; right: 0;
+  margin-top: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--xy-line);
+  border-radius: 12px;
+  box-shadow: var(--xy-shadow);
+  padding: 4px;
+}
+.xy-select-opt {
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--xy-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.xy-select-opt:hover { background: var(--xy-soft); }
+.xy-select-opt[data-active="1"] {
+  background: var(--xy-soft);
+  color: var(--xy-violet);
+  font-weight: 600;
+}
+
+/* Mobile shell helpers */
+.xy-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+@media (max-width: 767px) {
+  .xy-sidebar-desktop { display: none !important; }
+}
+
+/* native checkbox/radio fallback — flat 2D */
+input[type="checkbox"], input[type="radio"] {
+  width: 15px; height: 15px;
+  accent-color: #7C3AED;
+  cursor: pointer;
 }

@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-pub const VERSI: &str = "1.3.0-rust";
+pub const VERSI: &str = "1.3.1-rust";
 const SUNSHINE_BAWAAN: &str = "https://127.0.0.1:47990";
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

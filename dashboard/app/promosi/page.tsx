@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Gift, Plus, Trash2 } from "lucide-react";
-import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { Chip, ErrBox, Header, jam, Load, Select, Check } from "@/components/ui/kit";
 
 const kosong = { nama: "", jenis: "floating", gambar: "", aksi: "url", target: "", posisi: "kanan", platform: "semua", aktif: 1, urutan: 0 };
 
@@ -56,19 +56,13 @@ export default function PromosiPage() {
           <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama promo" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
             <input value={form.gambar} onChange={(e) => setForm({ ...form, gambar: e.target.value })} placeholder="URL gambar (https://)" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
-            <select value={form.jenis} onChange={(e) => setForm({ ...form, jenis: e.target.value })} className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none">
-              <option value="floating">floating</option><option value="popup">popup</option>
-            </select>
-            <select value={form.posisi} onChange={(e) => setForm({ ...form, posisi: e.target.value })} className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none">
-              <option value="kanan">kanan</option><option value="kiri">kiri</option><option value="bawah">bawah</option>
-            </select>
+            <Select value={form.jenis} onChange={(v) => setForm({ ...form, jenis: v })} options={[{ value: "floating", label: "floating" }, { value: "popup", label: "popup" }]} />
+            <Select value={form.posisi} onChange={(v) => setForm({ ...form, posisi: v })} options={[{ value: "kanan", label: "kanan" }, { value: "kiri", label: "kiri" }, { value: "bawah", label: "bawah" }]} />
             <input value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} placeholder="Target (URL https://)" className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none" />
-            <select value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })} className="px-3.5 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[13px] focus:border-[#7C3AED] outline-none">
-              <option value="semua">semua</option><option value="aplikasi">aplikasi</option><option value="web">web</option>
-            </select>
+            <Select value={form.platform} onChange={(v) => setForm({ ...form, platform: v })} options={[{ value: "semua", label: "semua" }, { value: "aplikasi", label: "aplikasi" }, { value: "web", label: "web" }]} />
           </div>
-          {err && <div className="mt-2 text-[12px] text-red-600 font-semibold">{err}</div>}
-          <button onClick={simpan} disabled={saving} className="mt-3 px-5 py-2.5 rounded-full xy-btn text-white font-semibold text-[13px] disabled:opacity-50">
+          {err && <div className="mt-2"><ErrBox msg={err} /></div>}
+          <button onClick={simpan} disabled={saving} className="mt-3 px-5 h-10 rounded-[10px] xy-btn text-white font-semibold text-[13px] disabled:opacity-50">
             {saving ? "Menyimpan…" : "Simpan Promo"}
           </button>
         </div>

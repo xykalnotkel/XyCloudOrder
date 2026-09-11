@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Ticket, Plus } from "lucide-react";
+import { Select, Check, ErrBox, Field } from "@/components/ui/kit";
 
 export default function VoucherPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
@@ -47,12 +48,12 @@ export default function VoucherPage() {
               <input type="number" value={form.min_belanja} onChange={(e) => setForm({ ...form, min_belanja: parseInt(e.target.value) || 0 })} placeholder="Min belanja" className="px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             </div>
             <input type="number" value={form.kuota} onChange={(e) => setForm({ ...form, kuota: parseInt(e.target.value) || 0 })} placeholder="Kuota" className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
-            <select value={form.jenis} onChange={(e) => setForm({ ...form, jenis: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium">
-              <option value="all">all</option>
-              <option value="sewa">sewa</option>
-              <option value="akun">akun</option>
-            </select>
-            <button onClick={create} className="w-full py-3 rounded-xl xy-btn font-semibold text-white tracking-wide">Simpan Voucher</button>
+            <Select value={form.jenis} onChange={(v) => setForm({ ...form, jenis: v })} options={[
+              { value: "all", label: "all" },
+              { value: "sewa", label: "sewa" },
+              { value: "akun", label: "akun" },
+            ]} />
+            <button onClick={create} className="w-full h-10 rounded-[10px] xy-btn font-semibold text-white tracking-wide">Simpan Voucher</button>
             <div className="text-[11px] text-[#7C738F] font-medium">Security: claim atomik — rollback jika transaksi gagal (v3.0c). Icons Lucide, no emoji.</div>
           </div>
         </div>

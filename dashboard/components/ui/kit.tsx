@@ -50,7 +50,7 @@ export function Header({ icon: Icon, title, sub, right }: {
   return (
     <div className="flex items-start justify-between flex-wrap gap-2">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center shadow-[0_8px_18px_rgba(124,58,237,.25)]">
+        <div className="w-10 h-10 rounded-[10px] bg-[#7C3AED] border border-[#6D28D9] grid place-items-center">
           <Icon size={18} className="text-white" />
         </div>
         <div>
@@ -72,18 +72,30 @@ export function Load() {
   );
 }
 
-export function ErrBox({ msg }: { msg: string }) {
+export function ErrBox({ msg, title = "Terjadi kesalahan", onRetry }: { msg: string; title?: string; onRetry?: () => void }) {
+  if (!msg) return null;
   return (
-    <div className="xy-card rounded-xl p-4 text-red-600 font-medium text-[13px] leading-relaxed">
-      {msg}
+    <div role="alert" className="rounded-[12px] border border-rose-200 bg-rose-50 p-4 text-rose-800">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-[8px] bg-white border border-rose-200 grid place-items-center shrink-0 text-[14px] font-semibold text-rose-600">!</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-semibold tracking-tight">{title}</div>
+          <div className="mt-1 text-[12.5px] font-medium leading-relaxed text-rose-700/90 break-words">{msg}</div>
+          {onRetry && (
+            <button type="button" onClick={onRetry} className="mt-3 h-8 px-3 rounded-[8px] border border-rose-200 bg-white text-[12px] font-semibold text-rose-700 hover:bg-rose-100">
+              Coba lagi
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 export function EmptyBox({ msg, sub }: { msg: string; sub?: string }) {
   return (
-    <div className="xy-card rounded-[20px] p-10 text-center">
-      <div className="w-12 h-12 mx-auto rounded-xl bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center">
+    <div className="xy-card rounded-[14px] p-8 text-center">
+      <div className="w-12 h-12 mx-auto rounded-[10px] bg-[#F3F0FF] border border-[#E9E3F5] grid place-items-center">
         <Package size={20} className="text-[#7C3AED]" />
       </div>
       <div className="mt-3 text-sm text-[#6B5A8A] font-semibold tracking-tight">{msg}</div>
@@ -138,8 +150,8 @@ export function Tabel({ kolom, rows, kosong, leading }: {
     return <EmptyBox msg={kosong || "Belum ada data."} sub="Data akan muncul setelah ada aktivitas." />;
   }
   return (
-    <div className="xy-card rounded-[20px] overflow-x-auto">
-      <table className="w-full text-left text-[12.5px] min-w-[640px]">
+    <div className="xy-card rounded-[14px] overflow-x-auto">
+      <table className="w-full text-left text-[12.5px] min-w-[560px]">
         <thead>
           <tr className="border-b border-[#E9E3F5] bg-[#F5F3FF]">
             {leading && <th className="px-3 py-2.5 w-10" />}
@@ -180,12 +192,12 @@ type BtnProps = {
 };
 
 export function Btn({ children, onClick, disabled, type = "button", className = "", title, tone = "utama" }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-full text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
+  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-[10px] text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition border";
   const map: Record<string, string> = {
-    utama: "xy-btn text-white",
-    ghost: "bg-white border border-[#E9E3F5] text-[#4B445F] hover:bg-[#F5F3FF]",
-    bahaya: "bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100",
-    ok: "bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100",
+    utama: "xy-btn text-white border-[#6D28D9]",
+    ghost: "bg-white border-[#E9E3F5] text-[#4B445F] hover:bg-[#F5F3FF]",
+    bahaya: "bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100",
+    ok: "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100",
   };
   return (
     <button type={type} title={title} disabled={disabled} onClick={onClick} className={`${base} ${map[tone]} ${className}`}>
@@ -328,4 +340,116 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
 export function MsgOk({ msg }: { msg: string }) {
   if (!msg) return null;
   return <div className="xy-card rounded-xl p-3 text-emerald-700 text-[12.5px] font-semibold border border-emerald-200 bg-emerald-50">{msg}</div>;
+}
+
+export function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="text-[11.5px] font-medium text-rose-600 mt-1 leading-snug">{msg}</p>;
+}
+
+export function Check({
+  checked, onChange, disabled, label, className = "",
+}: {
+  checked: boolean;
+  onChange?: (v: boolean) => void;
+  disabled?: boolean;
+  label?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange?.(!checked)}
+      className={`inline-flex items-center gap-2.5 text-left disabled:opacity-50 ${className}`}
+    >
+      <span className="xy-check" data-on={checked ? "1" : "0"} aria-hidden>
+        {checked ? (
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+        ) : null}
+      </span>
+      {label != null && <span className="text-[13px] font-medium text-[#1E1B2E]">{label}</span>}
+    </button>
+  );
+}
+
+export type SelectOption = { value: string; label: string; disabled?: boolean };
+
+export function Select({
+  value, onChange, options, placeholder = "Pilih…", disabled, invalid, className = "", size,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  invalid?: boolean;
+  className?: string;
+  /** native multi-row list when size set (user picker) */
+  size?: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const aktif = options.find((o) => o.value === value);
+  // list mode (size): keep accessible native for long lists
+  if (size && size > 1) {
+    return (
+      <select
+        value={value}
+        disabled={disabled}
+        size={size}
+        aria-invalid={invalid || undefined}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full px-3 py-2 rounded-[10px] bg-white border border-[#E9E3F5] text-[13px] font-medium text-[#1E1B2E] outline-none focus:border-[#7C3AED] ${invalid ? "border-rose-300" : ""} ${className}`}
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>
+        ))}
+      </select>
+    );
+  }
+  return (
+    <div className={`relative ${className}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-invalid={invalid || undefined}
+        className="xy-select-trigger disabled:opacity-50"
+        onClick={() => setOpen((v) => !v)}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+      >
+        <span className={aktif ? "text-[#1E1B2E]" : "text-[#7C738F]"}>{aktif?.label || placeholder}</span>
+      </button>
+      {open && (
+        <div className="xy-select-menu" role="listbox">
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              role="option"
+              aria-selected={o.value === value}
+              data-active={o.value === value ? "1" : "0"}
+              disabled={o.disabled}
+              className="xy-select-opt disabled:opacity-40"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              {o.label}
+            </button>
+          ))}
+          {options.length === 0 && (
+            <div className="px-3 py-2 text-[12px] text-[#7C738F] font-medium">Tidak ada pilihan</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PageShell({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return <div className={`space-y-4 font-[var(--font-inter)] max-w-[1600px] ${className}`}>{children}</div>;
 }

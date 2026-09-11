@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Rocket, Package } from "lucide-react";
+import { Select, Check, ErrBox, Field } from "@/components/ui/kit";
 
 export default function RilisPage() {
   const [rilis, setRilis] = useState<any[]>([]);
@@ -40,16 +41,16 @@ export default function RilisPage() {
             <input value={form.versi} onChange={(e) => setForm({ ...form, versi: e.target.value })} placeholder="Versi, mis: 3.3.0" className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             <input value={form.url_apk} onChange={(e) => setForm({ ...form, url_apk: e.target.value })} placeholder="URL APK https://..." className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             <textarea value={form.catatan} onChange={(e) => setForm({ ...form, catatan: e.target.value })} placeholder="Catatan rilis (apa yang baru)" rows={4} className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
-            <select value={form.gambar_tema} onChange={(e) => setForm({ ...form, gambar_tema: e.target.value })} className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium">
-              <option value="default">default — violet-indigo</option>
-              <option value="ramadan">ramadan — bulan + lampu</option>
-              <option value="lebaran">lebaran — ketupat</option>
-              <option value="natal">natal — salju</option>
-              <option value="tahunbaru">tahunbaru — kembang api</option>
-              <option value="merdeka">merdeka — merah putih</option>
-            </select>
-            <label className="flex items-center gap-2 text-sm text-[#1E1B2E]/70 font-medium"><input type="checkbox" checked={form.wajib} onChange={(e) => setForm({ ...form, wajib: e.target.checked })} /> Wajib update?</label>
-            <button onClick={handleCreate} className="w-full py-3 rounded-xl xy-btn font-semibold tracking-wide">Simpan Rilis</button>
+            <Select value={form.gambar_tema} onChange={(v) => setForm({ ...form, gambar_tema: v })} options={[
+              { value: "default", label: "default — violet-indigo" },
+              { value: "ramadan", label: "ramadan — bulan + lampu" },
+              { value: "lebaran", label: "lebaran — ketupat" },
+              { value: "natal", label: "natal — salju" },
+              { value: "tahunbaru", label: "tahunbaru — kembang api" },
+              { value: "merdeka", label: "merdeka — merah putih" },
+            ]} />
+            <Check checked={!!form.wajib} onChange={(v) => setForm({ ...form, wajib: v })} label="Wajib update?" />
+            <button onClick={handleCreate} className="w-full h-10 rounded-[10px] xy-btn font-semibold tracking-wide">Simpan Rilis</button>
             <div className="text-[11px] text-[#7C738F] font-medium">Gambar tema: file `rilis_popup_{"{tema}"}.png` 928x1152 — generate nanti pas waktunya. Icons Lucide, no emoji.</div>
           </div>
         </div>

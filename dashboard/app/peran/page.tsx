@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Copy, KeyRound, Plus, RefreshCw, ShieldUser, Trash2, UserPlus } from "lucide-react";
-import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { Chip, ErrBox, Header, jam, Load, Select } from "@/components/ui/kit";
 
 export default function PeranPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -66,14 +66,17 @@ export default function PeranPage() {
           <div className="mt-3 space-y-3">
             <input value={nama} onChange={(e) => setNama(e.target.value)} placeholder="Nama admin"
               className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium focus:border-[#7C3AED] outline-none" />
-            <select value={peran} onChange={(e) => setPeran(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-white border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium focus:border-[#7C3AED] outline-none">
-              <option value="pemilik">pemilik</option>
-              <option value="cs">cs</option>
-              <option value="moderator">moderator</option>
-            </select>
+            <Select
+              value={peran}
+              onChange={setPeran}
+              options={[
+                { value: "pemilik", label: "pemilik" },
+                { value: "cs", label: "cs" },
+                { value: "moderator", label: "moderator" },
+              ]}
+            />
             <button onClick={buat} disabled={saving || !nama.trim()}
-              className="w-full py-3 rounded-full xy-btn text-white font-semibold text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50">
+              className="w-full h-10 rounded-[10px] xy-btn text-white font-semibold text-[13px] flex items-center justify-center gap-1.5 disabled:opacity-50">
               <Plus size={15} /> {saving ? "Membuat…" : "Buat Key Baru"}
             </button>
           </div>

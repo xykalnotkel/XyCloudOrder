@@ -1,3 +1,10 @@
+## Unduh siap pakai
+
+- **Permanent:** https://github.com/xykalnotkel/XyCloudOrder/releases/download/agent-windows/XyCloudStore-Agent-Windows.zip
+- Actions artifact: workflow **Build Agen Windows**
+
+> EXE lama yang error `localhost refused to connect` = build tanpa UI embed. Pakai v1.3.1+ dari link di atas.
+
 # Agen PC Host XyCloudStore (Rust + Tauri, v1.3)
 
 Program kecil di setiap PC/VM sewa. Menyambungkan mesin ke server XyCloudStore supaya

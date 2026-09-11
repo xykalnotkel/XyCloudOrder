@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Gamepad2, Plus, Package, Star } from "lucide-react";
+import { Select, Check, ErrBox, Field } from "@/components/ui/kit";
 
 export default function ProdukPage() {
   const [produk, setProduk] = useState<any[]>([]);
@@ -43,17 +44,17 @@ export default function ProdukPage() {
           <div className="mt-4 space-y-3">
             <input value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Nama produk" className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             <div className="grid grid-cols-2 gap-2">
-              <select value={form.kategori} onChange={(e) => setForm({ ...form, kategori: e.target.value })} className="px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium">
-                <option value="game">game</option>
-                <option value="streaming">streaming</option>
-                <option value="software">software</option>
-                <option value="vpn">vpn</option>
-              </select>
+              <Select value={form.kategori} onChange={(v) => setForm({ ...form, kategori: v })} options={[
+                { value: "game", label: "game" },
+                { value: "streaming", label: "streaming" },
+                { value: "software", label: "software" },
+                { value: "vpn", label: "vpn" },
+              ]} />
               <input type="number" value={form.harga} onChange={(e) => setForm({ ...form, harga: parseInt(e.target.value) || 0 })} placeholder="Harga" className="px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             </div>
             <input type="number" value={form.stok} onChange={(e) => setForm({ ...form, stok: parseInt(e.target.value) || 0 })} placeholder="Stok awal" className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
             <textarea value={form.deskripsi} onChange={(e) => setForm({ ...form, deskripsi: e.target.value })} placeholder="Deskripsi" rows={3} className="w-full px-4 py-2.5 rounded-xl bg-[#FFFFFF] border border-[#E9E3F5] text-sm text-[#1E1B2E] font-medium" />
-            <button onClick={create} className="w-full py-3 rounded-xl xy-btn font-semibold text-white tracking-wide">Simpan</button>
+            <button onClick={create} className="w-full h-10 rounded-[10px] xy-btn font-semibold text-white tracking-wide">Simpan</button>
             <div className="text-[11px] text-[#7C738F] font-medium">Stok kredensial: klaim atomik WHERE status=tersedia — anti-double sudah di v3.0c. Icons Lucide, font konsisten.</div>
           </div>
         </div>

@@ -95,15 +95,15 @@
   a{color:inherit;text-decoration:none}
   img{max-width:100%;display:block}
   .wrap{max-width:1140px;margin:0 auto;padding:0 20px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;
-    font-family:inherit;font-weight:700;font-size:14.5px;padding:14px 24px;border-radius:99px;
-    background:linear-gradient(135deg,#7C3AED,#5B16CC);color:#fff;box-shadow:0 12px 26px rgba(108,43,226,.32);
-    transition:transform .18s,box-shadow .18s}
-  .btn:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(108,43,226,.4)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+    font-family:inherit;font-weight:600;font-size:14.5px;padding:12px 20px;border-radius:10px;
+    background:var(--u);color:#fff;border:1px solid #6D28D9;box-shadow:none;
+    transition:background .12s,border-color .12s,filter .12s}
+  .btn:hover{background:#6D28D9}
   .btn.ghost{background:var(--putih);color:var(--ink);border:1px solid var(--line);box-shadow:none}
-  .btn.ghost:hover{border-color:var(--u);color:var(--u)}
-  .btn.sm{padding:10px 18px;font-size:13px}
-  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn.ghost:hover{border-color:var(--u);color:var(--u);background:var(--soft)}
+  .btn.sm{padding:9px 14px;font-size:13px;border-radius:10px}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
   .kartu{background:var(--putih);border:1px solid var(--line);border-radius:var(--r-l);padding:22px;box-shadow:var(--sh)}
   .tag{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:99px;
     font-size:11.5px;font-weight:700;background:var(--soft);color:var(--u)}
@@ -1694,5 +1694,15 @@ muatForum();
 muatUnduh();
 muatKontak();
 </script>
+
+  <div class="kartu" style="margin-top:18px" id="agen-pc">
+    <div style="font-weight:600;font-size:15px;margin-bottom:6px">Agen PC Host (Windows)</div>
+    <p style="color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 12px">Pasang di PC sewa. Wizard 3 langkah + Sunshine otomatis — tanpa login web UI manual.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <a class="btn sm" href="https://github.com/xykalnotkel/XyCloudOrder/releases/download/agent-windows/XyCloudStore-Agent-Windows.zip">Unduh Agent Windows</a>
+      <a class="btn sm ghost" href="https://admin.xycloud.my.id/unit">Daftar unit (admin)</a>
+    </div>
+  </div>
+
 </body>
 </html>

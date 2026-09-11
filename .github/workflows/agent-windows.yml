@@ -14,11 +14,11 @@ concurrency:
 
 jobs:
   build:
-    name: Bangun agen Rust/Tauri jadi .exe (tanpa Python)
+    name: Bangun agen Rust/Tauri jadi .exe (UI ter-embed)
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -26,32 +26,51 @@ jobs:
 
       - name: Pasang toolchain Rust (stable-msvc)
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
 
       - name: Cache kargo
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: agent-gui/src-tauri
 
-      - name: Bangun rilis (cargo build --release)
+      - name: Pasang Tauri CLI
         shell: pwsh
-        working-directory: agent-gui/src-tauri
-        run: |
-          cargo build --release --locked
-          Get-Item target/release/xycloud-agent.exe | Select-Object Name, Length
+        run: cargo install tauri-cli --version "^2" --locked --force
 
-      - name: Kemas exe + uji versi + zip
+      - name: Bangun rilis lewat tauri CLI (embed frontendDist, bukan localhost)
         shell: pwsh
+        working-directory: agent-gui
         run: |
+          # --no-bundle = exe saja (cepat); UI dari ../ui di-embed ke binary
+          cargo tauri build --no-bundle --ci
+          $exe = Get-Item "src-tauri/target/release/xycloud-agent.exe" -ErrorAction SilentlyContinue
+          if (-not $exe) {
+            $exe = Get-ChildItem -Recurse -Filter "xycloud-agent.exe" "src-tauri/target" |
+              Where-Object { $_.FullName -match "[\/]release[\/]" } |
+              Select-Object -First 1
+          }
+          if (-not $exe) { throw "xycloud-agent.exe tidak ketemu setelah tauri build" }
+          Write-Host "EXE:" $exe.FullName $exe.Length
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item agent-gui/src-tauri/target/release/xycloud-agent.exe `
-            dist/XyCloudStore-Agent.exe -Force
-          Copy-Item agent-gui/README.md dist/README.md -Force
-          # Smoke-test: exe berjalan dan melaporkan versi (tanpa Python)
+          Copy-Item $exe.FullName dist/XyCloudStore-Agent.exe -Force
+          Copy-Item README.md dist/README.md -Force
+
+      - name: Smoke-test versi + pastikan bukan localhost embed
+        shell: pwsh
+        working-directory: agent-gui
+        run: |
           & .\dist\XyCloudStore-Agent.exe --veri
           if ($LASTEXITCODE -ne 0) { throw "Smoke-test --veri gagal" }
+          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path .\dist\XyCloudStore-Agent.exe))
+          $text = [System.Text.Encoding]::ASCII.GetString($bytes)
+          if ($text -match "localhost:1420") {
+            throw "EXE masih mengandung localhost:1420 — UI tidak ter-embed. Gagal."
+          }
+          Write-Host "OK: tidak ada localhost:1420 di binary"
           Compress-Archive -Path dist/XyCloudStore-Agent.exe, dist/README.md `
-            -DestinationPath XyCloudStore-Agent-Windows.zip -Force
-          Get-Item XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
+            -DestinationPath ../XyCloudStore-Agent-Windows.zip -Force
+          Get-Item ../XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,3 +78,22 @@ jobs:
           name: XyCloudStore-Agent-Windows
           path: XyCloudStore-Agent-Windows.zip
           if-no-files-found: error
+
+      # Tag bergerak agent-windows = link unduhan permanen (bukan v* rilis app)
+      - name: Publish unduhan tetap (tag agent-windows)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: agent-windows
+          name: XyCloudStore Agent (Windows)
+          body: |
+            Agen PC Host Windows — build otomatis dari `main`.
+            Wizard 3 langkah + auto Sunshine (`sunshine --creds`), UI ter-embed (bukan localhost).
+
+            **Unduh:** `XyCloudStore-Agent-Windows.zip` → ekstrak → jalankan `XyCloudStore-Agent.exe`
+
+            Alur: Admin → Unit PC → salin kode → tempel di Agent → Pasang & kunci otomatis → Jalankan Agen.
+          files: XyCloudStore-Agent-Windows.zip
+          fail_on_unmatched_files: true
+          make_latest: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
