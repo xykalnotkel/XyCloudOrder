@@ -73,3 +73,11 @@ Lihat juga: `docs/migrasi-dashboard.md`, `docs/konsistensi-platform.md`.
 3. **Dashboard filter tanggal**: tidak ada komponen rentang tanggal yang disalin massal (false positive kata “dari/sampai”); hanya `keuangan` yang punya Export CSV lokal — dibiarkan.
 4. **Lint info 328**: tidak disentuh (bukan error/warning).
 
+
+## Gelombang 2 selesai (kode)
+
+- Worker CS alias digabung.
+- App hardcode warna → `XyTheme`.
+- Dashboard filter-date: tidak ada duplikat komponen nyata.
+- Sisa opsional: ganti hex Tailwind di dash ke `var(--xy-*)` (kosmetik), lint `info` 328.
+

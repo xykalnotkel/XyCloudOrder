@@ -258,3 +258,19 @@ User: "kalo udh Lu boleh Push build Tapi jan releases dlu, Gua harus tes dlu"
 - Dash: `api/src/admin.html` (lama), `dashboard/` (baru, Next.js)
 - Docs: `docs/PopupUpdate.md`, `docs/rencana-3.0.md`, `docs/rencana-3.3.md` (ini)
 
+
+
+## Progress update 2026-09-11 (agent)
+
+| Item rencana | Status |
+|---|---|
+| Dashboard Next.js full rewrite | ✅ 45 halaman + aksi parity (`docs/migrasi-dashboard.md`) |
+| Menu app Voucher / Referral / Leaderboard / Live / Favorit / Statistik | ✅ screen ada |
+| Security rate-limit auth + forum + CSP | ✅ ada di Worker (lihat `docs/keamanan-audit.md` ringkasan) |
+| Native updater DownloadManager | ✅ CI `siapkan_pembaruan.py` |
+| Konsistensi token warna lintas app/web/dash | ✅ `docs/konsistensi-platform.md` + tokenisasi `XyTheme` |
+| httpOnly cookie admin (Next) | ⏳ ditunda — static `output: 'export'` |
+| Tag release `v3.3.0` | ⏳ ditahan sampai user tes APK |
+| Build/compile lokal agen | ⏸ user minta tangguhkan sampai semua batch selesai |
+
+Checklist kotak di atas dokumen mungkin usang; andalkan tabel ini.

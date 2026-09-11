@@ -1,3 +1,24 @@
+# Keamanan — status terkini (2026-09-11)
+
+> Banyak checklist di bawah ini sudah **diimplementasi** di Worker (`index.js` + `security.js`). Ringkasan verifikasi kode:
+>
+> | Item | Status kode |
+> |---|---|
+> | Rate limit login IP (`login:${ip}` 12/5m) + email | ✅ |
+> | Rate limit OTP / OAuth start | ✅ `requireRate` |
+> | Device fingerprint `X-XY-Device` 64 hex + kuota daftar | ✅ `beforeRegistration` |
+> | Forum max 5 post/jam (memory + D1) + `bolehLanjut` | ✅ |
+> | CSP di respons JSON/HTML/admin/web | ✅ beberapa profil CSP |
+> | Atomic topup / saldo / claim kredensial | ✅ (v3.0+) |
+> | Dashboard Next.js shell + aksi admin | ✅ migrasi 2026-09-11 |
+> | Admin key httpOnly cookie (Next proxy) | ⏳ ditunda (static export Pages) |
+> | Filter kata kasar otomatis | ⏳ backlog |
+> | Admin key rotate endpoint | ⏳ backlog |
+>
+> Detail historis checklist tetap di bawah untuk jejak audit.
+
+---
+
 # Keamanan Audit — v3.3c Full (Updated 2026-09-09)
 
 > Audit semua lapisan sesuai request user. Status: ✅ sudah ada, ⏳ perlu ditambah di v3.3, ❌ belum.
