@@ -14,7 +14,7 @@ Status: **gelombang 1 selesai & terkirim** (`9ffc7ab`), gelombang 2 masih tersis
 | `app/lib` | Import tak terpakai di 7 berkas | ✅ dibuang |
 | `app/lib` | Widget/painter mati: `_GarisKartu`, `_MiniBtn`, `_MeshPainter`, cabang `if (cmd == null)` yang tak mungkin benar di parser SVG | ✅ dibuang |
 | `api/src` | Tidak ada blok/fungsi yang identik lintas berkas (pemindaian blok 12 baris) | ✅ bersih |
-| `dashboard/` | Belum dipindai tuntas (sandbox terlalu lambat untuk pemindaian 40+ halaman) | ⏳ gelombang 2 |
+| `dashboard/` | Kit bersama `kit.tsx` diperluas + halaman stub diisi aksi (migrasi tuntas `47f8804`) | ✅ gelombang migrasi |
 
 Hasil analyzer setelah perbaikan: **0 error, 0 warning** untuk `app/lib` (328 catatan tersisa semuanya `info`: `prefer_const_constructors`, `deprecated_member_use` pada `withOpacity`, `curly_braces_in_flow_control_structures`).
 
@@ -51,7 +51,7 @@ Efek samping positif: di `profil_screen.dart` ikon sebelumnya memakai `primarySo
 
 ## Gelombang 2 — sisa yang belum dikerjakan
 
-1. **Dashboard `dashboard/app/**` (40+ halaman)**: cari komponen tabel/form/filter yang disalin antar-halaman; kandidat kuat: filter rentang tanggal, kartu statistik, tombol ekspor, dan pembungkus fetch API. Usulan: tarik ke `dashboard/components/`.
+1. **Dashboard `dashboard/app/**`**: migrasi aksi selesai (`docs/migrasi-dashboard.md`). Sisa kosmetik dedup filter tanggal antar halaman analitik/keuangan bila perlu. (sebelumnya: filter rentang tanggal, kartu statistik, tombol ekspor, dan pembungkus fetch API. Usulan: tarik ke `dashboard/components/`.
 2. **`api/src/index.js` (361 KB, satu berkas)**: belum dipindai untuk blok rute berulang **di dalam** berkas. Kandidat: validasi admin, parsing body, dan pola respons error.
 3. **`_Stat` di `akun_screen.dart` vs `welcome_screen.dart`**: sebelumnya terdeteksi nama sama; setelah diperiksa isinya berbeda (satu berkartu vertikal, satu teks putih besar) — **bukan duplikat**, biarkan.
 4. **Pemakaian `XyBarisMenu` lebih luas**: `checkout_sewa_screen.dart` masih punya `_Baris` untuk baris rincian harga (kiri–kanan) — beda peran, jadi tetap lokal; tinjau ulang kalau nanti dipakai di 3+ tempat.
