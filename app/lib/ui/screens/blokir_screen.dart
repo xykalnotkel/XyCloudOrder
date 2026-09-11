@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
