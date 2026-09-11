@@ -35,3 +35,9 @@ dashboard/out/
 agent-gui/src-tauri/target/
 agent-gui/src-tauri/gen/
 __pycache__/
+
+# local deploy artifacts
+.vercel/
+rilis/
+dist-apk/
+dashboard/out/
