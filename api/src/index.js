@@ -2179,6 +2179,19 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         //                   0 = tanpa batas (tidak pernah auto-mati)
         if (a === 'sistem/pemeliharaan' && req.method === 'POST') {
           const b = await req.json().catch(() => ({}));
+          // hanya_bebas: perbarui daftar pengecualian tanpa mengubah status
+          // mode pemeliharaan (supaya menambah tester tidak mematikan mode).
+          if (b.hanya_bebas === true) {
+            const bersih = (Array.isArray(b.bebas) ? b.bebas : [])
+              .map((x) => (typeof x === 'string' ? { id: x } : x))
+              .filter((x) => x && (x.id || x.email))
+              .map((x) => ({ id: String(x.id || ''), email: String(x.email || '').toLowerCase(), nama: String(x.nama || '') }));
+            const unikB = [...new Map(bersih.map((x) => [x.id || x.email, x])).values()];
+            await simpanSetelan(env, 'pemeliharaan_bebas', JSON.stringify(unikB));
+            ctx.waitUntil(catatLog(env, 'pemeliharaan',
+              'Daftar pengecualian pemeliharaan diperbarui: ' + unikB.length + ' pengguna'));
+            return json({ ok: true, hanyaBebas: true, bebas: unikB }, 200, env);
+          }
           const aktif = Boolean(b.aktif);
           // cakupan: 'semua' | 'web' | 'aplikasi' | 'halaman'
           let cakupan = String(b.cakupan || 'semua').toLowerCase();

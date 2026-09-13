@@ -82,6 +82,21 @@ export default function SistemPage() {
     finally { setSaving(false); }
   }
 
+  async function simpanBebas() {
+    setSaving(true); setMsg(""); setErr("");
+    try {
+      const hasil = await adminFetch("/api/admin/sistem/pemeliharaan", {
+        method: "POST",
+        body: { hanya_bebas: true, bebas },
+      });
+      setMsg(hasil?.ok
+        ? `Daftar pengecualian tersimpan (${bebas.length} pengguna).`
+        : "Tidak berubah.");
+      await muat();
+    } catch (e: any) { setErr(e.message); }
+    finally { setSaving(false); }
+  }
+
   function toggleHalaman(path: string) {
     setHalaman((h) => h.includes(path) ? h.filter((x) => x !== path) : [...h, path]);
   }
