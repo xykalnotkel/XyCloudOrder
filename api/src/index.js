@@ -153,6 +153,31 @@ async function tertutupPemeliharaan(env, req) {
   return !(await bebasPemeliharaan(env, req));
 }
 
+// Tema banner profil yang tersedia di aplikasi (gradasi palet ungu).
+const BANNER_PROFIL = ['ungu', 'senja', 'midnight', 'permen', 'anggrek'];
+
+// True bila pengguna membisukan thread tertentu (dm:<id>, cs, forum:<id>)
+// dan masa bisunya belum lewat. Dipakai supaya tombol aksi "Bisukan" pada
+// push benar-benar menghentikan kiriman untuk thread itu (Batch D).
+async function threadBisu(env, userId, thread) {
+  try {
+    const u = await env.DB.prepare('SELECT bisu_notif FROM users WHERE id=?').bind(userId).first();
+    if (!u?.bisu_notif) return false;
+    const peta = JSON.parse(u.bisu_notif);
+    const sampai = Number(peta?.[thread] || 0);
+    return sampai > Date.now();
+  } catch (_) { return false; }
+}
+
+// Tombol aksi pada push chat/balasan/DM: baca, balas, bisukan (diminta Batch D).
+// 'baca' & 'balas' ditangani aplikasi; 'bisukan' membisukan notifikasi thread
+// terkait selama satu jam di perangkat.
+const TOMBOL_SOCIAL = [
+  { id: 'baca', text: 'Tandai dibaca' },
+  { id: 'balas', text: 'Balas' },
+  { id: 'bisukan', text: 'Bisukan 1 jam' },
+];
+
 // Blokir sementara yang sudah lewat batasnya pulih otomatis saat dibaca,
 // supaya akun tidak tetap terkunci setelah masanya habis (audit 2026-09-13).
 async function pulihkanBlokirKadaluarsa(env, userId) {
@@ -251,7 +276,7 @@ async function pushForum(env, idPengguna, { judul, pesan, data }) {
  * Simpan pemberitahuan untuk pengguna lalu dorong lewat WebSocket dan push.
  * Dipakai untuk suka, balasan, peringatan admin, dan kabar pesanan.
  */
-async function buatNotif(env, ctx, { userId, jenis, judul, pesan, aktor, refJenis, refId, kirimPushJuga = true }) {
+async function buatNotif(env, ctx, { userId, jenis, judul, pesan, aktor, refJenis, refId, kirimPushJuga = true, gambar = null, tombol = null }) {
   if (!userId) return;
   try {
     const id = uid('n_');
@@ -267,7 +292,7 @@ async function buatNotif(env, ctx, { userId, jenis, judul, pesan, aktor, refJeni
       const u = await env.DB.prepare('SELECT notif_forum FROM users WHERE id = ?').bind(userId).first();
       const forumJenis = ['suka', 'balasan', 'sebut', 'komunitas'];
       if (!forumJenis.includes(jenis) || (u?.notif_forum ?? 1) === 1) {
-        ctx.waitUntil(kirimPush(env, { userId, judul, pesan: pesan || '', data: { tipe: jenis, id: refId } }));
+        ctx.waitUntil(kirimPush(env, { userId, judul, pesan: pesan || '', data: { tipe: jenis, id: refId, dari: aktor || '' }, gambar, tombol }));
       }
     }
   } catch (_) { /* jangan sampai menggagalkan permintaan utama */ }
@@ -2768,6 +2793,154 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         return json({ ok: true, id: idB }, 201, env);
       }
 
+      if (p === 'me/bisukan' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const thread = String(b.thread || '').slice(0, 64);
+        const menit = Math.max(0, Math.min(720, Number(b.menit ?? 60)));
+        if (!thread) return err('Thread tidak valid.', 422, env);
+        const u = await env.DB.prepare('SELECT bisu_notif FROM users WHERE id=?').bind(me.sub).first();
+        let peta = {};
+        try { peta = JSON.parse(u?.bisu_notif || '{}') || {}; } catch (_) { peta = {}; }
+        if (menit === 0) delete peta[thread];
+        else peta[thread] = Date.now() + menit * 60000;
+        await env.DB.prepare('UPDATE users SET bisu_notif=? WHERE id=?').bind(JSON.stringify(peta), me.sub).run();
+        return json({ ok: true, menit }, 200, env);
+      }
+
+      // ---------------- PROFIL PUBLIK, FOLLOW, DM, SIMPAN ----------------
+      if (p.startsWith('users/') && p.endsWith('/profil') && req.method === 'GET') {
+        const idU = p.split('/')[1];
+        const u = await env.DB.prepare(
+          'SELECT id,nama,foto,bio,banner,tier,badge,diblokir FROM users WHERE id=? AND deleted_at IS NULL',
+        ).bind(idU).first();
+        if (!u) return err('Pengguna tidak ditemukan', 404, env);
+        const [pengikut, mengikuti, posting, sayaIkuti] = await Promise.all([
+          env.DB.prepare('SELECT COUNT(*) c FROM follows WHERE target_id=?').bind(idU).first(),
+          env.DB.prepare('SELECT COUNT(*) c FROM follows WHERE ikut_id=?').bind(idU).first(),
+          env.DB.prepare('SELECT COUNT(*) c FROM forum_post WHERE user_id=?').bind(idU).first(),
+          env.DB.prepare('SELECT 1 ada FROM follows WHERE ikut_id=? AND target_id=?').bind(me.sub, idU).first(),
+        ]);
+        return json({
+          ...u,
+          pengikut: pengikut.c, mengikuti: mengikuti.c, posting: posting.c,
+          sayaIkuti: Boolean(sayaIkuti), saya: idU === me.sub,
+        }, 200, env);
+      }
+      if (p.startsWith('users/') && p.endsWith('/ikuti') && req.method === 'POST') {
+        const idU = p.split('/')[1];
+        if (idU === me.sub) return err('Tidak bisa mengikuti akun sendiri.', 422, env);
+        if (!(await bolehLanjut(env, `ikuti:${me.sub}`, 30, 3600))) return err('Terlalu banyak aksi ikuti. Coba nanti.', 429, env);
+        const b = await req.json().catch(() => ({}));
+        const target = await env.DB.prepare('SELECT id,nama,diblokir,deleted_at FROM users WHERE id=?').bind(idU).first();
+        if (!target || target.deleted_at || target.diblokir === 1) return err('Akun tidak tersedia.', 404, env);
+        const ikut = b.ikuti !== false;
+        if (ikut) {
+          await env.DB.prepare('INSERT OR IGNORE INTO follows(ikut_id,target_id,waktu) VALUES(?,?,?)')
+            .bind(me.sub, idU, new Date().toISOString()).run();
+        } else {
+          await env.DB.prepare('DELETE FROM follows WHERE ikut_id=? AND target_id=?').bind(me.sub, idU).run();
+        }
+        if (ikut) {
+          const saya = await env.DB.prepare('SELECT nama,foto FROM users WHERE id=?').bind(me.sub).first();
+          ctx.waitUntil(buatNotif(env, ctx, {
+            userId: idU, jenis: 'sosial',
+            judul: `${saya?.nama || 'Seseorang'} mulai mengikuti kamu`,
+            pesan: 'Ketuk untuk melihat profilnya.',
+            aktor: saya?.nama || '', refJenis: 'profil', refId: me.sub,
+            gambar: saya?.foto || null,
+          }));
+        }
+        return json({ ok: true, ikut }, 200, env);
+      }
+      if (p === 'me/follows' && req.method === 'GET') {
+        const arah = url.searchParams.get('arah') === 'pengikut' ? 'pengikut' : 'mengikuti';
+        const q = arah === 'pengikut'
+          ? 'SELECT f.ikut_id id, u.nama, u.foto FROM follows f LEFT JOIN users u ON u.id=f.ikut_id WHERE f.target_id=?'
+          : 'SELECT f.target_id id, u.nama, u.foto FROM follows f LEFT JOIN users u ON u.id=f.target_id WHERE f.ikut_id=?';
+        const r = await env.DB.prepare(q + ' ORDER BY f.waktu DESC LIMIT 100').bind(me.sub).all();
+        return json(r.results, 200, env);
+      }
+      if (p.startsWith('dm/') && p.endsWith('/dibaca') && req.method === 'POST') {
+        const idU = p.split('/')[1];
+        const r = await env.DB.prepare('UPDATE dm SET dibaca=1 WHERE dari_id=? AND ke_id=? AND dibaca=0')
+          .bind(idU, me.sub).run();
+        return json({ ok: true, baru: r.meta?.changes ?? 0 }, 200, env);
+      }
+      if (p.startsWith('dm/') && req.method === 'GET') {
+        const idU = p.split('/')[1];
+        const sebelum = String(url.searchParams.get('sebelum') || '');
+        const r = await env.DB.prepare(
+          `SELECT id, dari_id, ke_id, teks, audio, durasi, gambar, tipe, dibaca, waktu
+           FROM dm WHERE ((dari_id=? AND ke_id=?) OR (dari_id=? AND ke_id=?)) ${sebelum ? 'AND waktu < ?' : ''}
+           ORDER BY waktu DESC LIMIT 50`,
+        ).bind(...(sebelum ? [me.sub, idU, idU, me.sub, sebelum] : [me.sub, idU, idU, me.sub])).all();
+        return json(r.results.reverse(), 200, env);
+      }
+      if (p.startsWith('dm/') && req.method === 'POST') {
+        const idU = p.split('/')[1];
+        if (idU === me.sub) return err('Tidak bisa mengirim ke diri sendiri.', 422, env);
+        if (!(await bolehLanjut(env, `dm:${me.sub}`, 20, 60))) return err('Terlalu banyak pesan. Pelan-pelan.', 429, env);
+        const b = await req.json().catch(() => ({}));
+        const target = await env.DB.prepare('SELECT id,nama,diblokir,deleted_at FROM users WHERE id=?').bind(idU).first();
+        if (!target || target.deleted_at || target.diblokir === 1) return err('Akun tidak tersedia.', 404, env);
+        const teks = String(b.teks ?? '').slice(0, 4000);
+        const audio = b.audio, gambarM = b.gambar;
+        const tipe = ['teks', 'audio', 'gambar'].includes(b.tipe) ? b.tipe : (audio ? 'audio' : (gambarM ? 'gambar' : 'teks'));
+        const durasi = Number.isFinite(Number(b.durasi)) ? Number(b.durasi) : null;
+        if (!teks.trim() && !audio && !gambarM) return err('Pesan kosong', 400, env);
+        if (tipe === 'audio' && (!audio || !durasi || durasi > 600)) return err('Pesan suara tidak valid', 400, env);
+        let urlAudio = null, urlGambar = null;
+        if (tipe === 'audio') {
+          const h = await unggahAudio(env, { dataUri: audio, folder: 'xycloudstore/dm' });
+          if (!h.ok) return err(h.alasan, 502, env);
+          urlAudio = h.url;
+        }
+        if (tipe === 'gambar') {
+          const h = await unggahGambar(env, { dataUri: gambarM, folder: 'xycloudstore/dm' });
+          if (!h.ok) return err(h.alasan, 502, env);
+          urlGambar = h.url;
+        }
+        const saya = await env.DB.prepare('SELECT nama,foto FROM users WHERE id=?').bind(me.sub).first();
+        const msg = {
+          id: uid('dm_'), dari_id: me.sub, ke_id: idU,
+          teks: tipe === 'audio' ? '' : teks,
+          audio: urlAudio, durasi: tipe === 'audio' ? durasi : null,
+          gambar: urlGambar, tipe, dibaca: 0,
+          waktu: new Date().toISOString(),
+          dari_nama: saya?.nama || '', dari_foto: saya?.foto || null,
+        };
+        await env.DB.prepare(
+          'INSERT INTO dm(id,dari_id,ke_id,teks,audio,durasi,gambar,tipe,dibaca,waktu) VALUES(?,?,?,?,?,?,?,?,0,?)',
+        ).bind(msg.id, me.sub, idU, msg.teks, urlAudio, msg.durasi, urlGambar, tipe, msg.waktu).run();
+        ctx.waitUntil(Promise.all([
+          push(env, `user:${idU}`, 'dm.baru', msg),
+          push(env, `user:${me.sub}`, 'dm.baru', msg),
+        ]));
+        ctx.waitUntil((async () => {
+          if (await threadBisu(env, idU, `dm:${me.sub}`)) return;
+          return kirimPush(env, {
+          userId: idU,
+          judul: `${saya?.nama || 'Seseorang'} mengirim pesan`,
+          pesan: tipe === 'audio' ? 'Pesan suara' : (teks.slice(0, 120) || 'Mengirim gambar'),
+          data: { tipe: 'dm', dari: me.sub, nama: saya?.nama || '' },
+          gambar: saya?.foto || null,
+          tombol: TOMBOL_SOCIAL,
+          });
+        })());
+        return json(msg, 201, env);
+      }
+      if (p.startsWith('forum/') && p.endsWith('/simpan') && req.method === 'POST') {
+        const idP = p.split('/')[1];
+        const ada = await env.DB.prepare('SELECT 1 ada FROM simpan_post WHERE post_id=? AND user_id=?').bind(idP, me.sub).first();
+        if (ada) await env.DB.prepare('DELETE FROM simpan_post WHERE post_id=? AND user_id=?').bind(idP, me.sub).run();
+        else await env.DB.prepare('INSERT OR IGNORE INTO simpan_post(post_id,user_id,waktu) VALUES(?,?,?)').bind(idP, me.sub, new Date().toISOString()).run();
+        return json({ ok: true, disimpan: !ada }, 200, env);
+      }
+      if (p === 'me/simpan' && req.method === 'GET') {
+        const r = await env.DB.prepare('SELECT post_id FROM simpan_post WHERE user_id=? ORDER BY waktu DESC LIMIT 200').bind(me.sub).all();
+        return json(r.results.map((x) => x.post_id), 200, env);
+      }
+
       if (p === 'me' && req.method === 'GET') {
         await pulihkanBlokirKadaluarsa(env, me.sub);
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
@@ -3131,13 +3304,23 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
 
         const notifForum = b.notif_forum == null ? null : (b.notif_forum ? 1 : 0);
 
+        // Kustomisasi profil luas (Batch D): bio bebas + tema banner gradasi.
+        const bio = b.bio === undefined ? null : String(b.bio || '').slice(0, 240);
+        const banner = b.banner === undefined ? null
+          : (b.banner === '' ? '' : (BANNER_PROFIL.includes(String(b.banner)) ? String(b.banner) : null));
+        if (b.banner !== undefined && banner === null && b.banner !== '') {
+          return err('Tema banner tidak dikenal.', 422, env);
+        }
+
         await env.DB.prepare(
           `UPDATE users SET nama = COALESCE(NULLIF(?,''), nama),
                             phone = COALESCE(NULLIF(?,''), phone),
                             foto = COALESCE(?, foto),
-                            notif_forum = COALESCE(?, notif_forum)
+                            notif_forum = COALESCE(?, notif_forum),
+                            bio = COALESCE(?, bio),
+                            banner = COALESCE(NULLIF(?,'~'), banner)
            WHERE id = ?`
-        ).bind(nama, phone, foto, notifForum, me.sub).run();
+        ).bind(nama, phone, foto, notifForum, bio, banner === null ? '~' : (banner || ''), me.sub).run();
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         delete u.password;
@@ -3271,6 +3454,8 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
                 aktor: baris.nama,
                 refJenis: 'forum',
                 refId: id,
+                gambar: baris.foto || null,
+                tombol: TOMBOL_SOCIAL,
               });
             }
           }
@@ -3286,6 +3471,8 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
               aktor: baris.nama,
               refJenis: 'forum',
               refId: id,
+              gambar: baris.foto || null,
+              tombol: TOMBOL_SOCIAL,
             });
           }
 

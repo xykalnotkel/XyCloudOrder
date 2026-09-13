@@ -31,7 +31,6 @@ class XyRadius {
   static const double xl = 24;
   static const double xxl = 28;
   static const double pill = 99;
-  static const double pill = 100;
 
   /// Radius khusus tombol supaya bentuknya membulat, bukan kotak.
   static const double tombol = 14;
@@ -457,4 +456,29 @@ class XyPalette {
   LinearGradient get gradSoft => dark
       ? const LinearGradient(colors: [Color(0xFF25183E), Color(0xFF1A0B2E)])
       : XyTheme.gradSoft;
+}
+
+
+/// Tema banner profil (Batch D). Nilai harus sama dengan whitelist
+/// BANNER_PROFIL di api/src/index.js.
+class XyBannerTema {
+  XyBannerTema._();
+
+  static const Map<String, List<Color>> peta = {
+    'ungu': [Color(0xFF8B5CF6), Color(0xFF4C1D95)],
+    'senja': [Color(0xFFFBBF24), Color(0xFFB91C1C)],
+    'midnight': [Color(0xFF2E1065), Color(0xFF0F172A)],
+    'permen': [Color(0xFFF472B6), Color(0xFF7C3AED)],
+    'anggrek': [Color(0xFFA855F7), Color(0xFF4F46E5)],
+  };
+
+  static const Map<String, String> label = {
+    'ungu': 'Ungu Glossy',
+    'senja': 'Senja',
+    'midnight': 'Midnight',
+    'permen': 'Permen Kapas',
+    'anggrek': 'Anggrek Neon',
+  };
+
+  static List<Color> warna(String? id) => peta[id ?? ''] ?? peta['ungu']!;
 }

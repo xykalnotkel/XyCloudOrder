@@ -8,6 +8,7 @@ import '../../core/motion.dart';
 import '../../data/push_service.dart';
 import 'akun_screen.dart';
 import 'cs_screen.dart';
+import 'dm_chat_screen.dart';
 import 'notifikasi_screen.dart';
 import 'order_list_screen.dart';
 import 'wallet_screen.dart';
@@ -73,8 +74,33 @@ class _XyShellState extends State<XyShell> {
     final aksi = '${data['aksi'] ?? ''}';
 
     // tombol aksi dari notifikasi Android (lihat api/src/push.js)
+    if (aksi == 'bisukan') {
+      // Bisukan thread 1 jam di server supaya push thread ini berhenti.
+      final thread = tipe == 'dm'
+          ? 'dm:${data['dari'] ?? ''}'
+          : (tipe == 'cs'
+              ? 'cs'
+              : 'forum:${data['post_id'] ?? data['id'] ?? ''}');
+      context.read<AppState>().bisukanThread(thread, 60);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Notifikasi thread ini dibisukan selama 1 jam.')));
+      context.read<AppState>().muatNotifikasi();
+      return;
+    }
+    if (aksi == 'baca') {
+      if (tipe == 'dm' && data['dari'] != null) {
+        context.read<AppState>().repo.dmBaca('${data['dari']}').catchError((_) => <String, dynamic>{});
+      }
+      context.read<AppState>().muatNotifikasi();
+      return;
+    }
     if (aksi == 'balas') {
-      Navigator.push(context, xyRoute(const CsScreen()));
+      if (tipe == 'dm' && data['dari'] != null) {
+        Navigator.push(context,
+            xyRoute(DmChatScreen(userId: '${data['dari']}', nama: data['nama'] as String?)));
+      } else {
+        Navigator.push(context, xyRoute(const CsScreen()));
+      }
       context.read<AppState>().muatNotifikasi();
       return;
     }
@@ -85,6 +111,10 @@ class _XyShellState extends State<XyShell> {
     }
 
     switch (tipe) {
+      case 'dm':
+        Navigator.push(context,
+            xyRoute(DmChatScreen(userId: '${data['dari'] ?? ''}', nama: data['nama'] as String?)));
+        break;
       case 'cs':
         Navigator.push(context, xyRoute(const CsScreen()));
         break;

@@ -5,6 +5,8 @@ import 'live_unit_screen.dart';
 import 'bantuan_screen.dart';
 import 'pembaruan_screen.dart';
 import 'favorit_screen.dart';
+import 'follows_screen.dart';
+import 'profil_publik_screen.dart';
 import 'statistik_screen.dart';
 import 'tier_screen.dart';
 import 'aktivitas_screen.dart';
@@ -184,8 +186,20 @@ class _ProfilScreenState extends State<ProfilScreen> {
               XyBarisMenu(
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',
-                sub: 'Nama, nomor WhatsApp, dan foto',
+                sub: 'Nama, nomor WhatsApp, bio, dan tema banner',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.UbahProfilScreen())),
+              ),
+              XyBarisMenu(
+                ikon: Icons.language_rounded,
+                judul: 'Profil Publik',
+                sub: 'Tampilan profilmu di mata pengguna lain',
+                onTap: () => Navigator.push(context, xyRoute(ProfilPublikScreen(userId: u.id))),
+              ),
+              XyBarisMenu(
+                ikon: Icons.forum_outlined,
+                judul: 'Mengikuti & Pesan',
+                sub: 'Teman yang diikuti, pengikut, dan pesan langsung',
+                onTap: () => Navigator.push(context, xyRoute(const FollowsScreen())),
               ),
               XyBarisMenu(
                 ikon: Icons.lock_outline_rounded,

@@ -225,6 +225,9 @@ class AppState extends ChangeNotifier {
 
   late final ApiClient _api;
   late final XyRepository _repo;
+
+  /// Akses repository untuk layar sosial (Batch D): profil publik, DM, follows.
+  XyRepository get repo => _repo;
   RealtimeService? _rt;
   RealtimeService? _rtKatalog;
   RealtimeService? _rtForum;
@@ -716,9 +719,9 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= profil =================
-  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async {
+  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, String? bio, String? banner}) async {
     try {
-      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum);
+      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, bio: bio, banner: banner);
       forumRevisi++;
       forum = forum.map((p) => p.userId == user!.id ? ForumPost.fromJson({...p.toJson(), 'nama': user!.nama, 'foto': user!.foto}) : p).toList();
       _ulasan.clear();
@@ -744,6 +747,47 @@ class AppState extends ChangeNotifier {
   // ================= forum komunitas =================
   List<ForumPost> forum = [];
   Set<String> forumDisukai = {};
+
+  /// Posting yang dibookmark pengguna (Batch D).
+  Set<String> forumDisimpan = {};
+  bool _simpanPernahDimuat = false;
+
+  /// Bisukan thread notifikasi (dipakai tombol aksi "Bisukan" pada push).
+  Future<String?> bisukanThread(String thread, int menit) async {
+    try {
+      await _repo.bisukan(thread, menit);
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<void> muatSimpanan({bool paksa = false}) async {
+    if (_simpanPernahDimuat && !paksa) return;
+    _simpanPernahDimuat = true;
+    try {
+      forumDisimpan = (await _repo.simpanSaya()).toSet();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> simpanForum(String id) async {
+    final tadinya = forumDisimpan.contains(id);
+    forumDisimpan = {...forumDisimpan}..remove(id);
+    if (!tadinya) forumDisimpan.add(id); // optimis
+    notifyListeners();
+    try {
+      final r = await _repo.simpanPost(id);
+      final disimpan = r['disimpan'] == true || r['disimpan'] == 1;
+      forumDisimpan = {...forumDisimpan}..remove(id);
+      if (disimpan) forumDisimpan.add(id);
+      notifyListeners();
+    } catch (_) {
+      forumDisimpan = {...forumDisimpan}..remove(id);
+      if (tadinya) forumDisimpan.add(id); // rollback
+      notifyListeners();
+    }
+  }
   bool forumMemuat = false;
   String? forumGalat;
 
@@ -768,6 +812,7 @@ class AppState extends ChangeNotifier {
       if (user != null) {
         try {
           forumDisukai = (await _repo.forumSukaSaya()).toSet();
+          unawaited(muatSimpanan());
         } catch (_) {}
       }
     } catch (e) {

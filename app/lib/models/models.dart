@@ -17,6 +17,10 @@ class UserProfile {
   /// Foto profil dari server (Cloudinary atau Google).
   final String? foto;
 
+  /// Bio singkat dan tema banner profil (Batch D: profil bisa dikustom).
+  final String? bio;
+  final String? banner;
+
   /// Terima pemberitahuan kegiatan forum komunitas.
   final bool notifForum;
 
@@ -37,6 +41,8 @@ class UserProfile {
     this.tier = 'basic',
     this.avatar,
     this.foto,
+    this.bio,
+    this.banner,
     this.notifForum = true,
     this.badge,
     this.diblokir = false,
@@ -55,6 +61,8 @@ class UserProfile {
         tier: j['tier'] ?? 'basic',
         avatar: j['avatar'],
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
+        bio: (j['bio'] as String?)?.isNotEmpty == true ? j['bio'] : null,
+        banner: (j['banner'] as String?)?.isNotEmpty == true ? j['banner'] : null,
         notifForum: (j['notif_forum'] ?? 1) == 1,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         diblokir: (j['diblokir'] ?? 0) == 1,
@@ -73,11 +81,13 @@ class UserProfile {
         'tier': tier,
         'avatar': avatar,
         'foto': foto,
+        'bio': bio,
+        'banner': banner,
         'notif_forum': notifForum ? 1 : 0,
         'badge': badge,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
@@ -86,6 +96,8 @@ class UserProfile {
         tier: tier,
         foto: foto ?? this.foto,
         avatar: avatar,
+        bio: bio ?? this.bio,
+        banner: banner ?? this.banner,
         notifForum: notifForum,
         badge: badge,
         diblokir: diblokir ?? this.diblokir,
@@ -914,4 +926,100 @@ class InfoBlokir {
             .map((x) => BandingItem.fromJson(Map<String, dynamic>.from(x)))
             .toList(),
       );
+}
+
+/// Ubah penanda waktu server (ISO-8601 atau epoch ms) jadi epoch ms lokal.
+int waktuMs(dynamic v) {
+  if (v == null) return 0;
+  if (v is num) return v.toInt();
+  final d = DateTime.tryParse('$v');
+  return d?.millisecondsSinceEpoch ?? 0;
+}
+
+/// ============================================================
+///  Sosial (Batch D): profil publik, ikutan, dan pesan DM
+/// ============================================================
+class ProfilPublik {
+  final String id;
+  final String nama;
+  final String? foto;
+  final String? bio;
+  final String? banner;
+  final String? tier;
+  final String? badge;
+  final int pengikut;
+  final int mengikuti;
+  final int posting;
+  final bool sayaIkuti;
+  final bool saya;
+
+  const ProfilPublik({
+    required this.id, required this.nama, this.foto, this.bio, this.banner,
+    this.tier, this.badge, this.pengikut = 0, this.mengikuti = 0,
+    this.posting = 0, this.sayaIkuti = false, this.saya = false,
+  });
+
+  factory ProfilPublik.fromJson(Map<String, dynamic> j) => ProfilPublik(
+    id: j['id'] as String,
+    nama: j['nama'] as String? ?? '',
+    foto: j['foto'] as String?,
+    bio: j['bio'] as String?,
+    banner: j['banner'] as String?,
+    tier: j['tier'] as String?,
+    badge: j['badge'] as String?,
+    pengikut: (j['pengikut'] as num?)?.toInt() ?? 0,
+    mengikuti: (j['mengikuti'] as num?)?.toInt() ?? 0,
+    posting: (j['posting'] as num?)?.toInt() ?? 0,
+    sayaIkuti: j['saya_ikuti'] == 1 || j['saya_ikuti'] == true,
+    saya: j['saya'] == 1 || j['saya'] == true,
+  );
+}
+
+class IkutanItem {
+  final String id;
+  final String nama;
+  final String? foto;
+  const IkutanItem({required this.id, required this.nama, this.foto});
+  factory IkutanItem.fromJson(Map<String, dynamic> j) => IkutanItem(
+    id: j['id'] as String, nama: j['nama'] as String? ?? '', foto: j['foto'] as String?,
+  );
+}
+
+class DmPesan {
+  final String id;
+  final String dariId;
+  final String keId;
+  final String? teks;
+  final String? audio;
+  final double? durasi;
+  final String? gambar;
+  final String tipe;
+  final bool dibaca;
+  final int waktu;
+  final String? dariNama;
+  final String? dariFoto;
+
+  const DmPesan({
+    required this.id, required this.dariId, required this.keId, this.teks,
+    this.audio, this.durasi, this.gambar, this.tipe = 'text',
+    this.dibaca = false, this.waktu = 0, this.dariNama, this.dariFoto,
+  });
+
+  factory DmPesan.fromJson(Map<String, dynamic> j) => DmPesan(
+    id: j['id'] as String? ?? '',
+    dariId: j['dari_id'] as String? ?? '',
+    keId: j['ke_id'] as String? ?? '',
+    teks: j['teks'] as String?,
+    audio: j['audio'] as String?,
+    durasi: (j['durasi'] as num?)?.toDouble(),
+    gambar: j['gambar'] as String?,
+    tipe: j['tipe'] as String? ?? 'text',
+    dibaca: j['dibaca'] == 1 || j['dibaca'] == true,
+    waktu: waktuMs(j['waktu']),
+    dariNama: j['dari_nama'] as String?,
+    dariFoto: j['dari_foto'] as String?,
+  );
+
+  bool dariSaya(String sayaId) => dariId == sayaId;
+  DateTime get tanggal => DateTime.fromMillisecondsSinceEpoch(waktu);
 }

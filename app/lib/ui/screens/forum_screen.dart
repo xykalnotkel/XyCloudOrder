@@ -15,6 +15,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import 'profil_publik_screen.dart';
 import '../widgets/error_state.dart';
 import '../widgets/lembar.dart';
 
@@ -318,6 +319,7 @@ class _KartuPost extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final disukai = s.forumDisukai.contains(post.id);
+    final disimpan = s.forumDisimpan.contains(post.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -326,7 +328,13 @@ class _KartuPost extends StatelessWidget {
             Navigator.push(context, xyRoute(ForumDetailScreen(post: post))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            _Avatar(nama: post.nama, foto: post.foto),
+            GestureDetector(
+              onTap: post.userId.isEmpty
+                  ? null
+                  : () => Navigator.push(context,
+                      xyRoute(ProfilPublikScreen(userId: post.userId))),
+              child: _Avatar(nama: post.nama, foto: post.foto),
+            ),
             const SizedBox(width: 11),
             Expanded(
               child: Column(
@@ -334,11 +342,17 @@ class _KartuPost extends StatelessWidget {
                   children: [
                     Row(children: [
                       Flexible(
-                        child: Text(post.nama,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 13.5)),
+                        child: GestureDetector(
+                          onTap: post.userId.isEmpty
+                              ? null
+                              : () => Navigator.push(context,
+                                  xyRoute(ProfilPublikScreen(userId: post.userId))),
+                          child: Text(post.nama,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700, fontSize: 13.5)),
+                        ),
                       ),
                       LencanaTier(post.tier),
                       if (post.badge != null) LencanaKhusus(post.badge!),
@@ -413,6 +427,28 @@ class _KartuPost extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: XyTheme.of(context).muted)),
+            const SizedBox(width: 18),
+            Pressable(
+              onTap: () => s.simpanForum(post.id),
+              child: Row(children: [
+                Icon(
+                    disimpan
+                        ? Icons.bookmark_rounded
+                        : Icons.bookmark_border_rounded,
+                    size: 17,
+                    color: disimpan
+                        ? XyTheme.primary
+                        : XyTheme.of(context).muted),
+                const SizedBox(width: 5),
+                Text(disimpan ? 'Disimpan' : 'Simpan',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: disimpan
+                            ? XyTheme.primary
+                            : XyTheme.of(context).muted)),
+              ]),
+            ),
             const Spacer(),
             const Text('Lihat',
                 style: TextStyle(

@@ -20,7 +20,7 @@ const UNGU = '6C2BE2';
  * Saat diketuk, aplikasi menerima data.tipe seperti biasa (id tombol juga
  * disertakan di data.aksi bila perangkat mendukungnya).
  */
-export async function kirimPush(env, { userId, judul, pesan, data, url, tombol }) {
+export async function kirimPush(env, { userId, judul, pesan, data, url, tombol, gambar }) {
   if (!env.ONESIGNAL_APP_ID || !env.ONESIGNAL_API_KEY || !userId) {
     return { ok: false, alasan: 'kredensial OneSignal belum diatur' };
   }
@@ -34,6 +34,9 @@ export async function kirimPush(env, { userId, judul, pesan, data, url, tombol }
     android_accent_color: `FF${UNGU}`,
     existing_android_channel_id: kanalPush(data?.tipe),
     small_icon: 'ic_stat_onesignal_default',
+    // Gambar besar di notifikasi (foto pengirim) supaya push chat/balasan
+    // langsung terasa personal (permintaan Batch D, 2026-09-13).
+    ...(gambar ? { image: String(gambar) } : {}),
     data: data || {},
     ...(Array.isArray(tombol) && tombol.length
       ? { buttons: tombol.slice(0, 3).map((t) => ({ id: String(t.id), text: String(t.text), icon: 'ic_stat_onesignal_default' })) }

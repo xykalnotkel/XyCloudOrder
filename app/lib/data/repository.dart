@@ -69,8 +69,19 @@ abstract class XyRepository {
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri);
 
   // ---------- profil ----------
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum});
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, String? bio, String? banner});
   Future<void> gantiPassword(String lama, String baru);
+
+  // ---------- sosial (Batch D) ----------
+  Future<ProfilPublik> profilPublik(String id);
+  Future<Map<String, dynamic>> ikuti(String id, bool ikut);
+  Future<List<IkutanItem>> followsSaya({String arah = 'mengikuti'});
+  Future<List<DmPesan>> dmAmbil(String id);
+  Future<DmPesan> dmKirim(String id, {String? teks, String? audio, double? durasi, String? gambar});
+  Future<Map<String, dynamic>> dmBaca(String id);
+  Future<Map<String, dynamic>> simpanPost(String id);
+  Future<List<String>> simpanSaya();
+  Future<Map<String, dynamic>> bisukan(String thread, int menit);
 
   // ---------- sesi main ----------
   Future<SesiMain> sesiMulai(String orderId);
@@ -300,13 +311,60 @@ class RemoteRepository implements XyRepository {
           await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) async =>
-      UserProfile.fromJson(await api.patch('/me', {
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, String? bio, String? banner}) async =>
+      UserProfile.fromJson(Map<String, dynamic>.from(await api.patch('/me', {
         if (nama != null) 'nama': nama,
         if (phone != null) 'phone': phone,
         if (foto != null) 'foto': foto,
         if (notifForum != null) 'notif_forum': notifForum ? 1 : 0,
-      }));
+        if (bio != null) 'bio': bio,
+        if (banner != null) 'banner': banner,
+      })));
+
+  // ---------- sosial (Batch D) ----------
+  @override
+  Future<ProfilPublik> profilPublik(String id) async =>
+      ProfilPublik.fromJson(Map<String, dynamic>.from(await api.get('/users/$id/profil')));
+
+  @override
+  Future<Map<String, dynamic>> ikuti(String id, bool ikut) async =>
+      Map<String, dynamic>.from(await api.post('/users/$id/ikuti', {'ikuti': ikut}));
+
+  @override
+  Future<List<IkutanItem>> followsSaya({String arah = 'mengikuti'}) async =>
+      ((await api.get('/me/follows', {'arah': arah})) as List)
+          .map((e) => IkutanItem.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+
+  @override
+  Future<List<DmPesan>> dmAmbil(String id) async => ((await api.get('/dm/$id')) as List)
+      .map((e) => DmPesan.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+
+  @override
+  Future<DmPesan> dmKirim(String id, {String? teks, String? audio, double? durasi, String? gambar}) async =>
+      DmPesan.fromJson(Map<String, dynamic>.from(await api.post('/dm/$id', {
+        if (teks != null) 'teks': teks,
+        if (audio != null) 'audio': audio,
+        if (durasi != null) 'durasi': durasi,
+        if (gambar != null) 'gambar': gambar,
+      })));
+
+  @override
+  Future<Map<String, dynamic>> dmBaca(String id) async =>
+      Map<String, dynamic>.from(await api.post('/dm/$id/dibaca', {}));
+
+  @override
+  Future<Map<String, dynamic>> simpanPost(String id) async =>
+      Map<String, dynamic>.from(await api.post('/forum/$id/simpan', {}));
+
+  @override
+  Future<List<String>> simpanSaya() async =>
+      ((await api.get('/me/simpan')) as List).map((e) => '$e').toList();
+
+  @override
+  Future<Map<String, dynamic>> bisukan(String thread, int menit) async =>
+      Map<String, dynamic>.from(await api.post('/me/bisukan', {'thread': thread, 'menit': menit}));
 
   @override
   Future<void> gantiPassword(String lama, String baru) async =>
@@ -620,11 +678,44 @@ class MockRepository implements XyRepository {
   Future<List<PermintaanTopup>> daftarTopup() => _delay(<PermintaanTopup>[], 300);
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum}) =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, String? bio, String? banner}) =>
       _delay(MockData.user, 400);
 
   @override
   Future<void> gantiPassword(String lama, String baru) async {}
+
+  // ---------- sosial (Batch D) ----------
+  @override
+  Future<ProfilPublik> profilPublik(String id) async =>
+      _delay(const ProfilPublik(id: 'u_demo', nama: 'Anggota Demo', bio: 'Halo, ini profil contoh.'), 300);
+
+  @override
+  Future<Map<String, dynamic>> ikuti(String id, bool ikut) async => _delay({'ikuti': ikut}, 250);
+
+  @override
+  Future<List<IkutanItem>> followsSaya({String arah = 'mengikuti'}) async => _delay(const <IkutanItem>[], 250);
+
+  @override
+  Future<List<DmPesan>> dmAmbil(String id) async => _delay(const <DmPesan>[], 250);
+
+  @override
+  Future<DmPesan> dmKirim(String id, {String? teks, String? audio, double? durasi, String? gambar}) async => _delay(
+      DmPesan(id: 'dm_${DateTime.now().millisecondsSinceEpoch}', dariId: 'u_demo', keId: id,
+          teks: teks, audio: audio, tipe: teks != null ? 'text' : (audio != null ? 'audio' : 'gambar'),
+          waktu: DateTime.now().millisecondsSinceEpoch),
+      250);
+
+  @override
+  Future<Map<String, dynamic>> dmBaca(String id) async => _delay({'dibaca': 0}, 200);
+
+  @override
+  Future<Map<String, dynamic>> simpanPost(String id) async => _delay({'disimpan': 1}, 200);
+
+  @override
+  Future<List<String>> simpanSaya() async => _delay(const <String>[], 200);
+
+  @override
+  Future<Map<String, dynamic>> bisukan(String thread, int menit) async => _delay({'menit': menit}, 200);
 
   @override
   Future<SesiMain> sesiMulai(String orderId) => _delay(

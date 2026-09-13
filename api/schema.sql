@@ -25,7 +25,7 @@ CREATE TABLE users (
   saldo     INTEGER NOT NULL DEFAULT 0,
   tier      TEXT NOT NULL DEFAULT 'basic',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT);
+, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT, bio TEXT, banner TEXT, bisu_notif TEXT);
 
 -- ------------------------------------------------------------
 --  pc_plans
@@ -471,3 +471,32 @@ WHEN NEW.registration_device IS NOT NULL BEGIN
  UPDATE security_devices SET registrations=registrations+1,last_seen=datetime('now') WHERE id=NEW.registration_device;
  INSERT INTO security_device_users(device_id,user_id,signup) VALUES(NEW.registration_device,NEW.id,1);
 END;
+
+-- ---- 0007: sosial (follow, DM, bookmark, bisukan notifikasi) ----
+CREATE TABLE IF NOT EXISTS follows (
+  ikut_id   TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  waktu     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (ikut_id, target_id)
+);
+CREATE INDEX IF NOT EXISTS idx_follows_target ON follows(target_id);
+CREATE TABLE IF NOT EXISTS dm (
+  id      TEXT PRIMARY KEY,
+  dari_id TEXT NOT NULL,
+  ke_id   TEXT NOT NULL,
+  teks    TEXT NOT NULL DEFAULT '',
+  audio   TEXT,
+  durasi  REAL,
+  gambar  TEXT,
+  tipe    TEXT NOT NULL DEFAULT 'teks',
+  dibaca  INTEGER NOT NULL DEFAULT 0,
+  waktu   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_dm_dari ON dm(dari_id, waktu);
+CREATE INDEX IF NOT EXISTS idx_dm_ke   ON dm(ke_id, waktu);
+CREATE TABLE IF NOT EXISTS simpan_post (
+  post_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  waktu   TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (post_id, user_id)
+);

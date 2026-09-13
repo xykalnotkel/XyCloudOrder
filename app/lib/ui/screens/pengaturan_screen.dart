@@ -130,6 +130,8 @@ class UbahProfilScreen extends StatefulWidget {
 class _UbahProfilScreenState extends State<UbahProfilScreen> {
   late final _nama = TextEditingController(text: context.read<AppState>().user?.nama ?? '');
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
+  late final _bio = TextEditingController(text: context.read<AppState>().user?.bio ?? '');
+  late String _banner = context.read<AppState>().user?.banner ?? 'ungu';
   bool proses = false;
   String? pesan;
 
@@ -137,6 +139,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   void dispose() {
     _nama.dispose();
     _phone.dispose();
+    _bio.dispose();
     super.dispose();
   }
 
@@ -152,6 +155,8 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
     final galat = await context.read<AppState>().perbaruiProfil(
           nama: _nama.text.trim(),
           phone: _phone.text.trim(),
+          bio: _bio.text.trim(),
+          banner: _banner,
         );
     if (!mounted) return;
     setState(() {
@@ -193,6 +198,77 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             decoration: const InputDecoration(
               hintText: '08xxxxxxxxxx',
               prefixIcon: Icon(Icons.phone_iphone_rounded),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const XyLabel('Bio'),
+          TextField(
+            controller: _bio,
+            maxLines: 3,
+            maxLength: 160,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              hintText: 'Ceritakan sedikit tentang dirimu — tampil di profil publik dan komunitas',
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(bottom: 44),
+                child: Icon(Icons.edit_note_rounded),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const XyLabel('Tema Banner Profil'),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 58,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: XyBannerTema.peta.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final id = XyBannerTema.peta.keys.elementAt(i);
+                final warna = XyBannerTema.peta[id]!;
+                final pilih = _banner == id;
+                return GestureDetector(
+                  onTap: () => setState(() => _banner = id),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    width: 92,
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(XyRadius.sm),
+                      border: Border.all(
+                        color: pilih ? XyTheme.primary : Colors.transparent,
+                        width: 2.4,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(XyRadius.sm - 4),
+                        gradient: LinearGradient(
+                          colors: warna,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      alignment: Alignment.bottomLeft,
+                      padding: const EdgeInsets.all(6),
+                      child: Row(children: [
+                        Text(XyBannerTema.label[id] ?? id,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        if (pilih)
+                          const Icon(Icons.check_circle_rounded,
+                              size: 14, color: Colors.white),
+                      ]),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 10),
