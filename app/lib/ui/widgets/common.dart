@@ -563,8 +563,18 @@ class XyWordmark extends StatelessWidget {
 /// Ilustrasi 3D bawaan aplikasi (hasil generate, latar sudah transparan).
 class XyIlustrasi extends StatelessWidget {
   const XyIlustrasi(this.nama, {super.key, this.tinggi = 200});
-  final String nama; // sewa | akun | cs | dompet | kosong | sukses
+  final String nama; // sewa | akun | cs | dompet | kosong | sukses | favorit | pc | order
   final double tinggi;
+
+  /// Ilustrasi yang pasti tersedia, dipakai sebagai jaring pengaman.
+  ///
+  /// Sebelumnya `Image.asset` dipasang TANPA `errorBuilder`, sehingga satu nama
+  /// berkas yang lupa disertakan langsung melempar "Unable to load asset" di
+  /// perangkat pengguna dan layarnya menampilkan kotak galat. Kasus nyatanya
+  /// terjadi di produksi (audit 2026-09-13): `favorit`, `pc`, dan `order`
+  /// dipakai tiga layar baru v3.3 tetapi berkasnya tidak ada, dan galatnya
+  /// sampai tercatat di tabel `galat`.
+  static const String cadangan = 'kosong';
 
   @override
   Widget build(BuildContext context) => Image.asset(
@@ -572,6 +582,12 @@ class XyIlustrasi extends StatelessWidget {
         height: tinggi,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) => nama == cadangan
+            // Kalau bahkan cadangannya hilang, jangan melempar lagi: tampilkan
+            // ikon polos supaya layar tetap bisa dipakai.
+            ? Icon(Icons.image_not_supported_outlined,
+                size: tinggi * .55, color: XyTheme.of(context).muted.withOpacity(.45))
+            : XyIlustrasi(cadangan, tinggi: tinggi),
       );
 }
 
