@@ -68,6 +68,21 @@ test('Sosial: profil publik, follow dua arah, DM, dan simpan posting', async () 
     assert.equal(r.status, 200);
     assert.equal((await B('/users/a/profil')).json.data.banner, 'senja');
     assert.equal((await A('/me', 'PATCH', { banner: 'pelangi' })).status, 422);
+
+    // toggle notifikasi DM (0008) + manajemen bisukan
+    r = await A('/me', 'PATCH', { notif_dm: false });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.notif_dm, 0);
+    r = await A('/me', 'PATCH', { notif_dm: true });
+    assert.equal(r.json.data.notif_dm, 1);
+
+    r = await A('/me/bisukan', 'POST', { thread: 'dm:b', menit: 60 });
+    assert.equal(r.json.data.ok, true);
+    r = await A('/me/bisukan');
+    assert.equal(r.json.data.length, 1);
+    assert.equal(r.json.data[0].thread, 'dm:b');
+    await A('/me/bisukan', 'POST', { thread: 'dm:b', menit: 0 });
+    assert.deepEqual((await A('/me/bisukan')).json.data, []);
   } finally {
     await mf.dispose();
   }

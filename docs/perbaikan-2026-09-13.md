@@ -186,3 +186,38 @@ pengiriman akhir baru bisa dilakukan begitu ada perangkat nyata memasang APK.
   **armeabi-v7a**, x86_64, + Sumber GPL (run 34785495619, head 5d9187b).
 - Release/tag (`apk-android`, `agent-windows`) DITAHAN sampai pemilik tes APK,
   sesuai kesepakatan.
+
+## Batch D lanjutan — menutup sisa antrian (release tetap ditahan)
+
+### Backend (migrasi 0008 sudah live di D1 produksi)
+- Kolom `users.notif_dm` (default 1): toggle push DM per pengguna;
+  `PATCH /api/me` menerima `notif_dm`; push DM melewati penerima yang
+  mematikannya (selain hormati `threadBisu`).
+- `GET /api/me/bisukan`: daftar thread yang sedang dibisukan (untuk
+  manajemen di Settings); `POST menit=0` = nyalakan lagi.
+- Test sosial diperluas (notif_dm + bisukan). Suite 22/22 hijau.
+
+### Flutter
+- Forum: tombol bookmark di app bar → filter "Hanya yang disimpan"
+  (menutup celah: simpan ada tapi tidak bisa dilihat).
+- Profil sendiri: header kini memakai **tema banner pilihan pengguna**
+  (gradien XyBannerTema) + bio tampil di bawah email.
+- Settings → Notifikasi: kartu toggle **Pesan Langsung** + kartu
+  **Sedang dibisukan** (daftar thread, sisa waktu, tombol nyalakan lagi).
+- Settings → Data: "Bersihkan Sekarang" kini juga mengosongkan cache
+  gambar (flutter_cache_manager + imageCache memori).
+- Model/repo/AppState: `notifDm`, `bisukanDaftar()`, `BisukanItem`.
+
+### Optimasi (butir 7 Batch D) — ringkasan yang sudah terpasang
+- DM: LIMIT 50 + index `idx_dm_dari/ke`, polling 6 detik hanya saat layar
+  terbuka, gambar di-encode max 1200px q82, audio m4a 32kbps mono.
+- Gambar jaringan lewat `AppImage` dengan `memCacheWidth` (decode seukuran
+  tampilan, hemat RAM).
+- Push: penerima yang bisu/mematikan notif DM tidak dikirimi (hemat kuota
+  OneSignal + tidak mengganggu).
+- Cache offline bisa dibersihkan penuh dari Settings → Data.
+
+### Status antrian
+- Batch D butir 1–9: **selesai semua**.
+- Batch B (tag `apk-android`, `agent-windows`, `simpanRilis`): **DITAHAN**
+  atas instruksi pemilik — tunggu seluruh antrian beres + tes APK.

@@ -68,8 +68,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
           // ---------- kepala ----------
           Container(
             padding: EdgeInsets.fromLTRB(22, MediaQuery.of(context).padding.top + 22, 22, 26),
-            decoration: const BoxDecoration(
-              gradient: XyTheme.gradDeep,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: XyBannerTema.warna(u.banner),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
             ),
             child: Column(children: [
@@ -127,6 +131,16 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 12.5)),
+                    if ((u.bio ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(u.bio!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(.82),
+                              fontSize: 12,
+                              height: 1.4)),
+                    ],
                     const SizedBox(height: 8),
                     Wrap(spacing: 7, runSpacing: 6, children: [
                       Container(

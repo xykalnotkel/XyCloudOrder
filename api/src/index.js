@@ -2793,6 +2793,18 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         return json({ ok: true, id: idB }, 201, env);
       }
 
+      if (p === 'me/bisukan' && req.method === 'GET') {
+        const u = await env.DB.prepare('SELECT bisu_notif FROM users WHERE id=?').bind(me.sub).first();
+        let peta = {};
+        try { peta = JSON.parse(u?.bisu_notif || '{}') || {}; } catch (_) { peta = {}; }
+        const kini = Date.now();
+        const daftar = Object.entries(peta)
+          .filter(([, sampai]) => Number(sampai) > kini)
+          .map(([thread, sampai]) => ({ thread, sampai: Number(sampai) }))
+          .sort((a, b) => b.sampai - a.sampai);
+        return json(daftar, 200, env);
+      }
+
       if (p === 'me/bisukan' && req.method === 'POST') {
         const b = await req.json().catch(() => ({}));
         const thread = String(b.thread || '').slice(0, 64);
@@ -2831,7 +2843,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         if (idU === me.sub) return err('Tidak bisa mengikuti akun sendiri.', 422, env);
         if (!(await bolehLanjut(env, `ikuti:${me.sub}`, 30, 3600))) return err('Terlalu banyak aksi ikuti. Coba nanti.', 429, env);
         const b = await req.json().catch(() => ({}));
-        const target = await env.DB.prepare('SELECT id,nama,diblokir,deleted_at FROM users WHERE id=?').bind(idU).first();
+        const target = await env.DB.prepare('SELECT id,nama,diblokir,deleted_at,notif_dm FROM users WHERE id=?').bind(idU).first();
         if (!target || target.deleted_at || target.diblokir === 1) return err('Akun tidak tersedia.', 404, env);
         const ikut = b.ikuti !== false;
         if (ikut) {
@@ -2917,6 +2929,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           push(env, `user:${me.sub}`, 'dm.baru', msg),
         ]));
         ctx.waitUntil((async () => {
+          if ((target.notif_dm ?? 1) !== 1) return;
           if (await threadBisu(env, idU, `dm:${me.sub}`)) return;
           return kirimPush(env, {
           userId: idU,
@@ -3303,6 +3316,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         }
 
         const notifForum = b.notif_forum == null ? null : (b.notif_forum ? 1 : 0);
+        const notifDm = b.notif_dm == null ? null : (b.notif_dm ? 1 : 0);
 
         // Kustomisasi profil luas (Batch D): bio bebas + tema banner gradasi.
         const bio = b.bio === undefined ? null : String(b.bio || '').slice(0, 240);
@@ -3317,10 +3331,11 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
                             phone = COALESCE(NULLIF(?,''), phone),
                             foto = COALESCE(?, foto),
                             notif_forum = COALESCE(?, notif_forum),
+                            notif_dm = COALESCE(?, notif_dm),
                             bio = COALESCE(?, bio),
                             banner = COALESCE(NULLIF(?,'~'), banner)
            WHERE id = ?`
-        ).bind(nama, phone, foto, notifForum, bio, banner === null ? '~' : (banner || ''), me.sub).run();
+        ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), me.sub).run();
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         delete u.password;

@@ -40,6 +40,7 @@ class _ForumScreenState extends State<ForumScreen> {
   ];
   String pilih = 'Semua';
   String cari = '';
+  bool hanyaSimpan = false;
   final _cari = TextEditingController();
 
   @override
@@ -66,13 +67,23 @@ class _ForumScreenState extends State<ForumScreen> {
           f.judul.toLowerCase().contains(kunci) ||
           f.isi.toLowerCase().contains(kunci) ||
           f.nama.toLowerCase().contains(kunci);
-      return cocokKategori && cocokCari;
+      final cocokSimpan = !hanyaSimpan || s.forumDisimpan.contains(f.id);
+      return cocokKategori && cocokCari && cocokSimpan;
     }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Komunitas'),
         actions: [
+          IconButton(
+            tooltip: hanyaSimpan ? 'Tampilkan semua diskusi' : 'Hanya yang disimpan',
+            onPressed: () => setState(() => hanyaSimpan = !hanyaSimpan),
+            icon: Icon(
+                hanyaSimpan
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_border_rounded,
+                color: hanyaSimpan ? XyTheme.primary : null),
+          ),
           IconButton(
             tooltip: 'Muat ulang',
             onPressed: () => s.muatForum(paksa: true),

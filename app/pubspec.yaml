@@ -29,6 +29,7 @@ dependencies:
   flutter_image_compress: ^2.3.0
   url_launcher: ^6.3.1
   cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
   record: 5.1.2
   audioplayers: ^5.2.1
 

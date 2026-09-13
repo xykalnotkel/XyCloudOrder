@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
 import '../../core/cache.dart';
 import '../../core/prefs.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
+import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
@@ -473,8 +475,58 @@ class _KeamananScreenState extends State<KeamananScreen> {
 // ============================================================
 //  Notifikasi
 // ============================================================
-class PengaturanNotifikasiScreen extends StatelessWidget {
+class PengaturanNotifikasiScreen extends StatefulWidget {
   const PengaturanNotifikasiScreen({super.key});
+
+  @override
+  State<PengaturanNotifikasiScreen> createState() =>
+      _PengaturanNotifikasiScreenState();
+}
+
+class _PengaturanNotifikasiScreenState extends State<PengaturanNotifikasiScreen> {
+  List<BisukanItem> _bisu = [];
+  bool _muatBisu = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _muatBisuDaftar();
+  }
+
+  Future<void> _muatBisuDaftar() async {
+    try {
+      final daftar = await context.read<AppState>().repo.bisukanDaftar();
+      if (mounted) {
+        setState(() {
+          _bisu = daftar;
+          _muatBisu = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _muatBisu = false);
+    }
+  }
+
+  Future<void> _nyalakanLagi(String thread) async {
+    setState(() => _bisu = _bisu.where((b) => b.thread != thread).toList());
+    try {
+      await context.read<AppState>().repo.bisukan(thread, 0);
+    } catch (_) {}
+  }
+
+  String _labelThread(String thread) {
+    if (thread == 'cs') return 'Chat CS';
+    if (thread.startsWith('dm:')) return 'Pesan langsung';
+    if (thread.startsWith('forum:')) return 'Balasan diskusi';
+    return thread;
+  }
+
+  String _sisaBisu(int sampai) {
+    final sisa = sampai - DateTime.now().millisecondsSinceEpoch;
+    if (sisa <= 0) return 'selesai';
+    final menit = (sisa / 60000).ceil();
+    return menit < 60 ? '$menit menit lagi' : '${(menit / 60).floor()} jam lagi';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -516,6 +568,77 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
                   }
                 },
               ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          XyCard(
+            padding: const EdgeInsets.fromLTRB(15, 6, 8, 6),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(14)),
+                child: Icon(Icons.chat_bubble_outline_rounded, size: 20, color: XyTheme.primary),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Pesan Langsung', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  SizedBox(height: 3),
+                  Text('Pesan pribadi dari pengguna lain: teks, gambar, dan suara',
+                      style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5, height: 1.4)),
+                ]),
+              ),
+              Switch(
+                value: u?.notifDm ?? true,
+                activeColor: XyTheme.primary,
+                onChanged: (v) async {
+                  final galat = await s.perbaruiProfil(notifDm: v);
+                  if (galat != null && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(galat)));
+                  }
+                },
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          XyCard(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.volume_off_rounded, size: 18, color: XyTheme.of(context).muted),
+                SizedBox(width: 9),
+                Text('Sedang dibisukan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                Spacer(),
+                if (_muatBisu)
+                  SizedBox(width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: XyTheme.primary)),
+              ]),
+              const SizedBox(height: 10),
+              if (_bisu.isEmpty && !_muatBisu)
+                Text(
+                  'Tidak ada percakapan yang dibisukan. Tombol "Bisukan 1 jam" pada notifikasi akan muncul di sini supaya bisa dinyalakan lagi kapan saja.',
+                  style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12.5, height: 1.6),
+                ),
+              for (final b in _bisu)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(children: [
+                    Icon(Icons.notifications_off_outlined, size: 16, color: XyTheme.of(context).muted),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(_labelThread(b.thread),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5)),
+                        Text(_sisaBisu(b.sampai),
+                            style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11)),
+                      ]),
+                    ),
+                    TextButton(
+                      onPressed: () => _nyalakanLagi(b.thread),
+                      child: const Text('Nyalakan lagi'),
+                    ),
+                  ]),
+                ),
             ]),
           ),
           const SizedBox(height: 12),
@@ -620,16 +743,21 @@ class _DataScreenState extends State<DataScreen> {
                     final yakin = await konfirmasi(
                       context,
                       judul: 'Bersihkan data tersimpan?',
-                      pesan: 'Aplikasi akan mengunduh ulang katalog saat dibuka lagi. Akunmu tidak terpengaruh.',
+                      pesan: 'Katalog offline dan cache gambar dibuang; aplikasi akan mengunduh ulang saat dibuka lagi. Akunmu tidak terpengaruh.',
                       tombolYa: 'Bersihkan',
                       ikon: Icons.cleaning_services_outlined,
                     );
                     if (!yakin) return;
                     await Cache.bersihkan();
+                    try {
+                      await DefaultCacheManager().emptyCache();
+                    } catch (_) {}
+                    PaintingBinding.instance.imageCache.clear();
+                    PaintingBinding.instance.imageCache.clearLiveImages();
                     await _hitung();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Data tersimpan dibersihkan.')),
+                        const SnackBar(content: Text('Data tersimpan dan cache gambar dibersihkan.')),
                       );
                     }
                   },

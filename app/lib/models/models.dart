@@ -24,6 +24,9 @@ class UserProfile {
   /// Terima pemberitahuan kegiatan forum komunitas.
   final bool notifForum;
 
+  /// Terima pemberitahuan pesan langsung (DM).
+  final bool notifDm;
+
   /// Lencana khusus dari admin, contohnya XySpace.
   final String? badge;
   final bool diblokir;
@@ -44,6 +47,7 @@ class UserProfile {
     this.bio,
     this.banner,
     this.notifForum = true,
+    this.notifDm = true,
     this.badge,
     this.diblokir = false,
     this.alasanBlokir,
@@ -64,6 +68,7 @@ class UserProfile {
         bio: (j['bio'] as String?)?.isNotEmpty == true ? j['bio'] : null,
         banner: (j['banner'] as String?)?.isNotEmpty == true ? j['banner'] : null,
         notifForum: (j['notif_forum'] ?? 1) == 1,
+        notifDm: (j['notif_dm'] ?? 1) == 1,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         diblokir: (j['diblokir'] ?? 0) == 1,
         alasanBlokir: j['alasan_blokir'] as String?,
@@ -84,6 +89,7 @@ class UserProfile {
         'bio': bio,
         'banner': banner,
         'notif_forum': notifForum ? 1 : 0,
+        'notif_dm': notifDm ? 1 : 0,
         'badge': badge,
       };
 
@@ -99,6 +105,7 @@ class UserProfile {
         bio: bio ?? this.bio,
         banner: banner ?? this.banner,
         notifForum: notifForum,
+        notifDm: notifDm,
         badge: badge,
         diblokir: diblokir ?? this.diblokir,
         alasanBlokir: alasanBlokir ?? this.alasanBlokir,
@@ -973,6 +980,16 @@ class ProfilPublik {
     sayaIkuti: j['saya_ikuti'] == 1 || j['saya_ikuti'] == true,
     saya: j['saya'] == 1 || j['saya'] == true,
   );
+}
+
+class BisukanItem {
+  final String thread;
+  final int sampai;
+  const BisukanItem({required this.thread, required this.sampai});
+  factory BisukanItem.fromJson(Map<String, dynamic> j) => BisukanItem(
+        thread: j['thread'] as String? ?? '',
+        sampai: (j['sampai'] as num?)?.toInt() ?? 0,
+      );
 }
 
 class IkutanItem {
