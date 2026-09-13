@@ -1,18 +1,52 @@
 
-/** Host streaming harus IP/DNS publik — tolak COMPUTERNAME Windows tanpa titik. */
+/**
+ * Host streaming harus alamat yang bisa dijangkau HP penyewa — IP publik, IPv6,
+ * atau FQDN. Nama PC Windows (COMPUTERNAME, tanpa titik) ditolak karena hanya
+ * berlaku di jaringan lokal host itu.
+ *
+ * Port OPSIONAL dan memang didukung: lapisan native Android
+ * (`native/xy_stream/.../NativeStreaming.java#address`) mengurai `host:port`,
+ * membungkus IPv6 dengan kurung siku, dan memakai port bawaan Sunshine bila
+ * tidak disebut. Validator lama menolak apa pun yang mengandung ':' sekaligus
+ * '.', jadi isian sah seperti `103.10.20.30:47989` ditolak dan penyewa mendapat
+ * pesan "Host bukan IP/DNS publik" padahal isian admin benar.
+ *
+ * @returns {string|null} host (dengan port bila disebut) atau null bila tidak ada calon sah
+ */
 export function normalisasiHostStream(raw, fallback){
-  const h=String(raw||'').trim();
-  const fb=String(fallback||'').trim();
-  const ok=v=>{
-    if(!v)return false;
-    if(/^\d{1,3}(\.\d{1,3}){3}$/.test(v))return true; // IPv4
-    if(v.includes(':')&&v.includes('.'))return false;
-    if(/^[a-fA-F0-9:]+$/.test(v)&&v.includes(':'))return true; // bare IPv6 rough
-    if(v.includes('.')&&!/\s/.test(v)&&v.length<253)return true; // FQDN
-    return false;
+  const portSah=p=>{if(p==null)return true;const n=Number(p);return Number.isInteger(n)&&n>=1&&n<=65535;};
+  /**
+   * Pisahkan `host` dan `:port` opsional.
+   * Tiga bentuk diterima: `host`, `host:port`, dan `[ipv6]:port` / `ipv6` polos.
+   * Bentuk yang dikembalikan selalu bisa diurai `NativeStreaming.address()`.
+   */
+  const pisah=v=>{
+    const t=String(v||'').trim();
+    if(!t||/\s/.test(t))return null;
+    // [ipv6] atau [ipv6]:port — kurung siku dipertahankan supaya tidak ambigu
+    const siku=/^\[([0-9a-fA-F:]{2,})\](?::(\d{1,5}))?$/.exec(t);
+    if(siku)return portSah(siku[2])?{host:siku[1],port:siku[2]||null,siku:true}:null;
+    // IPv6 polos: lebih dari satu titik dua, hanya heksadesimal + ':' (tanpa port,
+    // karena tidak bisa dibedakan dari bagian alamat). Klien membungkusnya sendiri.
+    if((t.match(/:/g)||[]).length>1)return /^[0-9a-fA-F:]{2,}$/.test(t)?{host:t,port:null}:null;
+    // host atau host:port
+    const m=/^([^\s:]+)(?::(\d{1,5}))?$/.exec(t);
+    if(!m||!portSah(m[2]))return null;
+    return {host:m[1],port:m[2]||null};
   };
-  if(ok(h))return h;
-  if(ok(fb))return fb;
+  /** Host saja (tanpa port) harus IP atau FQDN, bukan nama mesin lokal. */
+  const okHost=h=>{
+    if(!h)return false;
+    if(/^\d{1,3}(\.\d{1,3}){3}$/.test(h))return h.split('.').every(o=>Number(o)<=255);   // IPv4
+    if(h.includes(':'))return /^[0-9a-fA-F:]{2,}$/.test(h);                              // IPv6
+    return h.includes('.')&&h.length<253&&/^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)+$/.test(h); // FQDN
+  };
+  for(const calon of [raw,fallback]){
+    const p=pisah(calon);
+    if(!p||!okHost(p.host))continue;
+    const host=p.siku?`[${p.host}]`:p.host;
+    return p.port?`${host}:${p.port}`:host;
+  }
   return null;
 }
 
@@ -164,9 +198,77 @@ export async function tutupSewa(env,s){
     env.DB.prepare('UPDATE agen SET sesi_aktif=NULL WHERE id=? AND sesi_aktif=?').bind(s.agen_id,s.id),
   ]);
 }
+/**
+ * Pembersih sewa — dipanggil cron tiap jam, tiap heartbeat agen, dan tiap baca sesi.
+ *
+ * Aturan lama hanya menutup dua keadaan: sesi yang punya `berakhir` dan sudah
+ * lewat, serta sesi 'menyiapkan' yang berumur lebih dari 2 menit. Akibatnya ada
+ * dua jalan buntu yang mengunci unit PC **permanen** (keduanya terjadi di
+ * produksi, audit 2026-09-13):
+ *
+ *   1. sesi berstatus 'siap' dengan `berakhir` NULL — agen melaporkan siap tanpa
+ *      batas waktu, tidak cocok dengan aturan mana pun, jadi `agen.sesi_aktif`
+ *      tidak pernah dilepas dan unit hilang dari kolam selamanya;
+ *   2. sesi 'mengakhiri' yang tidak pernah di-ACK agen (agen offline) —
+ *      `tutupSewa()` hanya jalan lewat `konfirmasiAgen()`, jadi tanpa ACK
+ *      unit tetap terkunci.
+ *
+ * Ditambah lagi order 'aktif' yang sudah lewat `berakhir` tidak pernah ditutup.
+ */
 export async function rawatSewa(env){
-  // An unused paid reservation expires with a refund, never locks a host forever.
+  // 1. Reservasi berbayar yang tidak pernah dipakai kedaluwarsa → batal.
+  //    Trigger D1 `order_saldo_selesai` yang mengembalikan saldo dan menulis
+  //    baris transaksi 'refund', jadi di sini cukup mengubah status.
   await env.DB.prepare("UPDATE orders SET status='batal' WHERE metode='saldo' AND status='dibayar' AND datetime(dibuat)<datetime('now','-15 minutes')").run();
-  const {results}=await env.DB.prepare("SELECT * FROM sesi WHERE status NOT IN ('selesai','gagal') AND ((berakhir IS NOT NULL AND datetime(berakhir)<=datetime('now')) OR (status='menyiapkan' AND datetime(dibuat)<datetime('now','-2 minutes')))").all();
-  for(const s of results)await bacaSewa(env,s.user_id,s.id);
+
+  // 2. Sesi yang harus ditutup.
+  const {results}=await env.DB.prepare(
+    "SELECT * FROM sesi WHERE status NOT IN ('selesai','gagal') AND ("
+    +" (berakhir IS NOT NULL AND datetime(berakhir)<=datetime('now'))"
+    +" OR (status='menyiapkan' AND datetime(dibuat)<datetime('now','-2 minutes'))"
+    // jalan buntu (1): tidak punya batas waktu padahal sudah lama dibuat
+    +" OR (berakhir IS NULL AND status<>'menyiapkan' AND datetime(dibuat)<datetime('now','-10 minutes'))"
+    // jalan buntu (2): pembersihan tidak pernah dikonfirmasi agen
+    +" OR (status='mengakhiri' AND datetime(COALESCE(berakhir,dibuat))<datetime('now','-10 minutes'))"
+    +")").all();
+  for(const s of results||[]){
+    if(s.status==='mengakhiri'){
+      await tutupSewa(env,s);
+      await env.DB.prepare("UPDATE sesi SET catatan=? WHERE id=? AND status='selesai'")
+        .bind('Pembersihan host tidak dikonfirmasi agen; unit dilepas otomatis oleh pembersih. Mesin mungkin perlu dibersihkan manual.',s.id).run();
+      continue;
+    }
+    if(!s.berakhir&&s.status!=='menyiapkan'){
+      await antreAkhir(env,s,'Sesi berjalan tanpa batas waktu lebih dari 10 menit; unit dibersihkan dan dilepas.');
+      continue;
+    }
+    await bacaSewa(env,s.user_id,s.id);
+  }
+
+  // 3. Order 'aktif'/'provisioning' yang waktunya sudah habis → 'selesai'.
+  //    Sesi terkait ikut ditutup. Untuk metode='saldo' trigger D1 mengembalikan
+  //    unit_tersedia dan melepas agen; langkah 4 menangkap sisanya (legacy).
+  const {results:lewat}=await env.DB.prepare(
+    "SELECT id FROM orders WHERE status IN ('aktif','provisioning') AND berakhir IS NOT NULL AND datetime(berakhir)<=datetime('now')").all();
+  for(const o of lewat||[]){
+    await env.DB.batch([
+      env.DB.prepare("UPDATE orders SET status='selesai' WHERE id=? AND status IN ('aktif','provisioning')").bind(o.id),
+      env.DB.prepare("UPDATE sesi SET status='selesai',pin=NULL,catatan=COALESCE(catatan,'')||' · Ditutup pembersih: waktu sewa habis.' WHERE order_id=? AND status NOT IN ('selesai','gagal')").bind(o.id),
+      env.DB.prepare("UPDATE agen SET sesi_aktif=NULL WHERE sesi_aktif=?").bind('order:'+o.id),
+    ]);
+  }
+
+  // 4. Lepas kunci unit yang menunjuk ke sesi/order yang sudah final, atau yang
+  //    yatim (barisnya sudah tidak ada). `agen.sesi_aktif` punya dua bentuk:
+  //    id sesi (`s_…`) setelah sesi dimulai, atau `order:<id>` sejak order dibuat
+  //    (trigger `order_saldo_baru`). Bentuk kedua HARUS dipertahankan selama
+  //    ordernya masih terbuka, kalau tidak reservasi unit bisa direbut order lain.
+  await env.DB.prepare(
+    "UPDATE agen SET sesi_aktif=NULL WHERE sesi_aktif IS NOT NULL AND sesi_aktif<>'' AND ("
+    +" EXISTS(SELECT 1 FROM sesi WHERE id=agen.sesi_aktif AND status IN ('selesai','gagal'))"
+    +" OR EXISTS(SELECT 1 FROM orders WHERE 'order:'||id=agen.sesi_aktif AND status IN ('selesai','batal'))"
+    +" OR (NOT EXISTS(SELECT 1 FROM sesi WHERE id=agen.sesi_aktif)"
+    +"     AND NOT EXISTS(SELECT 1 FROM orders WHERE 'order:'||id=agen.sesi_aktif))"
+    +")").run();
 }
+
