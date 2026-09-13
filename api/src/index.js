@@ -421,6 +421,15 @@ export default {
       });
     }
 
+    // Pemeriksaan kesehatan harus dijawab SEBELUM cabang situs publik.
+    // Sebelumnya handler ini ada di baris ~788, sesudah pemilihan rute berdasar
+    // host, sehingga `/health` hanya hidup di `api.*`. Di host cadangan
+    // (`xycloud-api.*.workers.dev`) dan di `xycloud.my.id` permintaannya masuk
+    // ke cabang situs publik dan dibalas HTML — 200 tapi bukan JSON, jadi
+    // pemantau kesehatan selalu tampak hijau walau Worker sedang bermasalah
+    // atau mode pemeliharaan sedang menyala.
+    if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
+
     // Private rooms require a valid user token or an authorized admin key.
     if (path.startsWith('/ws/')) {
       const room = decodeURIComponent(path.slice(4));
@@ -784,8 +793,6 @@ ${halaman.map(([u, p2, f]) => `  <url>
         headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=3600' },
       });
     }
-
-    if (path === '/health') return json({ ok: true, at: new Date().toISOString() }, 200, env);
 
     // pemberitahuan dari penyedia pembayaran
     if (path.startsWith('/bayar/webhook/')) {
