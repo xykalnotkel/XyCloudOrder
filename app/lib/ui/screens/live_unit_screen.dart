@@ -44,7 +44,7 @@ class LiveUnitScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
+                        Container(width: 40, height: 40, decoration: BoxDecoration(gradient: XyTheme.gradPrimary, borderRadius: BorderRadius.circular(14)), child: Icon(Icons.memory_rounded, color: Colors.white, size: 20)),
                         const SizedBox(width: 12),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(p.nama, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
@@ -58,7 +58,7 @@ class LiveUnitScreen extends StatelessWidget {
                       ]),
                       const SizedBox(height: 12),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(value: p.totalUnit == 0 ? 0 : p.unitTersedia / p.totalUnit, minHeight: 6, backgroundColor: XyTheme.of(context).line, valueColor: const AlwaysStoppedAnimation(XyTheme.primary)),
                       ),
                       const SizedBox(height: 8),

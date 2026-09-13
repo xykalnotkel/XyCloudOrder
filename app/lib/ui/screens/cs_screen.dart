@@ -929,7 +929,7 @@ class _Gelembung extends StatelessWidget {
                         color: saya
                             ? XyTheme.primary.withOpacity(.13)
                             : XyTheme.of(context).surface,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         border: saya
                             ? null
                             : Border.all(color: XyTheme.of(context).line),
@@ -1046,13 +1046,13 @@ class _Gelembung extends StatelessWidget {
     final isi = msg.replyTeks?.isNotEmpty == true ? msg.replyTeks! : '';
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
         decoration: BoxDecoration(
           color: saya ? Colors.white.withOpacity(.13) : XyTheme.of(context).primarySoft,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           border: Border(left: BorderSide(color: warna, width: 3)),
         ),
         child: Row(children: [
@@ -1121,7 +1121,7 @@ Widget _MediaGambar(BuildContext context, ChatMessage msg) {
   }
   return Container(
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(18),
       boxShadow: [
         BoxShadow(
             color: Colors.black.withOpacity(.08),
@@ -1129,7 +1129,7 @@ Widget _MediaGambar(BuildContext context, ChatMessage msg) {
             offset: const Offset(0, 4)),
       ],
     ),
-    child: ClipRRect(borderRadius: BorderRadius.circular(16), child: gambar),
+    child: ClipRRect(borderRadius: BorderRadius.circular(18), child: gambar),
   );
 }
 
@@ -1276,7 +1276,7 @@ class _SuaraState extends State<_Suara> with SingleTickerProviderStateMixin {
                   color: aktif
                       ? (widget.saya ? Colors.white : XyTheme.primary)
                       : warnaDasar,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               );
             }),

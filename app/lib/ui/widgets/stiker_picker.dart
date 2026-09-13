@@ -224,7 +224,7 @@ class _StikerPickerState extends State<StikerPicker> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                  color: pal.line, borderRadius: BorderRadius.circular(8))),
+                  color: pal.line, borderRadius: BorderRadius.circular(10))),
           Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 8, 4),
               child: Row(children: [

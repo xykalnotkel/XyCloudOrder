@@ -267,7 +267,7 @@ class LencanaTier extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: warna.withOpacity(.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: warna.withOpacity(.28)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -295,7 +295,7 @@ class LencanaKhusus extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
         decoration: BoxDecoration(
           gradient: XyTheme.gradPrimary,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.verified_rounded, size: 9.5, color: Colors.white),
@@ -585,7 +585,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           if (p.gambar != null) ...[
             const SizedBox(height: 14),
             ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(18),
                 child: Image.network(p.gambar!,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
@@ -861,7 +861,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                               padding: const EdgeInsets.only(left: 12),
                               decoration: BoxDecoration(
                                   color: pal.primarySoft,
-                                  borderRadius: BorderRadius.circular(12)),
+                                  borderRadius: BorderRadius.circular(14)),
                               child: Row(children: [
                                 Icon(Icons.reply_rounded,
                                     size: 18, color: pal.accent),

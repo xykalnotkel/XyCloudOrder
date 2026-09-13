@@ -91,7 +91,7 @@ function ModalKonfirmasi({
         <div className="flex items-start gap-3">
           <div
             className={`shrink-0 w-10 h-10 rounded-[14px] grid place-items-center ${
-              bahaya ? "bg-[#FDE8EC] text-[#D3385B]" : "bg-[#F3F0FF] text-[#6D5AE0]"
+              bahaya ? "bg-[#FDE8EC] text-[#D3385B]" : "bg-[#F3F0FF] text-[#7C3AED]"
             }`}
           >
             <AlertTriangle size={18} />
@@ -123,7 +123,7 @@ function ModalKonfirmasi({
             className={`h-9 px-4 rounded-[12px] text-[13px] font-semibold text-white shadow-sm transition ${
               bahaya
                 ? "bg-[#D3385B] hover:bg-[#B92E4E]"
-                : "bg-[#6D5AE0] hover:bg-[#5B48CE]"
+                : "bg-[#7C3AED] hover:bg-[#6D28C9]"
             }`}
             onClick={() => {
               setTutup(true);
@@ -166,7 +166,7 @@ function Toast({ pesan, tone }: { pesan: string; tone: ToneToast }) {
     ) : tone === "err" ? (
       <XCircle size={16} className="text-[#D3385B]" />
     ) : (
-      <Info size={16} className="text-[#6D5AE0]" />
+      <Info size={16} className="text-[#7C3AED]" />
     );
   return (
     <div
@@ -250,7 +250,7 @@ function ModalTeks({ opsi, selesai }: { opsi: OpsiTeks; selesai: (v: string | nu
         style={{ animation: "xyDialogMasuk .18s cubic-bezier(.2,.9,.3,1.2)" }}
       >
         <div className="flex items-start gap-3">
-          <div className={`shrink-0 w-10 h-10 rounded-[14px] grid place-items-center ${opsi.bahaya ? "bg-[#FDE8EC] text-[#D3385B]" : "bg-[#F3F0FF] text-[#6D5AE0]"}`}>
+          <div className={`shrink-0 w-10 h-10 rounded-[14px] grid place-items-center ${opsi.bahaya ? "bg-[#FDE8EC] text-[#D3385B]" : "bg-[#F3F0FF] text-[#7C3AED]"}`}>
             <AlertTriangle size={18} />
           </div>
           <div className="min-w-0 flex-1">
@@ -270,7 +270,7 @@ function ModalTeks({ opsi, selesai }: { opsi: OpsiTeks; selesai: (v: string | nu
           onChange={(e) => { setNilai(e.target.value); setGalat(""); }}
           onKeyDown={(e) => { if (e.key === "Enter") kirim(); }}
           placeholder={opsi.placeholder || ""}
-          className="mt-4 w-full px-3.5 py-2.5 rounded-[12px] bg-[#FAF8FF] border border-[#E9E3F5] text-[13px] text-[#1E1B2E] outline-none focus:border-[#6D5AE0] focus:bg-white transition"
+          className="mt-4 w-full px-3.5 py-2.5 rounded-[12px] bg-[#FAF8FF] border border-[#E9E3F5] text-[13px] text-[#1E1B2E] outline-none focus:border-[#7C3AED] focus:bg-white transition"
         />
         {galat && <div className="mt-1.5 text-[11.5px] font-semibold text-[#D3385B]">{galat}</div>}
         <div className="flex justify-end gap-2 mt-4">
@@ -279,7 +279,7 @@ function ModalTeks({ opsi, selesai }: { opsi: OpsiTeks; selesai: (v: string | nu
             Batal
           </button>
           <button
-            className={`h-9 px-4 rounded-[12px] text-[13px] font-semibold text-white shadow-sm transition ${opsi.bahaya ? "bg-[#D3385B] hover:bg-[#B92E4E]" : "bg-[#6D5AE0] hover:bg-[#5B48CE]"}`}
+            className={`h-9 px-4 rounded-[12px] text-[13px] font-semibold text-white shadow-sm transition ${opsi.bahaya ? "bg-[#D3385B] hover:bg-[#B92E4E]" : "bg-[#7C3AED] hover:bg-[#6D28C9]"}`}
             onClick={kirim}>
             {opsi.okLabel || "Simpan"}
           </button>

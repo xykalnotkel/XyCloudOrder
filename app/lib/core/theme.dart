@@ -21,14 +21,20 @@ class XySpace {
 }
 
 class XyRadius {
+  // Skala radius SATU untuk seluruh aplikasi (audit UI 2026-09-13):
+  // 10 -> kontrol kecil, 14 -> input/tombol, 18 -> kartu, 20 -> panel,
+  // 24 -> lembar/hero, 28 -> lembar besar, 99 -> pil.
+  static const double xs = 10;
   static const double sm = 14;
   static const double md = 18;
-  static const double lg = 18;
-  static const double xl = 22;
+  static const double lg = 20;
+  static const double xl = 24;
+  static const double xxl = 28;
+  static const double pill = 99;
   static const double pill = 100;
 
   /// Radius khusus tombol supaya bentuknya membulat, bukan kotak.
-  static const double tombol = 12;
+  static const double tombol = 14;
 }
 
 class XyTheme {

@@ -350,7 +350,7 @@ class _Metode extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: XyTheme.of(context).surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
               color: aktif ? XyTheme.primary : XyTheme.of(context).line,
               width: aktif ? 1.7 : 1),
@@ -361,7 +361,7 @@ class _Metode extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
                 color: XyTheme.primary.withOpacity(.09),
-                borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: XyTheme.primary, size: 21),
           ),
           const SizedBox(width: 12),

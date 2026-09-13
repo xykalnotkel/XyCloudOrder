@@ -164,7 +164,7 @@ class _LegalScreenState extends State<_LegalScreen> {
                                 height: 26,
                                 decoration: BoxDecoration(
                                   color: XyTheme.of(context).primarySoft,
-                                  borderRadius: BorderRadius.circular(9),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Center(
                                   child: Text('${i + 1}',

@@ -297,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Checkbox(
                           value: ingat,
                           onChanged: (v) => setState(() => ingat = v ?? true),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           side:  BorderSide(color: XyTheme.of(context).line, width: 1.6),
                           activeColor: XyTheme.primary,
                           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

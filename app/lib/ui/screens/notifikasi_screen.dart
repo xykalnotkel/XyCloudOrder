@@ -134,7 +134,7 @@ class _Baris extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: warna.withOpacity(.11), borderRadius: BorderRadius.circular(13)),
+            decoration: BoxDecoration(color: warna.withOpacity(.11), borderRadius: BorderRadius.circular(14)),
             child: Icon(ikon, size: 19, color: warna),
           ),
           const SizedBox(width: 12),

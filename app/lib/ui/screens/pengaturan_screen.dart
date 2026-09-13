@@ -418,7 +418,7 @@ class PengaturanNotifikasiScreen extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(14)),
                 child: Icon(Icons.groups_2_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
@@ -503,7 +503,7 @@ class _DataScreenState extends State<DataScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(14)),
                 child: Icon(Icons.data_saver_on_rounded, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),
@@ -601,7 +601,7 @@ class _PrivasiScreenState extends State<PrivasiScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: XyTheme.of(context).primarySoft, borderRadius: BorderRadius.circular(14)),
                 child: Icon(Icons.shield_moon_outlined, size: 20, color: XyTheme.primary),
               ),
               const SizedBox(width: 13),

@@ -79,7 +79,7 @@ class TierScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(.10), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(.10), borderRadius: BorderRadius.circular(14)),
                 child: Row(children: [
                   const Icon(Icons.info_outline_rounded, color: Colors.white70, size: 16),
                   const SizedBox(width: 8),
@@ -103,7 +103,7 @@ class TierScreen extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           color: (t['color'] as Color).withOpacity(.15),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: (t['color'] as Color).withOpacity(.25)),
                         ),
                         child: Icon(t['icon'] as IconData, color: t['color'] as Color, size: 22),

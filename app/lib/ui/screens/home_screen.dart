@@ -128,7 +128,7 @@ class _Header extends StatelessWidget {
         height: 46,
         decoration: BoxDecoration(
           gradient: XyTheme.gradPrimary,
-          borderRadius: BorderRadius.circular(15),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: XyTheme.glow(XyTheme.primary, .22),
         ),
         child: Center(
@@ -152,7 +152,7 @@ class _Header extends StatelessWidget {
             const SizedBox(width: 7),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-              decoration: BoxDecoration(gradient: XyTheme.gradGold, borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(gradient: XyTheme.gradGold, borderRadius: BorderRadius.circular(10)),
               child: Text(user.tier.toUpperCase(),
                   style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: .8)),
             ),
@@ -169,7 +169,7 @@ class _Header extends StatelessWidget {
           height: 42,
           decoration: BoxDecoration(
             color: XyTheme.of(context).surface,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: XyTheme.of(context).line),
           ),
           child: const Icon(Icons.forum_outlined, size: 20),
@@ -187,7 +187,7 @@ class _Header extends StatelessWidget {
           height: 42,
           decoration: BoxDecoration(
             color: XyTheme.of(context).surface,
-            borderRadius: BorderRadius.circular(13),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: XyTheme.of(context).line),
           ),
           child: Stack(alignment: Alignment.center, children: [
@@ -328,7 +328,7 @@ class _KartuSaldoState extends State<_KartuSaldo> {
                     width: 42,
                     height: 32,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(10),
                       gradient: LinearGradient(
                         colors: [XyTheme.goldBright, XyTheme.goldMid, XyTheme.goldPale],
                         begin: Alignment.topLeft,

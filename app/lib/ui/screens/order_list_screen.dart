@@ -89,7 +89,7 @@ class _List extends StatelessWidget {
               if (o.status == OrderStatus.provisioning) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
                       value: o.progress / 100, minHeight: 6, backgroundColor: XyTheme.of(context).line, color: XyTheme.primary),
                 ),

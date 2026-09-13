@@ -49,7 +49,7 @@ class LeaderboardScreen extends StatelessWidget {
                       Text(m['nama'] as String, style: const TextStyle(fontWeight: FontWeight.w700)),
                       if ((m['badge'] as String).isNotEmpty) ...[
                         const SizedBox(width: 6),
-                        Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: XyTheme.primary, borderRadius: BorderRadius.circular(6)), child: Text(m['badge'] as String, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700))),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: XyTheme.primary, borderRadius: BorderRadius.circular(10)), child: Text(m['badge'] as String, style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700))),
                       ],
                     ]),
                     const SizedBox(height: 2),

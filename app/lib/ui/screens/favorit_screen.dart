@@ -79,7 +79,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
                     padding: const EdgeInsets.all(14),
                     child: Row(children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         child: Container(
                           width: 56,
                           height: 56,

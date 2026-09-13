@@ -124,7 +124,7 @@ class _PembaruanScreenState extends State<PembaruanScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 26),
                 decoration: BoxDecoration(
                   gradient: XyTheme.gradPrimary,
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: XyTheme.glow(XyTheme.primary, .22),
                 ),
                 child: Column(children: [

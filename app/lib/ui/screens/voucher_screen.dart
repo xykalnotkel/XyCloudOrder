@@ -109,7 +109,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: XyTheme.danger.withOpacity(.1), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: XyTheme.danger.withOpacity(.1), borderRadius: BorderRadius.circular(14)),
                     child: Text(err!, style: const TextStyle(color: XyTheme.danger, fontWeight: FontWeight.w700, fontSize: 12.5)),
                   ),
                 ),
@@ -118,7 +118,7 @@ class _VoucherScreenState extends State<VoucherScreen> {
                   padding: const EdgeInsets.only(top: 12),
                   child: Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: XyTheme.success.withOpacity(.1), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: XyTheme.success.withOpacity(.1), borderRadius: BorderRadius.circular(14)),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('Voucher berlaku!', style: TextStyle(color: XyTheme.success, fontWeight: FontWeight.w700, fontSize: 13)),
                       const SizedBox(height: 6),

@@ -68,7 +68,7 @@ class _PromoLayerState extends State<PromoLayer> {
                                 button: true,
                                 label: p.nama,
                                 child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(22),
+                                    borderRadius: BorderRadius.circular(24),
                                     child: Image.network(p.gambar,
                                         fit: BoxFit.contain))))),
                     IconButton.filled(

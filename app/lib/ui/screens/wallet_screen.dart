@@ -156,7 +156,7 @@ class WalletScreen extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         color: (masuk ? XyTheme.success : XyTheme.primary).withOpacity(.10),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(ikon, size: 20, color: masuk ? XyTheme.success : XyTheme.primary),
                     ),

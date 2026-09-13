@@ -50,7 +50,7 @@ body { padding: 16px; }
 
 .brand { display: flex; align-items: center; gap: 12px; color: #F5F3FF; }
 .mark {
-  width: 40px; height: 40px; border-radius: 12px;
+  width: 40px; height: 40px; border-radius: 14px;
   display: grid; place-items: center;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -133,7 +133,7 @@ main { flex: 0 0 auto; }
   font-size: 11.5px;
   background: rgba(255,255,255,0.08);
   padding: 1px 6px;
-  border-radius: 6px;
+  border-radius: 10px;
   color: #E9D5FF;
   border: 1px solid rgba(255,255,255,0.08);
 }
@@ -245,7 +245,7 @@ button.mini {
   border: 1px solid rgba(255,255,255,0.14);
   padding: 4px 10px;
   font-size: 11px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .aksi { margin-top: 14px; }
@@ -257,7 +257,7 @@ button.mini {
   margin-top: 12px;
   background: var(--soft);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
 }
 .tips.soft { background: #FAFAFE; }
@@ -281,7 +281,7 @@ button.mini {
   background: #fff;
   border: 1px solid var(--line);
   padding: 0 5px;
-  border-radius: 5px;
+  border-radius: 10px;
   color: var(--teks);
 }
 
@@ -294,7 +294,7 @@ button.mini {
 .stat {
   background: var(--soft);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px;
 }
 .stat-l {
@@ -319,7 +319,7 @@ button.mini {
 .lanjut {
   margin-top: 12px;
   border: 1px dashed var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 8px 12px 12px;
   background: #FAFAFE;
 }
@@ -344,7 +344,7 @@ button.mini {
 .status {
   background: #FAFAFE;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
   font-size: 12.5px;
   line-height: 1.65;
@@ -391,7 +391,7 @@ footer {
 .log {
   background: rgba(10, 6, 28, 0.72);
   border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 14px;
   font-family: var(--mono);
   font-size: 11.5px;
   line-height: 1.6;

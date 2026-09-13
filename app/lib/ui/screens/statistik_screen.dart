@@ -52,7 +52,7 @@ class StatistikScreen extends StatelessWidget {
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(.14), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(.14), borderRadius: BorderRadius.circular(14)),
                   child: const Icon(Icons.bar_chart_rounded, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
@@ -227,7 +227,7 @@ class _StatSmall extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(.10))),
+        decoration: BoxDecoration(color: Colors.white.withOpacity(.08), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(.10))),
         child: Row(children: [
           Icon(icon, size: 14, color: Colors.white70),
           const SizedBox(width: 6),

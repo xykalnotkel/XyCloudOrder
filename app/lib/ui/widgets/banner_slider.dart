@@ -106,7 +106,7 @@ class _BannerSliderState extends State<BannerSlider> {
               height: 6,
               decoration: BoxDecoration(
                 color: aktif ? XyTheme.primary : XyTheme.of(context).muted.withOpacity(.28),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(10),
               ),
             );
           }),

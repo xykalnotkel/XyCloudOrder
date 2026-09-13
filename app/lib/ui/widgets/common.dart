@@ -358,7 +358,7 @@ class SpecChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(color: XyTheme.of(context).lineSoft, borderRadius: BorderRadius.circular(9)),
+      decoration: BoxDecoration(color: XyTheme.of(context).lineSoft, borderRadius: BorderRadius.circular(10)),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, size: 13, color: XyTheme.of(context).muted),
         const SizedBox(width: 5),
@@ -765,7 +765,7 @@ class XyBarisMenu extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: warna.withOpacity(.11),
-              borderRadius: BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(ikon, size: 20, color: warna),
           ),
