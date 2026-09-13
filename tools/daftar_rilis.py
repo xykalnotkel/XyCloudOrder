@@ -64,10 +64,17 @@ def main() -> int:
             for b in berkas:
                 print(f"  - {b['nama']} {round(b['ukuran'] / 1048576, 1)} MB")
     except urllib.error.HTTPError as e:
-        print(f'Gagal mendaftarkan rilis: HTTP {e.code} {e.read().decode(errors="ignore")[:200]}')
+        print(f'GAGAL mendaftarkan rilis: HTTP {e.code} {e.read().decode(errors="ignore")[:300]}',
+              file=sys.stderr)
+        return 1
     except Exception as e:  # noqa: BLE001
-        print(f'Gagal mendaftarkan rilis: {e}')
+        print(f'GAGAL mendaftarkan rilis: {e}', file=sys.stderr)
+        return 1
 
+    # Pendaftaran rilis adalah gerbang halaman unduh dan popup pembaruan.
+    # Kalau gagal, CI HARUS merah: sebelumnya kegagalan ditelan (return 0)
+    # sehingga selama lima hari server tetap menyajikan rilis lama sementara
+    # semua workflow tampak hijau (audit 2026-09-13).
     return 0
 
 

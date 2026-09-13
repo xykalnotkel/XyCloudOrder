@@ -201,7 +201,15 @@ jobs:
           done
 
       - name: Sertakan corresponding source GPL
-        run: python3 tools/buat_sumber_streaming.py dist/XyCloudStore-2.6.0-source.zip
+        run: |
+          # Nama bundle sumber GPLv3 HARUS mengikuti versi aplikasi yang sedang
+          # dibangun. Sebelumnya angkanya mati di 2.6.0 sehingga bundle sumber
+          # tidak lagi cocok dengan APK yang disebar (kewajiban GPLv3).
+          VER=$(grep -m1 '^version:' ${{ env.APP_DIR }}/pubspec.yaml | sed -E 's/^version:[[:space:]]*([^+]+).*/\1/')
+          echo "VERSI_APLIKASI=$VER" >> "$GITHUB_ENV"
+          echo "Versi aplikasi: $VER"
+          python3 tools/buat_sumber_streaming.py "dist/XyCloudStore-$VER-source.zip"
+          ls -lh dist
 
       - name: Unggah APK universal (terpisah, 1 APK per artifact)
         uses: actions/upload-artifact@v4
@@ -239,7 +247,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: XyCloudStore-APK-Sumber-GPL
-          path: dist/XyCloudStore-2.6.0-source.zip
+          path: dist/XyCloudStore-${{ env.VERSI_APLIKASI }}-source.zip
           retention-days: 30
           if-no-files-found: error
 
