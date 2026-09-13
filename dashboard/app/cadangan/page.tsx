@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Database, DatabaseBackup, Download, HardDrive, Link2, RefreshCw } from "lucide-react";
 import { Chip, EmptyBox, ErrBox, Header, jam, Load, Stat } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function CadanganPage() {
   const [list, setList] = useState<any[]>([]);
@@ -20,7 +21,7 @@ export default function CadanganPage() {
   useEffect(() => { muat(); }, []);
 
   async function buat() {
-    if (!confirm("Buat cadangan database sekarang?")) return;
+    if (!await konfirm({ pesan: "Buat cadangan database sekarang?" })) return;
     setBusy(true); setErr(""); setInfo("");
     try { const r = await adminFetch("/api/admin/cadangan", { method: "POST" }); setInfo("Cadangan " + r.id + " dibuat: " + r.baris + " baris."); await muat(); }
     catch (e: any) { setErr(e.message); }

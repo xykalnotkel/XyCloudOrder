@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { MessagesSquare, Pin, Reply, ShieldAlert, ThumbsUp, Trash2 } from "lucide-react";
 import { Btn, Chip, ErrBox, Header, jam, Load, MsgOk } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function ForumPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -36,7 +37,7 @@ export default function ForumPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus posting forum ini? (termasuk balasan)")) return;
+    if (!await konfirm({ pesan: "Hapus posting forum ini? (termasuk balasan)", bahaya: true })) return;
     setProses("h_" + id);
     try {
       await adminFetch("/api/admin/forum/" + id, { method: "DELETE" });

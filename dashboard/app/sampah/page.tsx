@@ -6,6 +6,7 @@ import {
   Btn, EmptyBox, ErrBox, Header, jam, Load, MsgOk, runBatch, SelectBar,
   useAdminList, useSelection,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function SampahPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/users?trash=1");
@@ -25,7 +26,7 @@ export default function SampahPage() {
   }
 
   async function aksiRestore(id: string) {
-    if (!confirm("Pulihkan akun ini? Login ulang diperlukan.")) return;
+    if (!await konfirm({ pesan: "Pulihkan akun ini? Login ulang diperlukan." })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await restore(id);
@@ -43,7 +44,7 @@ export default function SampahPage() {
       setErr("Email tidak cocok — dibatalkan.");
       return;
     }
-    if (!confirm(`Hapus permanen ${u.email}? Tidak bisa dibatalkan.`)) return;
+    if (!await konfirm({ pesan: `Hapus permanen ${u.email}? Tidak bisa dibatalkan.`, bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await permanent(u.id, u.email);
@@ -55,7 +56,7 @@ export default function SampahPage() {
 
   async function massalRestore() {
     if (!sel.count) return;
-    if (!confirm(`Pulihkan ${sel.count} akun?`)) return;
+    if (!await konfirm({ pesan: `Pulihkan ${sel.count} akun?` })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const msg = await runBatch(sel.list, restore, "dipulihkan");
@@ -69,7 +70,7 @@ export default function SampahPage() {
     if (!target.length) { setErr("Tidak ada akun non-pemilik di pilihan."); return; }
     const kunci = prompt(`Ketik HAPUS untuk menghapus permanen ${target.length} akun:`);
     if (kunci !== "HAPUS") return;
-    if (!confirm("Yakin? Seluruh data akun terpilih hilang permanen.")) return;
+    if (!await konfirm({ pesan: "Yakin? Seluruh data akun terpilih hilang permanen.", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const msg = await runBatch(target, async (id) => {

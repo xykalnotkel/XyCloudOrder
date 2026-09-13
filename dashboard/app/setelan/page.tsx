@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { KeySquare, Plus, Search, SlidersHorizontal, Trash2 } from "lucide-react";
 import { Chip, EmptyBox, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function SetelanPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -36,7 +37,7 @@ export default function SetelanPage() {
   }
 
   async function hapus(k: string) {
-    if (!confirm("Hapus setelan " + k + "?")) return;
+    if (!await konfirm({ pesan: "Hapus setelan " + k + "?", bahaya: true })) return;
     setBusy(true); setErr(""); setHasil("");
     try { await adminFetch("/api/admin/setelan/" + encodeURIComponent(k), { method: "DELETE" }); setHasil("Setelan " + k + " dihapus."); await muat(); }
     catch (e: any) { setErr(e.message); }

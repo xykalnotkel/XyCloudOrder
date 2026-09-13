@@ -41,6 +41,18 @@ class AppState extends ChangeNotifier {
   /// menampilkan halaman perawatan yang jelas alih-alih galat membingungkan.
   bool perawatan = false;
 
+  /// True bila pengguna mengetuk "Staf internal? Masuk untuk uji" di halaman
+  /// perawatan — halaman login ditampilkan meski server sedang pemeliharaan.
+  /// Setelah login, pengguna yang tidak dikecualikan tetap mendapat 503 dan
+  /// kembali ke halaman perawatan; yang dikecualikan (setelan
+  /// `pemeliharaan_bebas` di server) lanjut memakai aplikasi.
+  bool paksaMasukPerawatan = false;
+
+  void ujiMasukPerawatan() {
+    paksaMasukPerawatan = true;
+    notifyListeners();
+  }
+
   /// Pesan dari server saat mode pemeliharaan menyala.
   String pesanPerawatan =
       'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.';

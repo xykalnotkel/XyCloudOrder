@@ -82,11 +82,15 @@ class _Root extends StatelessWidget {
 
     // server sedang mode pemeliharaan: tampilkan halaman perawatan yang jelas
     // (baik sebelum maupun sesudah login), bukan deretan galat yang membingungkan
-    if (s.perawatan) {
+    // Selama pemeliharaan: tampilkan halaman perawatan, KECUALI staf internal
+    // yang belum login dan sudah mengetuk jalan masuk uji — mereka perlu
+    // melihat halaman login. Server yang memutuskan siapa yang dikecualian.
+    if (s.perawatan && !(s.paksaMasukPerawatan && !s.masuk)) {
       return PerawatanScreen(
         pesan: s.pesanPerawatan,
         onCoba: s.cobaLagiPerawatan,
         onKeluar: s.masuk ? s.logout : null,
+        onMasuk: s.masuk ? null : s.ujiMasukPerawatan,
       );
     }
 

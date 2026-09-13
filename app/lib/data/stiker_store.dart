@@ -10,8 +10,12 @@ import 'package:path_provider/path_provider.dart';
 import '../core/stiker_cipher.dart';
 import '../models/stiker.dart';
 
-/// Koleksi per akun, disimpan terenkripsi di application support, bukan galeri.
-/// Sumber galeri milik pengguna tidak dihapus/diubah. Preview hanya didekripsi di RAM.
+/// Koleksi per akun, disimpan TERENKRIPSI di direktori media privat aplikasi
+/// (`/Android/media/<paket>/media/stiker/<id>/` pada Android; application
+/// support di platform lain), bukan di galeri. Nama berkas disamarkan menjadi
+/// `<sha256>.webp.byscrt` supaya tidak terlihat sebagai berkas stiker mentah,
+/// dan isinya tetap tersandi (kunci di secure storage). Sumber galeri milik
+/// pengguna tidak dihapus/diubah. Preview hanya didekripsi di RAM.
 class StikerStore {
   StikerStore._(String akun)
       : _id = sha256.convert(utf8.encode(akun)).toString();
@@ -29,24 +33,74 @@ class StikerStore {
   List<StikerLokal> _items = [];
   final Map<String,Future<Uint8List>> _downloads = {};
   static const batasCache = 32 * 1024 * 1024;
+
+  /// Ekstensi samaran: berkas stiker tersandi menyaru sebagai webp.
+  static const _extStiker = '.webp.byscrt';
+  static const _extIndex = '.byscrt';
+  String _namaStiker(String id) => '$id$_extStiker';
+  String get _namaIndex => 'index$_extIndex';
+
+  /// Direktori koleksi: media privat aplikasi di Android (tidak terscan
+  /// galeri karena di bawah /Android/media), fallback application support.
+  Future<Directory> _direktoriStiker() async {
+    if (Platform.isAndroid) {
+      try {
+        final ext = await getExternalStorageDirectory();
+        if (ext != null) return Directory('${ext.path}/media/stiker/$_id');
+      } catch (_) {
+        // izin/directori tidak tersedia -> pakai fallback di bawah
+      }
+    }
+    return Directory(
+        '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id');
+  }
+
+  /// Pindahkan koleksi lama (application support, ekstensi .xys) ke lokasi
+  /// baru bila ada, supaya stiker pengguna tidak hilang saat memperbarui.
+  Future<void> _pindahkanLama() async {
+    final lama = Directory(
+        '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id');
+    if (lama.path == _dir!.path || !await lama.exists()) return;
+    await for (final e in lama.list()) {
+      if (e is! File) continue;
+      var nama = e.path.split('/').last;
+      if (nama.endsWith('.xys')) {
+        nama = nama.substring(0, nama.length - 4) +
+            (nama.startsWith('index') ? _extIndex : _extStiker);
+      }
+      final tujuan = File('${_dir!.path}/$nama');
+      try {
+        await e.rename(tujuan.path);
+      } catch (_) {
+        await tujuan.writeAsBytes(await e.readAsBytes(), flush: true);
+        await e.delete();
+      }
+    }
+    try {
+      await lama.delete(recursive: true);
+    } catch (_) {
+      // direktori lama dibiarkan bila gagal menghapus
+    }
+  }
+
   String get _keyName => 'xy_stiker_key_$_id';
 
   Future<void> _siap() => _initializing ??= _buka();
   Future<void> _buka() async {
-    _dir = Directory(
-        '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id');
+    _dir = await _direktoriStiker();
     await _dir!.create(recursive: true);
+    await _pindahkanLama();
     final saved = await _secure.read(key: _keyName);
     if (saved != null) {
       _key = base64Decode(saved);
     } else {
-      if (await File('${_dir!.path}/index.xys').exists())
+      if (await File('${_dir!.path}/$_namaIndex').exists())
         throw const FormatException(
             'Kunci koleksi lokal tidak tersedia pada perangkat ini.');
       _key = await StikerCipher.kunciBaru();
       await _secure.write(key: _keyName, value: base64Encode(_key!));
     }
-    final index = File('${_dir!.path}/index.xys');
+    final index = File('${_dir!.path}/$_namaIndex');
     if (await index.exists()) {
       final json = jsonDecode(utf8.decode(
               await StikerCipher.dekripsi(await index.readAsBytes(), _key!)))
@@ -76,7 +130,7 @@ class StikerStore {
     await tmp.rename('${_dir!.path}/$nama');
   }
 
-  Future<void> _index() => _tulis('index.xys',
+  Future<void> _index() => _tulis(_namaIndex,
       utf8.encode(jsonEncode(_items.map((x) => x.toJson()).toList())));
   Future<List<StikerLokal>> daftar() async {
     await _siap();
@@ -89,7 +143,7 @@ class StikerStore {
     if (!RegExp(r'^[a-f0-9]{64}$').hasMatch(item.id))
       throw const FormatException('ID stiker tidak valid.');
     return StikerCipher.dekripsi(
-        await File('${_dir!.path}/${item.id}.xys').readAsBytes(), _key!);
+        await File('${_dir!.path}/${_namaStiker(item.id)}').readAsBytes(), _key!);
   }
 
   Future<StikerLokal> simpan(Stiker sticker, {Uint8List? bytes}) =>
@@ -105,7 +159,7 @@ class StikerStore {
           throw const FormatException(
               'Koleksi penuh (100 stiker). Hapus beberapa stiker dahulu.');
         final item = StikerLokal(id, sticker);
-        await _tulis('$id.xys', bytes!);
+        await _tulis(_namaStiker(id), bytes!);
         _items.insert(0, item);
         try {
           await _index();
@@ -119,7 +173,7 @@ class StikerStore {
         await _siap();
         _items.removeWhere((x) => x.id == item.id);
         await _index();
-        final file = File('${_dir!.path}/${item.id}.xys');
+        final file = File('${_dir!.path}/${_namaStiker(item.id)}');
         if (await file.exists()) await file.delete();
       });
   Future<void> hapusSemua() => _urut(() async {
@@ -141,17 +195,17 @@ class StikerStore {
     return job;
   }
   Future<Uint8List> _cacheRead(Stiker stiker,String id) async {
-    await _siap();final file=File('${_dir!.path}/cache_$id.xys');
+    await _siap();final file=File('${_dir!.path}/cache_$id$_extStiker');
     if(await file.exists()){
       try{final bytes=await StikerCipher.dekripsi(await file.readAsBytes(),_key!);await file.setLastModified(DateTime.now());return bytes;}
       catch(_){await file.delete();}
     }
     final bytes=await unduh(stiker.url);
-    await _tulis('cache_$id.xys',bytes);
+    await _tulis('cache_$id$_extStiker',bytes);
     await _rapikanCache();return bytes;
   }
   Future<void> _rapikanCache() async {
-    final files=await _dir!.list().where((x)=>x is File&&x.path.split('/').last.startsWith('cache_')&&x.path.endsWith('.xys')).cast<File>().toList();
+    final files=await _dir!.list().where((x)=>x is File&&x.path.split('/').last.startsWith('cache_')&&x.path.endsWith(_extStiker)).cast<File>().toList();
     final sizes=<String,int>{},times=<String,DateTime>{};var total=0;
     for(final file in files){final stat=await file.stat();sizes[file.path]=stat.size;times[file.path]=stat.modified;total+=stat.size;}
     files.sort((a,b)=>times[a.path]!.compareTo(times[b.path]!));

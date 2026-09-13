@@ -5,6 +5,7 @@ import { Bug, CheckCheck, Trash2 } from "lucide-react";
 import {
   Btn, Chip, EmptyBox, ErrBox, Header, jam, Load, MsgOk, toneStatus, useAdminList,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function GalatPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/galat");
@@ -23,7 +24,7 @@ export default function GalatPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus laporan galat ini?")) return;
+    if (!await konfirm({ pesan: "Hapus laporan galat ini?", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await adminFetch(`/api/admin/galat/${id}`, { method: "DELETE" });

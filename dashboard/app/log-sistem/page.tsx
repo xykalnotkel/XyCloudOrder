@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Eraser, ScrollText } from "lucide-react";
 import { Chip, EmptyBox, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function LogSistemPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -20,7 +21,7 @@ export default function LogSistemPage() {
   useEffect(() => { muat(); }, []);
 
   async function bersihkan() {
-    if (!confirm("Hapus log sistem yang berumur lebih dari 24 jam?")) return;
+    if (!await konfirm({ pesan: "Hapus log sistem yang berumur lebih dari 24 jam?", bahaya: true })) return;
     setBusy(true); setErr(""); setHasil("");
     try { await adminFetch("/api/admin/log-sistem/bersihkan", { method: "DELETE" }); setHasil("Log lama dibersihkan."); await muat(); }
     catch (e: any) { setErr(e.message); }

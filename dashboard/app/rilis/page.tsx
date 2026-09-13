@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Rocket, Package } from "lucide-react";
 import { Select, Check, ErrBox, Field } from "@/components/ui/kit";
+import { toast } from "@/components/ui/dialog";
 
 export default function RilisPage() {
   const [rilis, setRilis] = useState<any[]>([]);
@@ -19,9 +20,9 @@ export default function RilisPage() {
   const handleCreate = async () => {
     try {
       await adminFetch("/api/admin/rilis", { method: "POST", body: form });
-      alert("Rilis dibuat");
+      toast("Rilis dibuat", "ok");
       location.reload();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { toast(e.message, "err"); }
   };
 
   return (

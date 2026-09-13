@@ -5,6 +5,7 @@ import { Ban, RefreshCcw, Smartphone } from "lucide-react";
 import {
   Btn, Chip, EmptyBox, ErrBox, Header, jam, Load, MsgOk, Panel, useAdminList,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function PerangkatPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/devices");
@@ -22,7 +23,7 @@ export default function PerangkatPage() {
   }
 
   async function block(id: string, blocked: boolean) {
-    if (!confirm(blocked ? "Blokir perangkat ini?" : "Buka blokir perangkat?")) return;
+    if (!await konfirm({ pesan: blocked ? "Blokir perangkat ini?" : "Buka blokir perangkat?", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await adminFetch(`/api/admin/devices/${id}/block`, {
@@ -37,7 +38,7 @@ export default function PerangkatPage() {
   }
 
   async function reset(id: string) {
-    if (!confirm("Reset jatah pendaftaran perangkat? Akun yang sudah ada tetap.")) return;
+    if (!await konfirm({ pesan: "Reset jatah pendaftaran perangkat? Akun yang sudah ada tetap.", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await adminFetch(`/api/admin/devices/${id}/reset`, {

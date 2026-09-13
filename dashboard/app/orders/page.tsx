@@ -6,6 +6,7 @@ import {
   Btn, Chip, ErrBox, Header, jam, Load, MsgOk, rupiah, runBatch, SelectBar,
   toneStatus, useAdminList, useSelection,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function OrdersPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/orders");
@@ -36,7 +37,7 @@ export default function OrdersPage() {
 
   async function aksiSatu(id: string, status: "selesai" | "batal") {
     const label = status === "selesai" ? "tandai selesai" : "batalkan";
-    if (!confirm(`${label[0].toUpperCase() + label.slice(1)} pesanan ${id}?`)) return;
+    if (!await konfirm({ pesan: `${label[0].toUpperCase() + label.slice(1)} pesanan ${id}?` })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await setStatus(id, status);
@@ -48,7 +49,7 @@ export default function OrdersPage() {
 
   async function massal(status: "selesai" | "batal") {
     if (!sel.count) return;
-    if (!confirm(`${status === "selesai" ? "Selesaikan" : "Batalkan"} ${sel.count} pesanan terpilih?`)) return;
+    if (!await konfirm({ pesan: `${status === "selesai" ? "Selesaikan" : "Batalkan"} ${sel.count} pesanan terpilih?`, bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const msg = await runBatch(sel.list, (id) => setStatus(id, status), status === "selesai" ? "diselesaikan" : "dibatalkan");

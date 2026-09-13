@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Activity, Cloud, Database, Eraser, HeartPulse, RefreshCw } from "lucide-react";
 import { Chip, ErrBox, Header, Load, Stat } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function KesehatanPage() {
   const [d, setD] = useState<any>(null);
@@ -20,7 +21,7 @@ export default function KesehatanPage() {
   useEffect(() => { muat(); }, []);
 
   async function bersihCache() {
-    if (!confirm("Kosongkan singgahan (cache) rilis & halaman publik?")) return;
+    if (!await konfirm({ pesan: "Kosongkan singgahan (cache) rilis & halaman publik?", bahaya: true })) return;
     setBusy(true); setErr(""); setInfo("");
     try { const r = await adminFetch("/api/admin/sistem/cache", { method: "DELETE" }); setInfo("Cache dibuang: " + (r.dibuang?.join(", ") || "tidak ada")); }
     catch (e: any) { setErr(e.message); }

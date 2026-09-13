@@ -6,6 +6,7 @@ import {
   Btn, Chip, EmptyBox, ErrBox, Field, Header, Input, jam, Load, MsgOk,
   useAdminList,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function UnitPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/agen");
@@ -39,7 +40,7 @@ export default function UnitPage() {
   }
 
   async function hapus(id: string, nama: string) {
-    if (!confirm(`Hapus unit "${nama}"? Agen di PC tidak bisa terhubung lagi.`)) return;
+    if (!await konfirm({ pesan: `Hapus unit "${nama}"? Agen di PC tidak bisa terhubung lagi.`, bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await adminFetch(`/api/admin/agen/${id}`, { method: "DELETE" });

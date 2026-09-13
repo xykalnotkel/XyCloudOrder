@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Gift, Plus, Trash2 } from "lucide-react";
 import { Chip, ErrBox, Header, jam, Load, Select, Check } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 const kosong = { nama: "", jenis: "floating", gambar: "", aksi: "url", target: "", posisi: "kanan", platform: "semua", aktif: 1, urutan: 0 };
 
@@ -34,7 +35,7 @@ export default function PromosiPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus promo " + id + "?")) return;
+    if (!await konfirm({ pesan: "Hapus promo " + id + "?", bahaya: true })) return;
     try {
       await adminFetch("/api/admin/promosi/" + id, { method: "DELETE" });
       await muat();

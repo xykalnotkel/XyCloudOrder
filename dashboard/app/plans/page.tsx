@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Monitor, Plus, Star, Trash2 } from "lucide-react";
 import { Chip, ErrBox, Header, Load, rupiah, Tabel } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 const kosong = {
   nama: "", gpu: "", cpu: "", ram_gb: 16, storage_gb: 256,
@@ -37,7 +38,7 @@ export default function PlansPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus paket " + id + "?")) return;
+    if (!await konfirm({ pesan: "Hapus paket " + id + "?", bahaya: true })) return;
     try {
       await adminFetch("/api/admin/plans/" + id, { method: "DELETE" });
       await muat();

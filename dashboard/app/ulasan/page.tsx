@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { MessageSquareReply, ShieldAlert, Star, Trash2 } from "lucide-react";
 import { Chip, ErrBox, Header, jam, Load } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function UlasanPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -35,7 +36,7 @@ export default function UlasanPage() {
   }
 
   async function hapus(id: string) {
-    if (!confirm("Hapus ulasan ini?")) return;
+    if (!await konfirm({ pesan: "Hapus ulasan ini?", bahaya: true })) return;
     setProses("h_" + id);
     try {
       await adminFetch("/api/admin/ulasan/" + id, { method: "DELETE" });

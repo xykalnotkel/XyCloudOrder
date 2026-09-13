@@ -6,6 +6,7 @@ import {
   Btn, Chip, ErrBox, Header, jam, Load, MsgOk, rupiah, runBatch, SelectBar,
   toneStatus, useAdminList, useSelection,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function TopupPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/topup");
@@ -33,8 +34,8 @@ export default function TopupPage() {
   }
 
   async function satu(id: string, status: string) {
-    if (status === "ditolak" && !confirm("Tolak top up ini?")) return;
-    if (status === "disetujui" && !confirm("Setujui & tambahkan saldo?")) return;
+    if (status === "ditolak" && !await konfirm({ pesan: "Tolak top up ini?" })) return;
+    if (status === "disetujui" && !await konfirm({ pesan: "Setujui & tambahkan saldo?" })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await aksi(id, status);
@@ -47,7 +48,7 @@ export default function TopupPage() {
 
   async function massal(status: string) {
     if (!sel.count) return;
-    if (!confirm(`${status === "disetujui" ? "Setujui" : "Tolak"} ${sel.count} permintaan?`)) return;
+    if (!await konfirm({ pesan: `${status === "disetujui" ? "Setujui" : "Tolak"} ${sel.count} permintaan?` })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const msg = await runBatch(sel.list, (id) => aksi(id, status), status === "disetujui" ? "disetujui" : "ditolak");

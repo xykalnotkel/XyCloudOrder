@@ -111,15 +111,46 @@ function deteksiPlatform(req) {
 }
 
 /** Baca apakah permintaan dengan platform tertentu sedang diblokir mode pemeliharaan. */
+// Daftar pengguna yang dikecualikan dari mode pemeliharaan ("tester internal").
+// Disimpan di setelan `pemeliharaan_bebas` sebagai JSON: [{"id":"u_..","email":".."}].
+// Admin memilihnya lewat dashboard (Sistem > Mode Pemeliharaan > Pengecualian).
+async function daftarBebasPemeliharaan(env) {
+  const mentah = await setelan(env, 'pemeliharaan_bebas', '');
+  if (!mentah) return [];
+  try {
+    const d = JSON.parse(mentah);
+    if (!Array.isArray(d)) return [];
+    return d
+      .map((x) => (typeof x === 'string' ? { id: x } : x))
+      .filter((x) => x && (x.id || x.email))
+      .map((x) => ({ id: String(x.id || ''), email: String(x.email || '').toLowerCase(), nama: String(x.nama || '') }));
+  } catch (_) { return []; }
+}
+
+// True bila permintaan membawa token sah milik pengguna yang dikecualikan,
+// sehingga ia tetap bisa memakai aplikasi untuk uji walau pemeliharaan menyala.
+async function bebasPemeliharaan(env, req) {
+  const daftar = await daftarBebasPemeliharaan(env);
+  if (!daftar.length) return false;
+  const u = await auth(req, env).catch(() => null);
+  if (!u) return false;
+  const id = String(u.sub || '');
+  const email = String(u.email || '').toLowerCase();
+  return daftar.some((x) => (x.id && x.id === id) || (x.email && email && x.email === email));
+}
+
 async function tertutupPemeliharaan(env, req) {
   const mode = await setelan(env, 'mode_pemeliharaan', '0');
   if (mode !== '1') return false;
   const cakupan = (await setelan(env, 'pemeliharaan_cakupan', 'semua')) || 'semua';
-  if (cakupan === 'semua') return true;
   const plat = deteksiPlatform(req);
-  if (cakupan === 'web' && plat === 'web') return true;
-  if (cakupan === 'aplikasi' && plat === 'aplikasi') return true;
-  return false;
+  let kena = false;
+  if (cakupan === 'semua') kena = true;
+  else if (cakupan === 'web' && plat === 'web') kena = true;
+  else if (cakupan === 'aplikasi' && plat === 'aplikasi') kena = true;
+  if (!kena) return false;
+  // Pengecualian: pengguna yang dipilih admin tetap boleh lewat (untuk uji).
+  return !(await bebasPemeliharaan(env, req));
 }
 
 // ---------- password ----------
@@ -863,8 +894,11 @@ ${halaman.map(([u, p2, f]) => `  <url>
     if (!p.startsWith('admin/') && !p.startsWith('agen/')) {
       const kena = await tertutupPemeliharaan(env, req);
       // /api/config tetap boleh dibaca supaya aplikasi bisa menampilkan pesan
-      // pemeliharaan yang benar, bukan galat yang membingungkan.
-      if (kena && p !== 'config') {
+      // pemeliharaan yang benar, bukan galat yang membingungkan. /api/auth/*
+      // tetap terbuka supaya penguji yang dikecualikan bisa login; setelah
+      // login, permintaan tanpa pengecualian tetap mendapat 503 dan aplikasi
+      // menampilkan halaman perawatan.
+      if (kena && p !== 'config' && !p.startsWith('auth/')) {
         return err(
           await setelan(env, 'pesan_pemeliharaan',
             'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
@@ -2174,6 +2208,16 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           await simpanSetelan(env, 'pemeliharaan_cakupan', cakupan);
           await simpanSetelan(env, 'pemeliharaan_halaman', JSON.stringify(unik));
           if (b.pesan !== undefined) await simpanSetelan(env, 'pesan_pemeliharaan', String(b.pesan ?? ''));
+          // Daftar pengguna yang dikecualikan (tester internal). Diterima sebagai
+          // larik objek {id,email,nama} atau larik string id; null = tidak diubah.
+          if (b.bebas !== undefined && b.bebas !== null) {
+            const bersih = (Array.isArray(b.bebas) ? b.bebas : [])
+              .map((x) => (typeof x === 'string' ? { id: x } : x))
+              .filter((x) => x && (x.id || x.email))
+              .map((x) => ({ id: String(x.id || ''), email: String(x.email || '').toLowerCase(), nama: String(x.nama || '') }));
+            const unikB = [...new Map(bersih.map((x) => [x.id || x.email, x])).values()];
+            await simpanSetelan(env, 'pemeliharaan_bebas', JSON.stringify(unikB));
+          }
           const sampai = aktif ? await setelan(env, 'mode_pemeliharaan_sampai', '') : '';
           const label = { semua: 'semua (web + aplikasi)', web: 'hanya situs web', aplikasi: 'hanya aplikasi Android', halaman: unik.length ? unik.length + ' halaman dipilih' : 'beranda saja (/)' }[cakupan];
           ctx.waitUntil(catatLog(env, 'pemeliharaan',
@@ -2483,6 +2527,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
               aktif: mode==='1', cakupan, pesan, versi_minimal: versi,
               halaman: await halamanPemeliharaan(env),
               sampai: sampai || null, mulai: mulaiPm || null,
+              bebas: await daftarBebasPemeliharaan(env),
             },
             email: Boolean(env.RESEND_API_KEY),
             push: Boolean(env.ONESIGNAL_API_KEY),

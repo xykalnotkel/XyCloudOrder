@@ -5,6 +5,7 @@ import { KeyRound, Sticker, Trash2 } from "lucide-react";
 import {
   Btn, Chip, ErrBox, Field, Header, Input, Load, MsgOk,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function StikerPage() {
   const [data, setData] = useState<any>(null);
@@ -35,7 +36,7 @@ export default function StikerPage() {
   }
 
   async function nonaktif() {
-    if (!confirm("Nonaktifkan GIPHY? Stiker yang sudah terkirim tetap ada.")) return;
+    if (!await konfirm({ pesan: "Nonaktifkan GIPHY? Stiker yang sudah terkirim tetap ada." })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       await adminFetch("/api/admin/integrasi/giphy", { method: "DELETE" });

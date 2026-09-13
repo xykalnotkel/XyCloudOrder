@@ -14,11 +14,17 @@ class PerawatanScreen extends StatelessWidget {
     required this.pesan,
     this.onCoba,
     this.onKeluar,
+    this.onMasuk,
   });
 
   final String pesan;
   final VoidCallback? onCoba;
   final VoidCallback? onKeluar;
+
+  /// Bila diisi, menampilkan jalan masuk kecil untuk staf internal yang
+  /// dikecualikan dari pemeliharaan (lihat setelan `pemeliharaan_bebas`),
+  /// supaya mereka bisa login dan menguji aplikasi meski mode menyala.
+  final VoidCallback? onMasuk;
 
   @override
   Widget build(BuildContext context) {
@@ -132,6 +138,32 @@ class PerawatanScreen extends StatelessWidget {
                       icon: Icons.refresh_rounded,
                       height: 50,
                       onPressed: onCoba,
+                    ),
+                  ),
+                ],
+                if (onMasuk != null) ...[
+                  const SizedBox(height: 16),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(99),
+                    onTap: onMasuk,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.lock_outline_rounded,
+                              size: 13, color: XyTheme.of(context).muted.withOpacity(.75)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Staf internal? Masuk untuk uji',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: XyTheme.of(context).muted.withOpacity(.9),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

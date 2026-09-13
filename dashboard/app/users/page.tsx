@@ -8,6 +8,7 @@ import {
   asList, Btn, Chip, EmptyBox, ErrBox, Field, Header, Input, jam, Load, MsgOk,
   Panel, rupiah, runBatch, Select, SelectBar, TextArea, useSelection,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 type User = any;
 
@@ -97,7 +98,7 @@ export default function UsersPage() {
       setErr("Nominal saldo harus angka selain 0 (boleh negatif untuk potong).");
       return;
     }
-    if (!confirm(`Sesuaikan saldo ${aktif.email} sebesar ${rupiah(nominal)}?`)) return;
+    if (!await konfirm({ pesan: `Sesuaikan saldo ${aktif.email} sebesar ${rupiah(nominal)}?` })) return;
     await aksi(
       () => adminFetch("/api/admin/users/saldo", {
         method: "POST",
@@ -139,7 +140,7 @@ export default function UsersPage() {
     if (!target.length) { setErr("Tidak ada akun cocok (pemilik dilindungi)."); return; }
     const kunci = prompt(`Ketik HAPUS untuk memindahkan ${target.length} akun ke Sampah:`);
     if (kunci !== "HAPUS") return;
-    if (!confirm(`Pindah ${target.length} akun ke Sampah? Login dinonaktifkan.`)) return;
+    if (!await konfirm({ pesan: `Pindah ${target.length} akun ke Sampah? Login dinonaktifkan.` })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const msg = await runBatch(target, (id) =>
@@ -160,7 +161,7 @@ export default function UsersPage() {
       return u && !u.owner_protected && Boolean(u.diblokir) !== blokir;
     });
     if (!target.length) { setErr("Tidak ada akun cocok (pemilik dilindungi / status sama)."); return; }
-    if (!confirm(`${blokir ? "Blokir" : "Buka blokir"} ${target.length} akun?`)) return;
+    if (!await konfirm({ pesan: `${blokir ? "Blokir" : "Buka blokir"} ${target.length} akun?`, bahaya: true })) return;
     setBusy(true); setErr("");
     try {
       const msg = await runBatch(target, (id) =>

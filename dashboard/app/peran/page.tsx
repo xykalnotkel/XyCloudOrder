@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { Copy, KeyRound, Plus, RefreshCw, ShieldUser, Trash2, UserPlus } from "lucide-react";
 import { Chip, ErrBox, Header, jam, Load, Select } from "@/components/ui/kit";
+import { konfirm, toast } from "@/components/ui/dialog";
 
 export default function PeranPage() {
   const [rows, setRows] = useState<any[]>([]);
@@ -34,7 +35,7 @@ export default function PeranPage() {
   }
 
   async function hapus(id: string, kunci: string) {
-    if (!confirm(`Hapus admin key ${kunci.slice(0, 10)}…?`)) return;
+    if (!await konfirm({ pesan: `Hapus admin key ${kunci.slice(0, 10)}…?`, bahaya: true })) return;
     try {
       await adminFetch("/api/admin/peran/" + id, { method: "DELETE" });
       await muat();
@@ -42,7 +43,7 @@ export default function PeranPage() {
   }
 
   async function putar(id: string, nama: string) {
-    if (!confirm(`Putar kunci untuk "${nama}"? Kunci lama langsung mati.`)) return;
+    if (!await konfirm({ pesan: `Putar kunci untuk "${nama}"? Kunci lama langsung mati.`, bahaya: true })) return;
     setErr(""); setBaru(null);
     try {
       const hasil = await adminFetch(`/api/admin/peran/${id}/rotate`, { method: "POST", body: {} });
@@ -52,7 +53,7 @@ export default function PeranPage() {
   }
 
   function salin(kunci: string) {
-    navigator.clipboard?.writeText(kunci).then(() => alert("Key disalin ke clipboard.")).catch(() => {});
+    navigator.clipboard?.writeText(kunci).then(() => toast("Key disalin ke clipboard.", "ok")).catch(() => {});
   }
 
   return (

@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import {
   Activity, CheckCircle2, Clock, Database, Globe, LayoutList, MonitorSmartphone,
-  RefreshCw, Save, Server, Settings, Shield, Smartphone, Trash2, XCircle,
+  RefreshCw, Save, Search, Server, Settings, Shield, Smartphone, Trash2, UserRound,
+  X, XCircle,
 } from "lucide-react";
-import { Chip, ErrBox, Header, Load, Stat } from "@/components/ui/kit";
+import { asList, Chip, ErrBox, Header, Load, Stat } from "@/components/ui/kit";
 
 const PRASET_HALAMAN: { label: string; path: string }[] = [
   { label: "Beranda", path: "/" },
@@ -34,6 +35,11 @@ export default function SistemPage() {
   const [menit, setMenit] = useState("60");
   const [inputH, setInputH] = useState("");
 
+  // pengecualian pemeliharaan: pengguna yang tetap boleh memakai aplikasi (tester)
+  const [bebas, setBebas] = useState<{ id: string; email: string; nama: string }[]>([]);
+  const [qBebas, setQBebas] = useState("");
+  const [userBebas, setUserBebas] = useState<any[]>([]);
+
   async function muat() {
     setLoading(true); setErr("");
     try {
@@ -43,6 +49,11 @@ export default function SistemPage() {
       setCakupan(pm.cakupan || "semua");
       setHalaman(Array.isArray(pm.halaman) ? pm.halaman : []);
       setPesan(pm.pesan || "");
+      setBebas(Array.isArray(pm.bebas) ? pm.bebas : []);
+      try {
+        const u = await adminFetch("/api/admin/users");
+        setUserBebas(asList(u, ["users", "data", "rows"]));
+      } catch { /* daftar pengecualian tetap bisa dipakai dari data tersimpan */ }
     } catch (e: any) { setErr(e.message); }
     finally { setLoading(false); }
   }
@@ -59,6 +70,7 @@ export default function SistemPage() {
           cakupan,
           halaman,
           pesan,
+          bebas,
           maks_menit: menit ? Number(menit) : 0,
         },
       });
@@ -79,6 +91,15 @@ export default function SistemPage() {
     if (p.length > 3 && !halaman.includes(p)) setHalaman((h) => [...h, p]);
     setInputH("");
   }
+
+  const cariBebas = qBebas.trim()
+    ? userBebas
+        .filter((u) =>
+          (u.nama || "").toLowerCase().includes(qBebas.toLowerCase()) ||
+          (u.email || "").toLowerCase().includes(qBebas.toLowerCase()))
+        .filter((u) => !bebas.some((b) => (b.id || b.email) === (u.id || u.email)))
+        .slice(0, 6)
+    : [];
 
   const db = d?.database || {};
   const pm = d?.pemeliharaan || {};
@@ -188,6 +209,53 @@ export default function SistemPage() {
                   <p className="mt-2 text-[10.5px] text-[#7C738F] font-medium">Mode ini hanya menutup halaman web publik yang dipilih — API & aplikasi Android tetap berjalan.</p>
                 </div>
               )}
+
+              {/* pengecualian pemeliharaan: tester internal tetap bisa masuk */}
+              <div className="mt-3 rounded-2xl bg-[#F5F3FF] border border-[#E9E3F5] p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B5A8A] uppercase tracking-wide">
+                  <UserRound size={12} /> Pengecualian — tetap bisa pakai aplikasi saat pemeliharaan
+                </div>
+                {bebas.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {bebas.map((b) => (
+                      <span key={b.id || b.email}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#E9E3F5] text-[11px] font-semibold text-[#1E1B2E]">
+                        {b.nama || b.email || b.id}
+                        {b.email && <span className="text-[#9A8CBF] font-normal">{b.email}</span>}
+                        <button aria-label="Buang pengecualian"
+                          onClick={() => setBebas((x) => x.filter((y) => (y.id || y.email) !== (b.id || b.email)))}
+                          className="text-[#9A8CBF] hover:text-rose-500"><X size={10} /></button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-2 relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9A8CBF]" />
+                  <input value={qBebas} onChange={(e) => setQBebas(e.target.value)}
+                    placeholder="Cari nama / email pengguna untuk ditambah…"
+                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[#E9E3F5] text-[12px] focus:border-[#7C3AED] outline-none" />
+                  {qBebas.trim() && (
+                    <div className="absolute z-20 mt-1 w-full rounded-xl bg-white border border-[#E9E3F5] shadow-lg overflow-hidden">
+                      {cariBebas.map((u) => (
+                        <button key={u.id}
+                          onClick={() => { setBebas((x) => [...x, { id: u.id, email: u.email || "", nama: u.nama || "" }]); setQBebas(""); }}
+                          className="w-full text-left px-3 py-2 hover:bg-[#F5F3FF] flex items-center justify-between gap-2">
+                          <span className="text-[12px] font-semibold text-[#1E1B2E] truncate">{u.nama || u.id}</span>
+                          <span className="text-[11px] text-[#7C738F] truncate">{u.email}</span>
+                        </button>
+                      ))}
+                      {cariBebas.length === 0 && (
+                        <div className="px-3 py-2 text-[11px] text-[#7C738F]">Tidak ada pengguna yang cocok.</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <p className="mt-2 text-[10.5px] text-[#7C738F] font-medium leading-relaxed">
+                  Pengguna di daftar ini tetap bisa login dan memakai aplikasi saat mode pemeliharaan
+                  menyala — untuk uji internal. Daftar tersimpan saat tombol Nyalakan/Matikan
+                  Pemeliharaan di bawah ditekan.
+                </p>
+              </div>
 
               <div className="mt-3 grid sm:grid-cols-[1fr_150px] gap-2">
                 <textarea value={pesan} onChange={(e) => setPesan(e.target.value)} rows={2}

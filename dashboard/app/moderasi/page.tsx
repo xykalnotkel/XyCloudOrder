@@ -5,6 +5,7 @@ import { CheckCheck, Flag, Trash2 } from "lucide-react";
 import {
   Btn, Chip, EmptyBox, ErrBox, Header, jam, Load, MsgOk, toneStatus, useAdminList,
 } from "@/components/ui/kit";
+import { konfirm } from "@/components/ui/dialog";
 
 export default function ModerasiPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/laporan");
@@ -22,7 +23,7 @@ export default function ModerasiPage() {
   }
 
   async function hapusKonten(l: any) {
-    if (!confirm("Hapus konten terkait laporan ini? Permanen.")) return;
+    if (!await konfirm({ pesan: "Hapus konten terkait laporan ini? Permanen.", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
       const jenis = String(l.jenis || l.tipe || "");
