@@ -62,7 +62,7 @@ class _BlokirScreenState extends State<BlokirScreen> {
   static String _tanggal(String iso) {
     final d = DateTime.tryParse(iso)?.toLocal();
     if (d == null) return iso;
-    String p(int n) => n.toString().padStart(2, '0');
+    String p(int n) => n.toString().padLeft(2, '0');
     return '${p(d.day)}/${p(d.month)}/${d.year} ${p(d.hour)}:${p(d.minute)}';
   }
 
