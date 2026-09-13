@@ -47,5 +47,9 @@ class XyConfig {
     'XY_BASE_URL_FALLBACK',
     defaultValue: 'https://xycloud-api.akuntiktok76y.workers.dev',
   );
-  static const String waCs = '6281234567890'; // fallback CS WhatsApp
+  /// Nomor CS cadangan bila `konfigurasi.whatsapp` dari server kosong/gagal.
+  /// Sebelumnya berisi placeholder '6281234567890' yang tidak aktif, sehingga
+  /// pengguna yang gagal memuat config diarahkan ke nomor mati.
+  /// Nilai ini harus sama dengan `WA_ADMIN` di api/wrangler.toml.
+  static const String waCs = '6283116632566';
 }

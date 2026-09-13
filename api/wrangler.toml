@@ -17,6 +17,10 @@ compatibility_date = "2025-01-01"
 binding = "DB"
 database_name = "xycloud"
 database_id = "9d9df6d2-1521-4697-b08d-ea5be2b652b5"
+# Supaya `wrangler d1 migrations apply xycloud --remote` tahu letak berkas
+# migrasi dan mencatatnya di tabel d1_migrations. Sebelumnya migrasi dijalankan
+# manual tanpa pencatatan, dan migrasi 0004 pernah terlewat tanpa ketahuan.
+migrations_dir = "migrations"
 
 # --- Durable Object untuk realtime (WebSocket) ---
 [[durable_objects.bindings]]

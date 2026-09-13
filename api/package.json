@@ -7,6 +7,9 @@
     "deploy": "wrangler deploy",
     "db:init": "wrangler d1 execute xycloud --remote --file=./schema.sql",
     "db:local": "wrangler d1 execute xycloud --local --file=./schema.sql",
+    "db:migrate": "wrangler d1 migrations apply xycloud --remote",
+    "db:migrate:local": "wrangler d1 migrations apply xycloud --local",
+    "db:check": "python3 ../tools/cek_skema_d1.py",
     "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {
