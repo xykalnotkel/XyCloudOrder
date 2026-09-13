@@ -105,24 +105,36 @@ Mode pemeliharaan **dibiarkan menyala** sesuai keputusan pemilik (produk belum r
 - Verifikasi nilai secret (`GOOGLE_CLIENT_SECRET`, `ONESIGNAL_API_KEY`) tidak
   terbaca lewat API — lihat bagian OneSignal di bawah.
 
-## 5. OneSignal — hasil pengecekan (butuh keputusan)
+## 5. OneSignal — hasil pengecekan (SELESAI penuh per 2026-09-13)
 
-REST key pada berkas kredensial **bukan** milik app yang terpasang di Worker:
+Ada **dua** app di akun OneSignal dan REST key-nya tidak saling tukar:
 
-| App ID | Nama | REST key di berkas | FCM/Google |
-|---|---|---|---|
-| `f4843c35-…` (terpasang di `wrangler.toml` + binding live) | XyCloudStore | ❌ ditolak (*access denied*) | dipasang menurut README |
-| `e3d5adea-…` (di berkas kredensial) | **XyDesk** | ✅ cocok | ❌ **belum ada** (`gcm_key` kosong) |
+| App ID | Nama | REST key | FCM/Google | Dipakai proyek? |
+|---|---|---|---|---|
+| `f4843c35-…` | XyCloudStore | key baru (berlabel di berkas kredensial) | ✅ **FCM v1 terpasang** (service account project `xycloud-c19f1`) | ✅ ya (wrangler.toml, workflow, Flutter) |
+| `e3d5adea-…` | XyDesk | key lama (berlabel di berkas kredensial) | ❌ belum | ❌ tidak |
 
-Artinya saat ini salah satu dari dua hal benar: secret `ONESIGNAL_API_KEY` di
-Worker adalah key lama yang cocok dengan `f4843c35` (push jalan), atau push mati.
-Dan app `XyDesk` belum bisa mengirim push Android sama sekali sebelum service
-account FCM dipasang di dashboard OneSignal.
+Akar masalahnya: secret Worker `ONESIGNAL_API_KEY` berisi key milik **XyDesk**,
+sehingga setiap kiriman push gagal autentikasi diam-diam sementara semua
+konfigurasi lain (app ID di wrangler/workflow/Flutter, FCM) sudah benar.
+Perbaikan yang sudah dijalankan:
 
-Rekomendasi: pilih satu app. Kalau `XyDesk` yang dilanjutkan → pasang FCM service
-account di OneSignal, lalu samakan `ONESIGNAL_APP_ID` di `api/wrangler.toml`,
-`--dart-define=XY_ONESIGNAL_APP_ID` di `build-apk.yml`, dan secret
-`ONESIGNAL_API_KEY`. Gw tunggu keputusan sebelum menyentuh apa pun di sini.
+1. Berkas kredensial dirapikan: blok `#ONESIGNAL` kini berlabel per-app
+   (`App Id/Api Key XyCloudStore` dan `App Id/Api Key XyDesk`) + catatan.
+2. Secret Worker `ONESIGNAL_API_KEY` **diset ulang lewat API**
+   (`PUT /accounts/…/workers/scripts/xycloud-api/secrets`, berhasil) ke key
+   XyCloudStore. Catatan: endpoint `PUT …/settings` ditolak token ini (kode
+   10405), tetapi endpoint `/secrets` boleh — jadi set secret bisa otomatis,
+   tidak perlu dashboard.
+3. README dikoreksi soal keberadaan app kedua dan sifat key per-app.
+
+Catatan verifikasi: field legacy `gcm_key`/`android_sender_id` memang kosong di
+app XyCloudStore dan sempat disalahartikan sebagai “FCM belum dipasang”;
+konfigurasi FCM v1 sebenarnya ada di field `fcm_v1_service_account_json` +
+`fcm_sender_id`. Uji kirim ke segment `Subscribed Users` membalas
+“All included players are not subscribed” karena saat ini **tidak ada perangkat
+yang berlangganan** (36 player sisa tes lama sudah tidak aktif) — bukti
+pengiriman akhir baru bisa dilakukan begitu ada perangkat nyata memasang APK.
 
 ## 6. Masih menunggu (Batch B, ditahan sampai APK dites)
 

@@ -488,9 +488,16 @@ dan saat banner promo baru dibuat dengan opsi "Kirim notifikasi push". Aplikasi 
 `onesignal_flutter` dan mengaitkan perangkat ke `external_id` = id pengguna, jadi kiriman selalu
 tepat sasaran.
 
-App OneSignal yang dipakai: **XyCloudStore** (`f4843c35-cc1d-4772-9f70-1c4349397ffb`), kredensial
-**Firebase FCM v1 (Service Account JSON)** sudah terpasang di dashboard OneSignal, jadi push Android
-siap terkirim begitu ada perangkat yang memasang aplikasi.
+App OneSignal yang dipakai: **XyCloudStore** (`f4843c35-cc1d-4772-9f70-1c4349397ffb`).
+Kredensial **Firebase FCM v1 (Service Account JSON)** sudah terpasang di app ini
+(project `xycloud-c19f1`), jadi push Android siap terkirim begitu ada perangkat yang
+memasang aplikasi dan berlangganan.
+
+Perhatian (perbaikan 2026-09-13): akun OneSignal ini punya app kedua bernama **XyDesk**
+(`e3d5adea-…`) yang tidak dipakai proyek ini, dan REST API key OneSignal bersifat per-app
+(tidak saling tukar). Secret Worker `ONESIGNAL_API_KEY` sempat berisi key milik XyDesk
+sehingga seluruh kiriman push gagal autentikasi diam-diam; sekarang sudah diisi key milik
+XyCloudStore. Bila menyalin key lagi dari dashboard, pastikan ambil dari app XyCloudStore.
 
 App ID dipakai di dua tempat: variabel `ONESIGNAL_APP_ID` pada `api/wrangler.toml` (sisi server) dan
 `--dart-define=XY_ONESIGNAL_APP_ID` pada workflow build (sisi aplikasi). REST API key disimpan sebagai
