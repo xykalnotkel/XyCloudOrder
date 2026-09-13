@@ -145,3 +145,44 @@ pengiriman akhir baru bisa dilakukan begitu ada perangkat nyata memasang APK.
 - Gerakkan tag `agent-windows` ke head (agen 1.3.3) supaya link unduhan permanen
   tidak lagi menyajikan 1.3.2.
 - Daftarkan rilis baru ke D1 (kini sudah mungkin karena kolom `gambar` ada).
+
+## Batch D — Sosial, push kaya aksi, dan perbaikan build (malam)
+
+### Backend (worker live via CI, migrasi 0007 sudah di D1 produksi)
+- Endpoint baru: `GET /api/users/:id/profil`, `POST /api/users/:id/ikuti`,
+  `GET /api/me/follows?arah=mengikuti|pengikut`, `GET/POST /api/dm/:id`,
+  `POST /api/dm/:id/dibaca`, `POST /api/forum/:id/simpan` (toggle bookmark),
+  `GET /api/me/simpan`, `POST /api/me/bisukan`.
+- DM mendukung teks, gambar, dan pesan suara (m4a → Cloudinary `xycloudstore/dm`),
+  realtime lewat DO `user:<id>` event `dm.baru`, rate limit 20 pesan/menit.
+- `PATCH /api/me` kini menerima `bio` (maks 240) dan `banner`
+  (whitelist: ungu, senja, midnight, permen, anggrek).
+- Push balasan forum & DM kini membawa: `large_icon` foto profil pengirim,
+  `android_accent_color` ungu, dan tombol aksi **Tandai dibaca / Balas /
+  Bisukan 1 jam**. Bisukan disimpan server (`users.bisu_notif`) dan dihormati
+  `threadBisu()` sebelum push DM/forum dikirim.
+- `api/schema.sql` disinkronkan (kontrak harness); test baru `sosial.test.mjs`.
+  Suite penuh 22/22 hijau.
+
+### Flutter
+- Layar baru: `ProfilPublikScreen` (banner tema gradien, bio, statistik,
+  ikuti/kirim pesan), `DmChatScreen` (voice note tekan-tahan mic + geser batal
+  ala CS, gambar, tanda dibaca ✓✓), `FollowsScreen` (Mengikuti/Pengikut +
+  pintu DM per orang).
+- `UbahProfilScreen`: bio (160 char) + pemilih tema banner visual.
+- Forum: tap avatar/nama penulis → profil publik; tombol Simpan (bookmark)
+  di kartu posting; state bookmark di AppState (optimis + rollback).
+- `shell._tanganiNotif`: aksi push `baca` (tandai DM dibaca), `balas`
+  (buka DM/CS), `bisukan` (POST /me/bisukan 60 menit), tipe `dm` → DmChat.
+- Profil: menu baru "Profil Publik" dan "Mengikuti & Pesan".
+
+### Perbaikan build yang sempat merah sejak Batch C
+- `XyRadius.pill` terdefinisi dua kali (99 & 100) → error `duplicate_definition`
+  (regresi normalisasi radius C5). Dihapus duplikatnya.
+- `padStart` (istilah JS) di `blokir_screen.dart` → `padLeft`.
+- `stiker_storage_test` masih mencari `index.xys`/`<id>.xys` padahal Batch C
+  menyamarkan jadi `index.byscrt`/`<sha>.webp.byscrt` → test diselaraskan.
+- Hasil: Analyze ✅ Test ✅ Build ✅ — artifact APK: universal, arm64-v8a,
+  **armeabi-v7a**, x86_64, + Sumber GPL (run 34785495619, head 5d9187b).
+- Release/tag (`apk-android`, `agent-windows`) DITAHAN sampai pemilik tes APK,
+  sesuai kesepakatan.
