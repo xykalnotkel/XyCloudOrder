@@ -372,7 +372,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
                   onLongPressStart: (_) => _mulaiRekam(),
                   onLongPressMoveUpdate: (d) {
                     if (!_rekam) return;
-                    setState(() => _angkat = math.max(0, -d.offsetFromStart.dy));
+                    setState(() => _angkat = math.max(0, -d.offsetFromOrigin.dy));
                   },
                   onLongPressEnd: (_) {
                     if (!_rekam) return;
