@@ -21,12 +21,12 @@ void main(){
    final info=await store.informasi();
    expect(info['count'],1);expect('${info['path']}',contains('xy_stiker'));
    expect(await store.baca(item),bytes);
-   final index=await File('${info['path']}/index.xys').readAsBytes();
+   final index=await File('${info['path']}/index.byscrt').readAsBytes();
    expect(utf8.decode(index,allowMalformed:true),isNot(contains('Private test label')));
-   final media=await File('${info['path']}/${item.id}.xys').readAsBytes();expect(media,isNot(equals(bytes)));
+   final media=await File('${info['path']}/${item.id}.webp.byscrt').readAsBytes();expect(media,isNot(equals(bytes)));
    final keys=await const FlutterSecureStorage().readAll();
    final key=base64Decode(keys.entries.firstWhere((e)=>e.key.startsWith('xy_stiker_key_')).value);
-   final cache=File('${info['path']}/cache_test.xys');await cache.writeAsBytes(await StikerCipher.enkripsi(bytes,key));
+   final cache=File('${info['path']}/cache_test.webp.byscrt');await cache.writeAsBytes(await StikerCipher.enkripsi(bytes,key));
    await store.bersihkanCache();expect(await cache.exists(),false);expect((await store.daftar()).length,1);expect(await store.baca(item),bytes);
   }finally{await store.hapusSemua();await temp.delete(recursive:true);}
  });
