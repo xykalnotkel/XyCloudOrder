@@ -6,7 +6,7 @@ import {
   Btn, EmptyBox, ErrBox, Header, jam, Load, MsgOk, runBatch, SelectBar,
   useAdminList, useSelection,
 } from "@/components/ui/kit";
-import { konfirm } from "@/components/ui/dialog";
+import { konfirm, mintaTeks } from "@/components/ui/dialog";
 
 export default function SampahPage() {
   const { rows, loading, err, setErr, reload } = useAdminList("/api/admin/users?trash=1");
@@ -38,12 +38,15 @@ export default function SampahPage() {
 
   async function aksiPermanent(u: any) {
     if (u.owner_protected) { setErr("Akun pemilik dilindungi."); return; }
-    const email = prompt(`Hapus permanen. Ketik email akun (${u.email}) untuk konfirmasi:`, "");
+    const email = await mintaTeks({
+      judul: "Hapus permanen",
+      pesan: `Ketik email akun (${u.email}) untuk konfirmasi.`,
+      bahaya: true,
+      okLabel: "Hapus permanen",
+      wajib: (v) => v.trim().toLowerCase() === String(u.email || "").toLowerCase()
+        ? null : "Email tidak sama dengan akun ini.",
+    });
     if (email === null) return;
-    if (String(email).trim().toLowerCase() !== String(u.email || "").toLowerCase()) {
-      setErr("Email tidak cocok — dibatalkan.");
-      return;
-    }
     if (!await konfirm({ pesan: `Hapus permanen ${u.email}? Tidak bisa dibatalkan.`, bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {
@@ -68,8 +71,14 @@ export default function SampahPage() {
   async function massalPermanent() {
     const target = sel.list.filter((id) => !rows.find((u) => u.id === id)?.owner_protected);
     if (!target.length) { setErr("Tidak ada akun non-pemilik di pilihan."); return; }
-    const kunci = prompt(`Ketik HAPUS untuk menghapus permanen ${target.length} akun:`);
-    if (kunci !== "HAPUS") return;
+    const kunci = await mintaTeks({
+      judul: "Hapus permanen massal",
+      pesan: `Ketik HAPUS untuk menghapus permanen ${target.length} akun.`,
+      bahaya: true,
+      okLabel: "Lanjutkan",
+      wajib: (v) => (v.trim() === "HAPUS" ? null : "Ketik persis: HAPUS"),
+    });
+    if (kunci === null) return;
     if (!await konfirm({ pesan: "Yakin? Seluruh data akun terpilih hilang permanen.", bahaya: true })) return;
     setBusy(true); setErr(""); setOk("");
     try {

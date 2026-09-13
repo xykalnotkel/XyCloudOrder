@@ -8,7 +8,7 @@ import {
   asList, Btn, Chip, EmptyBox, ErrBox, Field, Header, Input, jam, Load, MsgOk,
   Panel, rupiah, runBatch, Select, SelectBar, TextArea, useSelection,
 } from "@/components/ui/kit";
-import { konfirm } from "@/components/ui/dialog";
+import { konfirm, mintaTeks } from "@/components/ui/dialog";
 
 type User = any;
 
@@ -28,6 +28,8 @@ export default function UsersPage() {
   const [tier, setTier] = useState("");
   const [badge, setBadge] = useState("");
   const [alasanBlokir, setAlasanBlokir] = useState("");
+  // 0 = permanen; selain itu jumlah hari pembekuan sementara
+  const [lamaBlokir, setLamaBlokir] = useState("0");
   const [peringatan, setPeringatan] = useState("Mohon jaga bahasa dan hormati sesama pengguna di komunitas.");
 
   async function muat(query = cari) {
@@ -121,8 +123,13 @@ export default function UsersPage() {
 
   async function keSampah() {
     if (!aktif || aktif.owner_protected) return;
-    const kunci = prompt("Ketik HAPUS untuk memindahkan akun ke Sampah (soft-delete):");
-    if (kunci !== "HAPUS") return;
+    const kunci = await mintaTeks({
+      judul: "Pindah ke Sampah",
+      pesan: "Ketik HAPUS untuk memindahkan akun ini ke Sampah (soft-delete).",
+      bahaya: true, okLabel: "Pindahkan",
+      wajib: (v) => (v.trim() === "HAPUS" ? null : "Ketik persis: HAPUS"),
+    });
+    if (kunci === null) return;
     await aksi(
       () => adminFetch(`/api/admin/users/${aktif.id}/trash`, {
         method: "POST", body: { konfirmasi: "HAPUS" },
@@ -138,8 +145,13 @@ export default function UsersPage() {
       return u && !u.owner_protected;
     });
     if (!target.length) { setErr("Tidak ada akun cocok (pemilik dilindungi)."); return; }
-    const kunci = prompt(`Ketik HAPUS untuk memindahkan ${target.length} akun ke Sampah:`);
-    if (kunci !== "HAPUS") return;
+    const kunci = await mintaTeks({
+      judul: "Pindah massal ke Sampah",
+      pesan: `Ketik HAPUS untuk memindahkan ${target.length} akun ke Sampah.`,
+      bahaya: true, okLabel: "Pindahkan",
+      wajib: (v) => (v.trim() === "HAPUS" ? null : "Ketik persis: HAPUS"),
+    });
+    if (kunci === null) return;
     if (!await konfirm({ pesan: `Pindah ${target.length} akun ke Sampah? Login dinonaktifkan.` })) return;
     setBusy(true); setErr(""); setOk("");
     try {
@@ -336,18 +348,52 @@ export default function UsersPage() {
             <div className="space-y-2">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-[#7C738F]">Keamanan akun</div>
               {aktif.diblokir ? (
-                <Btn tone="ok" disabled={busy || aktif.owner_protected} onClick={() => simpanKelola({ diblokir: false }, "Blokir dibuka")}>
-                  <CheckCircle2 size={13} /> Buka blokir
-                </Btn>
+                <div className="space-y-2">
+                  {aktif.blokir_sampai ? (
+                    <div className="text-[11px] px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 font-semibold">
+                      Blokir sementara — pulih {new Date(aktif.blokir_sampai).toLocaleString("id-ID")}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-700 font-semibold">
+                      Blokir permanen
+                    </div>
+                  )}
+                  <Btn tone="ok" disabled={busy || aktif.owner_protected} onClick={() => simpanKelola({ diblokir: false }, "Blokir dibuka")}>
+                    <CheckCircle2 size={13} /> Buka blokir
+                  </Btn>
+                </div>
               ) : (
                 <div className="space-y-2">
                   <Field label="Alasan blokir">
                     <Input value={alasanBlokir} onChange={(e) => setAlasanBlokir(e.target.value)} placeholder="Melanggar ketentuan" />
                   </Field>
+                  <Field label="Durasi blokir">
+                    <Select
+                      value={lamaBlokir}
+                      onChange={setLamaBlokir}
+                      options={[
+                        { value: "0", label: "Permanen — sampai dibuka admin" },
+                        { value: "1", label: "Sementara — 1 hari" },
+                        { value: "7", label: "Sementara — 7 hari" },
+                        { value: "30", label: "Sementara — 30 hari" },
+                      ]}
+                    />
+                  </Field>
+                  <p className="text-[10.5px] text-[#7C738F] font-medium leading-relaxed">
+                    Blokir sementara pulih otomatis setelah masanya lewat; pengguna melihat
+                    hitung mundur, alasan, dan bisa mengajukan banding dari aplikasi.
+                  </p>
                   <Btn
                     tone="bahaya"
                     disabled={busy || aktif.owner_protected}
-                    onClick={() => simpanKelola({ diblokir: true, alasan: alasanBlokir || "Diblokir admin", badge, tier }, "Akun diblokir")}
+                    onClick={() => simpanKelola({
+                      diblokir: true,
+                      alasan: alasanBlokir || "Diblokir admin",
+                      badge, tier,
+                      sampai: Number(lamaBlokir) > 0
+                        ? new Date(Date.now() + Number(lamaBlokir) * 86400000).toISOString()
+                        : null,
+                    }, Number(lamaBlokir) > 0 ? `Akun diblokir ${lamaBlokir} hari` : "Akun diblokir permanen")}
                   >
                     <Ban size={13} /> Blokir akun
                   </Btn>

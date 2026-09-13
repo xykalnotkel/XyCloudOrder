@@ -39,6 +39,12 @@ abstract class XyRepository {
   // ---------- undang teman, favorit, ulasan paket ----------
   Future<Map<String, dynamic>> dataReferral();
   Future<Map<String, dynamic>> pakaiReferral(String kode);
+  /// Status pembekuan akun + riwayat pelanggaran + daftar banding.
+  Future<InfoBlokir> infoBlokir();
+
+  /// Ajukan banding atas pembekuan. Galat API dilempar apa adanya.
+  Future<Map<String, dynamic>> ajukanBanding(String pesan);
+
   Future<List<String>> favorit();
   Future<bool> ubahFavorit(String produkId);
   Future<List<Ulasan>> ulasanPaket(String planId);
@@ -210,6 +216,14 @@ class RemoteRepository implements XyRepository {
   @override
   Future<Map<String, dynamic>> pakaiReferral(String kode) async =>
       Map<String, dynamic>.from(await api.post('/referral/pakai', {'kode': kode}));
+
+  @override
+  Future<InfoBlokir> infoBlokir() async => InfoBlokir.fromJson(
+      Map<String, dynamic>.from(await api.get('/me/blokir')));
+
+  @override
+  Future<Map<String, dynamic>> ajukanBanding(String pesan) async =>
+      Map<String, dynamic>.from(await api.post('/me/banding', {'pesan': pesan}));
 
   @override
   Future<List<String>> favorit() async =>
@@ -532,6 +546,13 @@ class MockRepository implements XyRepository {
 
   @override
   Future<Map<String, dynamic>> pakaiReferral(String kode) => _delay({'ok': true, 'bonus': 5000}, 300);
+
+  @override
+  Future<InfoBlokir> infoBlokir() async => const InfoBlokir();
+
+  @override
+  Future<Map<String, dynamic>> ajukanBanding(String pesan) async =>
+      {'ok': true};
 
   @override
   Future<List<String>> favorit() => _delay(<String>[], 200);

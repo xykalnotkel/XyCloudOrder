@@ -153,6 +153,23 @@ async function tertutupPemeliharaan(env, req) {
   return !(await bebasPemeliharaan(env, req));
 }
 
+// Blokir sementara yang sudah lewat batasnya pulih otomatis saat dibaca,
+// supaya akun tidak tetap terkunci setelah masanya habis (audit 2026-09-13).
+async function pulihkanBlokirKadaluarsa(env, userId) {
+  const u = await env.DB.prepare('SELECT diblokir, blokir_sampai FROM users WHERE id=?').bind(userId).first();
+  if (!u || u.diblokir !== 1 || !u.blokir_sampai) return false;
+  if (Date.parse(u.blokir_sampai) > Date.now()) return false;
+  await env.DB.prepare(
+    'UPDATE users SET diblokir=0, alasan_blokir=NULL, blokir_sampai=NULL, session_version=session_version+1 WHERE id=?',
+  ).bind(userId).run();
+  await buatNotif(env, { waitUntil: (pr) => { Promise.resolve(pr).catch(() => {}); } }, {
+    userId, jenis: 'sistem', judul: 'Akunmu aktif kembali',
+    pesan: 'Masa pembekuan sementara telah selesai. Selamat memakai layanan lagi.',
+    aktor: 'Sistem',
+  });
+  return true;
+}
+
 // ---------- password ----------
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -339,6 +356,11 @@ async function auth(req, env) {
   return session;
 }
 async function issueUserToken(env,u,deviceId=null){
+  // Blokir sementara yang sudah lewat batasnya pulih saat pengguna masuk lagi,
+  // supaya ia tidak tertolak oleh pembekuan yang sebenarnya sudah selesai.
+  if (await pulihkanBlokirKadaluarsa(env, u.id)) {
+    u = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(u.id).first();
+  }
   assertAccountEnabled(u);
   await linkDevice(env,deviceId,u.id);
   return sign({sub:u.id,email:u.email,v:2,sv:u.session_version||0,dv:deviceId,iat:Date.now(),exp:Date.now()+MASA_TOKEN},env.JWT_SECRET);
@@ -1617,7 +1639,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
           const trash=url.searchParams.get('trash')==='1';
           if(trash&&admin.peran!=='pemilik')return err('Hanya pemilik',403,env);
           const q=String(url.searchParams.get('q')||'').slice(0,80);
-          const {results}=await env.DB.prepare(`SELECT id,nama,email,phone,saldo,tier,badge,diblokir,alasan_blokir,peringatan,
+          const {results}=await env.DB.prepare(`SELECT id,nama,email,phone,saldo,tier,badge,diblokir,alasan_blokir,blokir_sampai,peringatan,
             created_at,foto,total_belanja,kode_referral,deleted_at,registration_device FROM users
             WHERE deleted_at IS ${trash?'NOT ':''}NULL AND (nama LIKE ? OR email LIKE ?) ORDER BY created_at DESC LIMIT 200`).bind('%'+q+'%','%'+q+'%').all();
           return json(results.map(u=>({...u,foto:samarkanGambar(env,u.foto,'s'),owner_protected:ownerProtected(env,u)})),200,env);
@@ -1746,17 +1768,29 @@ ${halaman.map(([u, p2, f]) => `  <url>
           const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(idU).first();
           if (!u) return err('Pengguna tidak ditemukan', 404, env);
 
+          // `sampai` = batas blokir sementara (ISO). Kosong/null = permanen.
+          const sampaiB = b.diblokir && b.sampai ? String(b.sampai) : null;
           await env.DB.prepare(
             `UPDATE users SET badge = ?, tier = COALESCE(NULLIF(?,''), tier),
-                              diblokir = COALESCE(?, diblokir), alasan_blokir = ?
+                              diblokir = COALESCE(?, diblokir), alasan_blokir = ?,
+                              blokir_sampai = ?
              WHERE id = ?`
           ).bind(
             b.badge === '' ? null : (b.badge ?? u.badge),
             b.tier || '',
             b.diblokir == null ? null : (b.diblokir ? 1 : 0),
             b.diblokir ? (b.alasan || 'Melanggar ketentuan komunitas') : null,
+            b.diblokir ? sampaiB : null,
             idU,
           ).run();
+          // Setiap pembekuan BARU tercatat sebagai riwayat pelanggaran, supaya
+          // pengguna melihat rekam jejak moderasi di layar Akun Dibekukan.
+          if (b.diblokir && !u.diblokir) {
+            await env.DB.prepare(
+              "INSERT INTO pelanggaran(id,user_id,jenis,alasan,sampai,oleh,waktu) VALUES(?,?, 'blokir',?,?,?,?)",
+            ).bind(uid('pl_'), idU, b.alasan || 'Melanggar ketentuan komunitas', sampaiB,
+              String(admin?.nama || admin?.peran || 'admin'), new Date().toISOString()).run();
+          }
 
           if (b.diblokir != null) {
             await env.DB.prepare('UPDATE users SET session_version=session_version+1 WHERE id=?').bind(idU).run();
@@ -2240,6 +2274,44 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           return json({ ok: true, aktif, cakupan, sampai: aktif ? (sampai || null) : null, halaman: unik }, 200, env);
         }
 
+        // ---- banding pengguna yang dibekukan ----
+        if (a === 'moderasi/banding' && req.method === 'GET') {
+          const st = String(url.searchParams.get('status') || '');
+          const r = await env.DB.prepare(
+            `SELECT b.id, b.user_id, b.pesan, b.status, b.waktu, b.tanggapan, b.waktu_tanggapan,
+                    u.nama, u.email
+             FROM banding b LEFT JOIN users u ON u.id = b.user_id
+             ${st ? 'WHERE b.status = ?' : ''}
+             ORDER BY (b.status = 'baru') DESC, b.waktu DESC LIMIT 100`,
+          ).bind(...(st ? [st] : [])).all();
+          return json(r.results, 200, env);
+        }
+        if (a.startsWith('moderasi/banding/') && req.method === 'POST') {
+          const idB = a.split('/')[2];
+          const b = await req.json().catch(() => ({}));
+          const status = ['diterima', 'ditolak'].includes(b.status) ? b.status : null;
+          if (!status) return err('Status harus "diterima" atau "ditolak".', 422, env);
+          const row = await env.DB.prepare('SELECT * FROM banding WHERE id=?').bind(idB).first();
+          if (!row) return err('Banding tidak ditemukan', 404, env);
+          await env.DB.prepare('UPDATE banding SET status=?, tanggapan=?, waktu_tanggapan=? WHERE id=?')
+            .bind(status, String(b.tanggapan || ''), new Date().toISOString(), idB).run();
+          if (status === 'diterima') {
+            await env.DB.prepare(
+              'UPDATE users SET diblokir=0, alasan_blokir=NULL, blokir_sampai=NULL, session_version=session_version+1 WHERE id=?',
+            ).bind(row.user_id).run();
+          }
+          ctx.waitUntil(buatNotif(env, ctx, {
+            userId: row.user_id, jenis: 'sistem',
+            judul: status === 'diterima' ? 'Banding diterima' : 'Banding ditolak',
+            pesan: status === 'diterima'
+              ? 'Akunmu aktif kembali. Selamat memakai layanan.'
+              : (b.tanggapan || 'Bandingmu ditolak. Hubungi chat CS bila perlu penjelasan.'),
+            aktor: 'Admin',
+          }));
+          ctx.waitUntil(catatLog(env, 'laporan', `Banding ${idB} ${status} oleh admin`));
+          return json({ ok: true, status }, 200, env);
+        }
+
         // ---- jalankan pemeliharaan sekarang ----
         if (a === 'sistem/bersihkan' && req.method === 'POST') {
           return json(await jalankanPemeliharaan(env), 200, env);
@@ -2640,7 +2712,8 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
       const statusAkun = await env.DB.prepare('SELECT diblokir, alasan_blokir,deleted_at FROM users WHERE id = ?')
         .bind(me.sub).first();
       if (!statusAkun || statusAkun.deleted_at) return err('Sesi berakhir. Silakan masuk kembali.', 401, env);
-      if (statusAkun?.diblokir === 1 && !p.startsWith('cs/') && !p.startsWith('notifikasi') && p !== 'me') {
+      if (statusAkun?.diblokir === 1 && !p.startsWith('cs/') && !p.startsWith('notifikasi')
+          && p !== 'me' && p !== 'me/blokir' && p !== 'me/banding') {
         return err(
           statusAkun.alasan_blokir
             ? `Akunmu sedang dibekukan. Alasan: ${statusAkun.alasan_blokir}`
@@ -2666,7 +2739,37 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
       }
 
       // ---- profil pengguna yang sedang login ----
+      // ---- status pembekuan, riwayat pelanggaran, dan banding ----
+      // Dipakai layar "Akun Dibekukan" di aplikasi: pengguna melihat alasan,
+      // daftar pelanggaran, masa blokir, serta mengajukan/memantau banding.
+      if (p === 'me/blokir' && req.method === 'GET') {
+        await pulihkanBlokirKadaluarsa(env, me.sub);
+        const u = await env.DB.prepare('SELECT diblokir, alasan_blokir, blokir_sampai FROM users WHERE id=?').bind(me.sub).first();
+        const pel = await env.DB.prepare('SELECT jenis, alasan, sampai, waktu FROM pelanggaran WHERE user_id=? ORDER BY waktu DESC LIMIT 20').bind(me.sub).all();
+        const ban = await env.DB.prepare('SELECT id, pesan, status, waktu, tanggapan, waktu_tanggapan FROM banding WHERE user_id=? ORDER BY waktu DESC LIMIT 10').bind(me.sub).all();
+        return json({
+          diblokir: u?.diblokir === 1,
+          sampai: u?.blokir_sampai || null,
+          alasan: u?.alasan_blokir || null,
+          pelanggaran: pel.results,
+          banding: ban.results,
+        }, 200, env);
+      }
+      if (p === 'me/banding' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const pesan = String(b.pesan || '').trim().slice(0, 600);
+        if (pesan.length < 20) return err('Tuliskan penjelasan minimal 20 karakter supaya admin bisa menilai.', 422, env);
+        if (!(await bolehLanjut(env, `banding:${me.sub}`, 3, 86400))) return err('Banding maksimal 3 kali per hari. Tunggu besok atau hubungi chat CS.', 429, env);
+        const terbuka = await env.DB.prepare("SELECT id FROM banding WHERE user_id=? AND status='baru'").bind(me.sub).first();
+        if (terbuka) return err('Kamu masih punya banding yang sedang diproses.', 409, env);
+        const idB = uid('bd_');
+        await env.DB.prepare("INSERT INTO banding(id,user_id,pesan,status,waktu) VALUES(?,?,?,'baru',?)").bind(idB, me.sub, pesan, new Date().toISOString()).run();
+        ctx.waitUntil(catatLog(env, 'laporan', `Banding baru dari ${me.sub}: ${pesan.slice(0, 80)}`));
+        return json({ ok: true, id: idB }, 201, env);
+      }
+
       if (p === 'me' && req.method === 'GET') {
+        await pulihkanBlokirKadaluarsa(env, me.sub);
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         if (!u) return err('Akun tidak ditemukan', 404, env);
         delete u.password;

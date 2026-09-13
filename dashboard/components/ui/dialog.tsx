@@ -203,4 +203,99 @@ export function toast(pesan: string, tone: ToneToast = "info") {
   }, 3600);
 }
 
+// ---------------------------------------------------------------------------
+// Modal input teks (pengganti prompt() bawaan)
+// ---------------------------------------------------------------------------
+
+export type OpsiTeks = {
+  judul: string;
+  pesan?: string;
+  placeholder?: string;
+  okLabel?: string;
+  bahaya?: boolean;
+  /** Kembalikan pesan galat bila isian belum benar; null bila benar. */
+  wajib?: (v: string) => string | null;
+};
+
+function ModalTeks({ opsi, selesai }: { opsi: OpsiTeks; selesai: (v: string | null) => void }) {
+  const [nilai, setNilai] = useState("");
+  const [galat, setGalat] = useState("");
+
+  useEffect(() => {
+    const padaTombol = (e: KeyboardEvent) => {
+      if (e.key === "Escape") selesai(null);
+    };
+    window.addEventListener("keydown", padaTombol);
+    return () => window.removeEventListener("keydown", padaTombol);
+  }, [selesai]);
+
+  const kirim = () => {
+    const g = opsi.wajib ? opsi.wajib(nilai) : null;
+    if (g) { setGalat(g); return; }
+    selesai(nilai);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[95] grid place-items-center p-4"
+      style={{ animation: "xyLatarMasuk .16s ease-out" }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={opsi.judul}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) selesai(null); }}
+    >
+      <div className="absolute inset-0 bg-[#14002E]/45 backdrop-blur-[2px]" />
+      <div
+        className="relative w-[min(92vw,430px)] rounded-[20px] bg-white border border-[#E9E3F5] shadow-[0_24px_60px_-18px_rgba(46,20,120,.35)] p-5"
+        style={{ animation: "xyDialogMasuk .18s cubic-bezier(.2,.9,.3,1.2)" }}
+      >
+        <div className="flex items-start gap-3">
+          <div className={`shrink-0 w-10 h-10 rounded-[14px] grid place-items-center ${opsi.bahaya ? "bg-[#FDE8EC] text-[#D3385B]" : "bg-[#F3F0FF] text-[#6D5AE0]"}`}>
+            <AlertTriangle size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-[15px] text-[#1E1B2E]">{opsi.judul}</div>
+            {opsi.pesan && (
+              <div className="text-[13px] text-[#5C5474] mt-1 leading-relaxed whitespace-pre-wrap">{opsi.pesan}</div>
+            )}
+          </div>
+          <button className="shrink-0 w-8 h-8 rounded-[10px] grid place-items-center text-[#7C738F] hover:bg-[#F5F3FF] hover:text-[#1E1B2E] transition"
+            onClick={() => selesai(null)} aria-label="Tutup">
+            <X size={15} />
+          </button>
+        </div>
+        <input
+          autoFocus
+          value={nilai}
+          onChange={(e) => { setNilai(e.target.value); setGalat(""); }}
+          onKeyDown={(e) => { if (e.key === "Enter") kirim(); }}
+          placeholder={opsi.placeholder || ""}
+          className="mt-4 w-full px-3.5 py-2.5 rounded-[12px] bg-[#FAF8FF] border border-[#E9E3F5] text-[13px] text-[#1E1B2E] outline-none focus:border-[#6D5AE0] focus:bg-white transition"
+        />
+        {galat && <div className="mt-1.5 text-[11.5px] font-semibold text-[#D3385B]">{galat}</div>}
+        <div className="flex justify-end gap-2 mt-4">
+          <button className="h-9 px-4 rounded-[12px] text-[13px] font-medium text-[#5C5474] bg-[#F5F3FF] border border-[#E9E3F5] hover:bg-[#EDE9FB] transition"
+            onClick={() => selesai(null)}>
+            Batal
+          </button>
+          <button
+            className={`h-9 px-4 rounded-[12px] text-[13px] font-semibold text-white shadow-sm transition ${opsi.bahaya ? "bg-[#D3385B] hover:bg-[#B92E4E]" : "bg-[#6D5AE0] hover:bg-[#5B48CE]"}`}
+            onClick={kirim}>
+            {opsi.okLabel || "Simpan"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Pengganti `prompt()` bawaan browser. Resolve null bila dibatalkan. */
+export function mintaTeks(opsi: OpsiTeks): Promise<string | null> {
+  return new Promise((resolve) => {
+    const lepas = mount(
+      <ModalTeks opsi={opsi} selesai={(v) => { lepas(); resolve(v); }} />,
+    );
+  });
+}
+
 export default konfirm;

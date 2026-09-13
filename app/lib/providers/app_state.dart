@@ -57,6 +57,37 @@ class AppState extends ChangeNotifier {
   String pesanPerawatan =
       'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.';
 
+  /// Status pembekuan akun (alasan, masa, pelanggaran, banding) untuk layar
+  /// Akun Dibekukan. Null berarti belum dimuat.
+  InfoBlokir? infoBlokir;
+
+  /// Muat (atau muat ulang) status pembekuan dari server. Bila masa blokir
+  /// sementara ternyata sudah habis, profil dimuat ulang supaya aplikasi
+  /// langsung keluar dari layar pembekuan.
+  Future<void> muatInfoBlokir() async {
+    try {
+      final info = await _repo.infoBlokir();
+      infoBlokir = info;
+      if (!info.diblokir && (user?.diblokir ?? false)) {
+        user = await _repo.profilSaya();
+      }
+    } catch (_) {
+      // layar pembekuan menampilkan keadaan terakhir yang diketahui
+    }
+    notifyListeners();
+  }
+
+  /// Ajukan banding; mengembalikan pesan galat atau null bila berhasil.
+  Future<String?> ajukanBanding(String pesan) async {
+    try {
+      await _repo.ajukanBanding(pesan);
+      await muatInfoBlokir();
+      return null;
+    } catch (e) {
+      return e is ApiException ? e.pesan : e.toString();
+    }
+  }
+
   /// True selama aplikasi masih memeriksa token tersimpan.
   bool memeriksaSesi = true;
 
