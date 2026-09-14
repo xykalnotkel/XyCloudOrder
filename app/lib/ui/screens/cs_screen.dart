@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 
 import '../../core/format.dart';
+import '../../core/kompres.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
@@ -48,13 +49,17 @@ class _CsScreenState extends State<CsScreen> {
   Timer? _retensi;
   ChatMessage? _balas;
 
-  // --- rekam suara ---
+  // --- rekam suara (gestur ala WhatsApp: atas=batal, kiri=hapus, tahan=kunci) ---
   final _rec = AudioRecorder();
   bool _rekam = false;
   bool _batal = false;
-  double _angkat = 0; // seberapa jauh jari digeser ke atas
+  bool _hapus = false;
+  bool _kunci = false;
+  double _angkat = 0; // dy: geseran ke atas (negatif = naik)
+  double _geser = 0; // dx: geseran ke kiri (negatif = ke kiri)
   int _detik = 0;
   Timer? _stopwatch;
+  Timer? _kunciTimer;
 
   static const cepat = [
     'Halo Kirana, aku mau tanya',
@@ -81,6 +86,7 @@ class _CsScreenState extends State<CsScreen> {
   void dispose() {
     _retensi?.cancel();
     _stopwatch?.cancel();
+    _kunciTimer?.cancel();
     ctrl.dispose();
     scroll.dispose();
     _rec.dispose();
@@ -118,8 +124,8 @@ class _CsScreenState extends State<CsScreen> {
         .pickImage(source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-    final dataUri = 'data:image/$tipe;base64,${base64Encode(bytes)}';
+    // Kompres ke WebP dulu biar unggahan ringan dan cepat.
+    final dataUri = await Kompres.dataUri(bytes, f.name);
     if (!mounted) return;
     await context.read<AppState>().kirimChat(
           '',
@@ -170,6 +176,7 @@ class _CsScreenState extends State<CsScreen> {
   //  Pesan suara: tekan-tahan mic; geser ke atas (>= 70px) = batalkan.
   // ------------------------------------------------------------------
   Future<void> _mulaiRekam() async {
+    if (_rekam) return;
     try {
       if (!await _rec.hasPermission()) {
         if (!mounted) return;
@@ -191,15 +198,28 @@ class _CsScreenState extends State<CsScreen> {
         path: path,
       );
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       setState(() {
         _rekam = true;
         _batal = false;
+        _hapus = false;
+        _kunci = false;
         _angkat = 0;
+        _geser = 0;
         _detik = 0;
       });
       _stopwatch?.cancel();
       _stopwatch = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted && _rekam) setState(() => _detik++);
+      });
+      // Tahan jari diam-diam ~1,4 detik → rekaman terkunci (hands-free).
+      _kunciTimer?.cancel();
+      _kunciTimer = Timer(const Duration(milliseconds: 1400), () {
+        if (!mounted || !_rekam || _kunci) return;
+        if (_batal || _hapus) return;
+        HapticFeedback.mediumImpact();
+        SystemSound.play(SystemSoundType.click);
+        setState(() => _kunci = true);
       });
     } catch (_) {
       if (!mounted) return;
@@ -210,6 +230,7 @@ class _CsScreenState extends State<CsScreen> {
 
   Future<void> _hentiRekam({required bool batal}) async {
     _stopwatch?.cancel();
+    _kunciTimer?.cancel();
     String? jalur;
     try {
       if (batal) {
@@ -222,7 +243,10 @@ class _CsScreenState extends State<CsScreen> {
     setState(() {
       _rekam = false;
       _batal = false;
+      _hapus = false;
+      _kunci = false;
       _angkat = 0;
+      _geser = 0;
     });
     if (batal || jalur == null) return;
     final detik = _detik < 1 ? 1 : _detik;
@@ -458,11 +482,17 @@ class _CsScreenState extends State<CsScreen> {
                 );
               },
             ),
-            if (_rekam) _OverlayRekam(
-              detik: _detik,
-              batal: _batal,
-              angkat: _angkat,
-            ),
+            if (_rekam)
+              _OverlayRekam(
+                detik: _detik,
+                batal: _batal,
+                hapus: _hapus,
+                angkat: _angkat,
+                geser: _geser,
+                kunci: _kunci,
+                onKirim: () => _hentiRekam(batal: false),
+                onBatal: () => _hentiRekam(batal: true),
+              ),
           ]),
         ),
         // strip balasan
@@ -493,14 +523,24 @@ class _CsScreenState extends State<CsScreen> {
           ctrl: ctrl,
           sending: _sending,
           rekam: _rekam,
+          kunci: _kunci,
           onKirim: _kirim,
           onGambar: _kirimGambar,
           onMicMulai: _mulaiRekam,
-          onMicUpdate: (dy) {
+          onMicUpdate: (dx, dy) {
             if (!_rekam || !mounted) return;
+            final batalBaru = dy <= -70;
+            final hapusBaru = !batalBaru && dx <= -70;
+            if (batalBaru != _batal || hapusBaru != _hapus) {
+              // feedback terasa + terdengar tiap masuk/keluar zona gestur
+              HapticFeedback.selectionClick();
+              SystemSound.play(SystemSoundType.click);
+            }
             setState(() {
               _angkat = dy;
-              _batal = dy <= -70;
+              _geser = dx;
+              _batal = batalBaru;
+              _hapus = hapusBaru;
             });
           },
           onMicSelesai: (batal) => _hentiRekam(batal: batal),
@@ -611,6 +651,7 @@ class _BarInput extends StatelessWidget {
     required this.ctrl,
     required this.sending,
     required this.rekam,
+    required this.kunci,
     required this.onKirim,
     required this.onGambar,
     required this.onMicMulai,
@@ -622,10 +663,11 @@ class _BarInput extends StatelessWidget {
   final TextEditingController ctrl;
   final bool sending;
   final bool rekam;
+  final bool kunci;
   final void Function(String?) onKirim;
   final VoidCallback onGambar;
   final Future<void> Function() onMicMulai;
-  final void Function(double dy) onMicUpdate;
+  final void Function(double dx, double dy) onMicUpdate;
   final void Function(bool batal) onMicSelesai;
   final void Function(String) onKetik;
 
@@ -680,6 +722,7 @@ class _BarInput extends StatelessWidget {
                 onMulai: onMicMulai,
                 onUpdate: onMicUpdate,
                 onSelesai: onMicSelesai,
+                kunci: kunci,
               ),
           ]),
         );
@@ -716,16 +759,20 @@ class _TombolKirim extends StatelessWidget {
   }
 }
 
-/// Tombol mic: tekan-tahan untuk merekam, geser ke atas (>=70px) batalkan.
+/// Tombol mic: tekan-tahan untuk merekam; geser ke atas (>=70px) = batal,
+/// geser ke kiri (>=70px) = hapus, tahan diam ~1,4 dtk = kunci rekaman
+/// (lepas jari tidak menghentikan — kirim/buang lewat tombol di overlay).
 class _TombolMic extends StatefulWidget {
   const _TombolMic({
     required this.onMulai,
     required this.onUpdate,
     required this.onSelesai,
+    required this.kunci,
   });
   final Future<void> Function() onMulai;
-  final void Function(double dy) onUpdate;
+  final void Function(double dx, double dy) onUpdate;
   final void Function(bool batal) onSelesai;
+  final bool kunci;
 
   @override
   State<_TombolMic> createState() => _TombolMicState();
@@ -735,39 +782,48 @@ class _TombolMicState extends State<_TombolMic> {
   bool _aktif = false;
   bool _selesaiDiproses = false;
   double _dy = 0;
+  double _dx = 0;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPressStart: (_) async {
+        if (widget.kunci) return; // rekaman terkunci: abaikan gestur baru
         setState(() {
           _aktif = true;
           _selesaiDiproses = false;
           _dy = 0;
+          _dx = 0;
         });
         await widget.onMulai();
       },
       onLongPressMoveUpdate: (d) {
         if (!_aktif) return;
+        _dx = d.offsetFromOrigin.dx;
         _dy = d.offsetFromOrigin.dy;
-        widget.onUpdate(_dy);
+        widget.onUpdate(_dx, _dy);
       },
       onLongPressEnd: (_) {
         if (!_aktif || _selesaiDiproses) return;
-        _selesaiDiproses = true;
-        widget.onSelesai(_dy <= -70);
         setState(() => _aktif = false);
+        // Rekaman terkunci: lepas jari TIDAK menghentikan — kirim/buang
+        // lewat tombol pada overlay.
+        if (widget.kunci) return;
+        _selesaiDiproses = true;
+        widget.onSelesai(_dy <= -70 || _dx <= -70);
       },
       onLongPressCancel: () {
         if (!_aktif || _selesaiDiproses) return;
+        setState(() => _aktif = false);
+        if (widget.kunci) return;
         _selesaiDiproses = true;
         widget.onSelesai(true);
-        setState(() => _aktif = false);
       },
       onTapUp: (_) {
-        // ketukan singkat = abaikan (biar tidak salah kirim suara kosong)
-        if (_selesaiDiproses) return;
+        // ketukan singkat = abaikan (biar tidak salah kirim suara kosong);
+        // saat terkunci ketukan mic tidak boleh membatalkan rekaman.
+        if (_selesaiDiproses || widget.kunci) return;
         _selesaiDiproses = true;
         widget.onSelesai(true);
       },
@@ -790,40 +846,171 @@ class _TombolMicState extends State<_TombolMic> {
   }
 }
 
-/// Overlay kecil di tengah layar saat merekam.
+/// Overlay rekaman: zona geser (atas = batal, kiri = hapus) plus mode
+/// terkunci dengan tombol Kirim/Buang ala WhatsApp.
 class _OverlayRekam extends StatelessWidget {
   const _OverlayRekam({
     required this.detik,
     required this.batal,
+    required this.hapus,
     required this.angkat,
+    required this.geser,
+    required this.kunci,
+    required this.onKirim,
+    required this.onBatal,
   });
   final int detik;
   final bool batal;
+  final bool hapus;
+  final bool kunci;
   final double angkat;
+  final double geser;
+  final VoidCallback onKirim;
+  final VoidCallback onBatal;
+
+  String get _waktu => '${detik ~/ 60}:${(detik % 60).toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
+    // ---- rekaman terkunci: jari bebas, kirim/buang lewat tombol ----
+    if (kunci) {
+      return Positioned.fill(
+        child: Container(
+          color: Colors.black.withOpacity(.35),
+          alignment: Alignment.bottomCenter,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 92),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 26),
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+              decoration: BoxDecoration(
+                color: XyTheme.of(context).surface,
+                borderRadius: BorderRadius.circular(XyRadius.xxl),
+                boxShadow: XyTheme.shadowMd,
+              ),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                        color: XyTheme.danger, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(_waktu,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800, fontSize: 15)),
+                  const SizedBox(width: 9),
+                  Icon(Icons.lock_rounded,
+                      size: 14, color: XyTheme.of(context).muted),
+                  const SizedBox(width: 5),
+                  Text('Rekaman terkunci',
+                      style: TextStyle(
+                          color: XyTheme.of(context).muted,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600)),
+                ]),
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onBatal();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: XyTheme.danger.withOpacity(.10),
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                          border: Border.all(
+                              color: XyTheme.danger.withOpacity(.45)),
+                        ),
+                        child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.close_rounded,
+                                  size: 17, color: XyTheme.danger),
+                              SizedBox(width: 6),
+                              Text('Buang',
+                                  style: TextStyle(
+                                      color: XyTheme.danger,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13)),
+                            ]),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onKirim();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          gradient: XyTheme.gradPrimary,
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                        ),
+                        child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded,
+                                  size: 16, color: Colors.white),
+                              SizedBox(width: 7),
+                              Text('Kirim sekarang',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13)),
+                            ]),
+                      ),
+                    ),
+                  ),
+                ]),
+              ]),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // ---- masih menahan jari: tampilkan zona atas (batal) & kiri (hapus) ----
     final lintang = (angkat * -1).clamp(0.0, 200.0);
+    final geseran = (geser * -1).clamp(0.0, 200.0);
     return Positioned.fill(
       child: IgnorePointer(
         child: Container(
           color: Colors.black.withOpacity(.18),
           alignment: Alignment.bottomCenter,
           child: Padding(
-            padding: EdgeInsets.only(bottom: 70 + lintang * .3),
+            padding: EdgeInsets.only(
+                bottom: 70 + lintang * .3, right: geseran * .5),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 120),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                 decoration: BoxDecoration(
-                  color: batal
+                  color: batal || hapus
                       ? XyTheme.danger.withOpacity(.95)
                       : XyTheme.of(context).ink.withOpacity(.92),
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(XyRadius.pill),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(
-                    batal ? Icons.keyboard_arrow_up_rounded : Icons.mic_rounded,
+                    batal
+                        ? Icons.keyboard_arrow_up_rounded
+                        : hapus
+                            ? Icons.delete_rounded
+                            : Icons.mic_rounded,
                     color: Colors.white,
                     size: 17,
                   ),
@@ -831,7 +1018,9 @@ class _OverlayRekam extends StatelessWidget {
                   Text(
                     batal
                         ? 'Lepaskan untuk membatalkan'
-                        : 'Geser ke atas untuk membatalkan',
+                        : hapus
+                            ? 'Lepaskan untuk menghapus'
+                            : 'Geser \u2191 batal \u00b7 \u2190 hapus \u00b7 tahan diam = kunci',
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
@@ -845,7 +1034,7 @@ class _OverlayRekam extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: batal
+                  color: batal || hapus
                       ? XyTheme.danger.withOpacity(.9)
                       : XyTheme.primary.withOpacity(.9),
                   border: Border.all(color: Colors.white, width: 3),
@@ -858,7 +1047,7 @@ class _OverlayRekam extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    '${detik ~/ 60}:${(detik % 60).toString().padLeft(2, '0')}',
+                    _waktu,
                     style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

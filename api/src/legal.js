@@ -7,7 +7,7 @@
  *  ditampilkan di dalam aplikasi pada menu Tentang.
  */
 
-const PEMBARUAN = '6 September 2026';
+const PEMBARUAN = '14 September 2026';
 
 const SYARAT = [
   ['Penerimaan Ketentuan',
@@ -69,6 +69,42 @@ const PRIVASI = [
    'Kebijakan ini dapat diperbarui. Tanggal pembaruan terakhir selalu tertera di bagian atas halaman.'],
 ];
 
+const REFUND = [
+  ['Ringkasan',
+   'Kebijakan ini menjelaskan kapan dan bagaimana pengembalian dana (refund) diberikan untuk sewa PC cloud, ' +
+   'pembelian akun digital, dan pengisian saldo di XyCloudStore. Prinsip kami sederhana: kalau kesalahan ada ' +
+   'di pihak kami, uangmu kembali.'],
+  ['Sewa PC Cloud',
+   'Bila unit gagal dinyalakan, tidak bisa diakses, atau spesifikasi tidak sesuai yang tertera karena kesalahan kami, ' +
+   'biaya sewa dikembalikan penuh ke saldo. Bila sesi terputus di tengah karena gangguan server kami lebih dari ' +
+   '15 menit, sisa waktu yang belum terpakai dikembalikan secara proporsional. Pengembalian tidak berlaku untuk ' +
+   'gangguan akibat koneksi internet pengguna, perangkat pengguna, atau pelanggaran aturan pemakaian.'],
+  ['Akun Digital dan Langganan',
+   'Akun bergaransi diganti atau dananya dikembalikan bila bermasalah dalam masa garansi yang tertulis pada halaman ' +
+   'produk (misalnya akun tidak bisa masuk, terkena banned tanpa pelanggaran dari pengguna, atau masa aktif lebih ' +
+   'pendek dari yang dijanjikan). Garansi hangus bila pengguna mengubah data akun yang dilarang (email pemulihan, ' +
+   'kata sandi bawaan penjual) atau melanggar ketentuan penyedia layanan asli.'],
+  ['Pengisian Saldo',
+   'Top up yang sudah berhasil dibayar tidak dapat dicairkan kembali menjadi uang tunai, sesuai ketentuan layanan. ' +
+   'Bila kamu salah memasukkan nominal atau terjadi pemotongan ganda pada pembayaran otomatis (QRIS/e-wallet/VA), ' +
+   'hubungi Chat Admin maksimal 3x24 jam dengan bukti mutasi — selisihnya kami kembalikan ke saldo setelah diverifikasi. ' +
+   'Top up manual yang ditolak admin karena bukti tidak valid akan ditandai beserta alasannya.'],
+  ['Cara Mengajukan',
+   'Buka aplikasi → menu Chat Admin → jelaskan kendala dengan menyertakan kode pesanan atau kode top up (diawali t_ atau o_). ' +
+   'Tim kami memverifikasi ke sistem dan penyedia pembayaran. Pengajuan juga bisa lewat email resmi yang tercantum di halaman ini.'],
+  ['Lama Proses',
+   'Verifikasi awal maksimal 1x24 jam pada hari kerja. Refund ke saldo diproses seketika setelah disetujui. ' +
+   'Bila refund harus keluar melalui penyedia pembayaran (kasus khusus), proses mengikuti ketentuan penyedia, ' +
+   'umumnya 2-7 hari kerja.'],
+  ['Yang Tidak Termasuk',
+   'Refund tidak diberikan untuk: perubahan pikiran setelah layanan dipakai normal, pelanggaran aturan (termasuk ' +
+   'pemakaian untuk aktivitas ilegal), akun yang dinonaktifkan karena pelanggaran, voucher/promo yang sudah dipakai, ' +
+   'dan kendala akibat force majeure di luar kendali kami yang diberitahukan melalui aplikasi.'],
+  ['Kontak',
+   'Pertanyaan soal pengembalian dana bisa disampaikan lewat Chat Admin di aplikasi. Keputusan refund selalu ' +
+   'disertai alasan tertulis yang bisa kamu lihat di riwayat transaksi.'],
+];
+
 /** Daftar lisensi pihak ketiga yang dipakai server dan aplikasi. */
 export const LISENSI = [
   ['Flutter dan Dart', 'Google', 'BSD-3-Clause'],
@@ -94,9 +130,10 @@ export const LISENSI = [
 
 /** Halaman HTML bertema ungu untuk dibuka di browser. */
 export function halamanLegal(jenis) {
-  const privasi = jenis === 'privasi';
-  const judul = privasi ? 'Kebijakan Privasi' : 'Syarat dan Ketentuan';
-  const isi = privasi ? PRIVASI : SYARAT;
+  const judul = jenis === 'privasi' ? 'Kebijakan Privasi'
+    : jenis === 'refund' ? 'Kebijakan Pengembalian Dana'
+    : 'Syarat dan Ketentuan';
+  const isi = jenis === 'privasi' ? PRIVASI : jenis === 'refund' ? REFUND : SYARAT;
 
   const bagian = isi
     .map(
@@ -107,7 +144,7 @@ export function halamanLegal(jenis) {
     )
     .join('');
 
-  const lisensi = privasi
+  const lisensi = jenis !== 'syarat'
     ? ''
     : `<section>
         <h2><span>${isi.length + 1}</span>Lisensi Pihak Ketiga</h2>
@@ -157,6 +194,7 @@ export function halamanLegal(jenis) {
     <div class="tautan">
       <a href="/legal/syarat">Syarat dan Ketentuan</a>
       <a href="/legal/privasi">Kebijakan Privasi</a>
+      <a href="/legal/refund">Pengembalian Dana</a>
     </div>
   </main>
   <footer>XyCloudStore &middot; Sewa PC Cloud dan Akun Digital &middot; xycloud.my.id</footer>
@@ -165,10 +203,13 @@ export function halamanLegal(jenis) {
 
 /** Versi data mentah untuk ditampilkan di dalam aplikasi. */
 export function isiLegal(jenis) {
+  const isi = jenis === 'privasi' ? PRIVASI : jenis === 'refund' ? REFUND : SYARAT;
   return {
-    judul: jenis === 'privasi' ? 'Kebijakan Privasi' : 'Syarat dan Ketentuan',
+    judul: jenis === 'privasi' ? 'Kebijakan Privasi'
+      : jenis === 'refund' ? 'Kebijakan Pengembalian Dana'
+      : 'Syarat dan Ketentuan',
     pembaruan: PEMBARUAN,
-    bagian: (jenis === 'privasi' ? PRIVASI : SYARAT).map(([judul, teks]) => ({ judul, teks })),
+    bagian: isi.map(([judul, teks]) => ({ judul, teks })),
     lisensi: LISENSI.map(([nama, pembuat, lisensi]) => ({ nama, pembuat, lisensi })),
   };
 }

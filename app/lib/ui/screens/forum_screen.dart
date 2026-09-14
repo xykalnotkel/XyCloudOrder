@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../core/kompres.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
@@ -1081,8 +1082,9 @@ class _FormTulisState extends State<_FormTulis> {
         source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-    setState(() => gambar = 'data:image/$tipe;base64,${base64Encode(bytes)}');
+    final uri = await Kompres.dataUri(bytes, f.name);
+    if (!mounted) return;
+    setState(() => gambar = uri);
   }
 
   Future<void> _kirim() async {

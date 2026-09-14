@@ -998,6 +998,28 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Polling status top up sehabis bayar. [paksa] = sekalian memicu server
+  /// bertanya ke penyedia pembayaran (QRIS/DANA sudah benar-benar dibayar?).
+  /// Mengembalikan status terbaru; saldo disinkronkan begitu 'disetujui'.
+  Future<String?> cekStatusTopup(String idTopup, {bool paksa = false}) async {
+    try {
+      final r = paksa
+          ? await _repo.cekTopupPenyedia(idTopup)
+          : await _repo.statusTopup(idTopup);
+      final status = '${r['status'] ?? ''}';
+      if (status == 'disetujui' && user != null) {
+        final saldoBaru = r['saldo'];
+        if (saldoBaru is num && user!.saldo != saldoBaru.toInt()) {
+          user = user!.copyWith(saldo: saldoBaru.toInt());
+          notifyListeners();
+        }
+      }
+      return status.isEmpty ? null : status;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> unggahBukti(String idTopup, String dataUri) async {
     try {
       await _repo.unggahBukti(idTopup, dataUri);

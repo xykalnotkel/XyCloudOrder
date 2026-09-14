@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../core/kompres.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
@@ -41,11 +42,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
     final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 700, imageQuality: 80);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    // Foto profil cukup kecil — kompres lebih agresif.
+    final fotoUri = await Kompres.dataUri(bytes, f.name, maxSisi: 700, kualitas: 78);
     if (!mounted) return;
 
     final s = context.read<AppState>();
-    final galat = await s.perbaruiProfil(foto: 'data:image/$tipe;base64,${base64Encode(bytes)}');
+    final galat = await s.perbaruiProfil(foto: fotoUri);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(galat ?? 'Foto profil diperbarui.')),

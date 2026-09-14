@@ -28,7 +28,9 @@ class _FavoritScreenState extends State<FavoritScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Favorit Saya')),
-      body: ListView(
+      body: RefreshIndicator(
+        onRefresh: () => context.read<AppState>().muatFavorit(),
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
         children: [
           Container(
@@ -124,6 +126,7 @@ class _FavoritScreenState extends State<FavoritScreen> {
             ]),
           ),
         ],
+      ),
       ),
     );
   }

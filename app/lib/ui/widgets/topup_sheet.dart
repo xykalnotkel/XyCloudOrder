@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:android_intent_plus/flag.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../core/kompres.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
@@ -44,11 +46,49 @@ class _SheetTopupState extends State<_SheetTopup> {
 
   PermintaanTopup? dibuat;
   bool mengunggah = false;
+  Timer? _poll;
+  bool _sukses = false;
 
   @override
   void dispose() {
+    _poll?.cancel();
     _lain.dispose();
     super.dispose();
+  }
+
+  /// Pantau status top up tiap 4 detik — begitu pembayaran terdeteksi
+  /// (webhook / cek penyedia / admin menyetujui), lembar ini otomatis
+  /// berpindah ke tampilan sukses tanpa pengguna perlu memuat ulang.
+  void _mulaiPoll() {
+    _poll?.cancel();
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) async {
+      if (!mounted || dibuat == null || _sukses) return;
+      final status =
+          await context.read<AppState>().cekStatusTopup(dibuat!.id);
+      if (!mounted) return;
+      if (status == 'disetujui') {
+        _poll?.cancel();
+        HapticFeedback.mediumImpact();
+        setState(() => _sukses = true);
+      }
+    });
+  }
+
+  Future<void> _cekSekarang() async {
+    if (dibuat == null) return;
+    HapticFeedback.selectionClick();
+    final status =
+        await context.read<AppState>().cekStatusTopup(dibuat!.id, paksa: true);
+    if (!mounted) return;
+    if (status == 'disetujui') {
+      _poll?.cancel();
+      HapticFeedback.mediumImpact();
+      setState(() => _sukses = true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Pembayaran belum terdeteksi. Selesaikan pembayaran dulu, status diperbarui otomatis.')));
+    }
   }
 
   Future<void> _buat() async {
@@ -62,6 +102,7 @@ class _SheetTopupState extends State<_SheetTopup> {
       return;
     }
     setState(() => dibuat = t);
+    _mulaiPoll();
   }
 
   Future<void> _unggahBukti() async {
@@ -74,8 +115,7 @@ class _SheetTopupState extends State<_SheetTopup> {
 
     setState(() => mengunggah = true);
     final bytes = await berkas.readAsBytes();
-    final tipe = berkas.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-    final dataUri = 'data:image/$tipe;base64,${base64Encode(bytes)}';
+    final dataUri = await Kompres.dataUri(bytes, berkas.name);
 
     final s = context.read<AppState>();
     final galat = await s.unggahBukti(dibuat!.id, dataUri);
@@ -118,7 +158,11 @@ class _SheetTopupState extends State<_SheetTopup> {
             child: ListView(
               controller: ctrl,
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-              children: dibuat == null ? _langkahPilih(s) : _langkahBayar(rek),
+              children: _sukses
+                  ? _langkahSukses()
+                  : dibuat == null
+                      ? _langkahPilih(s)
+                      : _langkahBayar(rek),
             ),
           ),
         ]),
@@ -224,6 +268,50 @@ class _SheetTopupState extends State<_SheetTopup> {
         ),
       ];
 
+  // ---------------- tampilan sukses (saldo masuk otomatis) ----------------
+  List<Widget> _langkahSukses() {
+    final t = dibuat!;
+    return [
+      const SizedBox(height: 30),
+      Center(
+        child: Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            gradient: XyTheme.gradPrimary,
+            shape: BoxShape.circle,
+            boxShadow: XyTheme.glow(XyTheme.primary, .3),
+          ),
+          child: const Icon(Icons.check_rounded, color: Colors.white, size: 44),
+        ),
+      ),
+      const SizedBox(height: 18),
+      const Center(
+        child: Text('Saldo Bertambah!',
+            style: TextStyle(
+                fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -.6)),
+      ),
+      const SizedBox(height: 6),
+      Center(
+        child: Text('${rupiah(t.nominal)} sudah masuk ke saldomu.',
+            style:
+                TextStyle(color: XyTheme.of(context).muted, fontSize: 13.5)),
+      ),
+      const SizedBox(height: 26),
+      GradientButton(
+        label: 'Selesai',
+        icon: Icons.check_circle_rounded,
+        onPressed: () => Navigator.pop(context),
+      ),
+      const SizedBox(height: 14),
+      Center(
+        child: Text('Riwayatnya ada di menu Dompet & Riwayat.',
+            style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+      ),
+      const SizedBox(height: 16),
+    ];
+  }
+
   IconData _ikonMetode(String kode) {
     final k = kode.toUpperCase();
     if (k.contains('QRIS')) return Icons.qr_code_2_rounded;
@@ -320,6 +408,12 @@ class _SheetTopupState extends State<_SheetTopup> {
             icon: Icons.open_in_new_rounded,
             onPressed: () => _bukaTautan('${t.bayar['url']}'),
           ),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _cekSekarang,
+          icon: const Icon(Icons.radar_rounded, size: 17),
+          label: const Text('Sudah bayar? Cek sekarang'),
+        ),
         const SizedBox(height: 12),
          Center(
           child: Text('Saldo bertambah otomatis setelah pembayaran berhasil.\nHalaman ini boleh ditutup.',

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 
 import 'core/theme.dart';
 import 'core/pengaturan.dart';
+import 'core/keamanan.dart';
+import 'core/prefs.dart';
 import 'package:flutter/foundation.dart';
 import 'data/lapor_galat.dart';
 import 'data/push_service.dart';
@@ -29,6 +31,8 @@ Future<void> main() async {
   LicenseRegistry.addLicense(() async* {yield LicenseEntryWithLineBreaks(['Moonlight Android / XyCloudStore Streaming'],await rootBundle.loadString('assets/licenses/moonlight-gpl3.txt'));});
   await PushService.mulai();
   await LaporGalat.siapkan();
+  // Pulihkan mode privasi (FLAG_SECURE) sebelum layar pertama tampil.
+  Keamanan.setelPrivasi(await Prefs.modePrivasi());
 
   // semua galat yang lolos ditangkap dan dilaporkan ke server sendiri
   LaporGalat.pasang(() => runApp(const XyCloudStoreApp()));

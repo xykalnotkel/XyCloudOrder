@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { adminFetch } from "@/lib/api";
 import { CheckCheck, Loader2, MessageCircle, Search, Send } from "lucide-react";
 import { ErrBox, jam, Load } from "@/components/ui/kit";
+import VoiceNote from "@/components/ui/voice-note";
 
 const BALASAN_CEPAT = [
   "Halo, terima kasih sudah menghubungi XyCloudStore. Ada yang bisa dibantu?",
@@ -187,13 +188,11 @@ export default function CsPage() {
                           </div>
                         )}
                         {tipe === "audio" ? (
-                          <div className="flex items-center gap-2 py-0.5">
-                            <span className="w-2 h-2 rounded-full bg-current animate-pulse shrink-0" />
-                            <audio controls preload="metadata" src={m.audio} className="h-9 max-w-[230px]" />
-                            {typeof m.durasi === "number" && (
-                              <span className={`text-[10px] ${dariCs ? "text-white/70" : "text-[#9A8CBF]"}`}>{m.durasi.toFixed(0)}s</span>
-                            )}
-                          </div>
+                          <VoiceNote
+                            src={m.audio}
+                            durasi={typeof m.durasi === "number" ? m.durasi : null}
+                            gelap={dariCs}
+                          />
                         ) : (
                           <>
                             {m.gambar && <img src={m.gambar} alt="lampiran" className={`max-h-56 object-cover ${m.teks ? "mb-1.5" : ""} ${dariCs ? "" : "rounded-lg"}`} />}

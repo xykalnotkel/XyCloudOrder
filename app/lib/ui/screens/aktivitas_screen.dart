@@ -52,7 +52,9 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
       appBar: AppBar(title: const Text('Aktivitas & Keamanan')),
       body: loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
               children: [
                 Container(
@@ -172,6 +174,7 @@ class _AktivitasScreenState extends State<AktivitasScreen> {
                   ]),
                 ),
               ],
+            ),
             ),
     );
   }

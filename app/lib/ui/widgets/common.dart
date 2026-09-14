@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/motion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme.dart';
@@ -135,7 +136,12 @@ class _PressableState extends State<Pressable> {
       onTapDown: (_) => setState(() => _d = true),
       onTapUp: (_) => setState(() => _d = false),
       onTapCancel: () => setState(() => _d = false),
-      onTap: widget.onTap,
+      onTap: widget.onTap == null
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              widget.onTap!();
+            },
       child: AnimatedScale(
         scale: _d ? widget.scale : 1,
         duration: const Duration(milliseconds: 120),
@@ -189,7 +195,12 @@ class _GradientButtonState extends State<GradientButton> {
       onTapDown: mati ? null : (_) => setState(() => _tekan = true),
       onTapUp: mati ? null : (_) => setState(() => _tekan = false),
       onTapCancel: () => setState(() => _tekan = false),
-      onTap: widget.onPressed,
+      onTap: widget.onPressed == null
+          ? null
+          : () {
+              HapticFeedback.lightImpact();
+              widget.onPressed!();
+            },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,

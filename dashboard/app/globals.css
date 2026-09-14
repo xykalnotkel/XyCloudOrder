@@ -4,7 +4,7 @@
 
 /* ============================================================
    XyCloud Console — light theme
-   Tombol: 3D-tapi-2D (solid + radius tipis + border, tanpa glow)
+   Tombol: 3D-tapi-2D (solid + radius pil penuh + border, tanpa glow)
    ============================================================ */
 :root {
   --xy-bg: #F5F3FF;
@@ -58,7 +58,7 @@ html, body {
 /* Tombol 3D tipis ala xydesk: gradient + inset + hard bottom edge */
 .xy-btn {
   background: linear-gradient(160deg, #8b5cf6 0%, #7C3AED 45%, #5B21B6 100%);
-  border-radius: 12px;
+  border-radius: 999px;
   box-shadow: 0 1px 2px rgba(38,18,92,0.10), 0 4px 0 #4C1D95, inset 0 1px 0 rgba(255,255,255,0.28);
   font-family: var(--font-inter);
   font-weight: 600;
@@ -244,7 +244,7 @@ input[type="checkbox"], input[type="radio"] {
 .xy-toggle:checked::after { left: 20px; }
 
 .xy-btn-ghost {
-  background: #fff; border: 1px solid var(--xy-line); border-radius: 12px;
+  background: #fff; border: 1px solid var(--xy-line); border-radius: 999px;
   box-shadow: 0 1px 2px rgba(38,18,92,0.08), 0 3px 0 #E9E3F5;
   color: #4B445F; font-weight: 600;
   transition: transform .1s ease, box-shadow .15s ease;
@@ -253,14 +253,14 @@ input[type="checkbox"], input[type="radio"] {
 .xy-btn-ghost:active { transform: translateY(2px); box-shadow: 0 1px 0 #E9E3F5; }
 .xy-btn-danger {
   background: linear-gradient(160deg, #fb7185 0%, #e11d48 55%, #be123c 100%);
-  border-radius: 12px; color: #fff; font-weight: 600; border: 1px solid #be123c;
+  border-radius: 999px; color: #fff; font-weight: 600; border: 1px solid #be123c;
   box-shadow: 0 1px 2px rgba(190,18,60,0.12), 0 4px 0 #9F1239, inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .xy-btn-danger:hover { transform: translateY(-1px); }
 .xy-btn-danger:active { transform: translateY(2px); box-shadow: 0 1px 0 #9F1239; }
 .xy-btn-ok {
   background: linear-gradient(160deg, #34d399 0%, #059669 55%, #047857 100%);
-  border-radius: 12px; color: #fff; font-weight: 600; border: 1px solid #047857;
+  border-radius: 999px; color: #fff; font-weight: 600; border: 1px solid #047857;
   box-shadow: 0 1px 2px rgba(4,120,87,0.12), 0 4px 0 #065F46, inset 0 1px 0 rgba(255,255,255,0.25);
 }
 .xy-btn-ok:hover { transform: translateY(-1px); }
@@ -268,7 +268,7 @@ input[type="checkbox"], input[type="radio"] {
 .xy-file { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .xy-file-btn {
   display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px;
-  border-radius: 12px; background: #F3F0FF; border: 1px solid var(--xy-line);
+  border-radius: 999px; background: #F3F0FF; border: 1px solid var(--xy-line);
   font-size: 12.5px; font-weight: 600; color: #5B21B6; cursor: pointer;
 }
 

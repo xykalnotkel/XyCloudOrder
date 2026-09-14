@@ -192,7 +192,7 @@ type BtnProps = {
 };
 
 export function Btn({ children, onClick, disabled, type = "button", className = "", title, tone = "utama" }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-[12px] text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
+  const base = "inline-flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-full text-[12.5px] font-semibold tracking-tight disabled:opacity-50 disabled:pointer-events-none transition";
   const map: Record<string, string> = {
     utama: "xy-btn text-white",
     ghost: "xy-btn-ghost",

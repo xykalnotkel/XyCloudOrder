@@ -68,6 +68,13 @@ abstract class XyRepository {
   Future<List<PermintaanTopup>> daftarTopup();
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri);
 
+  /// Status top up terakhir + saldo (dipakai polling otomatis sehabis bayar).
+  Future<Map<String, dynamic>> statusTopup(String idTopup);
+
+  /// Pancing server bertanya ke penyedia pembayaran: sudah benar-benar
+  /// dibayar atau belum? (tombol "sudah bayar? cek sekarang")
+  Future<Map<String, dynamic>> cekTopupPenyedia(String idTopup);
+
   // ---------- profil ----------
   Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username});
   Future<Map<String, dynamic>> cekNama({String? nama, String? username});
@@ -307,6 +314,14 @@ class RemoteRepository implements XyRepository {
   @override
   Future<List<PermintaanTopup>> daftarTopup() async =>
       ((await api.get('/wallet/topup')) as List).map((e) => PermintaanTopup.fromJson(e)).toList();
+
+  @override
+  Future<Map<String, dynamic>> statusTopup(String idTopup) async =>
+      Map<String, dynamic>.from(await api.get('/wallet/topup/$idTopup'));
+
+  @override
+  Future<Map<String, dynamic>> cekTopupPenyedia(String idTopup) async =>
+      Map<String, dynamic>.from(await api.post('/wallet/topup/$idTopup/cek'));
 
   @override
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri) async =>
@@ -697,6 +712,12 @@ class MockRepository implements XyRepository {
 
   @override
   Future<List<PermintaanTopup>> daftarTopup() => _delay(<PermintaanTopup>[], 300);
+
+  Future<Map<String, dynamic>> statusTopup(String idTopup) =>
+      _delay(<String, dynamic>{'status': 'disetujui', 'saldo': 150000}, 300);
+
+  Future<Map<String, dynamic>> cekTopupPenyedia(String idTopup) =>
+      _delay(<String, dynamic>{'status': 'disetujui', 'saldo': 150000}, 300);
 
   @override
   Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) =>

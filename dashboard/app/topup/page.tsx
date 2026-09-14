@@ -1,7 +1,7 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { adminFetch } from "@/lib/api";
-import { Check, CreditCard, ExternalLink, X } from "lucide-react";
+import { Check, CreditCard, ExternalLink, X, Zap } from "lucide-react";
 import {
   Btn, Chip, ErrBox, Header, jam, Load, MsgOk, rupiah, runBatch, SelectBar,
   toneStatus, useAdminList, useSelection,
@@ -14,6 +14,12 @@ export default function TopupPage() {
   const [busy, setBusy] = useState(false);
   const [catatan, setCatatan] = useState("");
   const [filter, setFilter] = useState("pending");
+  const [info, setInfo] = useState<any>(null);
+
+  // status penyedia pembayaran (QRIS/DANA otomatis aktif atau masih manual?)
+  useEffect(() => {
+    adminFetch("/api/admin/bayar/info").then(setInfo).catch(() => setInfo(null));
+  }, []);
 
   const list = useMemo(() => {
     if (filter === "semua") return rows;
@@ -46,6 +52,16 @@ export default function TopupPage() {
     finally { setBusy(false); }
   }
 
+  async function verifikasi(id: string) {
+    setBusy(true); setErr(""); setOk("");
+    try {
+      const r: any = await adminFetch("/api/admin/topup/" + id + "/verifikasi", { method: "POST" });
+      setOk(r?.pesan || "Selesai diperiksa ke penyedia.");
+      await reload();
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  }
+
   async function massal(status: string) {
     if (!sel.count) return;
     if (!await konfirm({ pesan: `${status === "disetujui" ? "Setujui" : "Tolak"} ${sel.count} permintaan?` })) return;
@@ -66,6 +82,16 @@ export default function TopupPage() {
             <span className="text-xs px-3 py-1.5 rounded-full bg-[#F3F0FF] border border-[#E9E3F5] font-medium">{rows.length} total</span>
           </div>
         } />
+
+      {info && (info.otomatis ? (
+        <div className="text-[12px] px-3.5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 font-semibold flex items-center gap-2">
+          <Zap size={14} className="shrink-0" /> Pembayaran otomatis aktif via {String(info.penyedia).toUpperCase()} — QRIS/DANA/e-wallet terdeteksi sendiri (webhook + pengecekan berkala + tombol ⚡ Verifikasi).
+        </div>
+      ) : (
+        <div className="text-[12px] px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-amber-700 font-semibold flex items-center gap-2">
+          <Zap size={14} className="shrink-0" /> Mode manual — deteksi bayar otomatis belum aktif. Setel secret Worker TRIPAY_API_KEY + TRIPAY_PRIVATE_KEY + TRIPAY_MERCHANT_CODE (atau MIDTRANS_SERVER_KEY) lalu deploy ulang; QRIS/DANA akan terdeteksi otomatis.
+        </div>
+      ))}
 
       <div className="flex flex-wrap gap-1.5">
         {["pending", "menunggu", "diperiksa", "disetujui", "ditolak", "semua"].map((f) => (
@@ -126,6 +152,7 @@ export default function TopupPage() {
                   <td className="px-4 py-3">
                     {["menunggu", "diperiksa"].includes(String(r.status)) ? (
                       <div className="flex gap-1">
+                        <Btn tone="ghost" className="!h-8 !px-2.5" disabled={busy} title="Cek otomatis ke penyedia pembayaran (QRIS/DANA sudah benar-benar dibayar?)" onClick={() => verifikasi(r.id)}><Zap size={12} /></Btn>
                         <Btn tone="ok" className="!h-8 !px-2.5" disabled={busy} onClick={() => satu(r.id, "disetujui")}><Check size={12} /></Btn>
                         <Btn tone="bahaya" className="!h-8 !px-2.5" disabled={busy} onClick={() => satu(r.id, "ditolak")}><X size={12} /></Btn>
                       </div>

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
+import '../../core/kompres.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
@@ -182,8 +183,9 @@ class _FormUlasanState extends State<_FormUlasan> {
     final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 75);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
-    setState(() => _fotoDataUri = 'data:image/$tipe;base64,${base64Encode(bytes)}');
+    final uri = await Kompres.dataUri(bytes, f.name);
+    if (!mounted) return;
+    setState(() => _fotoDataUri = uri);
   }
 
   Future<void> _kirim() async {

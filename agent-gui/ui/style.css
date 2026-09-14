@@ -189,10 +189,10 @@ input:focus {
 .input-row { display: flex; gap: 8px; }
 .input-row input { flex: 1; }
 
-/* Tombol: 3D-tapi-2D — solid, radius tipis, border halus, tanpa glow/gradient tebal */
+/* Tombol: 3D-tapi-2D — solid, radius pil penuh, border halus, tanpa glow/gradient tebal */
 button {
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 10px 14px;
   font-family: var(--sans);
   font-weight: 600;
@@ -245,7 +245,7 @@ button.mini {
   border: 1px solid rgba(255,255,255,0.14);
   padding: 4px 10px;
   font-size: 11px;
-  border-radius: 10px;
+  border-radius: 999px;
 }
 
 .aksi { margin-top: 14px; }

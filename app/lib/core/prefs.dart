@@ -12,6 +12,7 @@ class Prefs {
   static const _kSaldoTampil = 'xy_saldo_tampil';
   static const _kSaringKonten = 'xy_saring_konten';
   static const _kTema = 'xy_tema';
+  static const _kPrivasi = 'xy_mode_privasi';
 
   static const _aman = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -55,6 +56,13 @@ class Prefs {
 
   static Future<void> simpanTema(String v) async =>
       (await SharedPreferences.getInstance()).setString(_kTema, v);
+
+  // ---------- mode privasi (anti screenshot / FLAG_SECURE) ----------
+  static Future<bool> modePrivasi() async =>
+      (await SharedPreferences.getInstance()).getBool(_kPrivasi) ?? false;
+
+  static Future<void> simpanModePrivasi(bool v) async =>
+      (await SharedPreferences.getInstance()).setBool(_kPrivasi, v);
 
   // ---------- sesi login ----------
   static Future<String?> token() async {

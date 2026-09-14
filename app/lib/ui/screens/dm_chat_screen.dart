@@ -5,11 +5,13 @@ import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 
+import '../../core/kompres.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
@@ -45,9 +47,14 @@ class _DmChatScreenState extends State<DmChatScreen> {
 
   // rekam suara
   bool _rekam = false;
+  bool _kunci = false;
+  bool _batalZone = false;
+  bool _hapusZone = false;
   double _angkat = 0;
+  double _geser = 0;
   int _detik = 0;
   Timer? _stopwatch;
+  Timer? _kunciTimer;
 
   @override
   void initState() {
@@ -60,6 +67,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
   void dispose() {
     _poll?.cancel();
     _stopwatch?.cancel();
+    _kunciTimer?.cancel();
     _rec.dispose();
     _ctrl.dispose();
     _scroll.dispose();
@@ -115,12 +123,11 @@ class _DmChatScreenState extends State<DmChatScreen> {
         .pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 82);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    final gambarUri = await Kompres.dataUri(bytes, f.name);
     if (!mounted) return;
     setState(() => _kirim = true);
     try {
-      await context.read<AppState>().repo.dmKirim(widget.userId,
-          gambar: 'data:image/$tipe;base64,${base64Encode(bytes)}');
+      await context.read<AppState>().repo.dmKirim(widget.userId, gambar: gambarUri);
       if (mounted) await _muat(sunyi: true);
     } catch (_) {
       if (mounted) {
@@ -133,6 +140,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
 
   // ---------- pesan suara (pola cs_screen) ----------
   Future<void> _mulaiRekam() async {
+    if (_rekam) return;
     try {
       if (!await _rec.hasPermission()) {
         if (!mounted) return;
@@ -153,14 +161,28 @@ class _DmChatScreenState extends State<DmChatScreen> {
         path: path,
       );
       if (!mounted) return;
+      HapticFeedback.mediumImpact();
       setState(() {
         _rekam = true;
         _angkat = 0;
+        _geser = 0;
+        _batalZone = false;
+        _hapusZone = false;
+        _kunci = false;
         _detik = 0;
       });
       _stopwatch?.cancel();
       _stopwatch = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted && _rekam) setState(() => _detik++);
+      });
+      // Tahan jari diam-diam ~1,4 detik → rekaman terkunci (hands-free).
+      _kunciTimer?.cancel();
+      _kunciTimer = Timer(const Duration(milliseconds: 1400), () {
+        if (!mounted || !_rekam || _kunci) return;
+        if (_angkat >= 70 || _geser <= -70) return;
+        HapticFeedback.mediumImpact();
+        SystemSound.play(SystemSoundType.click);
+        setState(() => _kunci = true);
       });
     } catch (_) {
       if (!mounted) return;
@@ -171,6 +193,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
 
   Future<void> _hentiRekam({required bool batal}) async {
     _stopwatch?.cancel();
+    _kunciTimer?.cancel();
     String? jalur;
     try {
       if (batal) {
@@ -183,6 +206,10 @@ class _DmChatScreenState extends State<DmChatScreen> {
     setState(() {
       _rekam = false;
       _angkat = 0;
+      _geser = 0;
+      _batalZone = false;
+      _hapusZone = false;
+      _kunci = false;
     });
     if (batal || jalur == null) return;
     final detik = _detik < 1 ? 1 : _detik;
@@ -314,10 +341,20 @@ class _DmChatScreenState extends State<DmChatScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  _angkat >= 70 ? 'Lepas untuk membatalkan' : 'Geser ke atas untuk batal',
+                  _kunci
+                      ? 'Terkunci \u2014 ketuk mic untuk kirim, \u2715 untuk buang'
+                      : _angkat >= 70
+                          ? 'Lepas untuk membatalkan'
+                          : _geser <= -70
+                              ? 'Lepas untuk menghapus'
+                              : 'Geser \u2191 batal \u00b7 \u2190 hapus \u00b7 tahan = kunci',
                   style: TextStyle(
                       fontSize: 12,
-                      color: _angkat >= 70 ? XyTheme.danger : t.muted,
+                      color: (_angkat >= 70 || _geser <= -70)
+                          ? XyTheme.danger
+                          : _kunci
+                              ? XyTheme.primary
+                              : t.muted,
                       fontWeight: FontWeight.w600),
                 ),
               ),
@@ -366,28 +403,75 @@ class _DmChatScreenState extends State<DmChatScreen> {
                   onSubmitted: (_) => _kirimTeks(),
                 ),
               ),
+              if (_rekam && _kunci)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _hentiRekam(batal: true);
+                    },
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                          shape: BoxShape.circle, color: XyTheme.danger),
+                      child: const Icon(Icons.close_rounded,
+                          color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
               const SizedBox(width: 8),
               if (_ctrl.text.trim().isEmpty)
                 GestureDetector(
-                  onLongPressStart: (_) => _mulaiRekam(),
+                  onLongPressStart: (_) {
+                    if (_rekam && _kunci) return; // terkunci: abaikan gestur baru
+                    _mulaiRekam();
+                  },
                   onLongPressMoveUpdate: (d) {
                     if (!_rekam) return;
-                    setState(() => _angkat = math.max(0, -d.offsetFromOrigin.dy));
+                    final angkat = math.max(0.0, -d.offsetFromOrigin.dy);
+                    final geser = d.offsetFromOrigin.dx;
+                    final batalBaru = angkat >= 70;
+                    final hapusBaru = !batalBaru && geser <= -70;
+                    if (batalBaru != _batalZone || hapusBaru != _hapusZone) {
+                      // feedback terasa + terdengar tiap masuk/keluar zona gestur
+                      HapticFeedback.selectionClick();
+                      SystemSound.play(SystemSoundType.click);
+                    }
+                    setState(() {
+                      _angkat = angkat;
+                      _geser = geser;
+                      _batalZone = batalBaru;
+                      _hapusZone = hapusBaru;
+                    });
                   },
                   onLongPressEnd: (_) {
                     if (!_rekam) return;
-                    _hentiRekam(batal: _angkat >= 70);
+                    if (_kunci) return; // terkunci: lepas jari bukan berhenti
+                    _hentiRekam(batal: _angkat >= 70 || _geser <= -70);
+                  },
+                  onTap: () {
+                    // saat terkunci, tombol mic berubah jadi "kirim"
+                    if (_rekam && _kunci) {
+                      HapticFeedback.lightImpact();
+                      _hentiRekam(batal: false);
+                    }
                   },
                   child: Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: _rekam ? null : XyTheme.gradPrimary,
-                      color: _rekam ? XyTheme.danger : null,
+                      gradient: (_rekam && !_kunci) ? null : XyTheme.gradPrimary,
+                      color: (_rekam && !_kunci) ? XyTheme.danger : null,
                     ),
-                    child: Icon(_rekam ? Icons.stop_rounded : Icons.mic_rounded,
-                        color: Colors.white, size: 21),
+                    child: Icon(
+                        _rekam
+                            ? (_kunci ? Icons.send_rounded : Icons.stop_rounded)
+                            : Icons.mic_rounded,
+                        color: Colors.white,
+                        size: 21),
                   ),
                 )
               else

@@ -84,6 +84,10 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: python3 ../tools/siapkan_pembaruan.py android
 
+      - name: Siapkan mode privasi (FLAG_SECURE anti-screenshot)
+        working-directory: ${{ env.APP_DIR }}
+        run: python3 ../tools/siapkan_keamanan.py android
+
       - name: Naikkan versi Kotlin (dibutuhkan OneSignal)
         working-directory: ${{ env.APP_DIR }}
         run: |

@@ -37,7 +37,7 @@ function muatB64(b64) {
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
 import { unggahGambar, unggahAudio, samarkanGambar, layaniGambar } from './upload.js';
-import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan } from './bayar.js';
+import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan, cekStatusPenyedia } from './bayar.js';
 import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, pantauKesehatan } from './sistem.js';
 import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, pakaiVoucherStrict, buatCadangan } from './loyal.js';
 import { halamanLegal, isiLegal } from './legal.js';
@@ -465,6 +465,73 @@ async function kirimBanner(env) {
 }
 
 // ============================================================
+//  PEMBAYARAN OTOMATIS — persetujuan top up satu pintu.
+//  Webhook penyedia, cron pemeriksa, tombol "cek sekarang" di
+//  aplikasi, dan "verifikasi otomatis" dashboard admin semuanya
+//  lewat fungsi ini. Klaim atomik (UPDATE bersyarat) menjamin
+//  saldo tidak pernah bertambah dua kali walau dipanggil bareng.
+// ============================================================
+async function setujuiTopupOtomatis(env, idTopup, catatan) {
+  const waktu = new Date().toISOString();
+  const klaim = await env.DB.prepare(
+    "UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=? AND status NOT IN ('disetujui','ditolak')"
+  ).bind(catatan, waktu, idTopup).run();
+  if (!klaim.meta?.changes) return false;
+
+  const t = await env.DB.prepare('SELECT * FROM topup WHERE id = ?').bind(idTopup).first();
+  const nominal = Number(t?.nominal) || 0;
+  if (t && nominal > 0 && t.user_id) {
+    await env.DB.batch([
+      env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, t.user_id),
+      env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
+        .bind(uid('t_'), t.user_id, 'Top up saldo otomatis', 'topup', nominal),
+    ]);
+
+    const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?')
+      .bind(t.user_id).first();
+    try {
+      await push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u?.saldo ?? 0 });
+      await kirimPush(env, {
+        userId: t.user_id,
+        judul: 'Saldo berhasil ditambahkan',
+        pesan: `Pembayaran Rp${nominal.toLocaleString('id-ID')} sudah kami terima.`,
+        data: { tipe: 'wallet' },
+      });
+      if (u?.email) {
+        await kirimEmail(env, {
+          to: u.email, template: 'struk',
+          data: { nama: u.nama, kode: t.id.toUpperCase(), judul: 'Top up saldo', total: nominal, metode: t.metode },
+        });
+      }
+    } catch (_) { /* notifikasi gagal tidak boleh membatalkan top up */ }
+  }
+  return true;
+}
+
+/**
+ * Jaring pengaman cron: tanya penyedia secara aktif untuk top up gateway
+ * (ditandai kode_unik=0) yang masih 'menunggu' 24 jam terakhir — supaya
+ * pembayaran QRIS/DANA tetap terdeteksi walau webhook telat atau hilang.
+ */
+async function pollPembayaran(env) {
+  const penyedia = penyediaBayar(env);
+  if (penyedia === 'manual') return;
+  const { results } = await env.DB.prepare(
+    "SELECT id FROM topup WHERE status='menunggu' AND kode_unik=0 AND datetime(dibuat) >= datetime('now','-1 day') LIMIT 12"
+  ).all();
+  for (const t of results || []) {
+    const cek = await cekStatusPenyedia(env, t.id);
+    if (cek.status === 'lunas') {
+      await setujuiTopupOtomatis(env, t.id, `Lunas — pemeriksaan otomatis via ${penyedia}`);
+    } else if (cek.status === 'gagal') {
+      await env.DB.prepare(
+        "UPDATE topup SET status='ditolak', catatan='Kedaluwarsa atau dibatalkan (cek penyedia)' WHERE id=? AND status='menunggu'"
+      ).bind(t.id).run();
+    }
+  }
+}
+
+// ============================================================
 //  ROUTER
 // ============================================================
 export default {
@@ -474,6 +541,9 @@ export default {
     ctx.waitUntil(rawatSewa(env));
     // pantau kesehatan tiap jam
     ctx.waitUntil(pantauKesehatan(env, kirimEmail));
+    // jaring pengaman pembayaran: tanya penyedia soal top up QRIS/e-wallet
+    // yang masih 'menunggu' (webhook bisa telat/hilang)
+    ctx.waitUntil(pollPembayaran(env));
     // cadangan otomatis sekali sehari pada jam 19 UTC (dini hari WIB)
     if (new Date().getUTCHours() === 19) {
       ctx.waitUntil((async () => {
@@ -736,9 +806,9 @@ p.kecil,span.kecil{color:#7d6faa;font-size:12px}
       });
     }
 
-    if (path === '/legal/syarat' || path === '/legal/privasi') {
-      const privasi = path.endsWith('privasi');
-      return new Response(halamanLegal(privasi ? 'privasi' : 'syarat'), {
+    if (path === '/legal/syarat' || path === '/legal/privasi' || path === '/legal/refund') {
+      const jenis = path.endsWith('privasi') ? 'privasi' : path.endsWith('refund') ? 'refund' : 'syarat';
+      return new Response(halamanLegal(jenis), {
         headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
       });
     }
@@ -809,6 +879,7 @@ self.addEventListener('fetch', (e) => {
         ['/bantuan', '0.6', 'monthly'],
         ['/legal/syarat', '0.3', 'yearly'],
         ['/legal/privasi', '0.3', 'yearly'],
+        ['/legal/refund', '0.3', 'yearly'],
       ];
       const hariIni = new Date().toISOString().slice(0, 10);
 
@@ -894,40 +965,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
       if (!hasil.sah) return new Response('signature tidak sah', { status: 401 });
 
       if (hasil.status === 'lunas') {
-        const waktu = new Date().toISOString();
-        // Klaim atomik: hanya SATU panggilan webhook yang boleh menandai top up
-        // 'disetujui'. Webhook yang terulang/bersamaan untuk id sama akan kena 0
-        // baris sehingga saldo tidak pernah ditambah dua kali.
-        const klaim = await env.DB.prepare(
-          "UPDATE topup SET status='disetujui', catatan=?, diproses=? WHERE id=? AND status NOT IN ('disetujui','ditolak')"
-        ).bind(`Lunas otomatis lewat ${provider}`, waktu, hasil.id).run();
-        if (klaim.meta?.changes) {
-          const t = await env.DB.prepare('SELECT * FROM topup WHERE id = ?').bind(hasil.id).first();
-          const nominal = Number(t?.nominal) || 0;
-          if (t && nominal > 0 && t.user_id) {
-            await env.DB.batch([
-              env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, t.user_id),
-              env.DB.prepare('INSERT INTO transaksi (id,user_id,judul,tipe,nominal) VALUES (?,?,?,?,?)')
-                .bind(uid('t_'), t.user_id, 'Top up saldo otomatis', 'topup', nominal),
-            ]);
-
-            const u = await env.DB.prepare('SELECT saldo, nama, email FROM users WHERE id = ?')
-              .bind(t.user_id).first();
-            ctx.waitUntil(push(env, `user:${t.user_id}`, 'wallet.update', { saldo: u?.saldo ?? 0 }));
-            ctx.waitUntil(kirimPush(env, {
-              userId: t.user_id,
-              judul: 'Saldo berhasil ditambahkan',
-              pesan: `Pembayaran Rp${nominal.toLocaleString('id-ID')} sudah kami terima.`,
-              data: { tipe: 'wallet' },
-            }));
-            if (u?.email) {
-              ctx.waitUntil(kirimEmail(env, {
-                to: u.email, template: 'struk',
-                data: { nama: u.nama, kode: t.id.toUpperCase(), judul: 'Top up saldo', total: nominal, metode: t.metode },
-              }));
-            }
-          }
-        }
+        // Klaim atomik + penambahan saldo + notifikasi: satu pintu di
+        // setujuiTopupOtomatis (dipakai juga oleh cron dan verifikasi admin).
+        await setujuiTopupOtomatis(env, hasil.id, `Lunas otomatis lewat ${provider}`);
       } else if (hasil.status === 'gagal') {
         await env.DB.prepare("UPDATE topup SET status='ditolak', catatan='Pembayaran kedaluwarsa atau dibatalkan' WHERE id = ? AND status != 'disetujui'")
           .bind(hasil.id).run();
@@ -1149,6 +1189,7 @@ ${halaman.map(([u, p2, f]) => `  <url>
       // ---------------- LEGAL ----------------
       if (p === 'legal/syarat' && req.method === 'GET') return json(isiLegal('syarat'), 200, env);
       if (p === 'legal/privasi' && req.method === 'GET') return json(isiLegal('privasi'), 200, env);
+      if (p === 'legal/refund' && req.method === 'GET') return json(isiLegal('refund'), 200, env);
 
       // ---------------- KONFIGURASI APLIKASI ----------------
       if (p === 'config' && req.method === 'GET') {
@@ -1766,6 +1807,35 @@ ${halaman.map(([u, p2, f]) => `  <url>
              CASE t.status WHEN 'diperiksa' THEN 0 WHEN 'menunggu' THEN 1 ELSE 2 END, t.dibuat DESC LIMIT 200`
           ).all();
           return json(results, 200, env);
+        }
+
+        // ---- info penyedia pembayaran (QRIS/DANA otomatis sudah siap?) ----
+        if (a === 'bayar/info' && req.method === 'GET') {
+          const py = penyediaBayar(env);
+          return json({ penyedia: py, otomatis: py !== 'manual', metode: metodeTersedia(env) }, 200, env);
+        }
+
+        // ---- verifikasi otomatis: tanya penyedia apakah top up benar-benar dibayar ----
+        if (a.startsWith('topup/') && a.endsWith('/verifikasi') && req.method === 'POST') {
+          const id = a.split('/')[1];
+          const t = await env.DB.prepare('SELECT * FROM topup WHERE id=?').bind(id).first();
+          if (!t) return err('Top up tidak ditemukan', 404, env);
+          if (t.status !== 'menunggu' && t.status !== 'diperiksa') return err(`Status sudah '${t.status}'.`, 409, env);
+          if (penyediaBayar(env) === 'manual' || Number(t.kode_unik) !== 0) {
+            return err('Top up ini bukan lewat penyedia pembayaran aktif — verifikasi manual.', 422, env);
+          }
+          const cek = await cekStatusPenyedia(env, id);
+          if (cek.status === 'lunas') {
+            await setujuiTopupOtomatis(env, id, `Lunas — verifikasi admin via ${penyediaBayar(env)}`);
+            await catatLog(env, 'topup', `Verifikasi otomatis top up ${id}: lunas, saldo ditambahkan`);
+            return json({ ok: true, status: 'disetujui', pesan: 'Lunas — saldo ditambahkan otomatis.' }, 200, env);
+          }
+          if (cek.status === 'gagal') {
+            await env.DB.prepare("UPDATE topup SET status='ditolak', catatan='Kedaluwarsa atau dibatalkan (cek penyedia)' WHERE id=? AND status IN ('menunggu','diperiksa')").bind(id).run();
+            await catatLog(env, 'topup', `Verifikasi otomatis top up ${id}: kedaluwarsa/dibatalkan`);
+            return json({ ok: true, status: 'ditolak', pesan: 'Penyedia: kedaluwarsa atau dibatalkan.' }, 200, env);
+          }
+          return json({ ok: false, status: 'menunggu', pesan: 'Penyedia masih menunjukkan pembayaran menunggu.' }, 200, env);
         }
 
         // ---- setujui atau tolak top up ----
@@ -3814,6 +3884,34 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           .bind(hasil.url, id).run();
         ctx.waitUntil(push(env, 'cs:inbox', 'topup.baru', { id, user_id: me.sub, nominal: t.nominal, bukti: hasil.url }));
         return json({ ...t, bukti: hasil.url, status: 'diperiksa' }, 200, env);
+      }
+
+      // ---- status top up milik sendiri (dipakai polling otomatis di aplikasi) ----
+      if (p.startsWith('wallet/topup/') && req.method === 'GET') {
+        const id = p.split('/')[2];
+        const t = await env.DB.prepare('SELECT id,status,nominal,total,metode,diproses,catatan FROM topup WHERE id=? AND user_id=?')
+          .bind(id, me.sub).first();
+        if (!t) return err('Permintaan top up tidak ditemukan', 404, env);
+        const u = await env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(me.sub).first();
+        return json({ ...t, saldo: u?.saldo ?? 0 }, 200, env);
+      }
+
+      // ---- "sudah bayar?" — cek langsung ke penyedia pembayaran ----
+      if (p.startsWith('wallet/topup/') && p.endsWith('/cek') && req.method === 'POST') {
+        const id = p.split('/')[2];
+        if (!rateMem(`cek-bayar:${me.sub}`, 12, 60)) return err('Tunggu sebentar sebelum memeriksa lagi.', 429, env);
+        const t = await env.DB.prepare('SELECT * FROM topup WHERE id=? AND user_id=?').bind(id, me.sub).first();
+        if (!t) return err('Permintaan top up tidak ditemukan', 404, env);
+        // kode_unik=0 adalah penanda top up gateway (QRIS/DANA/ShopeePay/VA/Snap)
+        if (t.status === 'menunggu' && Number(t.kode_unik) === 0 && penyediaBayar(env) !== 'manual') {
+          const cek = await cekStatusPenyedia(env, t.id);
+          if (cek.status === 'lunas') {
+            await setujuiTopupOtomatis(env, t.id, `Lunas — pengguna memicu cek via ${penyediaBayar(env)}`);
+          }
+        }
+        const terbaru = await env.DB.prepare('SELECT id,status,diproses,catatan FROM topup WHERE id=?').bind(id).first();
+        const u = await env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(me.sub).first();
+        return json({ ...terbaru, saldo: u?.saldo ?? 0 }, 200, env);
       }
 
       // ---- daftar order ----

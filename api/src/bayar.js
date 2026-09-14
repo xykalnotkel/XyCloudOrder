@@ -85,11 +85,17 @@ export async function buatTagihan(env, { id, nominal, metode, nama, email, phone
         { sku: 'TOPUP', name: keterangan || 'Isi saldo XyCloudStore', price: nominal, quantity: 1 },
       ],
       expired_time: Math.floor(Date.now() / 1000) + 6 * 3600,
+      // Tanpa ini Tripay hanya mengandalkan callback URL default di dashboard
+      // merchant — banyak yang lupa mengisinya sehingga pembayaran QRIS/DANA
+      // tidak pernah terdeteksi otomatis.
+      callback_url: `${env.PUBLIC_URL || 'https://api.xycloud.my.id'}/bayar/webhook/tripay`,
       signature: tanda,
     };
 
     try {
-      const r = await fetch(`${env.TRIPAY_BASE || 'https://tripay.co.id/api'}/transaction/create`, {
+      // Basis resmi Tripay Open API: https://tripay.co.id/open-api
+      // (sandbox: https://sandbox.tripay.co.id/open-api — setel via TRIPAY_BASE).
+      const r = await fetch(`${env.TRIPAY_BASE || 'https://tripay.co.id/open-api'}/transaction/create`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.TRIPAY_API_KEY}`,
@@ -185,4 +191,52 @@ export async function bacaPemberitahuan(env, provider, req, teksBadan) {
   }
 
   return { sah: false };
+}
+
+/**
+ * Tanya langsung ke penyedia: sudah benar-benar dibayar atau belum?
+ * Dipakai tiga tempat: cron pemantau (webhook telat/hilang), tombol
+ * "cek sekarang" di aplikasi, dan tombol verifikasi di dashboard admin.
+ * Mengembalikan { status: 'lunas' | 'gagal' | 'menunggu', referensi? }.
+ */
+export async function cekStatusPenyedia(env, idTopup) {
+  const p = penyediaBayar(env);
+  try {
+    if (p === 'tripay') {
+      const r = await fetch(
+        `${env.TRIPAY_BASE || 'https://tripay.co.id/open-api'}/transaction/detail?merchant_ref=${encodeURIComponent(idTopup)}`,
+        { headers: { Authorization: `Bearer ${env.TRIPAY_API_KEY}` } },
+      );
+      const j = await r.json();
+      if (!j.success || !j.data) return { status: 'menunggu' };
+      const s = String(j.data.status || '').toUpperCase();
+      return {
+        status: s === 'PAID' ? 'lunas' : (s === 'EXPIRED' || s === 'FAILED') ? 'gagal' : 'menunggu',
+        referensi: j.data.reference || null,
+      };
+    }
+
+    if (p === 'midtrans') {
+      const dasar = env.MIDTRANS_PRODUKSI === 'true'
+        ? 'https://api.midtrans.com'
+        : 'https://api.sandbox.midtrans.com';
+      const r = await fetch(`${dasar}/v2/${encodeURIComponent(idTopup)}/status`, {
+        headers: {
+          Authorization: `Basic ${btoa(`${env.MIDTRANS_SERVER_KEY}:`)}`,
+          Accept: 'application/json',
+        },
+      });
+      const b = await r.json();
+      if (!b.transaction_status) return { status: 'menunggu' };
+      const lunas = ['capture', 'settlement'].includes(b.transaction_status);
+      const gagal = ['deny', 'cancel', 'expire', 'failure'].includes(b.transaction_status);
+      return {
+        status: lunas ? 'lunas' : gagal ? 'gagal' : 'menunggu',
+        referensi: b.transaction_id || null,
+      };
+    }
+  } catch (_) {
+    // penyedia tidak bisa dihubungi — biarkan status apa adanya
+  }
+  return { status: 'menunggu' };
 }

@@ -32,8 +32,9 @@ class XyRadius {
   static const double xxl = 28;
   static const double pill = 99;
 
-  /// Radius khusus tombol supaya bentuknya membulat, bukan kotak.
-  static const double tombol = 14;
+  /// Radius khusus tombol: pil penuh (rounded-full) di SELURUH aplikasi —
+  /// permintaan UI 2026-09-14: "semua button rounded full agar bagus".
+  static const double tombol = 99;
 }
 
 class XyTheme {

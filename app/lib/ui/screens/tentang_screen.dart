@@ -1,4 +1,5 @@
 import 'cs_screen.dart';
+import 'legal_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -64,6 +65,12 @@ class _TentangScreenState extends State<TentangScreen> {
             judul: 'Kebijakan Privasi',
             sub: 'Data apa yang kami simpan dan untuk apa',
             onTap: () => Navigator.push(context, xyRoute(const _LegalScreen(jenis: 'privasi'))),
+          ),
+          XyBarisMenu(
+            ikon: Icons.currency_exchange_rounded,
+            judul: 'Kebijakan Pengembalian Dana',
+            sub: 'Refund sewa PC, akun digital, dan saldo',
+            onTap: () => Navigator.push(context, xyRoute(const LegalScreen(jenis: 'refund'))),
           ),
           XyBarisMenu(
             ikon: Icons.workspace_premium_outlined,

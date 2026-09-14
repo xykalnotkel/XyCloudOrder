@@ -16,7 +16,9 @@ class WalletScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Dompet & Riwayat', style: TextStyle(fontWeight: FontWeight.w700))),
-      body: ListView(
+      body: RefreshIndicator(
+        onRefresh: () => context.read<AppState>().muatProfilRingkas(),
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
         children: [
           Container(
@@ -180,6 +182,7 @@ class WalletScreen extends StatelessWidget {
               );
             }),
         ],
+      ),
       ),
     );
   }

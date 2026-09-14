@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
 import '../../core/cache.dart';
+import '../../core/keamanan.dart';
 import '../../core/prefs.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
@@ -14,6 +15,7 @@ import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/lembar.dart';
 import 'bantuan_screen.dart';
+import 'legal_screen.dart';
 import 'pembaruan_screen.dart';
 import 'tentang_screen.dart';
 import 'opsi_screen.dart';
@@ -47,6 +49,12 @@ class PengaturanScreen extends StatelessWidget {
             judul: 'Keamanan',
             sub: 'Ganti password dan info sesi',
             tujuan: const KeamananScreen(),
+          ),
+          XyBarisMenu(
+            ikon: Icons.screenshot_monitor_outlined,
+            judul: 'Mode Privasi',
+            sub: 'Blokir screenshot & rekaman layar',
+            tujuan: const ModePrivasiScreen(),
           ),
           const _Judul('Tampilan'),
           XyBarisMenu(
@@ -87,6 +95,25 @@ class PengaturanScreen extends StatelessWidget {
           XyBarisMenu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Konfirmasi identitas sebelum menghapus', tujuan: const HapusAkunScreen()),
           ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 8), leading: Icon(Icons.logout_rounded, color: XyTheme.danger), title: Text('Keluar dari Akun'),
             onTap: () async { if (await konfirmasi(context, judul:'Keluar dari akun?', pesan:'Data sesi di HP akan dibersihkan. Akunmu tidak dihapus.', tombolYa:'Keluar', bahaya:true) && context.mounted) { await context.read<AppState>().logout(); } }),
+          const _Judul('Legal dan kebijakan'),
+          XyBarisMenu(
+            ikon: Icons.description_outlined,
+            judul: 'Syarat dan Ketentuan',
+            sub: 'Aturan pemakaian layanan',
+            tujuan: const LegalScreen(jenis: 'syarat'),
+          ),
+          XyBarisMenu(
+            ikon: Icons.privacy_tip_outlined,
+            judul: 'Kebijakan Privasi',
+            sub: 'Data apa yang kami simpan dan untuk apa',
+            tujuan: const LegalScreen(jenis: 'privasi'),
+          ),
+          XyBarisMenu(
+            ikon: Icons.currency_exchange_rounded,
+            judul: 'Kebijakan Pengembalian Dana',
+            sub: 'Refund sewa PC, akun digital, dan saldo',
+            tujuan: const LegalScreen(jenis: 'refund'),
+          ),
           const _Judul('Lainnya'),
           XyBarisMenu(
             ikon: Icons.help_outline_rounded,
@@ -1106,6 +1133,106 @@ Future<void> salinTeks(BuildContext context, String teks, String label) async {
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label disalin'), duration: const Duration(seconds: 1)),
+    );
+  }
+}
+
+
+/// Mode privasi: FLAG_SECURE Android — tangkapan layar dan perekaman
+/// layar menghasilkan hitam, pratinjau di daftar aplikasi baru disembunyikan.
+/// Diterapkan instan lewat channel native (tools/siapkan_keamanan.py).
+class ModePrivasiScreen extends StatefulWidget {
+  const ModePrivasiScreen({super.key});
+
+  @override
+  State<ModePrivasiScreen> createState() => _ModePrivasiScreenState();
+}
+
+class _ModePrivasiScreenState extends State<ModePrivasiScreen> {
+  bool aktif = false;
+  bool siap = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.modePrivasi().then((v) {
+      if (mounted) {
+        setState(() {
+          aktif = v;
+          siap = true;
+        });
+      }
+    });
+  }
+
+  Future<void> _setel(bool v) async {
+    setState(() => aktif = v);
+    HapticFeedback.lightImpact();
+    await Prefs.simpanModePrivasi(v);
+    await Keamanan.setelPrivasi(v);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(v
+            ? 'Mode privasi aktif — screenshot & rekaman layar diblokir.'
+            : 'Mode privasi dimatikan.')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mode Privasi')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
+        children: [
+          XyCard(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                      gradient: XyTheme.gradPrimary,
+                      borderRadius: BorderRadius.circular(14)),
+                  child: const Icon(Icons.screenshot_monitor_rounded,
+                      color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                    child: Text('Anti Screenshot & Rekaman Layar',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 14.5))),
+              ]),
+              const SizedBox(height: 10),
+              Text(
+                'Saat aktif, jendela aplikasi ditandai aman oleh Android '
+                '(FLAG_SECURE): tangkapan layar dan perekaman layar menghasilkan '
+                'gambar hitam, dan pratinjau di daftar aplikasi baru disembunyikan. '
+                'Cocok untuk menjaga saldo, chat, dan kredensial akunmu.',
+                style: TextStyle(
+                    color: XyTheme.of(context).muted, fontSize: 12.8, height: 1.6),
+              ),
+              const SizedBox(height: 4),
+              SwitchListTile(
+                value: aktif,
+                onChanged: siap ? _setel : null,
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Mode Privasi',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                subtitle: Text(
+                    aktif ? 'Aktif — layar dilindungi' : 'Nonaktif',
+                    style: TextStyle(
+                        color: XyTheme.of(context).muted, fontSize: 11.5)),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 14),
+          Text(
+              'Catatan: perlindungan diterapkan instan tanpa perlu memulai ulang aplikasi.',
+              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+        ],
+      ),
     );
   }
 }
