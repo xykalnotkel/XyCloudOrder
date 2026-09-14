@@ -9,6 +9,12 @@ const KATA_DASAR = [
   'anjing', 'bangsat', 'bego', 'goblok', 'tolol', 'kontol', 'memek', 'ngentot',
   'jancok', 'jancuk', 'asu', 'setan', 'tai', 'brengsek', 'kampret',
   'fuck', 'shit', 'bitch', 'asshole', 'dick', 'pussy', 'bastard',
+  // SARA / ujaran kebencian (Batch E)
+  'pki', 'teroris', 'jihadis', 'penistagama', 'antiagama', 'haramjadah',
+  // pornografi (Batch E)
+  'porno', 'porn', 'bokep', 'hentai', 'nsfw', 'coli', 'onani', 'masturbasi',
+  'pelacur', 'lonte', 'jablay', 'sange', 'ngecrot', 'sperma', 'toket',
+  'bugil', 'telanjang', 'onlyfans',
 ];
 
 /** Domain yang sering dipakai spam phishing (bukan whitelist, hanya sinyal). */

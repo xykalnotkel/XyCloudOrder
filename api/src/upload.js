@@ -37,15 +37,26 @@ export async function unggahGambar(env, { dataUri, folder = 'xycloudstore' }) {
     }
   }
 
+  // Batch E: semua gambar dikonversi ke WebP + kualitas otomatis di sisi
+  // Cloudinary supaya jauh lebih ringan & cepat dimuat. GIF dibiarkan apa
+  // adanya agar animasinya tidak rusak.
+  const isGif = typeof dataUri === 'string' && dataUri.startsWith('data:image/gif');
+  const mauWebp = !isGif;
+
   const timestamp = Math.floor(Date.now() / 1000);
   // parameter yang ikut ditandatangani harus urut abjad
-  const tandaTangan = await sha1(`folder=${folder}&timestamp=${timestamp}${env.CLOUDINARY_SECRET}`);
+  const dasar = `folder=${folder}` + (mauWebp ? '&format=webp&quality=auto' : '') + `&timestamp=${timestamp}`;
+  const tandaTangan = await sha1(`${dasar}${env.CLOUDINARY_SECRET}`);
 
   const form = new FormData();
   form.append('file', dataUri);
   form.append('api_key', env.CLOUDINARY_KEY);
   form.append('timestamp', String(timestamp));
   form.append('folder', folder);
+  if (mauWebp) {
+    form.append('format', 'webp');
+    form.append('quality', 'auto');
+  }
   form.append('signature', tandaTangan);
 
   try {

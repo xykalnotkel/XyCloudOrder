@@ -719,9 +719,9 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= profil =================
-  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner}) async {
+  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) async {
     try {
-      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner);
+      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner, username: username);
       forumRevisi++;
       forum = forum.map((p) => p.userId == user!.id ? ForumPost.fromJson({...p.toJson(), 'nama': user!.nama, 'foto': user!.foto}) : p).toList();
       _ulasan.clear();

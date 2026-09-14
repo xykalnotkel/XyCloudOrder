@@ -221,3 +221,56 @@ pengiriman akhir baru bisa dilakukan begitu ada perangkat nyata memasang APK.
 - Batch D butir 1–9: **selesai semua**.
 - Batch B (tag `apk-android`, `agent-windows`, `simpanRilis`): **DITAHAN**
   atas instruksi pemilik — tunggu seluruh antrian beres + tes APK.
+
+## Batch E — SEO, dashboard 10 menu baru, username & filter kata, WebP (2026-09-14)
+
+### SEO (xycloud.my.id)
+- Worker kini melayani `/google8d6555ceced0c8e7.html` (verifikasi Google
+  Search Console) dan `/robots.txt` — tetap hidup walau mode pemeliharaan.
+- Dashboard → menu **SEO & Situs**: pemeriksaan langsung (berkas verifikasi,
+  robots, halaman utama, status maintenance) + panduan langkah GSC.
+
+### Dashboard admin
+- **Checkbox jelas**: bug CSS `input.xy-check:checked` — `background-image`
+  menimpa gradasi sehingga centang putih tak terlihat ("cuma berubah warna").
+  Kini dua lapisan dalam satu deklarasi + hover/focus ring; `.xy-check` kit
+  membesar (19px, border 2px, gradasi + glow saat aktif); opsi `Select` aktif
+  dapat tanda ✓; trigger select terbuka dapat ring ungu.
+- **Banner bisa diedit**: halaman Banner ditulis ulang — buat/ubah/hapus,
+  pratinjau langsung, pemilih warna, urutan, ikon, CTA, aksi, target, unggah
+  gambar (otomatis WebP), toggle aktif, dan kirim push promo saat membuat.
+- **10 menu baru berfungsi penuh**: Banding Akun, Laporan Pengguna,
+  Agen Windows, Mode Pemeliharaan (+ pengecualian), SEO & Situs, Stok Akun,
+  Database (jumlah baris per tabel), Statistik Push (OneSignal), Username,
+  Kata Terlarang (+ penguji teks).
+- Endpoint admin baru: `stok`, `dbinfo`, `usernames`, `kata`, `uji-kata`,
+  `push/statistik`.
+
+### Backend
+- Migrasi 0009 (live di produksi): `users.username` + index unik parsial.
+- `POST /api/cek-nama`: kebersihan nama & ketersediaan username (dipakai
+  layar Ubah Profil dengan debounce).
+- `PATCH /api/me` menerima `username` (3–20 karakter `[a-z0-9_.]`, unik,
+  bebas kata terlarang; string kosong = hapus username).
+- Filter kata terlarang identitas (`src/kata.js`): kasar + SARA + porno,
+  tahan leetspeak & pemisah (a.n.j.i.n.g); kata ≤3 huruf hanya dicocokkan
+  utuh supaya "Nasution" tidak terjaring "asu". Ditegakkan di register,
+  PATCH me (nama/bio/username).
+- Filter konten (`src/moderasi.js`) diperluas kategori SARA & porno
+  (forum/ulasan sudah memakai modul ini).
+- `POST /api/users/:id/lapor`: laporan antar-pengguna → tabel `laporan`
+  (jenis `pengguna`) → muncul di dashboard Laporan & Moderasi.
+- **Semua unggahan gambar otomatis WebP** (`quality:auto`) di Cloudinary;
+  GIF dibiarkan agar animasi aman. Berlaku untuk profil, forum, DM, ulasan,
+  bukti topup, banner, stiker.
+- Profil publik kini menyertakan `username`.
+- Test: 22/22 hijau (sosial diperluas: cek-nama, username unik 409, kata
+  terlarang 422, "Nasution" lolos, lapor pengguna 201/422).
+
+### Flutter
+- Ubah Profil: field **Username** dengan cek ketersediaan live (debounce
+  650 ms): spinner → centang hijau "Username tersedia!" / merah + alasannya
+  (dipakai / kata terlarang / format salah).
+- Profil publik: `@username` di bawah nama + tombol **Laporkan pengguna**
+  (bottom sheet: kategori SARA/porno/pelecehan/spam/lainnya + rincian).
+- Model/repo/AppState: `username`, `cekNama`, `laporPengguna`.

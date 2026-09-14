@@ -25,7 +25,7 @@ CREATE TABLE users (
   saldo     INTEGER NOT NULL DEFAULT 0,
   tier      TEXT NOT NULL DEFAULT 'basic',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT, bio TEXT, banner TEXT, bisu_notif TEXT, notif_dm INTEGER NOT NULL DEFAULT 1);
+, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT, bio TEXT, banner TEXT, bisu_notif TEXT, notif_dm INTEGER NOT NULL DEFAULT 1, username TEXT);
 
 -- ------------------------------------------------------------
 --  pc_plans
@@ -500,3 +500,5 @@ CREATE TABLE IF NOT EXISTS simpan_post (
   waktu   TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (post_id, user_id)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username) WHERE username IS NOT NULL;

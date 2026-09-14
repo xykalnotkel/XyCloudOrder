@@ -83,6 +83,47 @@ test('Sosial: profil publik, follow dua arah, DM, dan simpan posting', async () 
     assert.equal(r.json.data[0].thread, 'dm:b');
     await A('/me/bisukan', 'POST', { thread: 'dm:b', menit: 0 });
     assert.deepEqual((await A('/me/bisukan')).json.data, []);
+
+    // ---- Batch E: username, cek-nama, kata terlarang, lapor pengguna ----
+    r = await A('/cek-nama', 'POST', { nama: 'Budi Santoso', username: 'budi.kece' });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.nama.bersih, true);
+    assert.equal(r.json.data.username.tersedia, true);
+
+    // username porno ditolak + terdeteksi katanya
+    r = await A('/cek-nama', 'POST', { username: 'bokep123' });
+    assert.equal(r.json.data.username.tersedia, false);
+    assert.equal(r.json.data.username.kata, 'bokep');
+
+    // format username salah
+    r = await A('/cek-nama', 'POST', { username: 'AB' });
+    assert.equal(r.json.data.username.tersedia, false);
+
+    // pasang username lewat PATCH me
+    r = await A('/me', 'PATCH', { username: 'budi.kece' });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.username, 'budi.kece');
+    // muncul di profil publik
+    assert.equal((await B('/users/a/profil')).json.data.username, 'budi.kece');
+    // ditolak saat sudah dipakai orang lain
+    assert.equal((await B('/me', 'PATCH', { username: 'budi.kece' })).status, 409);
+    // pemilik lama boleh mengganti
+    r = await A('/me', 'PATCH', { username: 'andi_ganteng' });
+    assert.equal(r.json.data.username, 'andi_ganteng');
+
+    // nama & bio dengan kata kasar/SARA/porno ditolak
+    assert.equal((await A('/me', 'PATCH', { nama: 'Anjing Gila' })).status, 422);
+    assert.equal((await A('/me', 'PATCH', { bio: 'jual bokep murah' })).status, 422);
+    assert.equal((await A('/me', 'PATCH', { username: 'pki.123' })).status, 422);
+    // nama sah yang memuat substring pendek tidak ikut terjaring
+    r = await A('/me', 'PATCH', { nama: 'Nasution Andi' });
+    assert.equal(r.status, 200);
+
+    // lapor pengguna masuk moderasi
+    r = await A('/users/b/lapor', 'POST', { alasan: 'Spam di forum komunitas' });
+    assert.equal(r.status, 201);
+    assert.equal((await A('/users/a/lapor', 'POST', { alasan: 'lapor diri sendiri' })).status, 422);
+    assert.equal((await A('/users/b/lapor', 'POST', { alasan: 'x' })).status, 422);
   } finally {
     await mf.dispose();
   }

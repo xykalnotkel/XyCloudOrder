@@ -21,6 +21,9 @@ class UserProfile {
   final String? bio;
   final String? banner;
 
+  /// Username publik unik (Batch E): @nama_pengguna.
+  final String? username;
+
   /// Terima pemberitahuan kegiatan forum komunitas.
   final bool notifForum;
 
@@ -46,6 +49,7 @@ class UserProfile {
     this.foto,
     this.bio,
     this.banner,
+    this.username,
     this.notifForum = true,
     this.notifDm = true,
     this.badge,
@@ -67,6 +71,7 @@ class UserProfile {
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         bio: (j['bio'] as String?)?.isNotEmpty == true ? j['bio'] : null,
         banner: (j['banner'] as String?)?.isNotEmpty == true ? j['banner'] : null,
+        username: (j['username'] as String?)?.isNotEmpty == true ? j['username'] : null,
         notifForum: (j['notif_forum'] ?? 1) == 1,
         notifDm: (j['notif_dm'] ?? 1) == 1,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
@@ -88,12 +93,13 @@ class UserProfile {
         'foto': foto,
         'bio': bio,
         'banner': banner,
+        'username': username,
         'notif_forum': notifForum ? 1 : 0,
         'notif_dm': notifDm ? 1 : 0,
         'badge': badge,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, String? username, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
@@ -104,6 +110,7 @@ class UserProfile {
         avatar: avatar,
         bio: bio ?? this.bio,
         banner: banner ?? this.banner,
+        username: username ?? this.username,
         notifForum: notifForum,
         notifDm: notifDm,
         badge: badge,
@@ -949,6 +956,7 @@ int waktuMs(dynamic v) {
 class ProfilPublik {
   final String id;
   final String nama;
+  final String? username;
   final String? foto;
   final String? bio;
   final String? banner;
@@ -961,7 +969,7 @@ class ProfilPublik {
   final bool saya;
 
   const ProfilPublik({
-    required this.id, required this.nama, this.foto, this.bio, this.banner,
+    required this.id, required this.nama, this.username, this.foto, this.bio, this.banner,
     this.tier, this.badge, this.pengikut = 0, this.mengikuti = 0,
     this.posting = 0, this.sayaIkuti = false, this.saya = false,
   });
@@ -969,6 +977,7 @@ class ProfilPublik {
   factory ProfilPublik.fromJson(Map<String, dynamic> j) => ProfilPublik(
     id: j['id'] as String,
     nama: j['nama'] as String? ?? '',
+    username: (j['username'] as String?)?.isNotEmpty == true ? j['username'] : null,
     foto: j['foto'] as String?,
     bio: j['bio'] as String?,
     banner: j['banner'] as String?,

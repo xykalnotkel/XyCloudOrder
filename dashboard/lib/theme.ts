@@ -78,7 +78,17 @@ export type MenuIcon =
   | "sliders-horizontal"
   | "upload-cloud"
   | "heart-pulse"
-  | "list-checks";
+  | "list-checks"
+  | "gavel"
+  | "flag"
+  | "bot"
+  | "power"
+  | "globe"
+  | "layers"
+  | "hard-drive"
+  | "send"
+  | "at-sign"
+  | "filter";
 
 export const MENU: { id: string; label: string; icon: MenuIcon; path: string; badge?: string }[] = [
   { id: "dash", label: "Dashboard", icon: "layout-dashboard", path: "/" },
@@ -125,4 +135,15 @@ export const MENU: { id: string; label: string; icon: MenuIcon; path: string; ba
   { id: "impor-cadangan", label: "Impor Cadangan", icon: "upload-cloud", path: "/impor-cadangan" },
   { id: "kesehatan", label: "Kesehatan & Cache", icon: "heart-pulse", path: "/kesehatan" },
   { id: "keamanan", label: "Log Keamanan", icon: "list-checks", path: "/keamanan" },
+  // ---- Batch E: 10 menu baru yang berfungsi penuh ----
+  { id: "banding", label: "Banding Akun", icon: "gavel", path: "/banding" },
+  { id: "laporan", label: "Laporan Pengguna", icon: "flag", path: "/laporan" },
+  { id: "agen", label: "Agen Windows", icon: "bot", path: "/agen" },
+  { id: "pemeliharaan", label: "Mode Pemeliharaan", icon: "power", path: "/pemeliharaan" },
+  { id: "seo", label: "SEO & Situs", icon: "globe", path: "/seo" },
+  { id: "stok", label: "Stok Akun", icon: "layers", path: "/stok" },
+  { id: "db", label: "Database", icon: "hard-drive", path: "/db" },
+  { id: "push-stat", label: "Statistik Push", icon: "send", path: "/push-stat" },
+  { id: "username", label: "Username", icon: "at-sign", path: "/username" },
+  { id: "kata", label: "Kata Terlarang", icon: "filter", path: "/kata" },
 ] as const;

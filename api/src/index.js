@@ -4,6 +4,7 @@ import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
 import { periksaTeks, periksaGabungan } from './moderasi.js';
+import { kataTerlarangDalam, KATA_TERLARANG } from './kata.js';
 /**
  * ============================================================
  *  XyCloud API — Cloudflare Worker
@@ -854,6 +855,26 @@ ${halaman.map(([u, p2, f]) => `  <url>
         headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
       });
     }
+    // Verifikasi Google Search Console (Batch E) + robots.txt.
+    // Dilayani lebih dulu supaya tetap terjangkau saat mode pemeliharaan.
+    if (path === '/google8d6555ceced0c8e7.html') {
+      return new Response('google-site-verification: google8d6555ceced0c8e7.html', {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
+    }
+    if (path === '/robots.txt') {
+      return new Response('User-agent: *\nAllow: /\n', {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'public, max-age=3600',
+        },
+      });
+    }
     if (path === '/brand/logo-icon.png') {
       return new Response(LOGO_PNG, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
@@ -1267,6 +1288,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const phone = String(body.phone || '').trim() || null;
 
         if (nama.length < 3) return err('Nama minimal 3 karakter', 400, env);
+        const kasarDaftar = kataTerlarangDalam(nama);
+        if (kasarDaftar) return err(`Nama mengandung kata terlarang (${kasarDaftar.jenis}). Ganti dengan nama lain.`, 422, env);
         if (!emailValid(email)) return err('Format email tidak valid', 400, env);
         if (password.length < 6) return err('Password minimal 6 karakter', 400, env);
 
@@ -1574,6 +1597,59 @@ ${halaman.map(([u, p2, f]) => `  <url>
         }
 
         // ---- banner ----
+        // ---- Batch E: stok akun, info DB, username, uji kata, statistik push ----
+        if (a === 'stok' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            `SELECT p.id AS produk_id, p.nama, p.kategori, p.harga,
+                    COUNT(s.id) AS total,
+                    COALESCE(SUM(CASE WHEN s.terpakai=0 THEN 1 ELSE 0 END),0) AS tersedia
+             FROM akun_produk p LEFT JOIN akun_stok s ON s.produk_id=p.id
+             GROUP BY p.id, p.nama, p.kategori, p.harga
+             ORDER BY tersedia ASC`
+          ).all();
+          return json(results, 200, env);
+        }
+        if (a === 'dbinfo' && req.method === 'GET') {
+          const daftar = ['users','orders','sesi','pc_plans','akun_produk','akun_stok','transaksi','topup','cs_messages','forum_post','forum_balasan','ulasan','ulasan_pc','voucher','voucher_pakai','banners','follows','dm','simpan_post','laporan','banding','log_admin','log_sistem','security_events','media_assets','rilis','agen','notifikasi','setelan','batas','perintah','promo_overlay'];
+          const hasil = [];
+          for (const t of daftar) {
+            try {
+              const r = await env.DB.prepare(`SELECT COUNT(*) c FROM ${t}`).first();
+              hasil.push({ tabel: t, jumlah: r?.c ?? 0 });
+            } catch (_) {}
+          }
+          return json(hasil, 200, env);
+        }
+        if (a === 'usernames' && req.method === 'GET') {
+          const { results } = await env.DB.prepare(
+            "SELECT id, nama, username, email, tier, diblokir FROM users WHERE username IS NOT NULL ORDER BY username LIMIT 500"
+          ).all();
+          return json(results, 200, env);
+        }
+        if (a === 'kata' && req.method === 'GET') {
+          return json(KATA_TERLARANG, 200, env);
+        }
+        if (a === 'uji-kata' && req.method === 'POST') {
+          const b = await req.json().catch(() => ({}));
+          const teks = String(b.teks || '').slice(0, 200);
+          const k = kataTerlarangDalam(teks);
+          return json({ teks, terlarang: Boolean(k), ...(k || {}) }, 200, env);
+        }
+        if (a === 'push/statistik' && req.method === 'GET') {
+          if (!env.ONESIGNAL_API_KEY || !env.ONESIGNAL_APP_ID) {
+            return json({ ok: false, alasan: 'OneSignal belum dikonfigurasi di Worker.' }, 200, env);
+          }
+          try {
+            const r = await fetch(`https://onesignal.com/api/v1/apps/${env.ONESIGNAL_APP_ID}`, {
+              headers: { Authorization: `Basic ${env.ONESIGNAL_API_KEY}` },
+            });
+            const j = await r.json().catch(() => ({}));
+            return json({ ok: r.ok, app: j }, 200, env);
+          } catch (e) {
+            return json({ ok: false, alasan: String(e?.message || e) }, 200, env);
+          }
+        }
+
         if (a === 'banners' && req.method === 'GET') {
           const { results } = await env.DB.prepare('SELECT * FROM banners ORDER BY urutan ASC').all();
           return json(results, 200, env);
@@ -2819,11 +2895,53 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         return json({ ok: true, menit }, 200, env);
       }
 
+      // Cek kebersihan nama & ketersediaan username (dipakai layar Ubah Profil).
+      if (p === 'cek-nama' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const hasil = {};
+        if (b.nama !== undefined) {
+          const k = kataTerlarangDalam(String(b.nama || ''));
+          hasil.nama = k ? { bersih: false, kata: k.kata, jenis: k.jenis } : { bersih: true };
+        }
+        if (b.username !== undefined) {
+          const un = String(b.username || '').trim().toLowerCase();
+          const k = kataTerlarangDalam(un);
+          const formatOk = /^[a-z0-9_.]{3,20}$/.test(un);
+          let tersedia = false, alasan = null;
+          if (k) alasan = `Mengandung kata terlarang (${k.jenis}).`;
+          else if (!formatOk) alasan = 'Format: 3-20 karakter, huruf kecil, angka, strip bawah, titik.';
+          else {
+            const dipakai = await env.DB.prepare('SELECT id FROM users WHERE username=? AND id!=?').bind(un, me.sub).first();
+            tersedia = !dipakai;
+            if (dipakai) alasan = 'Username sudah dipakai orang lain.';
+          }
+          hasil.username = { tersedia, alasan, ...(k ? { kata: k.kata, jenis: k.jenis } : {}) };
+        }
+        return json(hasil, 200, env);
+      }
+
+      // Laporkan pengguna ke moderasi (masuk daftar Laporan di dashboard).
+      if (p.startsWith('users/') && p.endsWith('/lapor') && req.method === 'POST') {
+        const idU = p.split('/')[1];
+        if (idU === me.sub) return err('Tidak bisa melaporkan diri sendiri.', 422, env);
+        const target = await env.DB.prepare('SELECT id FROM users WHERE id=? AND deleted_at IS NULL').bind(idU).first();
+        if (!target) return err('Pengguna tidak ditemukan.', 404, env);
+        if (!(await bolehLanjut(env, `lapor:${me.sub}`, 10, 3600))) return err('Terlalu banyak laporan. Coba lagi nanti.', 429, env);
+        const b = await req.json().catch(() => ({}));
+        const alasan = String(b.alasan || '').trim().slice(0, 500);
+        if (alasan.length < 4) return err('Tuliskan alasan laporan.', 422, env);
+        const idL = uid('lp_');
+        await env.DB.prepare(
+          "INSERT INTO laporan(id,jenis,ref_id,pelapor,alasan,status) VALUES(?,'pengguna',?,?,?,'baru')",
+        ).bind(idL, idU, me.sub, alasan).run();
+        return json({ ok: true, id: idL }, 201, env);
+      }
+
       // ---------------- PROFIL PUBLIK, FOLLOW, DM, SIMPAN ----------------
       if (p.startsWith('users/') && p.endsWith('/profil') && req.method === 'GET') {
         const idU = p.split('/')[1];
         const u = await env.DB.prepare(
-          'SELECT id,nama,foto,bio,banner,tier,badge,diblokir FROM users WHERE id=? AND deleted_at IS NULL',
+          'SELECT id,nama,username,foto,bio,banner,tier,badge,diblokir FROM users WHERE id=? AND deleted_at IS NULL',
         ).bind(idU).first();
         if (!u) return err('Pengguna tidak ditemukan', 404, env);
         const [pengikut, mengikuti, posting, sayaIkuti] = await Promise.all([
@@ -3305,6 +3423,26 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         const nama = String(b.nama || '').trim();
         const phone = String(b.phone || '').trim();
         if (nama && nama.length < 3) return err('Nama minimal 3 karakter', 400, env);
+        if (nama) {
+          const k = kataTerlarangDalam(nama);
+          if (k) return err(`Nama mengandung kata terlarang (${k.jenis}). Ganti dengan nama lain.`, 422, env);
+        }
+
+        // Username publik unik (Batch E): 3-20 karakter [a-z0-9_.], tanpa kata terlarang.
+        let usernameBaru;
+        if (b.username !== undefined) {
+          const un = String(b.username || '').trim().toLowerCase();
+          if (un === '') {
+            usernameBaru = '';
+          } else {
+            if (!/^[a-z0-9_.]{3,20}$/.test(un)) return err('Username 3-20 karakter: huruf kecil a-z, angka, strip bawah, atau titik.', 422, env);
+            const k = kataTerlarangDalam(un);
+            if (k) return err(`Username mengandung kata terlarang (${k.jenis}).`, 422, env);
+            const dipakai = await env.DB.prepare('SELECT id FROM users WHERE username=? AND id!=?').bind(un, me.sub).first();
+            if (dipakai) return err('Username sudah dipakai orang lain.', 409, env);
+            usernameBaru = un;
+          }
+        }
 
         let foto = null;
         if (b.foto && String(b.foto).startsWith('data:')) {
@@ -3320,6 +3458,10 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
 
         // Kustomisasi profil luas (Batch D): bio bebas + tema banner gradasi.
         const bio = b.bio === undefined ? null : String(b.bio || '').slice(0, 240);
+        if (bio) {
+          const k = kataTerlarangDalam(bio);
+          if (k) return err(`Bio mengandung kata terlarang (${k.jenis}).`, 422, env);
+        }
         const banner = b.banner === undefined ? null
           : (b.banner === '' ? '' : (BANNER_PROFIL.includes(String(b.banner)) ? String(b.banner) : null));
         if (b.banner !== undefined && banner === null && b.banner !== '') {
@@ -3336,6 +3478,11 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
                             banner = COALESCE(NULLIF(?,'~'), banner)
            WHERE id = ?`
         ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), me.sub).run();
+
+        if (usernameBaru !== undefined) {
+          await env.DB.prepare('UPDATE users SET username=? WHERE id=?')
+            .bind(usernameBaru === '' ? null : usernameBaru, me.sub).run();
+        }
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         delete u.password;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -134,6 +135,10 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
   late final _bio = TextEditingController(text: context.read<AppState>().user?.bio ?? '');
   late String _banner = context.read<AppState>().user?.banner ?? 'ungu';
+  late final _username = TextEditingController(text: context.read<AppState>().user?.username ?? '');
+  Timer? _cekTimer;
+  String? _cekStatus; // null | 'cek' | 'ok' | 'galat'
+  String _cekPesan = '';
   bool proses = false;
   String? pesan;
 
@@ -142,7 +147,47 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
     _nama.dispose();
     _phone.dispose();
     _bio.dispose();
+    _username.dispose();
+    _cekTimer?.cancel();
     super.dispose();
+  }
+
+  /// Cek ketersediaan username ke server (debounce 650 ms) sekaligus
+  /// menyaring kata kasar/SARA/pornografi lewat endpoint /cek-nama.
+  void _jadwalCekUsername() {
+    _cekTimer?.cancel();
+    final un = _username.text.trim().toLowerCase();
+    if (un.isEmpty) {
+      setState(() {
+        _cekStatus = null;
+        _cekPesan = '';
+      });
+      return;
+    }
+    setState(() {
+      _cekStatus = 'cek';
+      _cekPesan = '';
+    });
+    _cekTimer = Timer(const Duration(milliseconds: 650), () async {
+      try {
+        final h = await context.read<AppState>().repo.cekNama(username: un);
+        final u = Map<String, dynamic>.from(h['username'] ?? {});
+        if (!mounted) return;
+        setState(() {
+          _cekStatus = u['tersedia'] == true ? 'ok' : 'galat';
+          _cekPesan = u['tersedia'] == true
+              ? 'Username tersedia!'
+              : '${u['alasan'] ?? 'Username tidak tersedia.'}';
+        });
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _cekStatus = null;
+            _cekPesan = '';
+          });
+        }
+      }
+    });
   }
 
   Future<void> _simpan() async {
@@ -159,6 +204,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
           phone: _phone.text.trim(),
           bio: _bio.text.trim(),
           banner: _banner,
+          username: _username.text.trim().toLowerCase(),
         );
     if (!mounted) return;
     setState(() {
@@ -202,6 +248,47 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
               prefixIcon: Icon(Icons.phone_iphone_rounded),
             ),
           ),
+          const SizedBox(height: 18),
+          const XyLabel('Username'),
+          TextField(
+            controller: _username,
+            onChanged: (_) => _jadwalCekUsername(),
+            autocorrect: false,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              hintText: 'pilih_username',
+              prefixIcon: const Icon(Icons.alternate_email_rounded),
+              helperText: '3–20 karakter: huruf kecil, angka, strip bawah, titik.',
+              helperMaxLines: 2,
+              suffixIcon: _cekStatus == 'cek'
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: XyTheme.primary)),
+                    )
+                  : _cekStatus == 'ok'
+                      ? const Icon(Icons.check_circle_rounded,
+                          color: Color(0xFF2D7357))
+                      : _cekStatus == 'galat'
+                          ? const Icon(Icons.cancel_rounded,
+                              color: Color(0xFFB54450))
+                          : null,
+            ),
+          ),
+          if (_cekPesan.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4),
+              child: Text(_cekPesan,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _cekStatus == 'ok'
+                          ? const Color(0xFF2D7357)
+                          : const Color(0xFFB54450))),
+            ),
           const SizedBox(height: 18),
           const XyLabel('Bio'),
           TextField(

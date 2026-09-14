@@ -10,6 +10,7 @@ import {
   ChevronsLeft, ChevronsRight, Share2, Heart, Bug, MonitorSmartphone, Sticker, Trash2,
   Smartphone, ShieldAlert, Wrench, Database, BellRing, ScrollText, Terminal, ReceiptText,
   MessageSquareText, ArrowLeftRight, SlidersHorizontal, UploadCloud, HeartPulse, ListChecks,
+  Gavel, Flag, Bot, Power, Globe, Layers, HardDrive, Send, AtSign, Filter,
   LogOut, Menu, X,
 } from "lucide-react";
 import { clearAdminKey } from "@/lib/api";
@@ -59,6 +60,16 @@ const iconMap: Record<MenuIcon, any> = {
   "upload-cloud": UploadCloud,
   "heart-pulse": HeartPulse,
   "list-checks": ListChecks,
+  gavel: Gavel,
+  flag: Flag,
+  bot: Bot,
+  power: Power,
+  globe: Globe,
+  layers: Layers,
+  "hard-drive": HardDrive,
+  send: Send,
+  "at-sign": AtSign,
+  filter: Filter,
 };
 
 function NavBody({

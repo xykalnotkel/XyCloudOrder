@@ -78,6 +78,107 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
     if (mounted) setState(() => _sibuk = false);
   }
 
+  /// Laporkan pengguna ke moderasi (Batch E): pilih kategori + rincian.
+  Future<void> _laporkan(ProfilPublik p) async {
+    const opsi = [
+      'Menghina / pelecehan',
+      'SARA / ujaran kebencian',
+      'Konten pornografi',
+      'Spam / penipuan',
+      'Lainnya',
+    ];
+    String jenis = opsi.first;
+    final rincian = TextEditingController();
+    final dikirim = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: StatefulBuilder(
+          builder: (ctx, setSheet) => Container(
+            margin: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: XyTheme.of(ctx).surface,
+              borderRadius: BorderRadius.circular(XyRadius.xxl),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Laporkan pengguna',
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+                const SizedBox(height: 4),
+                Text(
+                    'Laporan terhadap ${p.nama} akan ditinjau tim moderasi. Laporan palsu dapat dikenai sanksi.',
+                    style: TextStyle(
+                        fontSize: 12, height: 1.5, color: XyTheme.of(ctx).muted)),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final o in opsi)
+                      ChoiceChip(
+                        label: Text(o, style: const TextStyle(fontSize: 11.5)),
+                        selected: jenis == o,
+                        onSelected: (_) => setSheet(() => jenis = o),
+                        selectedColor: XyTheme.primarySoft,
+                        labelStyle: TextStyle(
+                            color: jenis == o ? XyTheme.primary : XyTheme.of(ctx).inkSoft,
+                            fontWeight: FontWeight.w700),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                          side: BorderSide(
+                              color: jenis == o ? XyTheme.primary : XyTheme.of(ctx).line),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: rincian,
+                  maxLines: 3,
+                  maxLength: 300,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: 'Jelaskan singkat apa yang terjadi (opsional)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GradientButton(
+                  label: 'Kirim Laporan',
+                  icon: Icons.flag_rounded,
+                  onPressed: () => Navigator.pop(ctx, true),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (dikirim != true) {
+      rincian.dispose();
+      return;
+    }
+    final gabungan =
+        rincian.text.trim().isEmpty ? jenis : '$jenis — ${rincian.text.trim()}';
+    rincian.dispose();
+    try {
+      await context.read<AppState>().repo.laporPengguna(p.id, gabungan);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Laporan terkirim. Tim moderasi akan meninjau.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Gagal mengirim laporan. Coba lagi.')));
+      }
+    }
+  }
+
   String _inisial(String nama) {
     final bagian = nama.trim().split(RegExp(r'\s+'));
     if (bagian.isEmpty || bagian.first.isEmpty) return '?';
@@ -171,6 +272,15 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                             LencanaTier(p.tier ?? 'basic'),
                             if (p.badge != null) LencanaKhusus(p.badge!),
                           ]),
+                          if ((p.username ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text('@${p.username}',
+                                style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: XyTheme.primary,
+                                    letterSpacing: .2)),
+                          ],
                           if ((p.bio ?? '').isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(p.bio!,
@@ -241,6 +351,20 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                                 ),
                               ),
                             ]),
+                          if (!p.saya) ...[
+                            const SizedBox(height: 8),
+                            Center(
+                              child: TextButton.icon(
+                                onPressed: () => _laporkan(p),
+                                icon: Icon(Icons.flag_outlined, size: 15, color: t.muted),
+                                label: Text('Laporkan pengguna',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: t.muted,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 30),
                         ],
                       ),

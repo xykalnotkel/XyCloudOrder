@@ -69,7 +69,9 @@ abstract class XyRepository {
   Future<PermintaanTopup> unggahBukti(String idTopup, String dataUri);
 
   // ---------- profil ----------
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner});
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username});
+  Future<Map<String, dynamic>> cekNama({String? nama, String? username});
+  Future<Map<String, dynamic>> laporPengguna(String id, String alasan);
   Future<List<BisukanItem>> bisukanDaftar();
   Future<void> gantiPassword(String lama, String baru);
 
@@ -312,7 +314,7 @@ class RemoteRepository implements XyRepository {
           await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner}) async =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) async =>
       UserProfile.fromJson(Map<String, dynamic>.from(await api.patch('/me', {
         if (nama != null) 'nama': nama,
         if (phone != null) 'phone': phone,
@@ -321,7 +323,19 @@ class RemoteRepository implements XyRepository {
         if (notifDm != null) 'notif_dm': notifDm ? 1 : 0,
         if (bio != null) 'bio': bio,
         if (banner != null) 'banner': banner,
+        if (username != null) 'username': username,
       })));
+
+  @override
+  Future<Map<String, dynamic>> cekNama({String? nama, String? username}) async =>
+      Map<String, dynamic>.from(await api.post('/cek-nama', {
+        if (nama != null) 'nama': nama,
+        if (username != null) 'username': username,
+      }));
+
+  @override
+  Future<Map<String, dynamic>> laporPengguna(String id, String alasan) async =>
+      Map<String, dynamic>.from(await api.post('/users/$id/lapor', {'alasan': alasan}));
 
   // ---------- sosial (Batch D) ----------
   @override
@@ -685,8 +699,18 @@ class MockRepository implements XyRepository {
   Future<List<PermintaanTopup>> daftarTopup() => _delay(<PermintaanTopup>[], 300);
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner}) =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) =>
       _delay(MockData.user, 400);
+
+  @override
+  Future<Map<String, dynamic>> cekNama({String? nama, String? username}) async => _delay({
+    if (nama != null) 'nama': {'bersih': true},
+    if (username != null) 'username': {'tersedia': true},
+  }, 300);
+
+  @override
+  Future<Map<String, dynamic>> laporPengguna(String id, String alasan) async =>
+      _delay({'ok': true, 'id': 'lp_demo'}, 300);
 
   @override
   Future<List<BisukanItem>> bisukanDaftar() async => _delay(const <BisukanItem>[], 200);
