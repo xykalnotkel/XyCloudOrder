@@ -286,7 +286,7 @@ class _PromoLayerState extends State<PromoLayer> {
                                                     color: Colors.white
                                                         .withOpacity(.85),
                                                     fontSize: 11)),
-                                        ]))),
+                                        ])),
                               ]))),
                       Positioned(
                           right: 8,
