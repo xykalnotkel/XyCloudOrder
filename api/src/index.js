@@ -866,15 +866,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         },
       });
     }
-    if (path === '/robots.txt') {
-      return new Response('User-agent: *\nAllow: /\n', {
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=3600',
-        },
-      });
-    }
+    // (robots.txt & sitemap.xml sudah dilayani handler lama yang lebih lengkap
+    //  di bagian atas — blokir /admin & /api + tautan sitemap.)
     if (path === '/brand/logo-icon.png') {
       return new Response(LOGO_PNG, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' },
