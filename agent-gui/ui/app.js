@@ -34,6 +34,9 @@ function tulis(teks, jenis = "") {
   baris.appendChild(t);
   baris.appendChild(document.createTextNode(String(teks)));
   logBox.appendChild(baris);
+  // Optimasi (Batch E): log dibatasi 300 baris terakhir supaya sesi panjang
+  // tidak menumpuk DOM tanpa batas (memori & scroll tetap ringan).
+  while (logBox.childElementCount > 300) logBox.removeChild(logBox.firstElementChild);
   logBox.scrollTop = logBox.scrollHeight;
 }
 
@@ -252,6 +255,44 @@ $("bersih-log").onclick = () => {
   logBox.innerHTML = "";
 };
 
+$("salin-log").onclick = async () => {
+  const teks = logBox.innerText.trim();
+  if (!teks) { tulis("Log masih kosong.", "err"); return; }
+  try {
+    await navigator.clipboard.writeText(teks);
+    tulis(`Log disalin ke clipboard (${logBox.childElementCount} baris).`, "ok");
+  } catch (_) {
+    const rentang = document.createRange();
+    rentang.selectNodeContents(logBox);
+    const pilih = window.getSelection();
+    pilih.removeAllRanges();
+    pilih.addRange(rentang);
+    tulis("Clipboard ditolak — teks log sudah diblok, tekan Ctrl+C.", "err");
+  }
+};
+
+// Indikator server API (Batch E): /health selalu hidup walau situs dalam
+// pemeliharaan, jadi agen bisa membedakan "server down" vs "sedang dirawat".
+async function cekServer() {
+  const url = ($("server").value || "https://api.xycloud.my.id").trim().replace(/\/+$/, "");
+  const mulai = Date.now();
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(url + "/health", { signal: ctrl.signal, cache: "no-store" });
+    clearTimeout(t);
+    if (r.ok) {
+      const ms = Date.now() - mulai;
+      setStat("st-server", `online · ${ms} ms`, ms < 800 ? "ok" : "warn");
+    } else {
+      setStat("st-server", `HTTP ${r.status}`, "jelek");
+    }
+  } catch (_) {
+    clearTimeout(t);
+    setStat("st-server", "offline", "jelek");
+  }
+}
+
 (async function initEvents() {
   if (!CORE) {
     tulis("Preview browser — fitur Tauri nonaktif. Pakai XyCloudStore-Agent.exe di Windows.", "err");
@@ -289,4 +330,6 @@ $("bersih-log").onclick = () => {
 
 setInterval(() => {
   if (CORE && !setupJalan) muatStatus().catch(() => {});
+  cekServer().catch(() => {});
 }, 15000);
+setTimeout(() => cekServer().catch(() => {}), 1200);

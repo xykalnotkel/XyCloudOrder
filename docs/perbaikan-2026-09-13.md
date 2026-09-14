@@ -274,3 +274,24 @@ pengiriman akhir baru bisa dilakukan begitu ada perangkat nyata memasang APK.
 - Profil publik: `@username` di bawah nama + tombol **Laporkan pengguna**
   (bottom sheet: kategori SARA/porno/pelecehan/spam/lainnya + rincian).
 - Model/repo/AppState: `username`, `cekNama`, `laporPengguna`.
+
+## Batch E lanjutan — Agen Windows v1.3.4 (2026-09-14)
+
+Agen Rust/Tauri ikut dinaikkan ke standar Batch D/E (sebelumnya baru
+tersentuh normalisasi warna/radius di Batch C):
+
+- **Optimasi memori**: log UI dipangkas otomatis ke 300 baris terakhir —
+  sesi agen yang jalan berhari-hari tidak lagi menumpuk DOM tanpa batas.
+- **Indikator "Server API"**: panel status kini punya sel keempat yang
+  memeriksa `/health` tiap 15 detik (abort 8 detik) dengan latensi ms —
+  operator bisa membedakan "server down" vs "lokal bermasalah" tanpa
+  keluar aplikasi. Endpoint `/health` hidup walau situs dalam pemeliharaan.
+- **Tombol "Salin" di panel log**: salin seluruh log ke clipboard untuk
+  laporan bug (dengan fallback blok-teks bila clipboard ditolak WebView).
+- Grid status 3 → 4 kolom (mobile tetap 1 kolom).
+- Versi dinaikkan serempak: `tauri.conf.json` 1.3.4, `Cargo.toml` 1.3.4,
+  `agent.rs` VERSI "1.3.4-rust", `Cargo.lock` disamakan (sebelumnya
+  tertinggal di 1.3.2 — CI tidak pakai `--locked` jadi tidak pernah gagal,
+  tapi sekarang rapi).
+- CI `Build Agen Windows` otomatis membangun `XyCloudStore-Agent.exe` baru
+  (UI ter-embed, smoke-test `--veri` + anti-localhost).

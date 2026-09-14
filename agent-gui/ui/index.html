@@ -100,6 +100,10 @@
               <div class="stat-l">API 47990</div>
               <div class="stat-v" id="st-api">—</div>
             </div>
+            <div class="stat">
+              <div class="stat-l">Server API</div>
+              <div class="stat-v" id="st-server">—</div>
+            </div>
           </div>
 
           <details class="lanjut">
@@ -162,7 +166,10 @@
     <footer>
       <div class="log-head">
         <span>Log</span>
-        <button type="button" id="bersih-log" class="mini">Bersihkan</button>
+        <span class="log-aksi">
+          <button type="button" id="salin-log" class="mini" title="Salin seluruh log ke clipboard">Salin</button>
+          <button type="button" id="bersih-log" class="mini">Bersihkan</button>
+        </span>
       </div>
       <div id="log" class="log" role="log" aria-live="polite"></div>
     </footer>
