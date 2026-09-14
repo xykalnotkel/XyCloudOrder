@@ -33,8 +33,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(statusBarColor: Colors.transparent,
+    // Container tidak punya konstruktor const → AnnotatedRegion di luar const,
+    // bagian dalamnya saja yang di-const.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light, systemNavigationBarColor: Color(0xFF100030),
         systemNavigationBarIconBrightness: Brightness.light),
       child: Scaffold(backgroundColor: XyTheme.primaryDark,
@@ -42,7 +44,7 @@ class _SplashScreenState extends State<SplashScreen> {
           // gradMidnight #2E1065 → #100030: senada dengan splash native
           // (flutter_native_splash color #2E1065) supaya transisi mulus.
           decoration: const BoxDecoration(gradient: XyTheme.gradMidnight),
-          child: Center(child: XyWordmark(tinggi: 40, putih: true)),
+          child: const Center(child: XyWordmark(tinggi: 40, putih: true)),
         )),
     );
   }
