@@ -25,6 +25,10 @@ Yang dikerjakan (diagnosa + jaring pengaman):
   panduan NSG/Security Group untuk VM cloud.
 - **Native**: pesan `stageFailed` diperjelas (port tertutup → daftar port).
 
+**Diagnosa produksi (15 Sep, via endpoint baru)**: probe Cloudflare ke unit `20.25.10.64`
+mengonfirmasi **47984, 47989, dan 48010 semuanya TERTUTUP** dari internet — persis
+penyebab `failed to connect ... after 5000ms` di HP penyewa.
+
 **Aksi yang harus dilakukan admin unit Azure** (sekali saja): buka inbound rule NSG untuk
 TCP+UDP 47984–47990 dan TCP 48010 ke VM, izinkan Sunshine di Windows Firewall, lalu tekan
 "Cek port dari internet" di agen sampai semua TERBUKA.
@@ -62,7 +66,7 @@ TCP+UDP 47984–47990 dan TCP 48010 ke VM, izinkan Sunshine di Windows Firewall,
 - Stiker tetap terenkripsi AES-GCM (kunci di secure storage).
 
 ## 6. Promosi model baru (dashboard + app)
-- Migrasi **0008_promo_konten.sql**: kolom `konten` di `promo_overlay` (sudah diterapkan
+- Migrasi **0010_promo_konten.sql**: kolom `konten` di `promo_overlay` (sudah diterapkan
   ke D1 produksi).
 - Jenis baru: **`fullscreen`** (popup gambar penuh + teks konten + tombol X, tap = aksi)
   dan **`nav`** (banner tipis 60px tepat di atas bottom nav, nama + konten, X untuk tutup,
