@@ -1047,8 +1047,9 @@ ${halaman.map(([u, p2, f]) => `  <url>
       // pemeliharaan yang benar, bukan galat yang membingungkan. /api/auth/*
       // tetap terbuka supaya penguji yang dikecualikan bisa login; setelah
       // login, permintaan tanpa pengecualian tetap mendapat 503 dan aplikasi
-      // menampilkan halaman perawatan.
-      if (kena && p !== 'config' && !p.startsWith('auth/')) {
+      // menampilkan halaman perawatan. /api/legal/* adalah dokumen publik
+      // (syarat/privasi/refund) yang dibutuhkan layar persetujuan login.
+      if (kena && p !== 'config' && !p.startsWith('auth/') && !p.startsWith('legal/')) {
         return err(
           await setelan(env, 'pesan_pemeliharaan',
             'Kami sedang melakukan perawatan singkat. Silakan coba lagi beberapa menit lagi.'),
