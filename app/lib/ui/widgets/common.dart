@@ -163,7 +163,7 @@ class GradientButton extends StatefulWidget {
     this.icon,
     this.gradient = XyTheme.gradPrimary,
     this.loading = false,
-    this.height = 56,
+    this.height = 48,
     this.glowColor = XyTheme.primary,
   });
 

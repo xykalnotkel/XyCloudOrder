@@ -272,6 +272,12 @@ class AppState extends ChangeNotifier {
   int notifBelumDibaca = 0;
 
   bool get masuk => user != null;
+
+  /// True bila pengguna sudah masuk tapi profilnya belum lengkap (username
+  /// kosong) — aplikasi menampilkan layar Lengkapi Profil sekali, termasuk
+  /// untuk akun yang mendaftar lewat Google.
+  bool get perluLengkapiProfil =>
+      user != null && (user!.username ?? '').trim().isEmpty;
   RentOrder? get orderAktif {
     try {
       return orders.firstWhere((o) =>

@@ -78,7 +78,8 @@ class _ProfilScreenState extends State<ProfilScreen> {
               ),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
             ),
-            child: Column(children: [
+            child: Stack(children: [
+              Column(children: [
               Row(children: [
                 Stack(children: [
                   Container(
@@ -133,6 +134,16 @@ class _ProfilScreenState extends State<ProfilScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.white.withOpacity(.62), fontSize: 12.5)),
+                    if ((u.username ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text('@${u.username}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(.78),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700)),
+                    ],
                     if ((u.bio ?? '').isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(u.bio!,
@@ -190,6 +201,27 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 _Statistik('Aktif', '$jumlahAktif'),
               ]),
             ]),
+              // Pensil edit profil di pojok kanan atas header.
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Pressable(
+                  onTap: () => Navigator.push(context,
+                      xyRoute(const pengaturan.UbahProfilScreen())),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.18),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(.32)),
+                    ),
+                    child: const Icon(Icons.edit_rounded,
+                        size: 18, color: Colors.white),
+                  ),
+                ),
+              ),
+            ]),
           ),
 
           Padding(
@@ -198,11 +230,12 @@ class _ProfilScreenState extends State<ProfilScreen> {
               // Pemberitahuan kini ada di tombol lonceng pada bar atas beranda,
               // supaya selalu terlihat dan cepat dijangkau dari mana pun.
 
+              // ---------- grup Akun ----------
               const SectionHeader('Akun'),
               XyBarisMenu(
                 ikon: Icons.badge_outlined,
                 judul: 'Ubah Profil',
-                sub: 'Nama, nomor WhatsApp, bio, dan tema banner',
+                sub: 'Nama, username, WhatsApp, bio, dan banner',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.UbahProfilScreen())),
               ),
               XyBarisMenu(
@@ -212,28 +245,46 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(ProfilPublikScreen(userId: u.id))),
               ),
               XyBarisMenu(
-                ikon: Icons.forum_outlined,
-                judul: 'Mengikuti & Pesan',
-                sub: 'Teman yang diikuti, pengikut, dan pesan langsung',
-                onTap: () => Navigator.push(context, xyRoute(const FollowsScreen())),
-              ),
-              XyBarisMenu(
                 ikon: Icons.lock_outline_rounded,
                 judul: 'Keamanan',
                 sub: 'Ganti password dan info sesi',
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.KeamananScreen())),
               ),
               XyBarisMenu(
+                ikon: Icons.security_rounded,
+                judul: 'Aktivitas & Keamanan',
+                sub: 'Perangkat, riwayat login, anti-abuse',
+                onTap: () => Navigator.push(context, xyRoute(const AktivitasScreen())),
+              ),
+
+              // ---------- grup Komunitas ----------
+              const SectionHeader('Komunitas'),
+              XyBarisMenu(
+                ikon: Icons.forum_outlined,
+                judul: 'Mengikuti & Pesan',
+                sub: 'Teman yang diikuti, pengikut, dan pesan langsung',
+                onTap: () => Navigator.push(context, xyRoute(const FollowsScreen())),
+              ),
+              XyBarisMenu(
+                ikon: Icons.leaderboard_rounded,
+                judul: 'Leaderboard',
+                sub: 'Top spender & poin',
+                onTap: () => Navigator.push(context, xyRoute(const LeaderboardScreen())),
+              ),
+              XyBarisMenu(
+                ikon: Icons.diamond_outlined,
+                judul: 'Tier & Benefit',
+                sub: 'Bronze → Platinum benefit',
+                onTap: () => Navigator.push(context, xyRoute(const TierScreen())),
+              ),
+
+              // ---------- grup Transaksi ----------
+              const SectionHeader('Transaksi'),
+              XyBarisMenu(
                 ikon: Icons.account_balance_wallet_outlined,
                 judul: 'Dompet dan Riwayat',
                 sub: 'Saldo ${rupiah(u.saldo)}',
                 onTap: () => Navigator.push(context, xyRoute(const WalletScreen())),
-              ),
-              XyBarisMenu(
-                ikon: Icons.card_giftcard_rounded,
-                judul: 'Undang Teman',
-                sub: 'Bagi kode, kalian berdua dapat saldo',
-                onTap: () => Navigator.push(context, xyRoute(const ReferralScreen())),
               ),
               XyBarisMenu(
                 ikon: Icons.receipt_long_outlined,
@@ -248,18 +299,6 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const VoucherScreen())),
               ),
               XyBarisMenu(
-                ikon: Icons.leaderboard_rounded,
-                judul: 'Leaderboard',
-                sub: 'Top spender & poin',
-                onTap: () => Navigator.push(context, xyRoute(const LeaderboardScreen())),
-              ),
-              XyBarisMenu(
-                ikon: Icons.sensors_rounded,
-                judul: 'Status Unit Live',
-                sub: '${s.orders.isEmpty ? '' : s.plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready — realtime',
-                onTap: () => Navigator.push(context, xyRoute(const LiveUnitScreen())),
-              ),
-              XyBarisMenu(
                 ikon: Icons.favorite_rounded,
                 judul: 'Favorit Saya',
                 sub: '${s.favorit.length} produk disukai',
@@ -272,24 +311,19 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const StatistikScreen())),
               ),
               XyBarisMenu(
-                ikon: Icons.diamond_outlined,
-                judul: 'Tier & Benefit',
-                sub: 'Bronze → Platinum benefit',
-                onTap: () => Navigator.push(context, xyRoute(const TierScreen())),
+                ikon: Icons.card_giftcard_rounded,
+                judul: 'Undang Teman',
+                sub: 'Bagi kode, kalian berdua dapat saldo',
+                onTap: () => Navigator.push(context, xyRoute(const ReferralScreen())),
               ),
               XyBarisMenu(
-                ikon: Icons.security_rounded,
-                judul: 'Aktivitas & Keamanan',
-                sub: 'Device, login history, anti-abuse',
-                onTap: () => Navigator.push(context, xyRoute(const AktivitasScreen())),
-              ),
-              XyBarisMenu(
-                ikon: Icons.help_center_rounded,
-                judul: 'Pusat Bantuan',
-                sub: 'FAQ, tutorial, CS',
-                onTap: () => Navigator.push(context, xyRoute(const BantuanScreen())),
+                ikon: Icons.sensors_rounded,
+                judul: 'Status Unit Live',
+                sub: '${s.orders.isEmpty ? '' : s.plans.fold(0, (a, p) => a + p.unitTersedia)} unit ready — realtime',
+                onTap: () => Navigator.push(context, xyRoute(const LiveUnitScreen())),
               ),
 
+              // ---------- grup Aplikasi ----------
               const SectionHeader('Aplikasi'),
               XyBarisMenu(
                 ikon: Icons.tune_rounded,
@@ -298,14 +332,24 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 onTap: () => Navigator.push(context, xyRoute(const pengaturan.PengaturanScreen())),
               ),
               XyBarisMenu(
+                ikon: Icons.dark_mode_outlined,
+                judul: 'Tema Aplikasi',
+                sub: 'Terang, gelap, atau ikuti sistem',
+                onTap: () => Navigator.push(context, xyRoute(const pengaturan.TemaScreen())),
+              ),
+              XyBarisMenu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
+              XyBarisMenu(
                 ikon: Icons.info_outline_rounded,
                 judul: 'Tentang Aplikasi',
                 sub: 'Versi, syarat, privasi, lisensi',
                 onTap: () => Navigator.push(context, xyRoute(const TentangScreen())),
               ),
-
-              XyBarisMenu(ikon: Icons.system_update_rounded, judul: 'Pembaruan Aplikasi', sub: 'Cek versi & update APK', onTap: () => Navigator.push(context, xyRoute(const PembaruanScreen()))),
-              XyBarisMenu(ikon: Icons.dark_mode_outlined, judul: 'Tema Aplikasi', sub: 'Terang, gelap, atau ikuti sistem', onTap: () => Navigator.push(context, xyRoute(const pengaturan.TemaScreen()))),
+              XyBarisMenu(
+                ikon: Icons.help_center_rounded,
+                judul: 'Pusat Bantuan',
+                sub: 'FAQ, tutorial, CS',
+                onTap: () => Navigator.push(context, xyRoute(const BantuanScreen())),
+              ),
               XyBarisMenu(ikon: Icons.delete_forever_outlined, judul: 'Hapus Akun', sub: 'Kelola penghapusan akun secara aman', onTap: () => Navigator.push(context, xyRoute(const HapusAkunScreen()))),
               const SizedBox(height: 18),
               OutlinedButton.icon(

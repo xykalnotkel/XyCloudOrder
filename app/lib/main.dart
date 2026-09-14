@@ -13,6 +13,7 @@ import 'data/push_service.dart';
 import 'data/device_identity.dart';
 import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
+import 'ui/screens/lengkapi_profil_screen.dart';
 import 'ui/screens/splash_screen.dart';
 import 'ui/screens/shell.dart';
 import 'ui/screens/blokir_screen.dart';
@@ -110,7 +111,9 @@ class _Root extends StatelessWidget {
           ? const FlowGate(key: ValueKey('flow'))
           : (s.user?.diblokir == true
               ? const BlokirScreen(key: ValueKey('blokir'))
-              : const XyShell(key: ValueKey('shell'))),
+              : (s.perluLengkapiProfil
+                  ? const LengkapiProfilScreen(key: ValueKey('lengkapi'))
+                  : const XyShell(key: ValueKey('shell')))),
     );
   }
 }

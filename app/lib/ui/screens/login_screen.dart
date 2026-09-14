@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/prefs.dart';
@@ -9,6 +10,7 @@ import '../widgets/brand_logos.dart';
 import '../widgets/common.dart';
 import 'lupa_password_screen.dart';
 import 'otp_screen.dart';
+import 'tentang_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.modeDaftar = false});
@@ -45,7 +47,21 @@ class _LoginScreenState extends State<LoginScreen> {
     _email.dispose();
     _phone.dispose();
     _pass.dispose();
+    _tapSyarat.dispose();
+    _tapPrivasi.dispose();
     super.dispose();
+  }
+
+  // Tautan inline persetujuan (Ketentuan Layanan & Kebijakan Privasi).
+  late final TapGestureRecognizer _tapSyarat =
+      TapGestureRecognizer()..onTap = () => _bukaLegal('syarat');
+  late final TapGestureRecognizer _tapPrivasi =
+      TapGestureRecognizer()..onTap = () => _bukaLegal('privasi');
+
+  void _bukaLegal(String jenis) {
+    if (mounted) {
+      Navigator.push(context, xyRoute(LegalScreen(jenis: jenis)));
+    }
   }
 
   Future<void> _submit() async {
@@ -397,6 +413,55 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+
+                    // Persetujuan layanan + asal akun (negara terdeteksi otomatis
+                    // dari jaringan oleh server, dikirim lewat /api/config).
+                    const SizedBox(height: 18),
+                    Builder(builder: (ctx) {
+                      final kon = ctx.watch<AppState>().konfigurasi;
+                      final kode = kon.negaraKode.toUpperCase();
+                      final bendera = kode.length == 2 &&
+                              kode.runes.every((r) => r >= 65 && r <= 90)
+                          ? String.fromCharCodes(
+                              kode.runes.map((r) => 0x1F1E6 + r - 65))
+                          : '\u{1F310}';
+                      final namaNegara = kon.negaraNama.isNotEmpty
+                          ? kon.negaraNama
+                          : 'Indonesia';
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text.rich(
+                          TextSpan(
+                            style: TextStyle(
+                                color: XyTheme.of(context).muted,
+                                fontSize: 11.5,
+                                height: 1.6),
+                            children: [
+                              const TextSpan(
+                                  text:
+                                      'Dengan masuk atau mendaftar, kamu menyetujui '),
+                              TextSpan(
+                                  text: 'Ketentuan Layanan',
+                                  style: const TextStyle(
+                                      color: XyTheme.primary,
+                                      fontWeight: FontWeight.w700),
+                                  recognizer: _tapSyarat),
+                              const TextSpan(text: ' dan '),
+                              TextSpan(
+                                  text: 'Kebijakan Privasi',
+                                  style: const TextStyle(
+                                      color: XyTheme.primary,
+                                      fontWeight: FontWeight.w700),
+                                  recognizer: _tapPrivasi),
+                              TextSpan(
+                                  text:
+                                      '. Akun kamu berasal dari $bendera $namaNegara (terdeteksi otomatis dari jaringan).'),
+                            ],
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }),
                   ]),
                 ),
               ),
@@ -420,7 +485,7 @@ class _SosialBtn extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       child: Container(
-        height: 52,
+        height: 48,
         decoration: BoxDecoration(
           color: XyTheme.of(context).surface,
           borderRadius: BorderRadius.circular(XyRadius.tombol),

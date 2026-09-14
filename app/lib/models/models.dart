@@ -642,6 +642,11 @@ class KonfigurasiApp {
   final Map<String, dynamic> rekening;
   final int minTopup;
 
+  /// Negara pengunjung (kode ISO-2 + nama Indonesia) — dideteksi server dari
+  /// jaringan (Cloudflare) untuk baris persetujuan di layar login.
+  final String negaraKode;
+  final String negaraNama;
+
   const KonfigurasiApp({
     this.bayarOtomatis = false,
     this.metodeBayar = const [],
@@ -650,11 +655,14 @@ class KonfigurasiApp {
     this.whatsapp = '',
     this.rekening = const {},
     this.minTopup = 10000,
+    this.negaraKode = '',
+    this.negaraNama = '',
   });
 
   factory KonfigurasiApp.fromJson(Map<String, dynamic> j) {
     final p = _petaAman(j['providers']);
     final bayar = _petaAman(j['pembayaran']);
+    final negara = _petaAman(j['negara']);
     return KonfigurasiApp(
       bayarOtomatis: bayar['otomatis'] == true,
       metodeBayar: ((bayar['metode'] as List?) ?? const [])
@@ -664,6 +672,8 @@ class KonfigurasiApp {
       facebookAktif: p['facebook'] == true,
       whatsapp: '${j['whatsapp'] ?? ''}',
       rekening: _petaAman(j['rekening']),
+      negaraKode: '${negara['kode'] ?? ''}',
+      negaraNama: '${negara['nama'] ?? ''}',
       minTopup: j['minTopup'] ?? 10000,
     );
   }

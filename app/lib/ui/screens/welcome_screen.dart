@@ -121,7 +121,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               FadeInUp(
                 delay: const Duration(milliseconds: 540),
                 child: SizedBox(
-                  height: 54,
+                  height: 48,
                   child: Pressable(
                     onTap: () => _keLogin(daftar: true),
                     scale: .975,

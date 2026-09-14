@@ -45,7 +45,7 @@ Future<bool> konfirmasi(
         Row(children: [
           Expanded(
             child: SizedBox(
-              height: 50,
+              height: 46,
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(d, false),
                 child: Text(tombolTidak),
@@ -56,7 +56,7 @@ Future<bool> konfirmasi(
           Expanded(
             child: GradientButton(
               label: tombolYa,
-              height: 50,
+              height: 46,
               gradient: bahaya
                   ? LinearGradient(colors: [XyTheme.dangerBright, XyTheme.dangerDeep])
                   : XyTheme.gradPrimary,
@@ -100,7 +100,7 @@ Future<void> beritahu(
             textAlign: TextAlign.center,
             style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 13.2, height: 1.6)),
         const SizedBox(height: 20),
-        GradientButton(label: tombol, height: 50, onPressed: () => Navigator.pop(d)),
+        GradientButton(label: tombol, height: 46, onPressed: () => Navigator.pop(d)),
       ]),
     ),
   );
@@ -143,7 +143,7 @@ Future<String?> tanyaTeks(
           Row(children: [
             Expanded(
               child: SizedBox(
-                height: 50,
+                height: 46,
                 child: OutlinedButton(onPressed: () => Navigator.pop(d), child: const Text('Batal')),
               ),
             ),
@@ -151,7 +151,7 @@ Future<String?> tanyaTeks(
             Expanded(
               child: GradientButton(
                 label: tombol,
-                height: 50,
+                height: 46,
                 onPressed: () => Navigator.pop(d, ctrl.text.trim()),
               ),
             ),

@@ -156,7 +156,7 @@ class _PromoLayerState extends State<PromoLayer> {
             p.jenis == 'floating' &&
             !_closed.contains(p.versiKey) &&
             prefs.getBool(_hide(p)) != true)
-        .take(2)
+        .take(4)
         .toList();
     // Strip banner tipis tepat di atas bottom navigation.
     final strip = all
@@ -188,7 +188,9 @@ class _PromoLayerState extends State<PromoLayer> {
                       : minY + savedY * (maxY - minY));
               final xy = _pos[p.id] ?? initial;
               final x = xy.dx.clamp(8.0, maxX), y = xy.dy.clamp(minY, maxY);
-              return Positioned(
+              return AnimatedPositioned(
+                  duration: const Duration(milliseconds: 240),
+                  curve: Curves.easeOutCubic,
                   left: x,
                   top: y,
                   width: 112,
@@ -205,8 +207,12 @@ class _PromoLayerState extends State<PromoLayer> {
                                   (y + d.delta.dy).clamp(minY, maxY))),
                           onPanEnd: (_) async {
                             final z = _pos[p.id] ?? initial;
+                            // Snap ke tepi terdekat (kiri/kanan) — promo tidak
+                            // pernah berhenti di tengah layar.
+                            final tepi = z.dx - 8 < maxX - z.dx ? 8.0 : maxX;
+                            setState(() => _pos[p.id] = Offset(tepi, z.dy));
                             await prefs.setDouble('xy_promo_x_${p.id}',
-                                (z.dx - 8) / math.max(1, maxX - 8));
+                                (tepi - 8) / math.max(1, maxX - 8));
                             await prefs.setDouble('xy_promo_y_${p.id}',
                                 (z.dy - minY) / math.max(1, maxY - minY));
                           },

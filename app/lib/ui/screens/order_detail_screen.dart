@@ -185,7 +185,7 @@ class _KartuStatus extends StatelessWidget {
           GradientButton(
               label: 'Mulai Main',
               icon: Icons.sports_esports_rounded,
-              height: 52,
+              height: 48,
               onPressed: () =>
                   Navigator.push(context, xyRoute(SesiScreen(order: order)))),
           if (order.status == OrderStatus.dibayar)

@@ -58,13 +58,13 @@ class _TentangScreenState extends State<TentangScreen> {
             ikon: Icons.description_outlined,
             judul: 'Syarat dan Ketentuan',
             sub: 'Aturan pemakaian layanan',
-            onTap: () => Navigator.push(context, xyRoute(const _LegalScreen(jenis: 'syarat'))),
+            onTap: () => Navigator.push(context, xyRoute(const LegalScreen(jenis: 'syarat'))),
           ),
           XyBarisMenu(
             ikon: Icons.privacy_tip_outlined,
             judul: 'Kebijakan Privasi',
             sub: 'Data apa yang kami simpan dan untuk apa',
-            onTap: () => Navigator.push(context, xyRoute(const _LegalScreen(jenis: 'privasi'))),
+            onTap: () => Navigator.push(context, xyRoute(const LegalScreen(jenis: 'privasi'))),
           ),
           XyBarisMenu(
             ikon: Icons.currency_exchange_rounded,
@@ -117,15 +117,15 @@ class _TentangScreenState extends State<TentangScreen> {
 
 
 /// Menampilkan Syarat dan Ketentuan atau Kebijakan Privasi dari server.
-class _LegalScreen extends StatefulWidget {
-  const _LegalScreen({required this.jenis});
+class LegalScreen extends StatefulWidget {
+  const LegalScreen({required this.jenis});
   final String jenis;
 
   @override
-  State<_LegalScreen> createState() => _LegalScreenState();
+  State<LegalScreen> createState() => LegalScreenState();
 }
 
-class _LegalScreenState extends State<_LegalScreen> {
+class LegalScreenState extends State<LegalScreen> {
   Map<String, dynamic>? data;
   String? galat;
 
