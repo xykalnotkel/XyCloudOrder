@@ -77,9 +77,12 @@ export function translateRegistrationError(e){
   if(String(e).includes('DEVICE_BLOCKED'))throw new SecurityError('Perangkat dibatasi.',403,'DEVICE_BLOCKED');
   throw e;
 }
-export function assertAccountEnabled(user){
+export function assertAccountEnabled(user,{izinkanBlokir=false}={}){
   if(user?.deleted_at)throw new SecurityError('Akun dinonaktifkan. Hubungi pengelola untuk pemulihan.',403,'ACCOUNT_TRASHED');
-  if(user?.diblokir)throw new SecurityError(user.alasan_blokir||'Akun diblokir. Hubungi pengelola layanan.',403,'ACCOUNT_BLOCKED');
+  // izinkanBlokir: akun dibekukan tetap boleh memegang token terbatas supaya
+  // app bisa langsung menampilkan layar Akun Dibekukan (alasan, pelanggaran,
+  // banding, CS). Endpoint lain tetap dikunci di gerbang permintaan.
+  if(user?.diblokir&&!izinkanBlokir)throw new SecurityError(user.alasan_blokir||'Akun diblokir. Hubungi pengelola layanan.',403,'ACCOUNT_BLOCKED');
 }
 export async function otpAllowed(env,email){
   const cfg=await securityConfig(env),id=email.trim().toLowerCase();

@@ -128,6 +128,22 @@ async function daftarBebasPemeliharaan(env) {
   } catch (_) { return []; }
 }
 
+// Nama negara berbahasa Indonesia untuk deteksi asal akun di layar login
+// (kode ISO 3166-1 alpha-2 dari Cloudflare `request.cf.country`).
+const NAMA_NEGARA = {
+  ID: 'Indonesia', MY: 'Malaysia', SG: 'Singapura', TH: 'Thailand', VN: 'Vietnam',
+  PH: 'Filipina', BN: 'Brunei', KH: 'Kamboja', MM: 'Myanmar', LA: 'Laos',
+  TL: 'Timor-Leste', AU: 'Australia', NZ: 'Selandia Baru', US: 'Amerika Serikat',
+  GB: 'Inggris', JP: 'Jepang', KR: 'Korea Selatan', CN: 'Tiongkok', TW: 'Taiwan',
+  HK: 'Hong Kong', MO: 'Makau', IN: 'India', SA: 'Arab Saudi', AE: 'Uni Emirat Arab',
+  QA: 'Qatar', NL: 'Belanda', DE: 'Jerman', FR: 'Prancis', IT: 'Italia',
+  ES: 'Spanyol', PT: 'Portugal', BR: 'Brasil', MX: 'Meksiko', RU: 'Rusia',
+  TR: 'Türkiye', PK: 'Pakistan', BD: 'Bangladesh', LK: 'Sri Lanka', NP: 'Nepal',
+  EG: 'Mesir', NG: 'Nigeria', ZA: 'Afrika Selatan', CA: 'Kanada', PL: 'Polandia',
+  SE: 'Swedia', NO: 'Norwegia', CH: 'Swiss', AT: 'Austria', BE: 'Belgia',
+  UA: 'Ukraina', AR: 'Argentina', CL: 'Chili', PE: 'Peru',
+};
+
 // True bila permintaan membawa token sah milik pengguna yang dikecualikan,
 // sehingga ia tetap bisa memakai aplikasi untuk uji walau pemeliharaan menyala.
 async function bebasPemeliharaan(env, req) {
@@ -309,7 +325,7 @@ const MASA_TOKEN = 30 * 24 * 60 * 60 * 1000;
 async function akunSosial(env, ctx, prof, provider, deviceId, req) {
   let u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(prof.email).first();
 
-  if(u)assertAccountEnabled(u);
+  if(u)assertAccountEnabled(u,{izinkanBlokir:true});
   if (!u) {
     await beforeRegistration(env,req,deviceId);
     const idBaru = uid('u_');
@@ -387,7 +403,7 @@ async function issueUserToken(env,u,deviceId=null){
   if (await pulihkanBlokirKadaluarsa(env, u.id)) {
     u = await env.DB.prepare('SELECT * FROM users WHERE id=?').bind(u.id).first();
   }
-  assertAccountEnabled(u);
+  assertAccountEnabled(u,{izinkanBlokir:true});
   await linkDevice(env,deviceId,u.id);
   return sign({sub:u.id,email:u.email,v:2,sv:u.session_version||0,dv:deviceId,iat:Date.now(),exp:Date.now()+MASA_TOKEN},env.JWT_SECRET);
 }
@@ -645,40 +661,73 @@ export default {
 <title>XyCloudStore — Sedang Perawatan</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0D0920;--line:rgba(139,92,246,.28);--pur:#A78BFA;--ink:#F1EDFC;--mut:#A99BD6}
+:root{--line:rgba(167,139,250,.30);--pur:#A78BFA;--ink:#F3EFFE;--mut:#A99BD6}
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100dvh;background:radial-gradient(1100px 760px at 50% -12%,#2A1463 0%,#0D0920 58%);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:grid;place-items:center;padding:24px;overflow-x:hidden}
-.kartu{max-width:470px;width:100%;text-align:center;animation:naik .7s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:32px;padding:28px 26px 24px;box-shadow:0 30px 90px rgba(10,4,40,.55)}
-@keyframes naik{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+html,body{height:100%}
+body{min-height:100dvh;color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow-x:hidden;background:#0A0618;display:flex;flex-direction:column}
+/* ---- latar aurora ultra: 4 blob ungu melayang + bintang halus ---- */
+.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(1200px 800px at 50% -10%,#2B1568 0%,#150B36 46%,#0A0618 100%)}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;mix-blend-mode:screen;animation:melayang 16s ease-in-out infinite alternate}
+.b1{width:56vmax;height:56vmax;left:-14vmax;top:-18vmax;background:radial-gradient(circle at 35% 35%,#7C3AED,transparent 62%)}
+.b2{width:44vmax;height:44vmax;right:-12vmax;top:6vmax;background:radial-gradient(circle at 60% 40%,#4F46E5,transparent 60%);animation-duration:21s;animation-delay:-4s}
+.b3{width:40vmax;height:40vmax;left:16vmax;bottom:-16vmax;background:radial-gradient(circle at 50% 50%,#A855F7,transparent 58%);animation-duration:26s;animation-delay:-9s}
+.b4{width:26vmax;height:26vmax;right:18vmax;bottom:-6vmax;background:radial-gradient(circle at 50% 50%,#D8B4FE,transparent 55%);opacity:.3;animation-duration:18s;animation-delay:-13s}
+@keyframes delayang{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(6vmax,-4vmax,0) scale(1.14)}}
+.bintang{position:absolute;inset:0;background-image:radial-gradient(1.4px 1.4px at 12% 22%,rgba(255,255,255,.5) 50%,transparent 51%),radial-gradient(1px 1px at 68% 12%,rgba(255,255,255,.42) 50%,transparent 51%),radial-gradient(1.6px 1.6px at 84% 62%,rgba(216,180,254,.5) 50%,transparent 51%),radial-gradient(1px 1px at 32% 78%,rgba(255,255,255,.34) 50%,transparent 51%),radial-gradient(1.3px 1.3px at 52% 42%,rgba(216,180,254,.4) 50%,transparent 51%),radial-gradient(1px 1px at 92% 28%,rgba(255,255,255,.3) 50%,transparent 51%),radial-gradient(1.2px 1.2px at 8% 58%,rgba(255,255,255,.3) 50%,transparent 51%);animation:kedip 5.5s ease-in-out infinite alternate}
+@keyframes kedip{from{opacity:.55}to{opacity:1}}
+.vignette{position:absolute;inset:0;background:radial-gradient(120% 90% at 50% 8%,transparent 52%,rgba(6,3,18,.62) 100%)}
+/* ---- kartu kaca ---- */
+.tengah{position:relative;z-index:1;flex:1;display:grid;place-items:center;padding:40px 20px 108px}
+.kartu{max-width:480px;width:100%;text-align:center;animation:naik .75s cubic-bezier(.2,.8,.2,1) both;background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:34px;padding:30px 26px 26px;box-shadow:0 34px 100px rgba(8,3,36,.6),inset 0 1px 0 rgba(255,255,255,.14);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+@keyframes naik{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
 .merek{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px}
 .merek img{height:20px;opacity:.95}
-.merek span{color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.5px}
-.gambar{width:min(74vw,288px);height:auto;margin:2px auto;display:block;filter:drop-shadow(0 26px 44px rgba(124,58,237,.42))}
-.lencana{display:inline-flex;align-items:center;gap:8px;margin:16px auto 0;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.13);color:#CDC0F0;font-size:11px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;padding:7px 15px;border-radius:99px}
-.lencana i{width:6px;height:6px;border-radius:50%;background:#A99BE0}
-h1{font-size:clamp(22px,6vw,30px);letter-spacing:-.5px;margin:14px 0 10px;color:#E7DFFB;font-weight:700}
+.merek span{color:var(--mut);font-size:11.5px;font-weight:800;letter-spacing:.5px}
+.gambar{width:min(72vw,280px);height:auto;margin:2px auto;display:block;filter:drop-shadow(0 26px 46px rgba(124,58,237,.5))}
+.lencana{display:inline-flex;align-items:center;gap:8px;margin:16px auto 0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#CDC0F0;font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;padding:7px 16px;border-radius:99px}
+.lencana i{width:6px;height:6px;border-radius:50%;background:#A99BE0;animation:denyut 1.8s ease-in-out infinite}
+@keyframes denyut{0%,100%{box-shadow:0 0 0 0 rgba(169,155,224,.55)}55%{box-shadow:0 0 0 7px rgba(169,155,224,0)}}
+h1{font-size:clamp(23px,6vw,31px);letter-spacing:-.5px;margin:14px 0 10px;color:#EDE7FD;font-weight:800}
 p{color:#B7A9E0;font-size:14.5px;line-height:1.7;margin:0 auto}
-p.kecil,span.kecil{color:#7d6faa;font-size:12px}
 .catatan{color:#9A8CC6;font-size:12px;margin-top:10px}
-.aksi{display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22px}
-.tombol{display:inline-flex;align-items:center;gap:9px;background:#7C3AED;color:#fff;padding:13px 27px;border-radius:14px;font-size:14px;font-weight:700;border:0;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;font-family:inherit;box-shadow:0 4px 0 #4C1D95,0 12px 22px rgba(76,29,149,.28)}
-.tombol:hover{transform:translateY(-1px)}
-.tombol:active{transform:translateY(3px);box-shadow:0 1px 0 #4C1D95}
-.meter{height:4px;width:min(220px,66%);border-radius:99px;background:rgba(124,58,237,.25);overflow:hidden;margin:16px auto 0}
-.meter i{display:block;height:100%;width:42%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#D8B4FE);animation:geser 1.4s ease-in-out infinite}
+.aksi{display:flex;flex-direction:column;align-items:center;gap:13px;margin-top:24px}
+.tombol{position:relative;display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;padding:14px 34px;border-radius:99px;font-size:14px;font-weight:800;border:0;cursor:pointer;font-family:inherit;box-shadow:0 12px 30px rgba(124,58,237,.45),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .14s ease,box-shadow .14s ease}
+.tombol:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(124,58,237,.55),inset 0 1px 0 rgba(255,255,255,.35)}
+.tombol:active{transform:translateY(1px) scale(.985)}
+.tombol::after{content:'';position:absolute;inset:0;border-radius:99px;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.28) 48%,transparent 62%);background-size:220% 100%;animation:kilau 3.2s linear infinite;pointer-events:none}
+@keyframes kilau{from{background-position:120% 0}to{background-position:-120% 0}}
+.meter{height:4px;width:min(230px,68%);border-radius:99px;background:rgba(124,58,237,.25);overflow:hidden;margin:18px auto 0}
+.meter i{display:block;height:100%;width:42%;border-radius:99px;background:linear-gradient(90deg,#7C3AED,#E9D5FF);animation:geser 1.4s ease-in-out infinite}
 @keyframes geser{0%{transform:translateX(-110%)}100%{transform:translateX(260%)}}
-@media (prefers-reduced-motion:reduce){.kartu,.lencana i,.meter i{animation:none}}
-</style></head><body><main class="kartu">
+.kecil{color:#8477b4;font-size:12px}
+/* ---- footer tetap ---- */
+footer{position:fixed;left:0;right:0;bottom:0;z-index:2;background:rgba(10,5,28,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(167,139,250,.18)}
+.isi-footer{max-width:860px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.f-merek{display:flex;align-items:center;gap:8px;color:#8f81bd;font-size:11.5px;font-weight:700}
+.f-merek img{height:15px;opacity:.85}
+.f-link{display:flex;gap:16px;flex-wrap:wrap}
+.f-link a{color:#B7A9E0;font-size:11.5px;font-weight:600;text-decoration:none;transition:color .12s}
+.f-link a:hover{color:#E9D5FF}
+@media (max-width:560px){.isi-footer{justify-content:center;text-align:center}.tengah{padding-bottom:128px}}
+@media (prefers-reduced-motion:reduce){.kartu,.blob,.bintang,.lencana i,.meter i,.tombol::after{animation:none}}
+</style></head><body>
+<div class="aurora" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div><div class="bintang"></div><div class="vignette"></div></div>
+<main class="tengah"><div class="kartu">
 <div class="merek"><img src="/brand/logo-full.png" alt="XyCloudStore"><span>XYCLOUDSTORE</span></div>
 <img class="gambar" src="/brand/maintenance-web.webp" alt="Sedang perawatan" width="576" height="512">
 <div class="lencana"><i></i>` + (sampaiHtml ? 'Kembali ' + sampaiHtml : 'Sedang Pemeliharaan') + `</div>
 <h1>Kami Sebentar Lagi</h1>
 <p>` + aman + `</p>` + (catatan ? '<p class="catatan">' + catatan + '</p>' : '') + `
 <div class="meter"><i></i></div>
-<div class="aksi"><button class="tombol" onclick="location.reload()">Coba lagi sekarang</button><span class="kecil">Data dan saldo kamu tetap aman.</span></div>
-</main></body></html>`, {
+<div class="aksi"><button class="tombol" onclick="location.reload()">Coba lagi sekarang</button><span class="kecil">Data dan saldo kamu tetap aman tersimpan.</span></div>
+</div></main>
+<footer><div class="isi-footer">
+<div class="f-merek"><img src="/brand/logo-full.png" alt="">© 2026 XyCloudStore</div>
+<nav class="f-link"><a href="/legal/syarat">Ketentuan Layanan</a><a href="/legal/privasi">Kebijakan Privasi</a><a href="/legal/refund">Pengembalian Dana</a></nav>
+</div></footer>
+</body></html>`, {
           headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
         });
       }
@@ -1204,7 +1253,11 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
       // ---------------- KONFIGURASI APLIKASI ----------------
       if (p === 'config' && req.method === 'GET') {
+        // Negara pengunjung dari jaringan (Cloudflare) — dipakai layar login
+        // untuk baris persetujuan "akun kamu berasal dari ...".
+        const ccNegara = String(req.cf?.country || '').toUpperCase();
         return json({
+          negara: { kode: ccNegara || 'ID', nama: NAMA_NEGARA[ccNegara] || (ccNegara || 'Indonesia') },
           providers: providerSiap(env),
           whatsapp: env.WA_ADMIN || '',
           rekening: {
@@ -1302,10 +1355,12 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
         const u = await env.DB.prepare('SELECT * FROM users WHERE lower(email) = ?').bind(email).first();
         if (!u) return err('Email atau password belum sesuai.', 401, env);
-        assertAccountEnabled(u);
+        // Akun dibekukan tetap bisa masuk (token terbatas) agar app langsung
+        // membuka layar Akun Dibekukan — bukan cuma pesan error di login.
+        assertAccountEnabled(u,{izinkanBlokir:true});
         if (!(await cocokPw(password, u.password))) return err('Password salah. Coba lagi.', 401, env);
 
-        if (!u.email_verified) {
+        if (!u.email_verified && !u.diblokir) {
           ctx.waitUntil(kirimOtp(env, { email: u.email, nama: u.nama, tipe: 'verifikasi' }));
           return json({ perluVerifikasi: true, email: u.email, nama: u.nama,
             pesan: 'Email belum diverifikasi. Periksa kode terakhir atau gunakan Kirim Ulang setelah jeda.' }, 200, env);
