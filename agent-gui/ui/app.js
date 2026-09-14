@@ -221,6 +221,47 @@ $("uji").onclick = async () => {
   }
 };
 
+const btnCekPort = $("cek-port");
+if (btnCekPort) btnCekPort.onclick = async () => {
+  const server = ($("server").value.trim() || "https://api.xycloud.my.id").replace(/\/+$/, "");
+  const kode = $("kode").value.trim();
+  if (!kode) {
+    tulis("Isi & simpan kode unit dulu (langkah 1).", "err");
+    setLangkah(1);
+    return;
+  }
+  btnCekPort.disabled = true;
+  tulis("Meminta server memeriksa port streaming host ini dari internet…");
+  try {
+    const r = await fetch(`${server}/api/agen/cek-port`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-agen-kode": kode },
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      tulis(`Gagal cek port: ${j.error || j.message || r.status}`, "err");
+      return;
+    }
+    const hasil = j.hasil || [];
+    for (const h of hasil) {
+      tulis(`Port ${h.port}/TCP → ${j.host}: ${h.terbuka ? "TERBUKA" : "TERTUTUP"}`, h.terbuka ? "ok" : "err");
+    }
+    if (hasil.some((h) => !h.terbuka)) {
+      tulis(
+        "Ada port tertutup → HP penyewa tidak bisa menyambung dari internet. Buka/forward port: " +
+        "47984-47990 TCP+UDP dan 48010. Rumah (router): aktifkan UPnP atau port-forward ke IP PC ini. " +
+        "VM cloud (Azure/AWS/GCP): tambahkan inbound rule di NSG/Security Group. Windows Firewall: izinkan Sunshine.",
+      );
+    } else {
+      tulis("Semua port penting terbuka — streaming dari HP bisa menyambung dari mana pun.", "ok");
+    }
+  } catch (e) {
+    tulis("Gagal cek port: " + e, "err");
+  } finally {
+    btnCekPort.disabled = false;
+  }
+};
+
 $("mulai").onclick = async () => {
   try {
     await panggil("mulai");

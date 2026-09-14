@@ -14,6 +14,7 @@ class PengaturanLokal {
     'vibration': true,
     'textScale': 1.0,
     'animasi': true,
+    'navTengah': 2,
   };
   static Map<String, dynamic> nilai = {...defaults};
   static Future<void> muat() async {

@@ -10,6 +10,7 @@ import '../widgets/common.dart';
 import '../../core/prefs.dart';
 import '../widgets/error_state.dart';
 import 'akun_screen.dart';
+import 'bantuan_screen.dart';
 import 'cs_screen.dart';
 import 'favorit_screen.dart';
 import 'leaderboard_screen.dart';
@@ -500,115 +501,79 @@ class _NirsentuhPainter extends CustomPainter {
 class _MenuCepat extends StatelessWidget {
   const _MenuCepat();
 
-  // Menu di bawah kartu saldo: hanya jalan pintas yang BELUM ada di nav bawah
-  // (Beranda/Sewa PC/Beli Akun/Komunitas/Profil) atau ikon header (Chat & notif),
-  // supaya tidak ada fitur yang tampil dobel. Total 4 = 1 baris rapi.
-  // id dipakai untuk memilih aset: assets/ikon/3d_<id>.png
+  // Kategori cepat di bawah saldo: jalan pintas tanpa kartu/label wadah,
+  // ikon 3D glossy (aset assets/ikon/3d_<id>.png) dengan fallback ikon gradien
+  // bila asetnya belum ada. 8 item = 2 baris rapi.
   static const _menu = [
-    ('topup', 'Top Up', WalletScreen()),
-    ('voucher', 'Voucher', VoucherScreen()),
-    ('referral', 'Referral', ReferralScreen()),
-    ('favorit', 'Favorit', FavoritScreen()),
-  ];
-
-  static const _jelajahi = [
-    ('Statistik', Icons.bar_chart_rounded, StatistikScreen()),
-    ('Leaderboard', Icons.leaderboard_rounded, LeaderboardScreen()),
-    ('Tier Saya', Icons.workspace_premium_rounded, TierScreen()),
+    ('topup', 'Top Up', Icons.account_balance_wallet_rounded, WalletScreen()),
+    ('voucher', 'Voucher', Icons.confirmation_number_rounded, VoucherScreen()),
+    ('referral', 'Referral', Icons.share_rounded, ReferralScreen()),
+    ('favorit', 'Favorit', Icons.favorite_rounded, FavoritScreen()),
+    ('statistik', 'Statistik', Icons.bar_chart_rounded, StatistikScreen()),
+    ('peringkat', 'Peringkat', Icons.leaderboard_rounded, LeaderboardScreen()),
+    ('tier', 'Tier Saya', Icons.workspace_premium_rounded, TierScreen()),
+    ('bantuan', 'Bantuan', Icons.support_agent_rounded, BantuanScreen()),
   ];
 
   @override
   Widget build(BuildContext context) {
-    Widget kartu(String ikon, String label, Widget layar) {
+    Widget kartu(String ikon, String label, IconData iconData, Widget layar) {
       return Pressable(
         onTap: () => Navigator.push(context, xyRoute(layar)),
-        scale: .96,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(6, 10, 6, 9),
-          decoration: BoxDecoration(
-            color: XyTheme.of(context).surface,
-            borderRadius: BorderRadius.circular(XyRadius.lg),
-            border: Border.all(color: XyTheme.of(context).line),
-            boxShadow: XyTheme.shadowXs,
-          ),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            // Ikon 3D glossy-clay: aset AI transparan (lihat assets/ikon/3d_*.png).
-            Image.asset(
-              'assets/ikon/3d_$ikon.png',
+        scale: .94,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          // Ikon 3D glossy-clay: aset AI transparan (lihat assets/ikon/3d_*.png).
+          // Item tanpa aset memakai fallback pil gradien + ikon material.
+          Image.asset(
+            'assets/ikon/3d_$ikon.png',
+            width: 50,
+            height: 50,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, __, ___) => Container(
               width: 50,
               height: 50,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.medium,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -.1,
-                color: XyTheme.of(context).ink,
+              decoration: BoxDecoration(
+                gradient: XyTheme.gradPrimary,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: XyTheme.glow(XyTheme.primary, .22),
               ),
+              child: Icon(iconData, color: Colors.white, size: 26),
             ),
-          ]),
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -.1,
+              color: XyTheme.of(context).ink,
+            ),
+          ),
+        ]),
       );
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // grid 4 kolom — kartu menu di bawah saldo
-      GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.80,
-        ),
-        itemCount: _menu.length,
-        itemBuilder: (_, i) {
-          final (ikon, label, layar) = _menu[i];
-          return kartu(ikon, label, layar);
-        },
+    // grid 4 kolom tanpa wadah kartu — ikon + label kecil langsung di halaman
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.80,
       ),
-      const SizedBox(height: 16),
-      // jelajahi chips
-      Text('Jelajahi', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: XyTheme.of(context).ink)),
-      const SizedBox(height: 8),
-      Row(
-        children: _jelajahi.map((e) {
-          final (label, iconData, layar) = e;
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(right: e == _jelajahi.last ? 0 : 8),
-              child: Pressable(
-                onTap: () => Navigator.push(context, xyRoute(layar)),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 10),
-                  decoration: BoxDecoration(
-                    color: XyTheme.of(context).surface,
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: XyTheme.of(context).line),
-                  ),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                    Icon(iconData, size: 16, color: XyTheme.primary),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(label,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
-                    ),
-                  ]),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    ]);
+      itemCount: _menu.length,
+      itemBuilder: (_, i) {
+        final (ikon, label, iconData, layar) = _menu[i];
+        return kartu(ikon, label, iconData, layar);
+      },
+    );
   }
 }
 

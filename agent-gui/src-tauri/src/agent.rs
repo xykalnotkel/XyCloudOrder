@@ -12,7 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-pub const VERSI: &str = "1.3.4-rust";
+pub const VERSI: &str = "1.4.0-rust";
 const SUNSHINE_BAWAAN: &str = "https://127.0.0.1:47990";
 /// MSI resmi LizardByte (fallback bila winget hang / tidak ada).
 const SUNSHINE_MSI_URL: &str =
@@ -327,6 +327,20 @@ fn spesifikasi() -> Value {
         let teks = String::from_utf8_lossy(&out.stdout).trim().to_string();
         if let Ok(v) = teks.parse::<f64>() {
             spec["ram_total_gb"] = json!(format!("{:.1}", v / 1e9));
+        }
+    }
+    // IP LAN (fallback streaming bila host publik tertutup NAT/firewall).
+    if let Ok(out) = std::process::Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object -First 3 -ExpandProperty IPAddress) -join ','",
+        ])
+        .output()
+    {
+        let teks = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !teks.is_empty() && teks.len() < 120 {
+            spec["ip_lan"] = json!(teks);
         }
     }
     spec

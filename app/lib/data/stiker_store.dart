@@ -11,11 +11,13 @@ import '../core/stiker_cipher.dart';
 import '../models/stiker.dart';
 
 /// Koleksi per akun, disimpan TERENKRIPSI di direktori media privat aplikasi
-/// (`/Android/media/<paket>/media/stiker/<id>/` pada Android; application
-/// support di platform lain), bukan di galeri. Nama berkas disamarkan menjadi
-/// `<sha256>.webp.byscrt` supaya tidak terlihat sebagai berkas stiker mentah,
-/// dan isinya tetap tersandi (kunci di secure storage). Sumber galeri milik
-/// pengguna tidak dihapus/diubah. Preview hanya didekripsi di RAM.
+/// (`/Android/media/<paket>/xycloudstore/media/stiker/<id>/` pada Android;
+/// application support di platform lain), bukan di galeri. Nama berkas
+/// disamarkan menjadi `<sha256>.webp.crypto15` supaya tidak terlihat sebagai
+/// berkas stiker mentah, dan isinya tetap tersandi (kunci di secure storage).
+/// Koleksi lama (`.xys`, `.byscrt`, direktori `media/stiker`) dipindahkan
+/// otomatis. Sumber galeri milik pengguna tidak dihapus/diubah. Preview hanya
+/// didekripsi di RAM.
 class StikerStore {
   StikerStore._(String akun)
       : _id = sha256.convert(utf8.encode(akun)).toString();
@@ -35,8 +37,8 @@ class StikerStore {
   static const batasCache = 32 * 1024 * 1024;
 
   /// Ekstensi samaran: berkas stiker tersandi menyaru sebagai webp.
-  static const _extStiker = '.webp.byscrt';
-  static const _extIndex = '.byscrt';
+  static const _extStiker = '.webp.crypto15';
+  static const _extIndex = '.crypto15';
   String _namaStiker(String id) => '$id$_extStiker';
   String get _namaIndex => 'index$_extIndex';
 
@@ -46,7 +48,8 @@ class StikerStore {
     if (Platform.isAndroid) {
       try {
         final ext = await getExternalStorageDirectory();
-        if (ext != null) return Directory('${ext.path}/media/stiker/$_id');
+        if (ext != null)
+          return Directory('${ext.path}/xycloudstore/media/stiker/$_id');
       } catch (_) {
         // izin/directori tidak tersedia -> pakai fallback di bawah
       }
@@ -55,17 +58,21 @@ class StikerStore {
         '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id');
   }
 
-  /// Pindahkan koleksi lama (application support, ekstensi .xys) ke lokasi
-  /// baru bila ada, supaya stiker pengguna tidak hilang saat memperbarui.
-  Future<void> _pindahkanLama() async {
-    final lama = Directory(
-        '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id');
+  /// Pindahkan isi satu direktori koleksi lama ke direktori aktif, menyamakan
+  /// ekstensi samaran lama (.xys, .byscrt) ke yang baru (.crypto15).
+  Future<void> _pindahDari(Directory lama) async {
     if (lama.path == _dir!.path || !await lama.exists()) return;
     await for (final e in lama.list()) {
       if (e is! File) continue;
       var nama = e.path.split('/').last;
       if (nama.endsWith('.xys')) {
         nama = nama.substring(0, nama.length - 4) +
+            (nama.startsWith('index') ? _extIndex : _extStiker);
+      } else if (nama.endsWith('.webp.byscrt')) {
+        nama = nama.substring(0, nama.length - '.webp.byscrt'.length) +
+            _extStiker;
+      } else if (nama.endsWith('.byscrt')) {
+        nama = nama.substring(0, nama.length - '.byscrt'.length) +
             (nama.startsWith('index') ? _extIndex : _extStiker);
       }
       final tujuan = File('${_dir!.path}/$nama');
@@ -80,6 +87,22 @@ class StikerStore {
       await lama.delete(recursive: true);
     } catch (_) {
       // direktori lama dibiarkan bila gagal menghapus
+    }
+  }
+
+  /// Pindahkan koleksi lama (application support `.xys`, dan direktori
+  /// eksternal lama `media/stiker` dengan `.byscrt`) ke lokasi baru supaya
+  /// stiker pengguna tidak hilang saat memperbarui.
+  Future<void> _pindahkanLama() async {
+    await _pindahDari(Directory(
+        '${(await getApplicationSupportDirectory()).path}/xy_stiker/$_id'));
+    if (Platform.isAndroid) {
+      try {
+        final ext = await getExternalStorageDirectory();
+        if (ext != null) {
+          await _pindahDari(Directory('${ext.path}/media/stiker/$_id'));
+        }
+      } catch (_) {}
     }
   }
 

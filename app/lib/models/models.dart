@@ -796,6 +796,7 @@ class SesiMain {
   final String? agenId;
   final String status; // menyiapkan | siap | pairing | berjalan | selesai | gagal
   final String? host;
+  final String? hostLan;
   final String? catatan;
   final int durasiMenit;
   final DateTime? mulai;
@@ -807,6 +808,7 @@ class SesiMain {
     required this.status,
     this.agenId,
     this.host,
+    this.hostLan,
     this.catatan,
     this.durasiMenit = 60,
     this.mulai,
@@ -819,6 +821,8 @@ class SesiMain {
         agenId: j['agen_id'],
         status: j['status'] ?? 'menyiapkan',
         host: (j['host'] as String?)?.isNotEmpty == true ? j['host'] : null,
+        hostLan:
+            (j['host_lan'] as String?)?.isNotEmpty == true ? j['host_lan'] : null,
         catatan: (j['catatan'] as String?)?.isNotEmpty == true ? j['catatan'] : null,
         durasiMenit: j['durasi_menit'] ?? 60,
         mulai: DateTime.tryParse('${j['mulai']}'.replaceFirst(' ', 'T')),

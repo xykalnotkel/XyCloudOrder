@@ -57,6 +57,32 @@ const now=()=>new Date().toISOString();
 const fail=(message,status=409)=>{throw new KontenError(message,status)};
 const READY="(CAST(versi AS INTEGER)>1 OR (CAST(versi AS INTEGER)=1 AND CAST(substr(versi,instr(versi,'.')+1) AS INTEGER)>=1)) AND terakhir IS NOT NULL AND datetime(terakhir)>datetime('now','-90 seconds') AND json_valid(spec) AND json_extract(spec,'$.sunshine.siap')=1";
 
+// Probe TCP sederhana dari sisi Cloudflare (dinamis agar npm test di Node tidak pecah).
+export async function probePortTcp(host,port,ms=6000){
+  try{
+    const {connect}=await import('cloudflare:sockets');
+    const sock=connect({hostname:host,port});
+    const terbuka=await Promise.race([
+      sock.opened.then(()=>true).catch(()=>false),
+      new Promise((r)=>setTimeout(()=>r(false),ms)),
+    ]);
+    try{sock.close();}catch(_){}
+    return terbuka;
+  }catch(_){return false;}
+}
+// Lampirkan IP LAN agen (dari spec.ip_lan) ke baris sesi agar app bisa fallback
+// bila host publik tertutup firewall/NAT saat penyewa satu jaringan dengan unit.
+async function lampirkanHostLan(env,s){
+  if(!s||!s.agen_id)return s;
+  try{
+    const ag=await env.DB.prepare('SELECT spec FROM agen WHERE id=?').bind(s.agen_id).first();
+    const spec=ag&&ag.spec?JSON.parse(ag.spec):{};
+    const lan=String(spec.ip_lan||'').split(',')[0].trim();
+    if(lan)s.host_lan=lan;
+  }catch(_){}
+  return s;
+}
+
 export async function estimasiSewa(env,userId,b){
   const jam=Number(b.durasi_jam);
   if(!Number.isInteger(jam)||jam<1||jam>24)fail('Durasi harus 1 sampai 24 jam.',400);
@@ -105,7 +131,7 @@ export async function mulaiSewa(env,userId,orderId){
   if(!['dibayar','provisioning','aktif'].includes(o.status))fail('Pesanan tidak dapat dimulai.',409);
   if(o.berakhir&&Date.parse(o.berakhir)<=Date.now())fail('Waktu pesanan sudah habis.',409);
   const existing=await env.DB.prepare("SELECT * FROM sesi WHERE order_id=? AND status NOT IN ('selesai','gagal') ORDER BY dibuat DESC LIMIT 1").bind(o.id).first();
-  if(existing)return existing;
+  if(existing)return lampirkanHostLan(env,existing);
   const host=await env.DB.prepare(`SELECT * FROM agen WHERE (${READY}) AND (sesi_aktif='order:'||? OR ((sesi_aktif IS NULL OR sesi_aktif='') AND (plan_id IS NULL OR plan_id=?))) AND (? IS NULL OR id=?) ORDER BY terakhir DESC LIMIT 1`)
     .bind(o.id,o.plan_id,o.agen_id,o.agen_id).first();
   if(!host)fail('Unit belum bisa dihubungi. Tunggu agen online atau batalkan pesanan yang belum siap.',409);
@@ -121,7 +147,7 @@ export async function mulaiSewa(env,userId,orderId){
   ]);
   const s=await env.DB.prepare("SELECT * FROM sesi WHERE order_id=? AND status NOT IN ('selesai','gagal') ORDER BY dibuat DESC LIMIT 1").bind(o.id).first();
   if(!s)fail('Unit sedang dipakai. Coba lagi.',409);
-  return s;
+  return lampirkanHostLan(env,s);
 }
 export async function antreAkhir(env,s,alasan='Sesi diakhiri pengguna'){
   if(['selesai','gagal'].includes(s.status))return s;
@@ -143,6 +169,7 @@ export async function bacaSewa(env,userId,key){
   if(s.host && !normalisasiHostStream(s.host,null)){
     s.catatan=(s.catatan?s.catatan+' · ':'')+'Host "'+s.host+'" bukan IP/DNS publik. Admin harus isi host unit (IP publik / domain).';
   }
+  await lampirkanHostLan(env,s);
   return s;
 }
 export async function konfirmasiAgen(env,agent,command,b){

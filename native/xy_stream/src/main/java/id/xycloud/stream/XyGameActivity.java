@@ -31,6 +31,15 @@ public class XyGameActivity extends Game {
             new AlertDialog.Builder(this).setTitle("Tombol keyboard")
                 .setItems(keys,(d,i)->xyTapKey(i==0?KeyEvent.KEYCODE_ESCAPE:i==1?KeyEvent.KEYCODE_TAB:KeyEvent.KEYCODE_F1+i-2)).show();
         });
+        addButton("Numpad",()->{
+            String[] keys={"0","1","2","3","4","5","6","7","8","9",".","+","-","*","/","Enter"};
+            int[] codes={KeyEvent.KEYCODE_NUMPAD_0,KeyEvent.KEYCODE_NUMPAD_1,KeyEvent.KEYCODE_NUMPAD_2,KeyEvent.KEYCODE_NUMPAD_3,
+                KeyEvent.KEYCODE_NUMPAD_4,KeyEvent.KEYCODE_NUMPAD_5,KeyEvent.KEYCODE_NUMPAD_6,KeyEvent.KEYCODE_NUMPAD_7,
+                KeyEvent.KEYCODE_NUMPAD_8,KeyEvent.KEYCODE_NUMPAD_9,KeyEvent.KEYCODE_NUMPAD_DOT,KeyEvent.KEYCODE_NUMPAD_ADD,
+                KeyEvent.KEYCODE_NUMPAD_SUBTRACT,KeyEvent.KEYCODE_NUMPAD_MULTIPLY,KeyEvent.KEYCODE_NUMPAD_DIVIDE,KeyEvent.KEYCODE_NUMPAD_ENTER};
+            new AlertDialog.Builder(this).setTitle("Numpad")
+                .setItems(keys,(d,i)->xyTapKey(codes[i])).show();
+        });
         Button toggle=new Button(this);toggle.setText("☰");toggle.setTextColor(Color.WHITE);toggle.setBackgroundColor(0xCF475664);
         toggle.setOnClickListener(v->hud.setVisibility(hud.getVisibility()==View.VISIBLE?View.GONE:View.VISIBLE));
         FrameLayout.LayoutParams menu=new FrameLayout.LayoutParams(dp(42),dp(42),Gravity.TOP|Gravity.END);menu.setMargins(0,dp(6),dp(8),0);root.addView(toggle,menu);
@@ -39,7 +48,7 @@ public class XyGameActivity extends Game {
     private int dp(int n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private void addButton(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextSize(11);b.setTextColor(Color.WHITE);b.setBackgroundColor(Color.TRANSPARENT);b.setMinWidth(0);b.setMinimumWidth(0);b.setOnClickListener(v->action.run());hud.addView(b,new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,dp(40)));}
     @Override public void connectionStarted(){connected=true;super.connectionStarted();NativeStreaming.emit("connected","Video terhubung.");}
-    @Override public void stageFailed(String stage,int ports,int code){NativeStreaming.emit("error","Tahap "+stage+" gagal ("+code+"). Periksa port, jaringan, dan encoder host.");super.stageFailed(stage,ports,code);}
+    @Override public void stageFailed(String stage,int ports,int code){NativeStreaming.emit("error","Tahap "+stage+" gagal ("+code+"). Port streaming host kemungkinan tertutup dari internet: buka/forward 47984-47990 (TCP+UDP) dan 48010 di PC (router/firewall, atau NSG/Security Group untuk VM cloud), lalu coba lagi.");super.stageFailed(stage,ports,code);}
     @Override public void connectionTerminated(int code){NativeStreaming.emit("disconnected","Koneksi video berakhir ("+code+").");super.connectionTerminated(code);}
     @Override protected void onDestroy(){super.onDestroy();NativeStreaming.emit("closed",connected?"Kembali ke sesi. Waktu sewa tetap berjalan.":"Layar streaming ditutup.");}
 }

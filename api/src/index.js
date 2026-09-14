@@ -1,6 +1,6 @@
 import { adminSecurity, ownerProtected } from './admin_security.js';
 import { SecurityError, securityConfig, securityHash, securitySlot, auditSecurity, requireRate, deviceFromRequest, linkDevice, beforeRegistration, translateRegistrationError, assertAccountEnabled, otpAllowed, otpDigest, newOAuthState, consumeOAuthState, saveSecurityConfig } from './security.js';
-import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa, normalisasiHostStream} from './sewa.js';
+import { estimasiSewa, buatSewa, mulaiSewa, bacaSewa, antreAkhir, konfirmasiAgen, tutupSewa, rawatSewa, normalisasiHostStream, probePortTcp} from './sewa.js';
 import { infoHapusAkun, bersihkanAkun } from './akun.js';
 import { KontenError, daftarPromosi, simpanPromosi, ambilKunciGiphy, simpanKunciGiphy, cariGiphy, terimaStiker, bacaStiker } from './engagement.js';
 import { periksaTeks, periksaGabungan } from './moderasi.js';
@@ -1049,6 +1049,17 @@ ${halaman.map(([u, p2, f]) => `  <url>
             ok: true, lease,
             perintah: results.map((r) => ({ ...r, muatan: r.muatan ? JSON.parse(r.muatan) : {} })),
           }, 200, env);
+        }
+
+        // ---- cek port streaming dari sisi internet (probe TCP via Cloudflare) ----
+        if (p === 'agen/cek-port' && req.method === 'POST') {
+          const host = String(agen.host || '').split(':')[0].trim();
+          if (!host) return err('Unit belum punya host streaming. Isi host (IP publik / domain) dulu.', 422, env);
+          const hasil = [];
+          for (const port of [47984, 47989, 48010]) {
+            hasil.push({ port, terbuka: await probePortTcp(host, port, 6000) });
+          }
+          return json({ ok: true, host, hasil }, 200, env);
         }
 
         // Only the owning agent can acknowledge a persisted command/session.
@@ -2554,6 +2565,18 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           return json({ id, kode }, 201, env);
         }
 
+        if (a.startsWith('agen/') && a.endsWith('/cek-port') && req.method === 'POST') {
+          const row = await env.DB.prepare('SELECT host FROM agen WHERE id=?').bind(a.split('/')[1]).first();
+          if (!row) return err('Unit tidak ditemukan', 404, env);
+          const host = String(row.host || '').split(':')[0].trim();
+          if (!host) return err('Unit belum punya host streaming. Isi host (IP publik / domain) dulu.', 422, env);
+          const hasil = [];
+          for (const port of [47984, 47989, 48010]) {
+            hasil.push({ port, terbuka: await probePortTcp(host, port, 6000) });
+          }
+          return json({ ok: true, host, hasil }, 200, env);
+        }
+
         if (a.startsWith('agen/') && req.method === 'DELETE') {
           await env.DB.prepare('DELETE FROM agen WHERE id = ?').bind(a.split('/')[1]).run();
           return json({ ok: true }, 200, env);
@@ -3006,7 +3029,20 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         const u = await env.DB.prepare(
           'SELECT id,nama,username,foto,bio,banner,tier,badge,diblokir FROM users WHERE id=? AND deleted_at IS NULL',
         ).bind(idU).first();
-        if (!u) return err('Pengguna tidak ditemukan', 404, env);
+        if (!u) {
+          // Posting forum & DM resmi dibuat atas nama 'admin' (tanpa baris users).
+          // Kembalikan profil publik sintetis agar view profil tidak 404.
+          if (idU === 'admin') {
+            const c = await env.DB.prepare("SELECT COUNT(*) c FROM forum_post WHERE user_id='admin'").first();
+            return json({
+              id: 'admin', nama: 'Admin XyCloud', username: 'admin', foto: null,
+              bio: 'Akun resmi tim XyCloudStore. Membalas laporan & pertanyaan layanan.',
+              banner: null, tier: 'admin', badge: 'admin', diblokir: 0,
+              pengikut: 0, mengikuti: 0, posting: c?.c || 0, sayaIkuti: false, saya: false,
+            }, 200, env);
+          }
+          return err('Pengguna tidak ditemukan', 404, env);
+        }
         const [pengikut, mengikuti, posting, sayaIkuti] = await Promise.all([
           env.DB.prepare('SELECT COUNT(*) c FROM follows WHERE target_id=?').bind(idU).first(),
           env.DB.prepare('SELECT COUNT(*) c FROM follows WHERE ikut_id=?').bind(idU).first(),

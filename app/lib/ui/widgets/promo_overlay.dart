@@ -52,7 +52,9 @@ class _PromoLayerState extends State<PromoLayer> {
       final buka = await showDialog<bool>(
           context: context,
           barrierColor: Colors.black.withOpacity(.72),
-          builder: (ctx) => Dialog(
+          builder: (ctx) => p.jenis == 'fullscreen'
+              ? _dialogFullscreen(ctx, p)
+              : Dialog(
               backgroundColor: Colors.transparent,
               insetPadding: const EdgeInsets.all(24),
               child: ConstrainedBox(
@@ -88,13 +90,60 @@ class _PromoLayerState extends State<PromoLayer> {
     }
   }
 
+  /// Popup fullscreen: gambar penuh + isi konten promosi + tombol X.
+  Widget _dialogFullscreen(BuildContext ctx, Promosi p) {
+    return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
+        child: Container(
+            color: Colors.black,
+            child: Stack(fit: StackFit.expand, children: [
+              GestureDetector(
+                  onTap: () => Navigator.pop(ctx, true),
+                  child: Image.network(p.gambar,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+              if (p.konten.isNotEmpty)
+                Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                        padding: EdgeInsets.fromLTRB(
+                            20, 44, 20, MediaQuery.paddingOf(ctx).bottom + 24),
+                        decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(.85)
+                            ])),
+                        child: Text(p.konten,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.45)))),
+              Positioned(
+                  top: MediaQuery.paddingOf(ctx).top + 10,
+                  right: 12,
+                  child: IconButton.filled(
+                      tooltip: 'Tutup promo',
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: IconButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black87),
+                      icon: const Icon(Icons.close_rounded, size: 22))),
+            ])));
+  }
+
   @override
   Widget build(BuildContext context) {
     final all = context.watch<AppState>().promosi;
     final prefs = _prefs;
     if (prefs == null) return widget.child;
     final pop = all.where((p) =>
-        p.jenis == 'popup' &&
+        (p.jenis == 'popup' || p.jenis == 'fullscreen') &&
         prefs.getBool(_seen(p)) != true &&
         !_attempted.contains(p.versiKey));
     if (pop.isNotEmpty && !_popupBusy && !_popupShown) {
@@ -108,6 +157,14 @@ class _PromoLayerState extends State<PromoLayer> {
             !_closed.contains(p.versiKey) &&
             prefs.getBool(_hide(p)) != true)
         .take(2)
+        .toList();
+    // Strip banner tipis tepat di atas bottom navigation.
+    final strip = all
+        .where((p) =>
+            p.jenis == 'nav' &&
+            !_closed.contains(p.versiKey) &&
+            prefs.getBool(_hide(p)) != true)
+        .take(1)
         .toList();
     return LayoutBuilder(builder: (ctx, c) {
       final minY = MediaQuery.paddingOf(ctx).top + 8;
@@ -177,6 +234,81 @@ class _PromoLayerState extends State<PromoLayer> {
                             })),
                   ]));
             }),
+        if (strip.isNotEmpty && MediaQuery.viewInsetsOf(ctx).bottom == 0)
+          Positioned(
+              left: 12,
+              right: 12,
+              bottom: MediaQuery.paddingOf(ctx).bottom + 84,
+              height: 60,
+              child: Builder(builder: (ctx) {
+                final p = strip.first;
+                return Semantics(
+                    button: true,
+                    label: '${p.nama}. Banner promo.',
+                    child: Stack(fit: StackFit.expand, children: [
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: GestureDetector(
+                              onTap: () =>
+                                  bukaTujuanPromo(context, p.aksi, p.target),
+                              child: Stack(fit: StackFit.expand, children: [
+                                Image.network(p.gambar,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                        color: const Color(0xFF6D28D9))),
+                                Container(
+                                    decoration: BoxDecoration(
+                                        gradient: LinearGradient(colors: [
+                                          Colors.black.withOpacity(.55),
+                                          Colors.black.withOpacity(.12)
+                                        ]))),
+                                Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        14, 8, 46, 8),
+                                    child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(p.nama,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 13)),
+                                          if (p.konten.isNotEmpty)
+                                            Text(p.konten,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                    color: Colors.white
+                                                        .withOpacity(.85),
+                                                    fontSize: 11)),
+                                        ]))),
+                              ]))),
+                      Positioned(
+                          right: 8,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                              child: IconButton.filled(
+                                  tooltip: 'Tutup banner promo',
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                      backgroundColor:
+                                          Colors.white.withOpacity(.92),
+                                      foregroundColor: Colors.black87,
+                                      minimumSize: const Size(28, 28)),
+                                  icon: const Icon(Icons.close_rounded,
+                                      size: 15),
+                                  onPressed: () async {
+                                    setState(() => _closed.add(p.versiKey));
+                                    await prefs.setBool(_hide(p), true);
+                                  }))),
+                    ]));
+              })),
       ]);
     });
   }

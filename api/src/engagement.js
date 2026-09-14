@@ -1,5 +1,5 @@
 import { setelan, simpanSetelan } from './sistem.js';
-import { unggahGambar } from './upload.js';
+import { unggahGambar, samarkanGambar } from './upload.js';
 
 export class KontenError extends Error {
   constructor(pesan, status = 400) { super(pesan); this.status = status; }
@@ -18,13 +18,17 @@ export async function daftarPromosi(env, admin = false) {
   const { results } = await env.DB.prepare(admin
     ? 'SELECT * FROM promo_overlay ORDER BY urutan, dibuat DESC'
     : 'SELECT * FROM promo_overlay WHERE aktif = 1 ORDER BY urutan, dibuat DESC LIMIT 12').all();
-  return results;
+  if (admin) return results;
+  // Untuk app: gambar disajikan lewat tautan domain sendiri → otomatis
+  // dikonversi WebP/AVIF + dikompresi tajam oleh pipeline /img/.
+  return results.map((r) => ({ ...r, gambar: samarkanGambar(env, r.gambar, 'l') }));
 }
 
 export async function simpanPromosi(env, b) {
   const id = b.id ? teks(b.id, 80) : 'pr_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) gagal('ID promo tidak valid.');
-  const jenis = b.jenis === 'popup' ? 'popup' : 'floating';
+  const jenis = ['popup', 'floating', 'fullscreen', 'nav'].includes(b.jenis) ? b.jenis : 'floating';
+  const konten = teks(b.konten, 600);
   const aksi = ['url', 'sewa', 'akun', 'topup', 'komunitas', 'unduh'].includes(b.aksi) ? b.aksi : 'url';
   const target = teks(b.target, 1500);
   if (aksi === 'url' && !httpsAman(target)) gagal('Tujuan klik harus URL HTTPS yang lengkap.');
@@ -38,14 +42,15 @@ export async function simpanPromosi(env, b) {
   if (!httpsAman(gambar)) gagal('Unggah gambar atau isi URL gambar HTTPS.');
   const waktu = new Date().toISOString();
   await env.DB.prepare(`INSERT INTO promo_overlay
-    (id,nama,jenis,gambar,aksi,target,posisi,platform,aktif,urutan,revisi,dibuat,diubah)
-    VALUES (?,?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET
+    (id,nama,jenis,gambar,aksi,target,posisi,platform,aktif,urutan,konten,revisi,dibuat,diubah)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?) ON CONFLICT(id) DO UPDATE SET
     nama=excluded.nama,jenis=excluded.jenis,gambar=excluded.gambar,aksi=excluded.aksi,
     target=excluded.target,posisi=excluded.posisi,platform=excluded.platform,aktif=excluded.aktif,
+    konten=excluded.konten,
     urutan=excluded.urutan,revisi=promo_overlay.revisi+1,diubah=excluded.diubah`)
     .bind(id, teks(b.nama, 100) || 'Promo', jenis, gambar, aksi, target,
       b.posisi === 'kiri' ? 'kiri' : 'kanan', ['app', 'web'].includes(b.platform) ? b.platform : 'semua',
-      b.aktif === 0 ? 0 : 1, Math.max(0, Math.min(999, Number(b.urutan) || 0)), waktu, waktu).run();
+      b.aktif === 0 ? 0 : 1, Math.max(0, Math.min(999, Number(b.urutan) || 0)), konten, waktu, waktu).run();
   return { ok: true, id };
 }
 

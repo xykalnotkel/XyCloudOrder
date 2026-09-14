@@ -20,6 +20,30 @@ class _OpsiStreamingScreenState extends State<OpsiStreamingScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _preset(Map<String, dynamic> nilai) async {
+    for (final e in nilai.entries) {
+      await PengaturanLokal.set(e.key, e.value);
+    }
+    if (mounted) setState(() {});
+  }
+
+  Widget _tombolPreset(String label, Map<String, dynamic> nilai) => Pressable(
+        onTap: () => _preset(nilai),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: XyTheme.primary.withOpacity(.10),
+            borderRadius: BorderRadius.circular(XyRadius.pill),
+            border: Border.all(color: XyTheme.primary.withOpacity(.35)),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  color: XyTheme.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5)),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final p = PengaturanLokal.nilai;
@@ -29,6 +53,34 @@ class _OpsiStreamingScreenState extends State<OpsiStreamingScreen> {
           const Text(
               'Pengaturan berlaku pada koneksi berikutnya. Tidak memerlukan aplikasi streaming lain.',
               style: TextStyle(height: 1.5)),
+          const SizedBox(height: 14),
+          const Text('Preset cepat',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _tombolPreset('\u26a1 Latensi Ultra Rendah', {
+              'resolution': '1920x1080',
+              'fps': 120,
+              'codec': 'forceh265',
+              'bitrate': 24000
+            }),
+            _tombolPreset('Seimbang', {
+              'resolution': '1280x720',
+              'fps': 60,
+              'codec': 'auto',
+              'bitrate': 10000
+            }),
+            _tombolPreset('Hemat Data', {
+              'resolution': '854x480',
+              'fps': 30,
+              'codec': 'neverh265',
+              'bitrate': 4000
+            }),
+          ]),
+          const SizedBox(height: 6),
+          Text(
+              'Latensi Ultra Rendah = HEVC + 120 FPS + bitrate tinggi; butuh HP yang mampu dan Wi-Fi/jaringan stabil. Suara game & Discord di PC ikut terdengar di HP; untuk onmic pakai Discord di HP atau mic PC.',
+              style: TextStyle(fontSize: 11.5, color: XyTheme.of(context).muted, height: 1.4)),
           const SizedBox(height: 18),
           _pilih('Resolusi', 'resolution', {
             '854x480': '480p · ringan',
@@ -151,8 +203,28 @@ class _OpsiTampilanScreenState extends State<OpsiTampilanScreen> {
             subtitle: const Text('Matikan untuk perpindahan lebih langsung'),
             value: PengaturanLokal.animasi,
             onChanged: (v) => set('animasi', v)),
+        const SizedBox(height: 24),
+        const Text('Tombol tengah navigasi bawah',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        const SizedBox(height: 4),
+        const Text(
+            'Pilih halaman mana yang jadi tombol besar di tengah. Kamu juga bisa swipe kiri/kanan di layar untuk pindah halaman.',
+            style: TextStyle(fontSize: 12.5, height: 1.45)),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (var i = 0; i < _labelNav.length; i++)
+            ChoiceChip(
+              label: Text(_labelNav[i]),
+              selected:
+                  ((PengaturanLokal.nilai['navTengah'] as num?)?.toInt() ?? 2) ==
+                      i,
+              onSelected: (_) => set('navTengah', i),
+            ),
+        ]),
       ]));
 }
+
+const _labelNav = ['Beranda', 'Sewa PC', 'Akun', 'Komunitas', 'Profil'];
 
 class OpsiNotifikasiScreen extends StatefulWidget {
   const OpsiNotifikasiScreen({super.key});

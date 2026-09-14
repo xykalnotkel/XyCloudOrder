@@ -368,6 +368,7 @@ CREATE TABLE IF NOT EXISTS promo_overlay (
  gambar TEXT NOT NULL, aksi TEXT NOT NULL DEFAULT 'url', target TEXT NOT NULL DEFAULT '',
  posisi TEXT NOT NULL DEFAULT 'kanan', platform TEXT NOT NULL DEFAULT 'semua',
  aktif INTEGER NOT NULL DEFAULT 1, urutan INTEGER NOT NULL DEFAULT 0, revisi INTEGER NOT NULL DEFAULT 1,
+ konten TEXT NOT NULL DEFAULT '',
  dibuat TEXT NOT NULL DEFAULT (datetime('now')), diubah TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_promo_aktif ON promo_overlay(aktif,urutan);

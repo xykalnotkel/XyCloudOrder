@@ -1,7 +1,9 @@
 import '../widgets/promo_overlay.dart';
 import '../widgets/rilis_popup.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/pengaturan.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../../core/motion.dart';
@@ -160,11 +162,35 @@ class _XyShellState extends State<XyShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild saat pengaturan tampilan (mis. tombol tengah nav) berubah.
+    context.watch<AppState>();
     final pad = MediaQuery.of(context).padding.bottom;
+    // Halaman mana yang duduk di tombol tengah besar (bisa dipilih pengguna).
+    final tengah =
+        ((PengaturanLokal.nilai['navTengah'] as num?)?.toInt() ?? 2).clamp(0, 4);
+    final urutan = [0, 1, 2, 3, 4];
+    if (tengah != 2) {
+      final t = urutan[2];
+      urutan[2] = urutan[tengah];
+      urutan[tengah] = t;
+    }
+    final posisi = urutan.indexOf(idx);
 
     return PromoLayer(child: Scaffold(
       extendBody: true,
-      body: IndexedStack(index: idx, children: _pages),
+      body: GestureDetector(
+        // Swipe kiri/kanan di body = pindah tab (mengikuti urutan tombol nav).
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: (d) {
+          final v = d.primaryVelocity ?? 0;
+          if (v.abs() < 260) return;
+          final baru = v < 0 ? posisi + 1 : posisi - 1;
+          if (baru < 0 || baru >= urutan.length) return;
+          HapticFeedback.selectionClick();
+          setState(() => idx = urutan[baru]);
+        },
+        child: IndexedStack(index: idx, children: _pages),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: XyTheme.of(context).surface,
@@ -175,14 +201,17 @@ class _XyShellState extends State<XyShell> {
         ),
         padding: EdgeInsets.only(bottom: pad > 0 ? pad - 2 : 11, top: 11, left: 6, right: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: List.generate(_items.length, (i) {
-            final on = i == idx;
-            final it = _items[i];
+            final pageIdx = urutan[i];
+            final on = pageIdx == idx;
+            final it = _items[pageIdx];
+            final isTengah = i == 2;
             return Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
-                  setState(() => idx = i);
+                  setState(() => idx = pageIdx);
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -190,23 +219,37 @@ class _XyShellState extends State<XyShell> {
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 260),
                       curve: Curves.easeOutCubic,
-                      height: 46,
-                      width: on ? 70 : 50,
+                      height: isTengah ? 56 : 46,
+                      width: isTengah ? (on ? 92 : 72) : (on ? 70 : 50),
                       decoration: BoxDecoration(
                         gradient: on ? XyTheme.gradPrimary : null,
                         borderRadius: BorderRadius.circular(XyRadius.pill),
-                        boxShadow: on ? XyTheme.glow(XyTheme.primary, .28) : null,
+                        border: isTengah && !on
+                            ? Border.all(
+                                color: XyTheme.primary.withOpacity(.45), width: 1.6)
+                            : null,
+                        boxShadow: on
+                            ? XyTheme.glow(
+                                XyTheme.primary, isTengah ? .38 : .28)
+                            : null,
                       ),
                       child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1, size: 23, color: on ? Colors.white : XyTheme.of(context).muted),
+                        Icon(on ? it.$2 : it.$1,
+                            size: isTengah ? 27 : 23,
+                            color: on
+                                ? Colors.white
+                                : (isTengah
+                                    ? XyTheme.primary
+                                    : XyTheme.of(context).muted)),
                       ]),
                     ),
                     const SizedBox(height: 6),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: on ? FontWeight.w700 : FontWeight.w600,
+                        fontSize: isTengah ? 12.5 : 12,
+                        fontWeight:
+                            (on || isTengah) ? FontWeight.w700 : FontWeight.w600,
                         color: on ? XyTheme.primary : XyTheme.of(context).muted,
                       ),
                       child: Text(it.$3),

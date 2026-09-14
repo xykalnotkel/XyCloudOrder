@@ -254,6 +254,26 @@ class _AjakanTulis extends StatelessWidget {
   }
 }
 
+/// Teks isi forum dengan @mention bergaya beda (tebal + warna tema) supaya
+/// sebutan terlihat jelas dari teks biasa.
+Widget teksForum(String isi, TextStyle gaya, {int? maxLines}) {
+  final spans = <InlineSpan>[];
+  final re = RegExp(r'@[A-Za-z0-9_.]{2,30}');
+  var last = 0;
+  for (final m in re.allMatches(isi)) {
+    if (m.start > last) spans.add(TextSpan(text: isi.substring(last, m.start)));
+    spans.add(TextSpan(
+        text: m.group(0),
+        style: gaya.copyWith(
+            color: XyTheme.primary, fontWeight: FontWeight.w800)));
+    last = m.end;
+  }
+  if (last < isi.length) spans.add(TextSpan(text: isi.substring(last)));
+  if (spans.isEmpty) spans.add(const TextSpan(text: ''));
+  return Text.rich(TextSpan(style: gaya, children: spans),
+      maxLines: maxLines, overflow: TextOverflow.ellipsis);
+}
+
 /// Lencana keanggotaan yang tampil di samping nama penulis.
 class LencanaTier extends StatelessWidget {
   const LencanaTier(this.tier, {super.key});
@@ -390,12 +410,11 @@ class _KartuPost extends StatelessWidget {
                   height: 1.32,
                   letterSpacing: -.2)),
           const SizedBox(height: 6),
-          Text(
+          teksForum(
             post.isi,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            TextStyle(
                 color: XyTheme.of(context).muted, fontSize: 13, height: 1.55),
+            maxLines: 3,
           ),
           if (post.gambar != null && !s.hematData) ...[
             const SizedBox(height: 12),
@@ -702,17 +721,59 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                   ]),
                               if (parent != null) ...[
                                 const SizedBox(height: 8),
-                                Text(
-                                    'Membalas ${s.namaPengguna(parent.userId, parent.nama)}',
-                                    style: TextStyle(
-                                        fontSize: 11,
-                                        color: pal.muted,
-                                        fontWeight: FontWeight.w700))
+                                // Kutipan "membalas siapa" bergaya chip dengan
+                                // aksen garis kiri — beda dari teks isi & nama.
+                                Container(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        9, 6, 10, 6),
+                                    decoration: BoxDecoration(
+                                        color: XyTheme.primary.withOpacity(.08),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        border: Border(
+                                            left: BorderSide(
+                                                color: XyTheme.primary,
+                                                width: 3))),
+                                    child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.reply_rounded,
+                                              size: 12,
+                                              color: XyTheme.primary),
+                                          const SizedBox(width: 5),
+                                          Flexible(
+                                              child: Text.rich(TextSpan(
+                                                  children: [
+                                                    TextSpan(
+                                                        text: 'Membalas ',
+                                                        style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: pal.muted,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w600)),
+                                                    TextSpan(
+                                                        text: s.namaPengguna(
+                                                            parent.userId,
+                                                            parent.nama),
+                                                        style: TextStyle(
+                                                            fontSize: 11,
+                                                            color: XyTheme
+                                                                .primary,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w800)),
+                                                  ]),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis)),
+                                        ]))
                               ],
                               if (b.isi.isNotEmpty) ...[
                                 const SizedBox(height: 7),
-                                Text(b.isi,
-                                    style: TextStyle(
+                                teksForum(
+                                    b.isi,
+                                    TextStyle(
                                         fontSize: 13.5,
                                         height: 1.6,
                                         color: pal.inkSoft))

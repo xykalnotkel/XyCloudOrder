@@ -115,12 +115,13 @@ class _SesiScreenState extends State<SesiScreen> {
       _error = null;
       _stage = 'Memeriksa host…';
     });
-    try {
-      final apps = await NativeStream.hubungkan(
-          host: sesi!.host ?? '',
-          session: sesi!.id,
-          hostKey: sesi!.agenId ?? sesi!.host ?? '');
-      if (!mounted) return;
+    final hostPublik = sesi!.host ?? '';
+    final hostLan = (sesi!.hostLan ?? '').trim();
+
+    Future<dynamic> jajak(String host) => NativeStream.hubungkan(
+        host: host, session: sesi!.id, hostKey: sesi!.agenId ?? sesi!.host ?? '');
+
+    void pakaiApps(dynamic apps) {
       setState(() {
         _apps = apps;
         _appId = (apps
@@ -128,7 +129,33 @@ class _SesiScreenState extends State<SesiScreen> {
                 .firstOrNull ??
             apps.first)['id'] as int;
         _stage = 'Host terhubung. Pilih aplikasi untuk ditampilkan.';
+        _error = null;
       });
+    }
+
+    try {
+      dynamic apps;
+      try {
+        apps = await jajak(hostPublik);
+      } catch (e) {
+        final msg = e.toString();
+        final tertutup = msg.contains('failed to connect') ||
+            msg.contains('ETIMEDOUT') ||
+            msg.contains('ECONNREFUSED') ||
+            msg.contains('connect timed out');
+        // Host publik tak terjangkau & unit melaporkan IP LAN → coba jalur lokal
+        // (berguna saat penyewa satu Wi-Fi/jaringan dengan PC unit).
+        if (tertutup && hostLan.isNotEmpty && hostLan != hostPublik) {
+          if (!mounted) return;
+          setState(() => _stage =
+              'Host publik $hostPublik tertutup — mencoba IP jaringan lokal $hostLan…');
+          apps = await jajak(hostLan);
+        } else {
+          rethrow;
+        }
+      }
+      if (!mounted) return;
+      pakaiApps(apps);
     } catch (e) {
       final msg = e.toString();
       // Cert klien / BC rusak — bersihkan pairing lokal lalu coba sekali lagi
@@ -138,20 +165,18 @@ class _SesiScreenState extends State<SesiScreen> {
         try {
           await NativeStream.resetPairing();
           setState(() => _stage = 'Memperbarui kunci pairing… coba lagi');
-          final apps = await NativeStream.hubungkan(
-              host: sesi!.host ?? '',
-              session: sesi!.id,
-              hostKey: sesi!.agenId ?? sesi!.host ?? '');
+          dynamic apps;
+          try {
+            apps = await jajak(hostPublik);
+          } catch (_) {
+            if (hostLan.isNotEmpty && hostLan != hostPublik) {
+              apps = await jajak(hostLan);
+            } else {
+              rethrow;
+            }
+          }
           if (!mounted) return;
-          setState(() {
-            _apps = apps;
-            _appId = (apps
-                    .where((x) => '${x['name']}'.toLowerCase() == 'desktop')
-                    .firstOrNull ??
-                apps.first)['id'] as int;
-            _stage = 'Host terhubung. Pilih aplikasi untuk ditampilkan.';
-            _error = null;
-          });
+          pakaiApps(apps);
           return;
         } catch (e2) {
           if (mounted)
@@ -167,6 +192,16 @@ class _SesiScreenState extends State<SesiScreen> {
         clean =
             'Alamat host PC tidak bisa dijangkau dari HP (bukan IP/DNS publik). '
             'Minta admin isi IP publik unit di Dashboard → Unit PC, atau perbarui agen ke 1.3.3+. '
+            'Detail: $clean';
+      }
+      if (clean.contains('failed to connect') ||
+          clean.contains('connect timed out') ||
+          clean.contains('ECONNREFUSED')) {
+        clean = 'Host PC tidak merespons${hostLan.isNotEmpty && hostLan != hostPublik ? ' (IP publik $hostPublik & IP lokal $hostLan sama-sama gagal)' : ''}. '
+            'Port streaming di sisi PC kemungkinan belum terbuka dari internet. '
+            'Admin PC: buka/forward port 47984–47990 (TCP+UDP) dan 48010 di router/firewall — '
+            'untuk VM cloud (Azure/AWS/GCP) tambahkan inbound rule di NSG/Security Group — '
+            'lalu tekan "Cek port dari internet" di aplikasi agen untuk memastikan. '
             'Detail: $clean';
       }
       if (mounted) setState(() => _error = clean);
