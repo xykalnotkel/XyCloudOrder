@@ -10,7 +10,7 @@ import '../widgets/brand_logos.dart';
 import '../widgets/common.dart';
 import 'lupa_password_screen.dart';
 import 'otp_screen.dart';
-import 'tentang_screen.dart';
+import 'legal_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, this.modeDaftar = false});
