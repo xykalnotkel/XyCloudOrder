@@ -365,7 +365,7 @@ class _DmChatScreenState extends State<DmChatScreen> {
               12, 8, 12, 10 + MediaQuery.of(context).viewInsets.bottom),
           decoration: BoxDecoration(
             color: t.surface,
-            border: Border(top: BorderSide(color: t.line)),
+            boxShadow: [BoxShadow(color: t.ink.withOpacity(.07), blurRadius: 22, offset: const Offset(0, -6))],
           ),
           child: SafeArea(
             top: false,

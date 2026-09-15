@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/motion.dart';
@@ -7,6 +8,7 @@ import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/banner_profil.dart';
 import '../widgets/bingkai_profil.dart';
+import '../widgets/gaya_nama.dart';
 import '../widgets/common.dart';
 import 'dm_chat_screen.dart';
 import 'forum_screen.dart' show LencanaTier, LencanaKhusus;
@@ -278,12 +280,23 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                            Text(p.nama,
+                            // Batch L: nama memakai gaya kustom pemiliknya.
+                            GayaNama(p.nama,
+                                gaya: p.gayaNama,
                                 style: const TextStyle(
                                     fontSize: 21, fontWeight: FontWeight.w800)),
                             LencanaTier(p.tier ?? 'basic'),
                             if (p.badge != null) LencanaKhusus(p.badge!),
                           ]),
+                          if ((p.slogan ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text('“${p.slogan}”',
+                                style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontStyle: FontStyle.italic,
+                                    fontWeight: FontWeight.w600,
+                                    color: t.inkSoft)),
+                          ],
                           if ((p.username ?? '').isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text('@${p.username}',
@@ -298,6 +311,44 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                             Text(p.bio!,
                                 style: TextStyle(
                                     fontSize: 13, height: 1.45, color: t.inkSoft)),
+                          ],
+                          // Batch L: bio link — chip tautan yang bisa dibuka.
+                          if ((p.bioLink ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Pressable(
+                              onTap: () => launchUrl(Uri.parse(p.bioLink!),
+                                  mode: LaunchMode.externalApplication),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 11, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: XyTheme.primary.withOpacity(.08),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: XyTheme.primary.withOpacity(.3)),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  const Icon(Icons.link_rounded,
+                                      size: 14, color: XyTheme.primary),
+                                  const SizedBox(width: 5),
+                                  ConstrainedBox(
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 230),
+                                    child: Text(
+                                      p.bioLink!
+                                          .replaceFirst(RegExp(r'^https?://'), '')
+                                          .replaceFirst(RegExp(r'/$'), ''),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: XyTheme.primary),
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                            ),
                           ],
                           if ((p.createdAt ?? '').isNotEmpty) ...[
                             const SizedBox(height: 8),

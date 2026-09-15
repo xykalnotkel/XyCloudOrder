@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/bingkai_profil.dart';
+import '../widgets/gaya_nama.dart';
 import '../widgets/common.dart';
 import 'profil_publik_screen.dart';
 
@@ -227,9 +228,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                             children: [
                               Row(children: [
                                 Flexible(
-                                  child: Text(x.nama,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                  child: GayaNama(x.nama,
+                                      gaya: x.gayaNama,
                                       style: TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 13.5,
@@ -269,6 +269,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 Text('@${x.username}',
                                     style: TextStyle(
                                         fontSize: 11, color: t.muted)),
+                              // Batch L: slogan singkat pemilik peringkat.
+                              if ((x.slogan ?? '').isNotEmpty)
+                                Text('“${x.slogan}”',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        fontSize: 10.5,
+                                        fontStyle: FontStyle.italic,
+                                        color: t.muted.withOpacity(.9))),
                             ]),
                       ),
                       Text(rupiah(x.poin),
@@ -401,17 +410,25 @@ class _Podium extends StatelessWidget {
       onTap: () => Navigator.push(
           context, xyRoute(ProfilPublikScreen(userId: entry.id))),
       child: Column(children: [
+        // Batch L: mahkota kecil melayang di atas juara 1.
+        if (medali == '1')
+          const Padding(
+            padding: EdgeInsets.only(bottom: 2),
+            child: Icon(Icons.emoji_events_rounded,
+                size: 20, color: XyTheme.goldSoft),
+          ),
         AvatarBingkai(
           bingkai: entry.bingkai,
           size: medali == '1' ? 62 : 52,
           child: _AvatarPapan(entry),
         ),
         const SizedBox(height: 8),
-        Text(entry.nama,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+        Center(
+          child: GayaNama(entry.nama,
+              gaya: entry.gayaNama,
+              style:
+                  const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+        ),
         Text(rupiah(entry.poin),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/elemen_melayang.dart';
 import 'cs_screen.dart';
 
 /// ============================================================
@@ -88,7 +89,16 @@ class _BlokirScreenState extends State<BlokirScreen> {
 
     return Scaffold(
       backgroundColor: p.bg,
-      body: SafeArea(
+      // Batch L: partikel apung lembut supaya layar tidak terasa "mati"
+      // — nadanya tenang (biru dingin), bukan meriah.
+      body: ElemenMelayang(
+        jumlah: 7,
+        warna: [
+          const Color(0xFF64748B).withOpacity(.14),
+          XyTheme.primary.withOpacity(.10),
+          const Color(0xFF94A3B8).withOpacity(.12),
+        ],
+        child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           children: [
@@ -314,6 +324,7 @@ class _BlokirScreenState extends State<BlokirScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

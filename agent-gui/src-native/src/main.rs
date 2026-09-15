@@ -94,6 +94,8 @@ struct Aplikasi {
     d_sandi: String,
     tampil_sandi: bool,
     autostart: bool,
+    // Batch L: mode relay Tailscale (host tanpa IP publik — untuk testing).
+    mode_relay: bool,
     status_simpan: Option<(bool, String)>,
     // Mode --gui-tes: tutup otomatis setelah beberapa frame (smoke-test CI).
     tes_gui: bool,
@@ -105,6 +107,7 @@ impl Aplikasi {
         terapkan_tema(&cc.egui_ctx);
         let cfg = st.cfg();
         let autostart = agent::autostart_aktif();
+        let mode_relay = agent::mode_relay_aktif();
         Self {
             ctx: cc.egui_ctx.clone(),
             st,
@@ -114,6 +117,7 @@ impl Aplikasi {
             d_sandi: cfg.sandi,
             tampil_sandi: false,
             autostart,
+            mode_relay,
             status_simpan: None,
             tes_gui,
             frame: 0,
@@ -248,6 +252,14 @@ impl Aplikasi {
         let st = self.st.clone();
         let ctx = self.ctx.clone();
         std::thread::spawn(move || {
+            // Batch L: cek port menguji jangkauan dari INTERNET publik —
+            // pada mode relay hasilnya pasti TERTUTUP (itu normal).
+            if agent::mode_relay_aktif() {
+                st.log_push(
+                    "Catatan: Mode Relay aktif — cek port dari internet biasanya                      TERTUTUP dan itu normal. Streaming berjalan lewat tailnet.",
+                    &ctx,
+                );
+            }
             st.log_push("Meminta server memeriksa port streaming dari internet…", &ctx);
             let server = cfg.server.trim_end_matches('/');
             let url = format!("{server}/api/agen/cek-port");
@@ -458,12 +470,13 @@ impl eframe::App for Aplikasi {
                 });
             });
 
-            ui.add_space(12.0);
-            ui.separator();
+            ui.add_space(14.0);
 
-            // ---------- pengaturan ----------
-            ui.label(egui::RichText::new("Pengaturan Unit").strong().size(13.5));
-            ui.add_space(6.0);
+            // ---------- pengaturan (kartu quiet surface, tanpa separator) ----------
+            ui.label(egui::RichText::new("PENGATURAN UNIT").size(10.5)
+                .color(egui::Color32::from_rgb(0x8A, 0x84, 0x9E)).strong());
+            ui.add_space(4.0);
+            kartu(ui, |ui| {
             egui::Grid::new("grid_cfg")
                 .num_columns(2)
                 .spacing([10.0, 8.0])
@@ -507,6 +520,7 @@ impl eframe::App for Aplikasi {
                     });
                     ui.end_row();
                 });
+            });
 
             ui.add_space(8.0);
             ui.horizontal(|ui| {
@@ -539,12 +553,39 @@ impl eframe::App for Aplikasi {
                 self.toggle_autostart(a);
             }
 
-            ui.add_space(10.0);
-            ui.separator();
+            // Batch L: mode relay Tailscale — untuk TESTING di host tanpa
+            // IP publik (VM/CGNAT). Host dilaporkan memakai IP tailnet 100.x.
+            let cb2 = ui.checkbox(
+                &mut self.mode_relay,
+                "Mode Relay (Tailscale) — host dilaporkan pakai IP tailnet 100.x",
+            );
+            if cb2.changed() {
+                let aktif = self.mode_relay;
+                match agent::set_mode_relay(aktif) {
+                    Ok(_) => {
+                        if aktif {
+                            match agent::ip_tailscale() {
+                                Some(ip) => log_gui(&format!(
+                                    "Mode relay AKTIF — IP Tailscale terdeteksi: {ip}.                                      Penyewa harus tergabung di tailnet yang sama.                                      Hanya untuk testing, bukan produksi."
+                                )),
+                                None => log_gui(
+                                    "Mode relay AKTIF tapi IP Tailscale tidak ditemukan.                                      Pastikan Tailscale terpasang & login, lalu coba lagi.",
+                                ),
+                            }
+                        } else {
+                            log_gui("Mode relay dimatikan — kembali pakai IP publik.");
+                        }
+                    }
+                    Err(e) => log_gui(&format!("Gagal simpan mode relay: {e}")),
+                }
+            }
+
+            ui.add_space(12.0);
 
             // ---------- kendali ----------
-            ui.label(egui::RichText::new("Kendali Agen").strong().size(13.5));
-            ui.add_space(6.0);
+            ui.label(egui::RichText::new("KENDALI AGEN").size(10.5)
+                .color(egui::Color32::from_rgb(0x8A, 0x84, 0x9E)).strong());
+            ui.add_space(4.0);
             ui.horizontal(|ui| {
                 let mati = sibuk != Sibuk::Tidak;
                 ui.add_enabled_ui(!mati, |ui| {
@@ -620,12 +661,12 @@ impl eframe::App for Aplikasi {
                 });
             }
 
-            ui.add_space(8.0);
-            ui.separator();
+            ui.add_space(12.0);
 
             // ---------- log ----------
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("Log Aktivitas").strong().size(13.5));
+                ui.label(egui::RichText::new("LOG AKTIVITAS").size(10.5)
+                    .color(egui::Color32::from_rgb(0x8A, 0x84, 0x9E)).strong());
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     if ui.small_button("Bersihkan").clicked() {
                         self.st.log.lock().unwrap().clear();
@@ -686,14 +727,22 @@ fn badge_hasil(ui: &mut egui::Ui, judul: &str, hasil: &Option<Value>) {
 }
 
 fn terapkan_tema(ctx: &egui::Context) {
+    // Batch L: gaya "quiet surface" — latar tenang nyaris netral, kartu
+    // seksi lembut, sudut besar, TANPA garis pemisah keras. Ungu hanya
+    // untuk aksen (tombol utama & status), bukan latar.
     let mut v = egui::Visuals::dark();
-    v.panel_fill = egui::Color32::from_rgb(0x12, 0x0C, 0x22);
-    v.window_fill = egui::Color32::from_rgb(0x17, 0x10, 0x2B);
+    v.panel_fill = egui::Color32::from_rgb(0x0F, 0x0E, 0x14);
+    v.window_fill = egui::Color32::from_rgb(0x14, 0x12, 0x1C);
     v.widgets.noninteractive.bg_fill = v.panel_fill;
-    v.widgets.inactive.bg_fill = egui::Color32::from_rgb(0x1F, 0x16, 0x3A);
-    v.widgets.inactive.rounding = egui::Rounding::same(9.0);
-    v.widgets.hovered.rounding = egui::Rounding::same(9.0);
-    v.widgets.active.rounding = egui::Rounding::same(9.0);
+    // separator/garis non-interaktif dibuat sangat samar (seamless).
+    v.widgets.noninteractive.bg_stroke =
+        egui::Stroke::new(1.0_f32, egui::Color32::from_rgb(0x1C, 0x1A, 0x26));
+    v.widgets.inactive.bg_fill = egui::Color32::from_rgb(0x1B, 0x19, 0x26);
+    v.widgets.inactive.bg_stroke = egui::Stroke::NONE;
+    v.widgets.inactive.rounding = egui::Rounding::same(10.0);
+    v.widgets.hovered.rounding = egui::Rounding::same(10.0);
+    v.widgets.hovered.bg_fill = egui::Color32::from_rgb(0x24, 0x21, 0x33);
+    v.widgets.active.rounding = egui::Rounding::same(10.0);
     v.widgets.active.bg_fill = UNGU;
     v.selection.bg_fill = UNGU.linear_multiply(0.35);
     v.hyperlink_color = UNGU_LEMBUT;
@@ -701,9 +750,23 @@ fn terapkan_tema(ctx: &egui::Context) {
 
     let mut gaya = (*ctx.style()).clone();
     gaya.spacing.item_spacing = egui::vec2(8.0, 8.0);
+    gaya.spacing.button_padding = egui::vec2(12.0, 6.0);
     gaya.text_styles
         .insert(egui::TextStyle::Body, egui::FontId::proportional(12.8));
     ctx.set_style(gaya);
+}
+
+/// Kartu seksi lembut (quiet surface): latar sedikit lebih terang dari
+/// panel, sudut membulat besar, tanpa garis tepi.
+fn kartu<R>(
+    ui: &mut egui::Ui,
+    isi: impl FnOnce(&mut egui::Ui) -> R,
+) -> egui::InnerResponse<R> {
+    egui::Frame::none()
+        .fill(egui::Color32::from_rgb(0x17, 0x15, 0x21))
+        .rounding(egui::Rounding::same(14.0))
+        .inner_margin(egui::Margin::symmetric(14.0, 12.0))
+        .show(ui, isi)
 }
 
 /// Jam WIB (UTC+7) HH:MM:SS tanpa dependensi chrono.

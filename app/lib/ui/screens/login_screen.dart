@@ -8,6 +8,7 @@ import '../../providers/app_state.dart';
 import '../../core/motion.dart';
 import '../widgets/brand_logos.dart';
 import '../widgets/common.dart';
+import '../widgets/elemen_melayang.dart';
 import 'lupa_password_screen.dart';
 import 'otp_screen.dart';
 import 'legal_screen.dart';
@@ -158,7 +159,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final loading = context.watch<AppState>().loading;
 
     return Scaffold(
-      body: AuroraBackground(
+      // Batch L: partikel melayang halus di atas aurora — halaman masuk
+      // terasa hidup tanpa mengganggu form.
+      body: ElemenMelayang(
+          jumlah: 10,
+          child: AuroraBackground(
         child: SafeArea(
           child: CustomScrollView(slivers: [
             SliverToBoxAdapter(
@@ -468,7 +473,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ]),
         ),
-      ),
+      )),
     );
   }
 }

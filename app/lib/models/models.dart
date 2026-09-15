@@ -79,6 +79,15 @@ class UserProfile {
   /// Terima pemberitahuan pesan langsung (DM).
   final bool notifDm;
 
+  /// Batch L: slogan pendek di bawah nama (maks 60 huruf).
+  final String? slogan;
+
+  /// Batch L: satu tautan publik di profil (divalidasi server).
+  final String? bioLink;
+
+  /// Batch L: gaya tampilan nama (font/efek). Lihat gaya_nama.dart.
+  final String? gayaNama;
+
   /// Lencana khusus dari admin, contohnya XySpace.
   final String? badge;
   final bool diblokir;
@@ -107,6 +116,9 @@ class UserProfile {
     this.pinTransferAktif = false,
     this.notifForum = true,
     this.notifDm = true,
+    this.slogan,
+    this.bioLink,
+    this.gayaNama,
     this.badge,
     this.diblokir = false,
     this.alasanBlokir,
@@ -135,6 +147,9 @@ class UserProfile {
         pinTransferAktif: (j['pin_transfer_aktif'] ?? 0) == 1,
         notifForum: (j['notif_forum'] ?? 1) == 1,
         notifDm: (j['notif_dm'] ?? 1) == 1,
+        slogan: (j['slogan'] as String?)?.isNotEmpty == true ? j['slogan'] : null,
+        bioLink: (j['bio_link'] as String?)?.isNotEmpty == true ? j['bio_link'] : null,
+        gayaNama: (j['gaya_nama'] as String?)?.isNotEmpty == true ? j['gaya_nama'] : null,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
         diblokir: (j['diblokir'] ?? 0) == 1,
         alasanBlokir: j['alasan_blokir'] as String?,
@@ -169,10 +184,13 @@ class UserProfile {
         'pin_transfer_aktif': pinTransferAktif ? 1 : 0,
         'notif_forum': notifForum ? 1 : 0,
         'notif_dm': notifDm ? 1 : 0,
+        'slogan': slogan,
+        'bio_link': bioLink,
+        'gaya_nama': gayaNama,
         'badge': badge,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, String? username, String? bingkai, BannerMedia? bannerMedia, bool hapusBannerMedia = false, int? totalBelanja, bool? pinTransferAktif, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, String? username, String? bingkai, BannerMedia? bannerMedia, bool hapusBannerMedia = false, int? totalBelanja, bool? pinTransferAktif, bool? diblokir, String? alasanBlokir, int? peringatan, String? slogan, String? bioLink, String? gayaNama}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
@@ -193,6 +211,9 @@ class UserProfile {
         pinTransferAktif: pinTransferAktif ?? this.pinTransferAktif,
         notifForum: notifForum,
         notifDm: notifDm,
+        slogan: slogan ?? this.slogan,
+        bioLink: bioLink ?? this.bioLink,
+        gayaNama: gayaNama ?? this.gayaNama,
         badge: badge,
         diblokir: diblokir ?? this.diblokir,
         alasanBlokir: alasanBlokir ?? this.alasanBlokir,
@@ -779,6 +800,9 @@ class ForumPost {
   final String? gambar;
   final String tier;
   final String? badge;
+  /// Batch L: bingkai avatar & gaya nama penulis (dibaca semua orang).
+  final String? bingkai;
+  final String? gayaNama;
   final bool sensitif;
   int suka;
   int balasan;
@@ -797,6 +821,8 @@ class ForumPost {
     this.gambar,
     this.tier = 'basic',
     this.badge,
+    this.bingkai,
+    this.gayaNama,
     this.sensitif = false,
     this.suka = 0,
     this.balasan = 0,
@@ -814,6 +840,8 @@ class ForumPost {
         gambar: (j['gambar'] as String?)?.isNotEmpty == true ? j['gambar'] : null,
         tier: j['tier'] ?? 'basic',
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
+        bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
+        gayaNama: (j['gaya_nama'] as String?)?.isNotEmpty == true ? j['gaya_nama'] : null,
         sensitif: (j['sensitif'] ?? 0) == 1,
         suka: j['suka'] ?? 0,
         balasan: j['balasan'] ?? 0,
@@ -851,6 +879,9 @@ class ForumBalasan {
   final bool admin;
   final String tier;
   final String? badge;
+  /// Batch L: bingkai & gaya nama penulis komentar.
+  final String? bingkai;
+  final String? gayaNama;
   int suka;
   final DateTime dibuat;
 
@@ -867,6 +898,8 @@ class ForumBalasan {
     this.admin = false,
     this.tier = 'basic',
     this.badge,
+    this.bingkai,
+    this.gayaNama,
     this.suka = 0,
   });
 
@@ -882,6 +915,8 @@ class ForumBalasan {
         admin: (j['admin'] ?? 0) == 1,
         tier: j['tier'] ?? 'basic',
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
+        bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
+        gayaNama: (j['gaya_nama'] as String?)?.isNotEmpty == true ? j['gaya_nama'] : null,
         suka: j['suka'] ?? 0,
         dibuat: tanggalServer(j['dibuat']),
       );
@@ -1066,6 +1101,10 @@ class ProfilPublik {
   final String? bingkai;
   final String? tier;
   final String? badge;
+  /// Batch L: identitas tambahan yang tampil ke semua orang.
+  final String? slogan;
+  final String? bioLink;
+  final String? gayaNama;
   final String? createdAt;
   final int pengikut;
   final int mengikuti;
@@ -1075,7 +1114,8 @@ class ProfilPublik {
 
   const ProfilPublik({
     required this.id, required this.nama, this.username, this.foto, this.bio, this.banner,
-    this.bannerMedia, this.bingkai, this.tier, this.badge, this.createdAt,
+    this.bannerMedia, this.bingkai, this.tier, this.badge,
+    this.slogan, this.bioLink, this.gayaNama, this.createdAt,
     this.pengikut = 0, this.mengikuti = 0,
     this.posting = 0, this.sayaIkuti = false, this.saya = false,
   });
@@ -1091,6 +1131,9 @@ class ProfilPublik {
     bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
     tier: j['tier'] as String?,
     badge: j['badge'] as String?,
+    slogan: (j['slogan'] as String?)?.isNotEmpty == true ? j['slogan'] : null,
+    bioLink: (j['bio_link'] as String?)?.isNotEmpty == true ? j['bio_link'] : null,
+    gayaNama: (j['gaya_nama'] as String?)?.isNotEmpty == true ? j['gaya_nama'] : null,
     createdAt: j['created_at'] as String?,
     pengikut: (j['pengikut'] as num?)?.toInt() ?? 0,
     mengikuti: (j['mengikuti'] as num?)?.toInt() ?? 0,
@@ -1103,7 +1146,8 @@ class ProfilPublik {
   ProfilPublik copyWith({bool? sayaIkuti, int? pengikut}) => ProfilPublik(
         id: id, nama: nama, username: username, foto: foto, bio: bio,
         banner: banner, bannerMedia: bannerMedia, bingkai: bingkai,
-        tier: tier, badge: badge, createdAt: createdAt,
+        tier: tier, badge: badge, slogan: slogan, bioLink: bioLink,
+        gayaNama: gayaNama, createdAt: createdAt,
         pengikut: pengikut ?? this.pengikut, mengikuti: mengikuti,
         posting: posting, sayaIkuti: sayaIkuti ?? this.sayaIkuti, saya: saya,
       );
@@ -1119,12 +1163,15 @@ class PapanPeringkat {
   final String? tier;
   final String? badge;
   final String? bingkai;
+  final String? gayaNama;
+  final String? slogan;
   final int poin;
   final bool saya;
 
   const PapanPeringkat({
     required this.peringkat, required this.id, required this.nama,
     this.username, this.foto, this.tier, this.badge, this.bingkai,
+    this.gayaNama, this.slogan,
     this.poin = 0, this.saya = false,
   });
 
@@ -1137,6 +1184,8 @@ class PapanPeringkat {
         tier: j['tier'] as String?,
         badge: j['badge'] as String?,
         bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
+        gayaNama: (j['gaya_nama'] as String?)?.isNotEmpty == true ? j['gaya_nama'] : null,
+        slogan: (j['slogan'] as String?)?.isNotEmpty == true ? j['slogan'] : null,
         poin: (j['poin'] as num?)?.toInt() ?? 0,
         saya: j['saya'] == true || j['saya'] == 1,
       );

@@ -76,7 +76,7 @@ abstract class XyRepository {
   Future<Map<String, dynamic>> cekTopupPenyedia(String idTopup);
 
   // ---------- profil ----------
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai});
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai, String? slogan, String? bioLink, String? gayaNama});
   Future<Map<String, dynamic>> cekNama({String? nama, String? username});
   Future<Map<String, dynamic>> laporPengguna(String id, String alasan);
   Future<List<BisukanItem>> bisukanDaftar();
@@ -92,6 +92,9 @@ abstract class XyRepository {
 
   /// Cari penerima transfer lewat @username / email persis.
   Future<Map<String, dynamic>> cariTransfer(String q);
+
+  /// Batch L: autocomplete @mention di komunitas (awalan username).
+  Future<List<Map<String, dynamic>>> cariMention(String q);
 
   /// Kirim saldo (butuh PIN transfer 6 digit).
   Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan});
@@ -352,7 +355,7 @@ class RemoteRepository implements XyRepository {
           await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) async =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai, String? slogan, String? bioLink, String? gayaNama}) async =>
       UserProfile.fromJson(Map<String, dynamic>.from(await api.patch('/me', {
         if (nama != null) 'nama': nama,
         if (phone != null) 'phone': phone,
@@ -363,6 +366,9 @@ class RemoteRepository implements XyRepository {
         if (banner != null) 'banner': banner,
         if (username != null) 'username': username,
         if (bingkai != null) 'bingkai': bingkai,
+        if (slogan != null) 'slogan': slogan,
+        if (bioLink != null) 'bio_link': bioLink,
+        if (gayaNama != null) 'gaya_nama': gayaNama,
       })));
 
   @override
@@ -388,6 +394,12 @@ class RemoteRepository implements XyRepository {
   @override
   Future<Map<String, dynamic>> cariTransfer(String q) async =>
       Map<String, dynamic>.from(await api.get('/me/transfer/cari', {'q': q}));
+
+  @override
+  Future<List<Map<String, dynamic>>> cariMention(String q) async =>
+      List<Map<String, dynamic>>.from(((await api.get(
+              '/pengguna/mention?q=${Uri.encodeQueryComponent(q)}')) as List)
+          .map((e) => Map<String, dynamic>.from(e as Map)));
 
   @override
   Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan}) async =>
@@ -783,7 +795,7 @@ class MockRepository implements XyRepository {
       _delay(<String, dynamic>{'status': 'disetujui', 'saldo': 150000}, 300);
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai, String? slogan, String? bioLink, String? gayaNama}) =>
       _delay(MockData.user, 400);
 
   @override
@@ -817,6 +829,10 @@ class MockRepository implements XyRepository {
   @override
   Future<Map<String, dynamic>> cariTransfer(String q) => _delay(
       {'id': 'u2', 'nama': 'Ayu Gamer', 'username': 'ayu.gg', 'tier': 'pro'}, 350);
+
+  @override
+  Future<List<Map<String, dynamic>>> cariMention(String q) async =>
+      _delay(<Map<String, dynamic>>[], 200);
 
   @override
   Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan}) =>

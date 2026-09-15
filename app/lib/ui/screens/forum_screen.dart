@@ -1,6 +1,8 @@
 import '../../core/pengaturan.dart';
 import '../../data/stiker_store.dart';
 import '../widgets/waktu_relatif.dart';
+import '../widgets/bingkai_profil.dart';
+import '../widgets/gaya_nama.dart';
 import 'dart:async';
 import '../../models/stiker.dart';
 import '../../core/komentar_thread.dart';
@@ -404,9 +406,8 @@ class _KartuPost extends StatelessWidget {
                               ? null
                               : () => Navigator.push(context,
                                   xyRoute(ProfilPublikScreen(userId: post.userId))),
-                          child: Text(post.nama,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          child: GayaNama(post.nama,
+                              gaya: post.gayaNama,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w700, fontSize: 13.5)),
                         ),
@@ -537,6 +538,53 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _memuat = true, _mengirim = false;
   int _revisi = -1, _req = 0;
   String? _galat;
+
+  // Batch L: autocomplete @mention di composer.
+  List<Map<String, dynamic>> _saranMention = [];
+  Timer? _mentionTimer;
+  int _reqMention = 0;
+
+  /// Kata @ yang sedang diketik pada posisi kursor; null bila tidak ada.
+  String? _kataMentionAktif() {
+    final sel = _balas.selection;
+    if (!sel.isValid || !sel.isCollapsed) return null;
+    final teks = _balas.text.substring(0, sel.baseOffset);
+    final m = RegExp(r'@([a-z0-9_.]{1,20})$', caseSensitive: false)
+        .firstMatch(teks);
+    return m?.group(1)?.toLowerCase();
+  }
+
+  void _cekMention() {
+    final kata = _kataMentionAktif();
+    _mentionTimer?.cancel();
+    if (kata == null || kata.isEmpty) {
+      if (_saranMention.isNotEmpty) setState(() => _saranMention = []);
+      return;
+    }
+    _mentionTimer = Timer(const Duration(milliseconds: 300), () async {
+      final no = ++_reqMention;
+      try {
+        final hasil = await context.read<AppState>().cariMention(kata);
+        if (mounted && no == _reqMention) {
+          setState(() => _saranMention = hasil);
+        }
+      } catch (_) {/* saran mention gagal — biarkan senyap */}
+    });
+  }
+
+  void _pakaiMention(String username) {
+    final sel = _balas.selection;
+    if (!sel.isValid) return;
+    final sebelum = _balas.text.substring(0, sel.baseOffset);
+    final sesudah = _balas.text.substring(sel.baseOffset);
+    final baru = sebelum.replaceFirst(
+        RegExp(r'@[a-z0-9_.]{1,20}$', caseSensitive: false), '@$username ');
+    _balas.value = TextEditingValue(
+      text: baru + sesudah,
+      selection: TextSelection.collapsed(offset: baru.length),
+    );
+    setState(() => _saranMention = []);
+  }
   @override
   void initState() {
     super.initState();
@@ -559,6 +607,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void dispose() {
     _balas.dispose();
     _fokusBalas.dispose();
+    _mentionTimer?.cancel();
     super.dispose();
   }
 
@@ -649,13 +698,19 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         padding: const EdgeInsets.all(18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            _Avatar(nama: nama, foto: s.fotoPengguna(p.userId, p.foto)),
+            // Batch L: bingkai penulis ikut tampil di detail diskusi.
+            AvatarBingkai(
+                bingkai: p.bingkai,
+                size: 38,
+                child: _Avatar(
+                    nama: nama, foto: s.fotoPengguna(p.userId, p.foto))),
             const SizedBox(width: 10),
             Expanded(
                 child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                  Text(nama,
+                  GayaNama(nama,
+                      gaya: p.gayaNama,
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text(tanggal(p.dibuat),
                       style: TextStyle(color: pal.muted, fontSize: 11))
@@ -709,25 +764,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Padding(
                   padding: const EdgeInsets.only(top: 4),
-                  child: _Avatar(
-                      nama: nama,
-                      foto: s.fotoPengguna(b.userId, b.foto),
-                      ukuran: 34,
-                      admin: b.admin)),
+                  // Batch L: bingkai avatar tampil juga di komentar.
+                  child: AvatarBingkai(
+                      bingkai: b.bingkai,
+                      size: 34,
+                      child: _Avatar(
+                          nama: nama,
+                          foto: s.fotoPengguna(b.userId, b.foto),
+                          ukuran: 34,
+                          admin: b.admin))),
               const SizedBox(width: 10),
               Expanded(
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                    // Batch L: komentar gaya flat tanpa bubble — bersih
+                    // seperti thread modern; pemisah cukup garis thread kiri.
                     Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(13, 11, 13, 12),
-                        decoration: BoxDecoration(
-                            color: b.stiker == null
-                                ? pal.surface
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(18),
-                            border: b.stiker == null ? Border.all(color:pal.line.withOpacity(.7)) : null),
+                        padding: const EdgeInsets.fromLTRB(2, 2, 4, 4),
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -736,7 +791,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                   spacing: 2,
                                   runSpacing: 3,
                                   children: [
-                                    Text(nama,
+                                    GayaNama(nama,
+                                        gaya: b.gayaNama,
                                         style: const TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700)),
@@ -983,7 +1039,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           Container(
               decoration: BoxDecoration(
                   color: pal.surface,
-                  border: Border(top: BorderSide(color: pal.line))),
+                  boxShadow: [BoxShadow(color: pal.ink.withOpacity(.07), blurRadius: 22, offset: const Offset(0, -6))]),
               child: SafeArea(
                   top: false,
                   child: Padding(
@@ -1035,6 +1091,44 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                     icon: const Icon(Icons.close_rounded,
                                         size: 18))
                               ])),
+                        // Batch L: saran @mention muncul di atas composer.
+                        if (_saranMention.isNotEmpty)
+                          Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              constraints: const BoxConstraints(maxHeight: 190),
+                              decoration: BoxDecoration(
+                                  color: pal.surface,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: pal.line),
+                                  boxShadow: XyTheme.shadowSm),
+                              child: ListView.builder(
+                                  shrinkWrap: true,
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  itemCount: _saranMention.length,
+                                  itemBuilder: (_, i) {
+                                    final m = _saranMention[i];
+                                    final un = '${m['username'] ?? ''}';
+                                    return ListTile(
+                                        dense: true,
+                                        visualDensity: VisualDensity.compact,
+                                        leading: _Avatar(
+                                            nama: '${m['nama'] ?? un}',
+                                            foto: (m['foto'] as String?),
+                                            ukuran: 30),
+                                        title: Text('${m['nama'] ?? un}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700)),
+                                        subtitle: Text('@$un',
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                color: XyTheme.primary,
+                                                fontWeight: FontWeight.w700)),
+                                        onTap: () => _pakaiMention(un));
+                                  })),
                         Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
@@ -1068,7 +1162,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                                               const EdgeInsets.symmetric(
                                                   horizontal: 14,
                                                   vertical: 12)),
-                                      onChanged: (_) => setState(() {}))),
+                                      onChanged: (_) {
+                                        setState(() {});
+                                        _cekMention();
+                                      })),
                               const SizedBox(width: 8),
                               IconButton.filled(
                                   tooltip: 'Kirim komentar',

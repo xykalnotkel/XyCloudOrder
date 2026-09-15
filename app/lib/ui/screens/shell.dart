@@ -1,5 +1,6 @@
 import '../widgets/promo_overlay.dart';
 import '../widgets/rilis_popup.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -191,12 +192,13 @@ class _XyShellState extends State<XyShell> {
         },
         child: IndexedStack(index: idx, children: _pages),
       ),
+      // Batch L: bar nav seamless — tanpa garis pemisah, menyatu dengan
+      // konten lewat bayangan lembut saja.
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: XyTheme.of(context).surface,
-          border:  Border(top: BorderSide(color: XyTheme.of(context).line)),
           boxShadow: [
-            BoxShadow(color: XyTheme.of(context).ink.withOpacity(.06), blurRadius: 24, offset: const Offset(0, -6)),
+            BoxShadow(color: XyTheme.of(context).ink.withOpacity(.08), blurRadius: 30, offset: const Offset(0, -8)),
           ],
         ),
         padding: EdgeInsets.only(bottom: pad > 0 ? pad - 2 : 11, top: 11, left: 6, right: 6),
@@ -216,33 +218,48 @@ class _XyShellState extends State<XyShell> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 260),
-                      curve: Curves.easeOutCubic,
-                      height: isTengah ? 56 : 46,
-                      width: isTengah ? (on ? 92 : 72) : (on ? 70 : 50),
-                      decoration: BoxDecoration(
-                        gradient: on ? XyTheme.gradPrimary : null,
-                        borderRadius: BorderRadius.circular(XyRadius.pill),
-                        border: isTengah && !on
-                            ? Border.all(
-                                color: XyTheme.primary.withOpacity(.45), width: 1.6)
-                            : null,
-                        boxShadow: on
-                            ? XyTheme.glow(
-                                XyTheme.primary, isTengah ? .38 : .28)
-                            : null,
-                      ),
-                      child: Stack(alignment: Alignment.center, children: [
-                        Icon(on ? it.$2 : it.$1,
-                            size: isTengah ? 27 : 23,
-                            color: on
-                                ? Colors.white
-                                : (isTengah
-                                    ? XyTheme.primary
-                                    : XyTheme.of(context).muted)),
-                      ]),
-                    ),
+                    // Batch L: tombol tengah berbentuk HEXAGON yang morphing
+                    // (hexagon → membulat) saat aktif; tombol lain tetap pill.
+                    isTengah
+                        ? TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 340),
+                            curve: Curves.easeOutBack,
+                            tween:
+                                Tween(begin: 0, end: on ? 1.0 : 0.0),
+                            builder: (_, v, __) => _Hexagon(
+                              aktif: on,
+                              morph: v,
+                              size: 58,
+                              child: Icon(on ? it.$2 : it.$1,
+                                  size: 26,
+                                  color: on
+                                      ? Colors.white
+                                      : XyTheme.primary),
+                            ),
+                          )
+                        : AnimatedContainer(
+                            duration: const Duration(milliseconds: 260),
+                            curve: Curves.easeOutCubic,
+                            height: 46,
+                            width: on ? 70 : 50,
+                            decoration: BoxDecoration(
+                              gradient: on ? XyTheme.gradPrimary : null,
+                              borderRadius:
+                                  BorderRadius.circular(XyRadius.pill),
+                              boxShadow: on
+                                  ? XyTheme.glow(XyTheme.primary, .28)
+                                  : null,
+                            ),
+                            child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Icon(on ? it.$2 : it.$1,
+                                      size: 23,
+                                      color: on
+                                          ? Colors.white
+                                          : XyTheme.of(context).muted),
+                                ]),
+                          ),
                     const SizedBox(height: 6),
                     AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 220),
@@ -263,4 +280,125 @@ class _XyShellState extends State<XyShell> {
       ),
     ));
   }
+}
+
+/// ============================================================
+///  Tombol nav tengah hexagon morphing (Batch L)
+/// ============================================================
+///  Bentuk hexagon dengan sudut membulat; saat aktif morph halus jadi
+///  makin bulat + gradasi + glow. Saat pasif tampil garis hexagon tipis.
+class _Hexagon extends StatelessWidget {
+  const _Hexagon({
+    required this.child,
+    required this.aktif,
+    required this.morph,
+    required this.size,
+  });
+  final Widget child;
+  final bool aktif;
+
+  /// 0 = hexagon penuh, 1 = hampir lingkaran (morphing saat aktif).
+  final double morph;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final bentuk = _HexBorder(rounding: .18 + morph * .5);
+    return Container(
+      width: size + 10,
+      height: size,
+      decoration: ShapeDecoration(
+        shape: bentuk,
+        gradient: aktif ? XyTheme.gradPrimary : null,
+        color: aktif ? null : XyTheme.of(context).surface,
+        shadows: aktif
+            ? [
+                BoxShadow(
+                    color: XyTheme.primary.withOpacity(.42),
+                    blurRadius: 18,
+                    offset: const Offset(0, 5)),
+              ]
+            : null,
+      ),
+      foregroundDecoration: aktif
+          ? null
+          : ShapeDecoration(
+              shape: bentuk.copyWith(
+                  side: BorderSide(
+                      color: XyTheme.primary.withOpacity(.5), width: 1.7)),
+            ),
+      alignment: Alignment.center,
+      child: child,
+    );
+  }
+}
+
+/// Border hexagon dengan sudut membulat; `rounding` 0..1 mengatur
+/// seberapa bulat sudutnya (dipakai untuk animasi morphing).
+class _HexBorder extends ShapeBorder {
+  const _HexBorder({this.rounding = .2, this.side = BorderSide.none});
+  final double rounding;
+  final BorderSide side;
+
+  _HexBorder copyWith({BorderSide? side}) =>
+      _HexBorder(rounding: rounding, side: side ?? this.side);
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
+
+  Path _hexPath(Rect rect) {
+    final c = rect.center;
+    final r = math.min(rect.width, rect.height) / 2;
+    // 6 titik hexagon datar-atas (flat-top) supaya pas untuk tombol nav.
+    final titik = List.generate(6, (i) {
+      final a = math.pi / 6 + i * math.pi / 3; // mulai 30° = flat top
+      return Offset(c.dx + r * math.cos(a), c.dy + r * math.sin(a));
+    });
+    final jarak = (titik[1] - titik[0]).distance;
+    final rad = jarak * rounding.clamp(0.0, .5);
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final p0 = titik[i];
+      final p1 = titik[(i + 1) % 6];
+      final arah = (p1 - p0) / (p1 - p0).distance;
+      final mulai = p0 + arah * rad;
+      final akhir = p1 - arah * rad;
+      if (i == 0) {
+        path.moveTo(mulai.dx, mulai.dy);
+      } else {
+        path.quadraticBezierTo(p0.dx, p0.dy, mulai.dx, mulai.dy);
+      }
+      path.lineTo(akhir.dx, akhir.dy);
+    }
+    // tutup sudut terakhir kembali ke titik awal
+    final p0 = titik[0];
+    final arah0 = (titik[1] - titik[0]) / (titik[1] - titik[0]).distance;
+    final mulai0 = p0 + arah0 * rad;
+    path.quadraticBezierTo(p0.dx, p0.dy, mulai0.dx, mulai0.dy);
+    path.close();
+    return path;
+  }
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      _hexPath(rect.deflate(side.width));
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
+      _hexPath(rect);
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none || side.width == 0) return;
+    canvas.drawPath(
+        _hexPath(rect),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = side.width
+          ..color = side.color);
+  }
+
+  @override
+  ShapeBorder scale(double t) =>
+      _HexBorder(rounding: rounding, side: side.scale(t));
 }

@@ -15,6 +15,7 @@ import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
 import '../widgets/bingkai_profil.dart';
+import '../widgets/gaya_nama.dart';
 import '../widgets/common.dart';
 import '../widgets/galeri_picker.dart';
 import '../widgets/lembar.dart';
@@ -167,6 +168,10 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   late final _nama = TextEditingController(text: context.read<AppState>().user?.nama ?? '');
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
   late final _bio = TextEditingController(text: context.read<AppState>().user?.bio ?? '');
+  // Batch L: slogan + bio link + gaya nama.
+  late final _slogan = TextEditingController(text: context.read<AppState>().user?.slogan ?? '');
+  late final _bioLink = TextEditingController(text: context.read<AppState>().user?.bioLink ?? '');
+  late String _gayaNama = context.read<AppState>().user?.gayaNama ?? 'normal';
   late String _banner = context.read<AppState>().user?.banner ?? 'ungu';
   late String? _bingkai = context.read<AppState>().user?.bingkai ?? 'polos';
   late final _username = TextEditingController(text: context.read<AppState>().user?.username ?? '');
@@ -186,6 +191,8 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
     _nama.dispose();
     _phone.dispose();
     _bio.dispose();
+    _slogan.dispose();
+    _bioLink.dispose();
     _username.dispose();
     _cekTimer?.cancel();
     super.dispose();
@@ -383,6 +390,9 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
           banner: _banner,
           username: _username.text.trim().toLowerCase(),
           bingkai: _bingkai ?? 'polos',
+          slogan: _slogan.text.trim(),
+          bioLink: _bioLink.text.trim(),
+          gayaNama: _gayaNama,
         );
     if (!mounted) return;
     setState(() {
@@ -466,7 +476,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Bingkai Aurora & Permata khusus pelanggan Pro/VIP — langsung terlihat oleh semua orang di profil, leaderboard, dan komunitas.',
+            'Bingkai premium (Aurora, Permata, Api, Galaksi, Sakura, Sirkuit, Sayap, Petir) khusus Pro/VIP — Mahkota Raja & Naga Emas eksklusif VIP. Terlihat oleh semua orang di profil, leaderboard, dan komunitas.',
             style: TextStyle(color: t.muted, fontSize: 11.5, height: 1.5),
           ),
           const SizedBox(height: 18),
@@ -567,6 +577,112 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             ),
           ),
           const SizedBox(height: 10),
+
+          // ---------- slogan (Batch L) ----------
+          const XyLabel('Slogan'),
+          TextField(
+            controller: _slogan,
+            maxLength: 60,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              hintText: 'Kalimat singkat khas kamu — tampil di bawah nama',
+              prefixIcon: Icon(Icons.format_quote_rounded),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // ---------- bio link (Batch L) ----------
+          const XyLabel('Bio Link'),
+          TextField(
+            controller: _bioLink,
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: const InputDecoration(
+              hintText: 'https://instagram.com/namamu',
+              prefixIcon: Icon(Icons.link_rounded),
+              helperText:
+                  'Satu tautan publik (Instagram, YouTube, toko, dll). Kosongkan untuk menghapus.',
+              helperMaxLines: 2,
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // ---------- gaya nama (Batch L) ----------
+          const XyLabel('Gaya Nama'),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            decoration: BoxDecoration(
+              color: t.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: t.line),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // pratinjau langsung nama dengan gaya terpilih
+              Center(
+                child: GayaNama(
+                  _nama.text.trim().isEmpty ? 'Nama Kamu' : _nama.text.trim(),
+                  gaya: _gayaNama,
+                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final g in daftarGayaNama)
+                    Builder(builder: (context) {
+                      final pilih = _gayaNama == g.id;
+                      final kunci = g.langganan && !langganan;
+                      return GestureDetector(
+                        onTap: () {
+                          if (kunci) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                content: Text(
+                                    'Gaya nama beranimasi khusus pelanggan Pro/VIP. Naikkan tier dulu ya.')));
+                            return;
+                          }
+                          setState(() => _gayaNama = g.id);
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            gradient: pilih ? XyTheme.gradPrimary : null,
+                            color: pilih ? null : t.bg,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: pilih ? Colors.transparent : t.line),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            if (kunci) ...[
+                              Icon(Icons.lock_rounded, size: 12, color: t.muted),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(g.label,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: pilih
+                                      ? Colors.white
+                                      : (kunci ? t.muted : t.ink),
+                                )),
+                          ]),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Gaya nama tampil di profil, komunitas, dan leaderboard. Gaya beranimasi (Gradasi, Emas, Neon, Pelangi, Ombak, Ketik) khusus Pro/VIP.',
+                style: TextStyle(color: t.muted, fontSize: 11.5, height: 1.5),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 18),
 
           // ---------- banner ----------
           const XyLabel('Banner Profil'),

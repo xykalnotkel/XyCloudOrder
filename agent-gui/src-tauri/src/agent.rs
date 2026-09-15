@@ -12,7 +12,23 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-pub const VERSI: &str = "1.5.2-rust";
+pub const VERSI: &str = "1.5.3-rust";
+
+/// Batch L: semua proses anak (powershell/cmd/reg/where/sunshine) dibuat
+/// dengan CREATE_NO_WINDOW supaya tidak ada jendela konsol hitam yang
+/// berkedip saat agen berjalan. Selalu pakai helper ini, jangan
+/// std::process::Command::new langsung.
+pub fn perintah(program: &str) -> std::process::Command {
+    let cmd = std::process::Command::new(program);
+    #[cfg(windows)]
+    let cmd = {
+        use std::os::windows::process::CommandExt;
+        let mut c = cmd;
+        c.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        c
+    };
+    cmd
+}
 const SUNSHINE_BAWAAN: &str = "https://127.0.0.1:47990";
 /// MSI resmi LizardByte (fallback bila winget hang / tidak ada).
 const SUNSHINE_MSI_URL: &str =
@@ -150,7 +166,7 @@ fn cari_sunshine_exe() -> Option<PathBuf> {
         }
     }
     // PATH
-    if let Ok(out) = std::process::Command::new("where").arg("sunshine.exe").output() {
+    if let Ok(out) = perintah("where").arg("sunshine.exe").output() {
         let teks = String::from_utf8_lossy(&out.stdout);
         if let Some(baris) = teks.lines().next() {
             let pb = PathBuf::from(baris.trim());
@@ -259,9 +275,60 @@ fn tunggu_api_siap(k: &Konfig, log: &Logger, detik: u64) -> Value {
 }
 
 
+/// Batch L: cari IP Tailscale (100.64.0.0/10) di adapter lokal — untuk
+/// mode relay/VPN saat host tidak punya IP publik yang bisa dijangkau.
+pub fn ip_tailscale() -> Option<String> {
+    let out = perintah("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |              Where-Object { $_.IPAddress -like '100.*' } |              Select-Object -First 1 -ExpandProperty IPAddress)",
+        ])
+        .output()
+        .ok()?;
+    let ip = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    // Validasi rentang CGNAT Tailscale: 100.64.0.0 – 100.127.255.255.
+    let oktet: Vec<u8> = ip.split('.').filter_map(|x| x.parse().ok()).collect();
+    if oktet.len() == 4 && oktet[0] == 100 && (64..=127).contains(&oktet[1]) {
+        Some(ip)
+    } else {
+        None
+    }
+}
+
+/// Batch L: apakah mode relay (Tailscale/VPN) diaktifkan di config.json.
+pub fn mode_relay_aktif() -> bool {
+    if let Ok(teks) = std::fs::read_to_string(jalur_config()) {
+        if let Ok(v) = serde_json::from_str::<Value>(&teks) {
+            return v.get("mode_relay").and_then(|x| x.as_bool()).unwrap_or(false);
+        }
+    }
+    false
+}
+
+/// Batch L: simpan flag mode relay ke config.json tanpa mengganggu field lain.
+pub fn set_mode_relay(aktif: bool) -> Result<(), String> {
+    let jalur = jalur_config();
+    let mut v: Value = std::fs::read_to_string(&jalur)
+        .ok()
+        .and_then(|t| serde_json::from_str(&t).ok())
+        .unwrap_or_else(|| json!({}));
+    v["mode_relay"] = json!(aktif);
+    let teks = serde_json::to_string_pretty(&v).map_err(|e| e.to_string())?;
+    std::fs::write(&jalur, teks).map_err(|e| e.to_string())
+}
+
 /// Alamat yang bisa dijangkau HP penyewa (bukan COMPUTERNAME Windows).
-/// Prioritas: STREAM_HOST / XY_STREAM_HOST env → config stream_host → IP publik.
+/// Prioritas: mode relay (IP Tailscale) → STREAM_HOST / XY_STREAM_HOST env
+/// → config stream_host → IP publik.
 fn alamat_stream(k: &Konfig) -> String {
+    // Batch L: mode relay — untuk TESTING di host tanpa IP publik
+    // (VM, CGNAT). Penyewa harus tergabung di tailnet yang sama.
+    if mode_relay_aktif() {
+        if let Some(ip) = ip_tailscale() {
+            return ip;
+        }
+    }
     for key in ["STREAM_HOST", "XY_STREAM_HOST", "SUNSHINE_HOST"] {
         if let Ok(v) = std::env::var(key) {
             let t = v.trim().to_string();
@@ -320,7 +387,7 @@ fn spesifikasi() -> Value {
         "rust": true,
         "versi": VERSI,
     });
-    if let Ok(out) = std::process::Command::new("powershell")
+    if let Ok(out) = perintah("powershell")
         .args(["-NoProfile", "-Command", "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory"])
         .output()
     {
@@ -330,7 +397,7 @@ fn spesifikasi() -> Value {
         }
     }
     // IP LAN (fallback streaming bila host publik tertutup NAT/firewall).
-    if let Ok(out) = std::process::Command::new("powershell")
+    if let Ok(out) = perintah("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -344,7 +411,7 @@ fn spesifikasi() -> Value {
         }
     }
     // Batch J: GPU + versi Windows — spek terdeteksi otomatis untuk app.
-    if let Ok(out) = std::process::Command::new("powershell")
+    if let Ok(out) = perintah("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -357,7 +424,7 @@ fn spesifikasi() -> Value {
             spec["gpu"] = json!(teks);
         }
     }
-    if let Ok(out) = std::process::Command::new("powershell")
+    if let Ok(out) = perintah("powershell")
         .args([
             "-NoProfile",
             "-Command",
@@ -503,7 +570,7 @@ pub fn jalankan_loop(k: Konfig, log: Logger, stop: Arc<AtomicBool>) {
 fn jalankan_timeout(program: &str, args: &[&str], detik: u64, log: &Logger) -> Result<(i32, String), String> {
     use std::io::Read;
     log(&format!("> {program} {}", args.join(" ")));
-    let mut child = std::process::Command::new(program)
+    let mut child = perintah(program)
         .args(args)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
@@ -670,13 +737,13 @@ fn pastikan_service_sunshine(log: &Logger) {
         if bat.is_file() {
             log("Menjalankan install-service.bat (tanpa tunggu UAC)…");
             let bat_s = bat.to_string_lossy().to_string();
-            let _ = std::process::Command::new("cmd")
+            let _ = perintah("cmd")
                 .args(["/C", &bat_s])
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .spawn();
             std::thread::sleep(Duration::from_secs(3));
-            let _ = std::process::Command::new("powershell")
+            let _ = perintah("powershell")
                 .args([
                     "-NoProfile",
                     "-Command",
@@ -689,7 +756,7 @@ fn pastikan_service_sunshine(log: &Logger) {
     if service_sunshine().is_none() {
         if let Some(exe) = cari_sunshine_exe() {
             log("Service belum ada — mencoba jalankan sunshine.exe di background…");
-            let _ = std::process::Command::new(&exe)
+            let _ = perintah(&exe.to_string_lossy())
                 .stdout(std::process::Stdio::null())
                 .stderr(std::process::Stdio::null())
                 .spawn();
@@ -787,7 +854,7 @@ pub fn setup_otomatis(k: &Konfig, log: Logger) -> (Konfig, Value) {
 }
 
 fn service_sunshine() -> Option<String> {
-    let out = std::process::Command::new("powershell")
+    let out = perintah("powershell")
         .args(["-NoProfile", "-Command",
                "(Get-Service -Name 'SunshineService' -ErrorAction SilentlyContinue).Status"])
         .output()
@@ -802,7 +869,7 @@ pub fn atur_autostart(aktif: bool, log: &Logger) {
     if aktif {
         let exe = std::env::current_exe().unwrap_or_default();
         let cmd = format!("\"{}\" -Jalankan", exe.display());
-        let out = std::process::Command::new("reg")
+        let out = perintah("reg")
             .args(["add", kunci, "/v", "XyCloudStoreAgent", "/t", "REG_SZ", "/d", &cmd, "/f"])
             .output();
         match out {
@@ -811,7 +878,7 @@ pub fn atur_autostart(aktif: bool, log: &Logger) {
             Err(e) => log(&format!("Gagal daftar autostart: {e}")),
         }
     } else {
-        let out = std::process::Command::new("reg")
+        let out = perintah("reg")
             .args(["delete", kunci, "/v", "XyCloudStoreAgent", "/f"])
             .output();
         match out {
@@ -824,7 +891,7 @@ pub fn atur_autostart(aktif: bool, log: &Logger) {
 pub fn autostart_aktif() -> bool {
     let kunci = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
     matches!(
-        std::process::Command::new("reg")
+        perintah("reg")
             .args(["query", kunci, "/v", "XyCloudStoreAgent"])
             .output(),
         Ok(o) if o.status.success()

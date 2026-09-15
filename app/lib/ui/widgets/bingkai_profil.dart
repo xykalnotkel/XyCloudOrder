@@ -9,10 +9,14 @@ import '../../core/theme.dart';
 ///  api/src/index.js. 'aurora' dan 'permata' khusus langganan
 ///  Pro/VIP (gate ditegakkan di server, di sini hanya ikon kunci).
 class BingkaiInfo {
-  const BingkaiInfo(this.id, this.label, {this.langganan = false, this.ikon});
+  const BingkaiInfo(this.id, this.label,
+      {this.langganan = false, this.vip = false, this.ikon});
   final String id;
   final String label;
   final bool langganan;
+
+  /// Batch L: bingkai kelas tertinggi — hanya untuk member VIP.
+  final bool vip;
   final IconData? ikon;
 }
 
@@ -23,10 +27,22 @@ const List<BingkaiInfo> daftarBingkai = [
   BingkaiInfo('neon', 'Neon'),
   BingkaiInfo('aurora', 'Aurora', langganan: true),
   BingkaiInfo('permata', 'Permata', langganan: true),
-  // Batch J: bingkai aset AI (assets/bingkai/*.png) + partikel melayang.
+  // Batch J: bingkai aset AI + partikel melayang.
   BingkaiInfo('api', 'Api Ungu', langganan: true),
   BingkaiInfo('galaksi', 'Galaksi', langganan: true),
+  // Batch L: enam bingkai aset AI baru (WebP, chroma-key). Dua teratas VIP.
+  BingkaiInfo('sakura', 'Sakura', langganan: true),
+  BingkaiInfo('sirkuit', 'Sirkuit Neon', langganan: true),
+  BingkaiInfo('sayap', 'Sayap Surgawi', langganan: true),
+  BingkaiInfo('petir', 'Petir Badai', langganan: true),
+  BingkaiInfo('mahkota', 'Mahkota Raja', langganan: true, vip: true),
+  BingkaiInfo('naga', 'Naga Emas', langganan: true, vip: true),
 ];
+
+/// Id bingkai yang memakai artwork AI (assets/bingkai/{id}.webp).
+const Set<String> _idAsetAi = {
+  'api', 'galaksi', 'sakura', 'sirkuit', 'sayap', 'petir', 'mahkota', 'naga',
+};
 
 /// Cincin gradasi statis untuk bingkai non-animasi.
 Gradient? _gradBingkai(String? id) => switch (id) {
@@ -82,17 +98,19 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
   );
 
   bool get _animasi =>
-      widget.bingkai == 'aurora' ||
-      widget.bingkai == 'galaksi' ||
-      widget.bingkai == 'api';
+      widget.bingkai == 'aurora' || _idAsetAi.contains(widget.bingkai ?? '');
 
-  bool get _asetAi => widget.bingkai == 'galaksi' || widget.bingkai == 'api';
+  bool get _asetAi => _idAsetAi.contains(widget.bingkai ?? '');
+
+  /// Bingkai yang memakai partikel apung (loop _apung).
+  bool get _pakaiApung => const {'api', 'sakura', 'sayap', 'naga'}
+      .contains(widget.bingkai ?? '');
 
   @override
   void initState() {
     super.initState();
     if (_animasi) _putar.repeat();
-    if (widget.bingkai == 'api') _apung.repeat();
+    if (_pakaiApung) _apung.repeat();
   }
 
   @override
@@ -103,9 +121,9 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
     } else if (!_animasi && _putar.isAnimating) {
       _putar.stop();
     }
-    if (widget.bingkai == 'api' && !_apung.isAnimating) {
+    if (_pakaiApung && !_apung.isAnimating) {
       _apung.repeat();
-    } else if (widget.bingkai != 'api' && _apung.isAnimating) {
+    } else if (!_pakaiApung && _apung.isAnimating) {
       _apung.stop();
     }
   }
@@ -132,7 +150,7 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
       if (_asetAi) {
         // Ring artwork hasil generate AI (chroma-key hijau → transparan).
         return Image.asset(
-          'assets/bingkai/$id.png',
+          'assets/bingkai/$id.webp',
           fit: BoxFit.contain,
           filterQuality: FilterQuality.medium,
           errorBuilder: (_, __, ___) => Container(
@@ -220,6 +238,45 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
         if (id == 'api')
           Positioned.fill(
               child: _BaraNaik(size: widget.size, tebal: tebal, apung: _apung)),
+        // Batch L: partikel khas tiap bingkai baru.
+        if (id == 'sakura')
+          Positioned.fill(
+              child: _KelopakJatuh(
+                  size: widget.size, tebal: tebal, apung: _apung)),
+        if (id == 'sayap')
+          Positioned.fill(
+              child: _CahayaNaik(
+                  size: widget.size, tebal: tebal, apung: _apung)),
+        if (id == 'naga')
+          Positioned.fill(
+              child: _BaraNaik(size: widget.size, tebal: tebal, apung: _apung)),
+        if (id == 'petir')
+          Positioned.fill(
+              child: _BintangOrbit(
+                  size: widget.size,
+                  tebal: tebal,
+                  putar: _putar,
+                  warna: const [
+                    Color(0xFF93C5FD), Color(0xFFC4B5FD), Colors.white,
+                  ])),
+        if (id == 'sirkuit')
+          Positioned.fill(
+              child: _BintangOrbit(
+                  size: widget.size,
+                  tebal: tebal,
+                  putar: _putar,
+                  warna: const [
+                    Color(0xFF22D3EE), Color(0xFFF472B6), Color(0xFF67E8F9),
+                  ])),
+        if (id == 'mahkota')
+          Positioned.fill(
+              child: _BintangOrbit(
+                  size: widget.size,
+                  tebal: tebal,
+                  putar: _putar,
+                  warna: const [
+                    XyTheme.goldSoft, Colors.white, Color(0xFFFCA5A5),
+                  ])),
         if (id == 'permata')
           ...List.generate(4, (i) {
             final sudut = math.pi / 4 + i * math.pi / 2;
@@ -264,6 +321,7 @@ class PilihBingkai extends StatelessWidget {
   final String tier;
 
   bool get _langganan => tier == 'pro' || tier == 'vip';
+  bool get _vip => tier == 'vip';
 
   @override
   Widget build(BuildContext context) {
@@ -276,13 +334,14 @@ class PilihBingkai extends StatelessWidget {
         itemBuilder: (context, i) {
           final b = daftarBingkai[i];
           final terpilih = (nilai ?? 'polos') == b.id;
-          final terkunci = b.langganan && !_langganan;
+          final terkunci = (b.langganan && !_langganan) || (b.vip && !_vip);
           return GestureDetector(
             onTap: () {
               if (terkunci) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text(
-                        'Bingkai animasi premium (Aurora, Permata, Api, Galaksi) khusus pelanggan Pro/VIP. Naikkan tier dulu ya.')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(b.vip
+                        ? 'Bingkai ${b.label} eksklusif member VIP. Naikkan tier dulu ya.'
+                        : 'Bingkai premium khusus pelanggan Pro/VIP. Naikkan tier dulu ya.')));
                 return;
               }
               onPilih(b.id);
@@ -318,6 +377,30 @@ class PilihBingkai extends StatelessWidget {
                 ]),
               ),
               const SizedBox(height: 6),
+              if (b.langganan)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    gradient: b.vip
+                        ? const LinearGradient(colors: [
+                            Color(0xFFD3A625), Color(0xFF8B5CF6),
+                          ])
+                        : null,
+                    color: b.vip ? null : XyTheme.violet.withOpacity(.14),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    b.vip ? 'VIP' : 'PRO+',
+                    style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .6,
+                      color: b.vip ? Colors.white : XyTheme.violet,
+                    ),
+                  ),
+                ),
               SizedBox(
                 width: 74,
                 child: Text(
@@ -372,12 +455,15 @@ class _AvatarJatuh extends StatelessWidget {
 
 /// Bintang kecil mengorbit mengelilingi bingkai Galaksi (Batch J).
 class _BintangOrbit extends StatelessWidget {
-  const _BintangOrbit({required this.size, required this.tebal, required this.putar});
+  const _BintangOrbit(
+      {required this.size,
+      required this.tebal,
+      required this.putar,
+      this.warna = const [Colors.white, XyTheme.goldSoft, Color(0xFFBFD9FF)]});
   final double size;
   final double tebal;
   final Animation<double> putar;
-
-  static const _warna = [Colors.white, XyTheme.goldSoft, Color(0xFFBFD9FF)];
+  final List<Color> warna;
 
   @override
   Widget build(BuildContext context) {
@@ -395,7 +481,7 @@ class _BintangOrbit extends StatelessWidget {
               top: r + r * math.sin(sudut) - s / 2,
               child: Icon(Icons.auto_awesome_rounded,
                   size: s,
-                  color: _warna[i].withOpacity(.95)),
+                  color: warna[i % warna.length].withOpacity(.95)),
             );
           }),
       ]),
@@ -444,6 +530,105 @@ class _BaraNaik extends StatelessWidget {
                     color: _bara[i],
                     boxShadow: [
                       BoxShadow(color: _bara[i].withOpacity(.75), blurRadius: 5),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+      ]),
+    );
+  }
+}
+
+/// Kelopak sakura melayang turun perlahan di sekitar bingkai (Batch L).
+class _KelopakJatuh extends StatelessWidget {
+  const _KelopakJatuh(
+      {required this.size, required this.tebal, required this.apung});
+  final double size;
+  final double tebal;
+  final Animation<double> apung;
+
+  static const _warna = [
+    Color(0xFFFBCFE8),
+    Color(0xFFF9A8D4),
+    Color(0xFFFDF2F8),
+    Color(0xFFF472B6),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final tinggi = size + tebal * 2;
+    return AnimatedBuilder(
+      animation: apung,
+      builder: (_, __) => Stack(clipBehavior: Clip.none, children: [
+        for (var i = 0; i < 4; i++)
+          Builder(builder: (_) {
+            final p = (apung.value + i / 4) % 1.0;
+            final turun = tinggi * p - tebal;
+            final goyang = math.sin(p * 3 * math.pi + i * 2.1) * size * .18;
+            final alpha = math.sin(p * math.pi).clamp(0.0, 1.0) * .9;
+            final s = 5.0 + (i % 2) * 2.5;
+            return Positioned(
+              left: tinggi / 2 + goyang + (i - 1.5) * size * .2 - s / 2,
+              top: turun,
+              child: Opacity(
+                opacity: alpha,
+                child: Transform.rotate(
+                  angle: p * 4 * math.pi + i,
+                  child: Icon(Icons.spa_rounded,
+                      size: s, color: _warna[i % _warna.length]),
+                ),
+              ),
+            );
+          }),
+      ]),
+    );
+  }
+}
+
+/// Butir cahaya putih-emas naik lembut — bingkai Sayap Surgawi (Batch L).
+class _CahayaNaik extends StatelessWidget {
+  const _CahayaNaik(
+      {required this.size, required this.tebal, required this.apung});
+  final double size;
+  final double tebal;
+  final Animation<double> apung;
+
+  static const _warna = [
+    Colors.white,
+    Color(0xFFFDF2C5),
+    Color(0xFFE0E7FF),
+    XyTheme.goldSoft,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final tinggi = size + tebal * 2;
+    return AnimatedBuilder(
+      animation: apung,
+      builder: (_, __) => Stack(clipBehavior: Clip.none, children: [
+        for (var i = 0; i < 4; i++)
+          Builder(builder: (_) {
+            final p = (apung.value + i / 4) % 1.0;
+            final naik = tinggi * (1 - p) - tebal;
+            final goyang = math.sin(p * 2 * math.pi + i * 1.3) * size * .12;
+            final alpha = math.sin(p * math.pi).clamp(0.0, 1.0) * .8;
+            final s = 3.0 + (i % 3) * 1.4;
+            return Positioned(
+              left: tinggi / 2 + goyang + (i - 1.5) * size * .22 - s / 2,
+              top: naik,
+              child: Opacity(
+                opacity: alpha,
+                child: Container(
+                  width: s,
+                  height: s,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _warna[i % _warna.length],
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.white.withOpacity(.7), blurRadius: 6),
                     ],
                   ),
                 ),

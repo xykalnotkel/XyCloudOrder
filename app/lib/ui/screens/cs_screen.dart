@@ -605,7 +605,7 @@ class _StripBalasan extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: XyTheme.of(context).line)),
+            boxShadow: [BoxShadow(color: XyTheme.of(context).ink.withOpacity(.07), blurRadius: 22, offset: const Offset(0, -6))],
             color: XyTheme.primary.withOpacity(.045),
           ),
           child: Row(children: [

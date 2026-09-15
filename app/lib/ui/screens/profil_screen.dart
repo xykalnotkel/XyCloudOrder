@@ -18,6 +18,7 @@ import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/banner_profil.dart';
+import '../widgets/gaya_nama.dart';
 import '../widgets/bingkai_profil.dart';
 import '../widgets/common.dart';
 import '../widgets/galeri_picker.dart';
@@ -126,11 +127,23 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(u.nama,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    GayaNama(u.nama,
+                        gaya: u.gayaNama,
                         style: const TextStyle(
                             color: Colors.white, fontWeight: FontWeight.w700, fontSize: 19, letterSpacing: -.5)),
+                    // Batch L: slogan tampil persis di bawah nama.
+                    if ((u.slogan ?? '').isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text('“${u.slogan}”',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(.85),
+                                fontSize: 11.5,
+                                fontStyle: FontStyle.italic,
+                                fontWeight: FontWeight.w600)),
+                      ),
                     const SizedBox(height: 4),
                     Text(u.email,
                         maxLines: 1,

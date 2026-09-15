@@ -176,8 +176,18 @@ const BANNER_PROFIL = ['ungu', 'senja', 'midnight', 'permen', 'anggrek'];
 // Bingkai avatar profil (Batch I). Nilai harus sama dengan daftar BINGKAI
 // di app/lib/ui/widgets/bingkai_profil.dart. 'aurora' & 'permata' khusus
 // langganan Pro/VIP.
-const BINGKAI_PROFIL = ['polos', 'ungu', 'emas', 'neon', 'aurora', 'permata', 'api', 'galaksi'];
-const BINGKAI_LANGGANAN = ['aurora', 'permata', 'api', 'galaksi'];
+const BINGKAI_PROFIL = ['polos', 'ungu', 'emas', 'neon', 'aurora', 'permata', 'api', 'galaksi',
+  // Batch L: bingkai aset AI baru (assets/bingkai/*.webp). 'mahkota' & 'naga'
+  // kelas tertinggi — khusus VIP; sisanya Pro/VIP.
+  'sakura', 'sirkuit', 'sayap', 'petir', 'mahkota', 'naga'];
+const BINGKAI_LANGGANAN = ['aurora', 'permata', 'api', 'galaksi', 'sakura', 'sirkuit', 'sayap', 'petir', 'mahkota', 'naga'];
+// Bingkai kelas VIP saja (premium tertinggi — tampil dengan label "VIP" di app).
+const BINGKAI_VIP = ['mahkota', 'naga'];
+
+// Gaya nama kustom (Batch L). Sama dengan daftar GAYA_NAMA di
+// app/lib/ui/widgets/gaya_nama.dart. Gaya beranimasi khusus Pro/VIP.
+const GAYA_NAMA = ['normal', 'tebal', 'miring', 'serif', 'mono', 'gradasi', 'emas', 'neon', 'pelangi', 'ombak', 'ketik'];
+const GAYA_NAMA_LANGGANAN = ['gradasi', 'emas', 'neon', 'pelangi', 'ombak', 'ketik'];
 
 // Username yang dicadangkan untuk akun resmi/sistem — tidak bisa dipakai,
 // baik persis maupun sebagai awalan merek (contoh: xycloud*, admin*).
@@ -326,6 +336,35 @@ async function pushForum(env, idPengguna, { judul, pesan, data }) {
   await Promise.all(
     results.map((u) => kirimPush(env, { userId: u.id, judul, pesan, data }))
   );
+}
+
+/**
+ * Batch L: deteksi @username dalam teks forum lalu kirim notifikasi 'sebut'
+ * ke tiap pengguna yang disebut (maks 8 per pesan, tidak menyebut diri sendiri).
+ */
+async function notifMention(env, ctx, { teks, dariId, dariNama, refId, judulPost }) {
+  try {
+    const mentions = [...new Set((String(teks || '').match(/@([a-z0-9_.]{3,20})/gi) || [])
+      .map((m) => m.slice(1).toLowerCase()))].slice(0, 8);
+    if (!mentions.length) return;
+    const tanda = mentions.map(() => '?').join(',');
+    const { results } = await env.DB.prepare(
+      `SELECT id, username FROM users WHERE lower(username) IN (${tanda}) AND deleted_at IS NULL AND diblokir = 0`
+    ).bind(...mentions).all();
+    for (const u of results) {
+      if (!u.id || u.id === dariId) continue;
+      await buatNotif(env, ctx, {
+        userId: u.id,
+        jenis: 'sebut',
+        judul: `${dariNama} menyebut kamu`,
+        pesan: `Di diskusi "${String(judulPost || 'komunitas').slice(0, 50)}": ${String(teks).slice(0, 90)}`,
+        aktor: dariNama,
+        refJenis: 'forum',
+        refId,
+        tombol: TOMBOL_SOCIAL,
+      });
+    }
+  } catch (_) { /* mention gagal tidak boleh mengganggu kiriman utama */ }
 }
 
 /**
@@ -1218,7 +1257,8 @@ ${halaman.map(([u, p2, f]) => `  <url>
         sql = sql.replace(
           'SELECT * FROM forum_post',
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, u.bingkai AS bingkai, u.gaya_nama AS gaya_nama,
+                  COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id`
         ).replace('WHERE kategori', 'WHERE f.kategori')
          .replace('ORDER BY disematkan DESC, dibuat DESC', 'ORDER BY f.disematkan DESC, f.dibuat DESC');
@@ -1231,14 +1271,16 @@ ${halaman.map(([u, p2, f]) => `  <url>
         const id = p.split('/')[1];
         const post = await env.DB.prepare(
           `SELECT f.*, COALESCE(u.tier, CASE WHEN f.user_id = 'admin' THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, f.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, u.bingkai AS bingkai, u.gaya_nama AS gaya_nama,
+                  COALESCE(u.foto, f.foto) AS foto
            FROM forum_post f LEFT JOIN users u ON u.id = f.user_id WHERE f.id = ?`
         ).bind(id).first();
         if (!post) return err('Diskusi tidak ditemukan', 404, env);
 
         const { results } = await env.DB.prepare(
           `SELECT b.*, COALESCE(u.tier, CASE WHEN b.admin = 1 THEN 'admin' ELSE 'basic' END) AS tier,
-                  u.nama AS nama_terbaru, u.badge AS badge, COALESCE(u.foto, b.foto) AS foto
+                  u.nama AS nama_terbaru, u.badge AS badge, u.bingkai AS bingkai, u.gaya_nama AS gaya_nama,
+                  COALESCE(u.foto, b.foto) AS foto
            FROM forum_balasan b LEFT JOIN users u ON u.id = b.user_id
            WHERE b.post_id = ? ORDER BY b.dibuat DESC, b.id DESC LIMIT 200`
         ).bind(id).all();
@@ -3168,7 +3210,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
       if (p.startsWith('users/') && p.endsWith('/profil') && req.method === 'GET') {
         const idU = p.split('/')[1];
         const u = await env.DB.prepare(
-          'SELECT id,nama,username,foto,bio,banner,banner_media,bingkai,tier,badge,diblokir,created_at FROM users WHERE id=? AND deleted_at IS NULL',
+          'SELECT id,nama,username,foto,bio,banner,banner_media,bingkai,tier,badge,diblokir,created_at,slogan,bio_link,gaya_nama FROM users WHERE id=? AND deleted_at IS NULL',
         ).bind(idU).first();
         if (!u) {
           // Posting forum & DM resmi dibuat atas nama 'admin' (tanpa baris users).
@@ -3727,6 +3769,9 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
             if (BINGKAI_LANGGANAN.includes(idB) && String(uLama.tier || 'basic') === 'basic') {
               return err('Bingkai ini khusus langganan Pro & VIP. Naikkan tier dulu di menu Tier & Benefit.', 403, env);
             }
+            if (BINGKAI_VIP.includes(idB) && String(uLama.tier || 'basic') !== 'vip') {
+              return err('Bingkai ini eksklusif untuk member VIP.', 403, env);
+            }
             bingkai = idB;
           }
         }
@@ -3742,6 +3787,38 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
 
         const notifForum = b.notif_forum == null ? null : (b.notif_forum ? 1 : 0);
         const notifDm = b.notif_dm == null ? null : (b.notif_dm ? 1 : 0);
+
+        // Batch L: slogan (tagline pendek), bio link, gaya nama kustom.
+        const slogan = b.slogan === undefined ? null : String(b.slogan || '').slice(0, 60);
+        if (slogan) {
+          const k = kataTerlarangDalam(slogan);
+          if (k) return err(`Slogan mengandung kata terlarang (${k.jenis}).`, 422, env);
+        }
+        let bioLink = null; // null = tidak diubah; '' = hapus
+        if (b.bio_link !== undefined) {
+          const tautan = String(b.bio_link || '').trim().slice(0, 200);
+          if (tautan === '') bioLink = '';
+          else {
+            let uOk = null;
+            try { uOk = new URL(tautan.startsWith('http') ? tautan : `https://${tautan}`); } catch { /* noop */ }
+            if (!uOk || !['http:', 'https:'].includes(uOk.protocol) || !uOk.hostname.includes('.')) {
+              return err('Bio link tidak valid. Contoh: https://instagram.com/namamu', 422, env);
+            }
+            bioLink = uOk.toString();
+          }
+        }
+        let gayaNama = '~';
+        if (b.gaya_nama !== undefined) {
+          const idG = String(b.gaya_nama || '').trim();
+          if (idG === '' || idG === 'normal') gayaNama = '';
+          else if (!GAYA_NAMA.includes(idG)) return err('Gaya nama tidak dikenal.', 422, env);
+          else {
+            if (GAYA_NAMA_LANGGANAN.includes(idG) && String(uLama.tier || 'basic') === 'basic') {
+              return err('Gaya nama ini khusus langganan Pro & VIP. Naikkan tier dulu di menu Tier & Benefit.', 403, env);
+            }
+            gayaNama = idG;
+          }
+        }
 
         // Kustomisasi profil luas (Batch D): bio bebas + tema banner gradasi.
         const bio = b.bio === undefined ? null : String(b.bio || '').slice(0, 240);
@@ -3763,9 +3840,13 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
                             notif_dm = COALESCE(?, notif_dm),
                             bio = COALESCE(?, bio),
                             banner = COALESCE(NULLIF(?,'~'), banner),
-                            bingkai = COALESCE(NULLIF(?,'~'), bingkai)
+                            bingkai = COALESCE(NULLIF(?,'~'), bingkai),
+                            slogan = COALESCE(?, slogan),
+                            bio_link = CASE WHEN ? IS NULL THEN bio_link ELSE NULLIF(?, '') END,
+                            gaya_nama = COALESCE(NULLIF(?,'~'), gaya_nama)
            WHERE id = ?`
-        ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), bingkai, me.sub).run();
+        ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), bingkai,
+               slogan, bioLink, bioLink, gayaNama, me.sub).run();
 
         if (usernameBaru !== undefined) {
           await env.DB.prepare('UPDATE users SET username=? WHERE id=?')
@@ -3835,7 +3916,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         let papan, saya;
         if (periode === 'bulan') {
           const { results } = await env.DB.prepare(
-            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai,
+            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai, u.gaya_nama, u.slogan,
                     CAST(COALESCE(SUM(ABS(t.nominal)),0) AS INTEGER) AS poin
              FROM transaksi t JOIN users u ON u.id = t.user_id
              WHERE t.nominal < 0 AND t.${bukanTransfer}
@@ -3870,7 +3951,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           saya = { peringkat: poinSaya > 0 ? (r?.peringkat || null) : null, poin: poinSaya };
         } else {
           const { results } = await env.DB.prepare(
-            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai,
+            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai, u.gaya_nama, u.slogan,
                     u.total_belanja AS poin
              FROM users u
              WHERE u.total_belanja > 0 AND u.diblokir = 0 AND u.deleted_at IS NULL
@@ -3926,6 +4007,19 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         }
         await env.DB.prepare('UPDATE users SET pin_transfer=? WHERE id=?').bind(await buatPw(pin), me.sub).run();
         return json({ ok: true }, 200, env);
+      }
+
+      // ---- Batch L: autocomplete @mention (awalan username, maks 8) ----
+      if (p === 'pengguna/mention' && req.method === 'GET') {
+        if (!(await bolehLanjut(env, `mention:${me.sub}`, 120, 3600))) return json([], 200, env);
+        const q = String(url.searchParams.get('q') || '').trim().toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
+        if (q.length < 1) return json([], 200, env);
+        const { results } = await env.DB.prepare(
+          `SELECT id, nama, username, foto, tier, badge FROM users
+           WHERE username IS NOT NULL AND lower(username) LIKE ? AND deleted_at IS NULL AND diblokir = 0
+           ORDER BY (lower(username) = ?) DESC, total_belanja DESC LIMIT 8`
+        ).bind(`${q}%`, q).all();
+        return json(results.map((r) => ({ ...r, foto: samarkanGambar(env, r.foto, 's') })), 200, env);
       }
 
       // ---- cari penerima transfer (username/email persis) ----
@@ -4092,6 +4186,10 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         ).bind(post.id, post.user_id, post.nama, post.foto, post.kategori, judul, isi, gambar, post.dibuat).run();
 
         ctx.waitUntil(push(env, 'forum', 'forum.baru', post));
+        // Batch L: notifikasi @mention di judul/isi diskusi baru.
+        ctx.waitUntil(notifMention(env, ctx, {
+          teks: `${judul} ${isi}`, dariId: me.sub, dariNama: post.nama, refId: post.id, judulPost: judul,
+        }));
         return json(post, 201, env);
       }
 
@@ -4126,6 +4224,15 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           env.DB.prepare('UPDATE forum_post SET balasan = balasan + 1 WHERE id = ?').bind(id),
         ]);
         ctx.waitUntil(push(env, 'forum', 'forum.balasan', baris));
+        // Batch L: notifikasi @mention di komentar.
+        if (isi) {
+          ctx.waitUntil((async () => {
+            const pJudul = await env.DB.prepare('SELECT judul FROM forum_post WHERE id = ?').bind(id).first();
+            await notifMention(env, ctx, {
+              teks: isi, dariId: me.sub, dariNama: baris.nama, refId: id, judulPost: pJudul?.judul,
+            });
+          })());
+        }
 
         // pemberitahuan ke pemilik diskusi, pemilik komentar yang dibalas, dan peserta lain
         ctx.waitUntil((async () => {

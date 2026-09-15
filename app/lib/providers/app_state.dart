@@ -755,9 +755,9 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= profil =================
-  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) async {
+  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai, String? slogan, String? bioLink, String? gayaNama}) async {
     try {
-      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner, username: username, bingkai: bingkai);
+      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner, username: username, bingkai: bingkai, slogan: slogan, bioLink: bioLink, gayaNama: gayaNama);
       forumRevisi++;
       forum = forum.map((p) => p.userId == user!.id ? ForumPost.fromJson({...p.toJson(), 'nama': user!.nama, 'foto': user!.foto}) : p).toList();
       _ulasan.clear();
@@ -794,6 +794,10 @@ class AppState extends ChangeNotifier {
   // ================= transfer saldo (Batch I) =================
   Future<Map<String, dynamic>> cariPenerimaTransfer(String q) =>
       _repo.cariTransfer(q);
+
+  /// Batch L: autocomplete @mention di composer komunitas.
+  Future<List<Map<String, dynamic>>> cariMention(String q) =>
+      _repo.cariMention(q);
 
   /// Kirim saldo. Melempar ApiException dengan pesan server (PIN salah,
   /// saldo kurang, batas harian, dsb.) — pemanggil yang menampilkan.
