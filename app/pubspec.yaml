@@ -90,3 +90,8 @@ dependency_overrides:
   record_windows: 1.0.2
   record_linux: 0.7.2
   record_darwin: 1.1.1
+  # Batch I: local_auth_android ≥1.0.56 menuntut minSdk 24 sedangkan CI memakai
+  # minSdk 23 (kebutuhan record_android). 1.0.47 (minSdk 19) teruji lokal.
+  local_auth_android: 1.0.47
+  # photo_manager 3.12.0 teruji lokal (compileSdk modul 36, Java 17).
+  photo_manager: 3.12.0
