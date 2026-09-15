@@ -51,8 +51,15 @@ jobs:
         shell: pwsh
         working-directory: agent-gui
         run: |
-          & .\dist\XyCloudStore-Agent.exe --veri
-          if ($LASTEXITCODE -ne 0) { throw "Smoke-test --veri gagal" }
+          # Exe rilis memakai windows_subsystem="windows" → pwsh `&` tidak menunggu
+          # dan $LASTEXITCODE kosong. Pakai Start-Process -Wait + redirect stdout.
+          $p = Start-Process -FilePath .\dist\XyCloudStore-Agent.exe -ArgumentList '--veri' `
+            -Wait -PassThru -NoNewWindow -RedirectStandardOutput ..\veri.txt
+          Get-Content ..\veri.txt
+          if ($p.ExitCode -ne 0) { throw "Smoke-test --veri gagal (exit $($p.ExitCode))" }
+          if (-not (Select-String -Path ..\veri.txt -Pattern 'XyCloudStore-Agent 1\.5\.' -Quiet)) {
+            throw "Output --veri tidak memuat versi yang diharapkan"
+          }
           Compress-Archive -Path dist/XyCloudStore-Agent.exe, dist/README.md `
             -DestinationPath ../XyCloudStore-Agent-Windows.zip -Force
           Get-Item ../XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
