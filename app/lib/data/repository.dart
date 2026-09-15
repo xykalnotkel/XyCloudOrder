@@ -142,6 +142,9 @@ abstract class XyRepository {
   Future<List<String>> balasanDisukai();
   Future<void> laporkan({required String jenis, required String refId, String? url, String? alasan});
   Future<List<PcPlan>> plans();
+
+  /// Batch J: agen live + spek PC host terdeteksi otomatis.
+  Future<List<UnitLive>> unitLive();
   Future<List<AkunProduk>> produkAkun();
   Future<List<PromoBanner>> banners();
   Future<List<RentOrder>> orders();
@@ -565,6 +568,11 @@ class RemoteRepository implements XyRepository {
       ((await api.get('/pc/plans')) as List).map((e) => PcPlan.fromJson(e)).toList();
 
   @override
+  Future<List<UnitLive>> unitLive() async => ((await api.get('/pc/unit-live')) as List)
+      .map((e) => UnitLive.fromJson(Map<String, dynamic>.from(e as Map)))
+      .toList();
+
+  @override
   Future<List<AkunProduk>> produkAkun() async =>
       ((await api.get('/akun/produk')) as List).map((e) => AkunProduk.fromJson(e)).toList();
 
@@ -970,6 +978,9 @@ class MockRepository implements XyRepository {
 
   @override
   Future<List<PcPlan>> plans() => _delay(_plans);
+
+  @override
+  Future<List<UnitLive>> unitLive() async => const [];
 
   @override
   Future<List<AkunProduk>> produkAkun() => _delay(_akun);

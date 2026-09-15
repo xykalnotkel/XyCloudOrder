@@ -100,7 +100,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Peringkat nyata dari transaksi lunas — transfer saldo tidak dihitung.',
+                  _periode == 'bulan'
+                      ? 'Periode ${_labelBulan()} — dihitung dari transaksi lunas bulan ini. Transfer saldo tidak dihitung.'
+                      : 'Akumulasi seluruh transaksi lunas sepanjang akun aktif. Transfer saldo tidak dihitung.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       color: Colors.white.withOpacity(.72), fontSize: 11.8, height: 1.5),
@@ -149,6 +151,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               ]),
             ),
             const SizedBox(height: 6),
+            Text(
+              'Sumber: riwayat transaksi lunas (top 50) · urutan menurun · akun diblokir tidak tampil',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: t.muted.withOpacity(.85), fontSize: 10.5),
+            ),
 
             if (_memuat && d == null)
               const Padding(
@@ -362,6 +369,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
     );
   }
+}
+
+/// Contoh: "1–30 September 2026" (bulan berjalan, zona waktu server = UTC).
+String _labelBulan() {
+  final n = DateTime.now().toUtc();
+  final akhir = DateTime(n.year, n.month + 1, 0).day;
+  const nama = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  return '1–$akhir ${nama[n.month - 1]} ${n.year}';
 }
 
 class _Podium extends StatelessWidget {

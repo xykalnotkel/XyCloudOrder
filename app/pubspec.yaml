@@ -1,7 +1,7 @@
 name: xycloud_order
 description: "XyCloudStore - Sewa PC Cloud, Beli Akun Digital, dan Customer Service realtime."
 publish_to: "none"
-version: 3.5.0+23
+version: 3.6.0+24
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -49,6 +49,7 @@ flutter:
     - assets/brand/
     - assets/ilustrasi/
     - assets/ikon/
+    - assets/bingkai/
 
 # ---------------------------------------------------------------
 #  Ikon launcher (adaptive icon Android)

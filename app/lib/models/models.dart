@@ -727,6 +727,10 @@ class KonfigurasiApp {
   final String negaraKode;
   final String negaraNama;
 
+  /// Batch J: angka realtime untuk layar welcome & status unit.
+  final int statistikPengguna;
+  final int statistikUnitOnline;
+
   const KonfigurasiApp({
     this.bayarOtomatis = false,
     this.metodeBayar = const [],
@@ -737,6 +741,8 @@ class KonfigurasiApp {
     this.minTopup = 10000,
     this.negaraKode = '',
     this.negaraNama = '',
+    this.statistikPengguna = 0,
+    this.statistikUnitOnline = 0,
   });
 
   factory KonfigurasiApp.fromJson(Map<String, dynamic> j) {
@@ -754,6 +760,8 @@ class KonfigurasiApp {
       rekening: _petaAman(j['rekening']),
       negaraKode: '${negara['kode'] ?? ''}',
       negaraNama: '${negara['nama'] ?? ''}',
+      statistikPengguna: (_petaAman(j['statistik'])['pengguna'] as num?)?.toInt() ?? 0,
+      statistikUnitOnline: (_petaAman(j['statistik'])['unitOnline'] as num?)?.toInt() ?? 0,
       minTopup: j['minTopup'] ?? 10000,
     );
   }
@@ -1216,4 +1224,41 @@ class DmPesan {
 
   bool dariSaya(String sayaId) => dariId == sayaId;
   DateTime get tanggal => DateTime.fromMillisecondsSinceEpoch(waktu);
+}
+
+
+/// Agen live per paket PC (Batch J) — spek PC host terdeteksi otomatis oleh
+/// agen di mesin host (heartbeat mengisi `agen.spec` di server).
+class UnitLive {
+  final String planId;
+  final String status;
+  final String versi;
+  final String host;
+  final String terakhir;
+  final Map<String, dynamic> spec;
+
+  const UnitLive({
+    this.planId = '',
+    this.status = 'offline',
+    this.versi = '',
+    this.host = '',
+    this.terakhir = '',
+    this.spec = const {},
+  });
+
+  factory UnitLive.fromJson(Map<String, dynamic> j) => UnitLive(
+        planId: '${j['planId'] ?? ''}',
+        status: '${j['status'] ?? 'offline'}',
+        versi: '${j['versi'] ?? ''}',
+        host: '${j['host'] ?? ''}',
+        terakhir: '${j['terakhir'] ?? ''}',
+        spec: _petaAman(j['spec']),
+      );
+
+  bool get online => status == 'online';
+  String get hostname => '${spec['hostname'] ?? ''}';
+  String get cpu => '${spec['cpu'] ?? ''}';
+  String get ram => '${spec['ram_total_gb'] ?? ''}';
+  String get gpu => '${spec['gpu'] ?? ''}';
+  String get osVersi => '${spec['os_versi'] ?? ''}';
 }

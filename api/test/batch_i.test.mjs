@@ -107,6 +107,16 @@ test('Batch I: bingkai profil + gate langganan banner media', async () => {
     assert.equal(r.status, 200);
     assert.equal(r.json.data.bingkai, 'aurora');
     assert.equal('banner_media' in r.json.data, true);
+
+    // Batch J: bingkai aset AI (api/galaksi) ikut gate langganan yang sama.
+    r = await A('/me', 'PATCH', { bingkai: 'galaksi' }); // tier pro → boleh
+    assert.equal(r.status, 200);
+    await db.prepare("UPDATE users SET tier='basic' WHERE id='a'").run();
+    assert.equal((await A('/me', 'PATCH', { bingkai: 'api' })).status, 403);
+    await db.prepare("UPDATE users SET tier='vip' WHERE id='a'").run();
+    r = await A('/me', 'PATCH', { bingkai: 'api' });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.data.bingkai, 'api');
   } finally {
     await mf.dispose();
   }

@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
+import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import 'login_screen.dart';
 
@@ -67,7 +69,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
               FadeInUp(
                 delay: const Duration(milliseconds: 180),
                 child: const Text(
-                  'Kekuatan PC\nkelas dewa,\ndi genggamanmu.',
+                  'Kekuatan PC\nkelas berat,\ndi genggamanmu.',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 32,
@@ -84,14 +86,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
                 delay: const Duration(milliseconds: 280),
                 child: Text(
                   'Sewa cloud PC per jam, beli akun digital bergaransi, dan pantau semuanya langsung dalam satu aplikasi.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(.60),
-                    fontSize: 14.5,
-                    height: 1.7,
-                    fontWeight: FontWeight.w500,
-                  ),
                 ),
               ),
+
+              const SizedBox(height: 14),
+
+              // Batch J: angka realtime dari /api/config (statistikPublik).
+              FadeInUp(
+                delay: const Duration(milliseconds: 340),
+                child: _ChipStatistik(),
+              ),
+
 
               const SizedBox(height: 30),
 
@@ -213,4 +218,51 @@ class _ConstellationPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConstellationPainter old) => old.t != t;
+}
+
+
+/// Baris angka realtime (Batch J): jumlah pengguna terdaftar & unit online.
+class _ChipStatistik extends StatelessWidget {
+  const _ChipStatistik();
+
+  String _fmt(int n) {
+    final s = n.toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+      b.write(s[i]);
+    }
+    return b.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final k = context.watch<AppState>().konfigurasi;
+    if (k.statistikPengguna <= 0 && k.statistikUnitOnline <= 0) {
+      return const SizedBox.shrink();
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.10),
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.white.withOpacity(.16)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.group_rounded, size: 14, color: Colors.white70),
+          const SizedBox(width: 6),
+          Text('${_fmt(k.statistikPengguna)} pengguna',
+              style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700)),
+          if (k.statistikUnitOnline > 0) ...[
+            Container(margin: const EdgeInsets.symmetric(horizontal: 8), width: 1, height: 12, color: Colors.white24),
+            Container(width: 7, height: 7, decoration: const BoxDecoration(color: Color(0xFF34D399), shape: BoxShape.circle)),
+            const SizedBox(width: 5),
+            Text('${k.statistikUnitOnline} unit online',
+                style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w600)),
+          ],
+        ]),
+      ),
+    ]);
+  }
 }

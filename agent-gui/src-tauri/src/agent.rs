@@ -343,6 +343,33 @@ fn spesifikasi() -> Value {
             spec["ip_lan"] = json!(teks);
         }
     }
+    // Batch J: GPU + versi Windows — spek terdeteksi otomatis untuk app.
+    if let Ok(out) = std::process::Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "(Get-CimInstance Win32_VideoController | Select-Object -First 1).Name",
+        ])
+        .output()
+    {
+        let teks = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !teks.is_empty() && teks.len() < 120 {
+            spec["gpu"] = json!(teks);
+        }
+    }
+    if let Ok(out) = std::process::Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "[System.Environment]::OSVersion.Version.ToString()",
+        ])
+        .output()
+    {
+        let teks = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if !teks.is_empty() && teks.len() < 40 {
+            spec["os_versi"] = json!(teks);
+        }
+    }
     spec
 }
 

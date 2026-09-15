@@ -518,10 +518,19 @@ class _MenuCepat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget kartu(String ikon, String label, IconData iconData, Widget layar) {
+      final t = XyTheme.of(context);
       return Pressable(
         onTap: () => Navigator.push(context, xyRoute(layar)),
         scale: .94,
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        // Batch J: wadah kartu halus (tidak mencolok) supaya grid enak dilihat.
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          decoration: BoxDecoration(
+            color: t.dark ? Colors.white.withOpacity(.045) : XyTheme.violet.withOpacity(.05),
+            border: Border.all(color: t.line.withOpacity(.55)),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           // Ikon 3D glossy-clay: aset AI transparan (lihat assets/ikon/3d_*.png).
           // Item tanpa aset memakai fallback pil gradien + ikon material.
           Image.asset(
@@ -554,6 +563,7 @@ class _MenuCepat extends StatelessWidget {
             ),
           ),
         ]),
+        ),
       );
     }
 

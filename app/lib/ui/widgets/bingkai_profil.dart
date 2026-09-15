@@ -23,6 +23,9 @@ const List<BingkaiInfo> daftarBingkai = [
   BingkaiInfo('neon', 'Neon'),
   BingkaiInfo('aurora', 'Aurora', langganan: true),
   BingkaiInfo('permata', 'Permata', langganan: true),
+  // Batch J: bingkai aset AI (assets/bingkai/*.png) + partikel melayang.
+  BingkaiInfo('api', 'Api Ungu', langganan: true),
+  BingkaiInfo('galaksi', 'Galaksi', langganan: true),
 ];
 
 /// Cincin gradasi statis untuk bingkai non-animasi.
@@ -66,18 +69,30 @@ class AvatarBingkai extends StatefulWidget {
 }
 
 class _AvatarBingkaiState extends State<AvatarBingkai>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _putar = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 5),
   );
 
-  bool get _animasi => widget.bingkai == 'aurora';
+  /// Partikel melayang untuk bingkai aset AI (bara api naik / bintang mengorbit).
+  late final AnimationController _apung = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2600),
+  );
+
+  bool get _animasi =>
+      widget.bingkai == 'aurora' ||
+      widget.bingkai == 'galaksi' ||
+      widget.bingkai == 'api';
+
+  bool get _asetAi => widget.bingkai == 'galaksi' || widget.bingkai == 'api';
 
   @override
   void initState() {
     super.initState();
     if (_animasi) _putar.repeat();
+    if (widget.bingkai == 'api') _apung.repeat();
   }
 
   @override
@@ -88,11 +103,17 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
     } else if (!_animasi && _putar.isAnimating) {
       _putar.stop();
     }
+    if (widget.bingkai == 'api' && !_apung.isAnimating) {
+      _apung.repeat();
+    } else if (widget.bingkai != 'api' && _apung.isAnimating) {
+      _apung.stop();
+    }
   }
 
   @override
   void dispose() {
     _putar.dispose();
+    _apung.dispose();
     super.dispose();
   }
 
@@ -102,10 +123,32 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
     if (id == 'polos' || id.isEmpty) {
       return SizedBox(width: widget.size, height: widget.size, child: widget.child);
     }
-    final tebal = widget.tebal ?? math.max(2.6, widget.size * .055);
+    // Bingkai aset AI punya cincin tebal yang menyatu dengan artwork-nya.
+    final tebal = widget.tebal ??
+        (_asetAi ? math.max(6.0, widget.size * .13) : math.max(2.6, widget.size * .055));
     final grad = _gradBingkai(id);
 
     Widget cincin() {
+      if (_asetAi) {
+        // Ring artwork hasil generate AI (chroma-key hijau → transparan).
+        return Image.asset(
+          'assets/bingkai/$id.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, __, ___) => Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: id == 'api'
+                    ? [const Color(0xFFF472B6), XyTheme.violet, const Color(0xFF7C2D12)]
+                    : [const Color(0xFF22D3EE), XyTheme.violet, const Color(0xFF312E81)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+        );
+      }
       if (id == 'aurora') {
         return RotationTransition(
           turns: _putar,
@@ -170,6 +213,13 @@ class _AvatarBingkaiState extends State<AvatarBingkai>
           clipBehavior: Clip.antiAlias,
           child: widget.child,
         ),
+        // Batch J: elemen melayang untuk bingkai aset AI.
+        if (id == 'galaksi')
+          Positioned.fill(
+              child: _BintangOrbit(size: widget.size, tebal: tebal, putar: _putar)),
+        if (id == 'api')
+          Positioned.fill(
+              child: _BaraNaik(size: widget.size, tebal: tebal, apung: _apung)),
         if (id == 'permata')
           ...List.generate(4, (i) {
             final sudut = math.pi / 4 + i * math.pi / 2;
@@ -232,7 +282,7 @@ class PilihBingkai extends StatelessWidget {
               if (terkunci) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                     content: Text(
-                        'Bingkai Aurora & Permata khusus pelanggan Pro/VIP. Naikkan tier dulu ya.')));
+                        'Bingkai animasi premium (Aurora, Permata, Api, Galaksi) khusus pelanggan Pro/VIP. Naikkan tier dulu ya.')));
                 return;
               }
               onPilih(b.id);
@@ -318,4 +368,89 @@ class _AvatarJatuh extends StatelessWidget {
         child: Icon(Icons.person_rounded,
             color: XyTheme.of(context).muted, size: 26),
       );
+}
+
+/// Bintang kecil mengorbit mengelilingi bingkai Galaksi (Batch J).
+class _BintangOrbit extends StatelessWidget {
+  const _BintangOrbit({required this.size, required this.tebal, required this.putar});
+  final double size;
+  final double tebal;
+  final Animation<double> putar;
+
+  static const _warna = [Colors.white, XyTheme.goldSoft, Color(0xFFBFD9FF)];
+
+  @override
+  Widget build(BuildContext context) {
+    final r = size / 2 + tebal * .5;
+    return AnimatedBuilder(
+      animation: putar,
+      builder: (_, __) => Stack(children: [
+        for (var i = 0; i < 3; i++)
+          Builder(builder: (_) {
+            final sudut = putar.value * 2 * math.pi + i * 2 * math.pi / 3;
+            final denyut = .75 + .25 * math.sin(putar.value * 6 * math.pi + i);
+            final s = (i == 0 ? 13.0 : 9.0) * denyut;
+            return Positioned(
+              left: r + r * math.cos(sudut) - s / 2,
+              top: r + r * math.sin(sudut) - s / 2,
+              child: Icon(Icons.auto_awesome_rounded,
+                  size: s,
+                  color: _warna[i].withOpacity(.95)),
+            );
+          }),
+      ]),
+    );
+  }
+}
+
+/// Bara api ungu-emas melayang naik di sekeliling bingkai Api (Batch J).
+class _BaraNaik extends StatelessWidget {
+  const _BaraNaik({required this.size, required this.tebal, required this.apung});
+  final double size;
+  final double tebal;
+  final Animation<double> apung;
+
+  static const _bara = [
+    Color(0xFFFBBF24),
+    Color(0xFFF472B6),
+    Color(0xFFA78BFA),
+    Color(0xFFFDE68A),
+    Color(0xFFF97316),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final tinggi = size + tebal * 2;
+    return AnimatedBuilder(
+      animation: apung,
+      builder: (_, __) => Stack(clipBehavior: Clip.none, children: [
+        for (var i = 0; i < 5; i++)
+          Builder(builder: (_) {
+            final p = (apung.value + i / 5) % 1.0;
+            final naik = tinggi * (1 - p) - tebal;
+            final goyang = math.sin(p * 4 * math.pi + i * 1.7) * size * .16;
+            final alpha = math.sin(p * math.pi).clamp(0.0, 1.0) * .9;
+            final s = 3.0 + (i % 3) * 1.6;
+            return Positioned(
+              left: tinggi / 2 + goyang + (i - 2) * size * .17 - s / 2,
+              top: naik,
+              child: Opacity(
+                opacity: alpha,
+                child: Container(
+                  width: s,
+                  height: s,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _bara[i],
+                    boxShadow: [
+                      BoxShadow(color: _bara[i].withOpacity(.75), blurRadius: 5),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+      ]),
+    );
+  }
 }

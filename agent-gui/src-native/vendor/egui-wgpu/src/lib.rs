@@ -96,18 +96,58 @@ impl RenderState {
 
         // This is always an empty list on web.
         #[cfg(not(target_arch = "wasm32"))]
-        let available_adapters = instance.enumerate_adapters(wgpu::Backends::all());
+        let mut available_adapters = instance.enumerate_adapters(wgpu::Backends::all());
 
         let adapter = {
             crate::profile_scope!("request_adapter");
-            instance
+            let mut dipilih = instance
                 .request_adapter(&wgpu::RequestAdapterOptions {
                     power_preference: config.power_preference,
                     compatible_surface: Some(surface),
                     force_fallback_adapter: config.force_fallback_adapter,
                 })
-                .await
-                .ok_or_else(|| {
+                .await;
+
+            // XY-PATCH (Batch J): di Windows tanpa GPU / headless (mis. runner CI),
+            // WARP bisa tereliminasi oleh uji kompatibilitas surface sehingga
+            // request_adapter mengembalikan None walau force_fallback_adapter=true.
+            // Fallback: pilih manual dari enumerate_adapters(); utamakan adapter
+            // software/WARP saat force_fallback, selain itu utamakan non-software.
+            #[cfg(not(target_arch = "wasm32"))]
+            if dipilih.is_none() {
+                log::warn!(
+                    "request_adapter kosong (force_fallback={}); {} adapter terenumerasi: {}",
+                    config.force_fallback_adapter,
+                    available_adapters.len(),
+                    describe_adapters(&available_adapters)
+                );
+                let perangkat_lunak = |a: &wgpu::Adapter| {
+                    let i = a.get_info();
+                    i.device_type == wgpu::DeviceType::Cpu
+                        || i.vendor == 0x1414
+                        || i.name.to_lowercase().contains("warp")
+                        || i.name.to_lowercase().contains("basic render")
+                };
+                // wgpu 22: Adapter tidak Clone → ambil langsung dari vektor.
+                let idx = if config.force_fallback_adapter {
+                    available_adapters.iter().position(|a| perangkat_lunak(a))
+                } else {
+                    available_adapters.iter().position(|a| !perangkat_lunak(a))
+                };
+                let pilihan = match idx {
+                    Some(i) => Some(available_adapters.swap_remove(i)),
+                    None => available_adapters.pop(),
+                };
+                if let Some(a) = &pilihan {
+                    log::warn!(
+                        "pemilihan adapter manual: {}",
+                        adapter_info_summary(&a.get_info())
+                    );
+                }
+                dipilih = pilihan;
+            }
+
+            dipilih.ok_or_else(|| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if available_adapters.is_empty() {
                         log::info!("No wgpu adapters found");

@@ -176,8 +176,8 @@ const BANNER_PROFIL = ['ungu', 'senja', 'midnight', 'permen', 'anggrek'];
 // Bingkai avatar profil (Batch I). Nilai harus sama dengan daftar BINGKAI
 // di app/lib/ui/widgets/bingkai_profil.dart. 'aurora' & 'permata' khusus
 // langganan Pro/VIP.
-const BINGKAI_PROFIL = ['polos', 'ungu', 'emas', 'neon', 'aurora', 'permata'];
-const BINGKAI_LANGGANAN = ['aurora', 'permata'];
+const BINGKAI_PROFIL = ['polos', 'ungu', 'emas', 'neon', 'aurora', 'permata', 'api', 'galaksi'];
+const BINGKAI_LANGGANAN = ['aurora', 'permata', 'api', 'galaksi'];
 
 // Username yang dicadangkan untuk akun resmi/sistem — tidak bisa dipakai,
 // baik persis maupun sebagai awalan merek (contoh: xycloud*, admin*).
@@ -1314,10 +1314,25 @@ ${halaman.map(([u, p2, f]) => `  <url>
           },
           tier: TIER,
           versiMinimal: await setelan(env, 'versi_minimal', ''),
+          // Batch J: angka realtime untuk layar welcome ("dipercaya N pengguna").
+          statistik: await statistikPublik(env),
         }, 200, env);
       }
 
-      // ---------------- LOGIN GOOGLE NATIVE (tanpa browser) ----------------
+      // ---------- statistik publik (Batch J) ----------
+async function statistikPublik(env) {
+  try {
+    const [u, g] = await Promise.all([
+      env.DB.prepare('SELECT COUNT(*) AS c FROM users WHERE deleted_at IS NULL').first(),
+      env.DB.prepare("SELECT COUNT(*) AS c FROM agen WHERE status = 'online'").first(),
+    ]);
+    return { pengguna: Number(u?.c || 0), unitOnline: Number(g?.c || 0) };
+  } catch (_) {
+    return { pengguna: 0, unitOnline: 0 };
+  }
+}
+
+// ---------------- LOGIN GOOGLE NATIVE (tanpa browser) ----------------
       if (p === 'auth/google/native' && req.method === 'POST') {
         await requireRate(env,'google-native-ip',ip,12,300);
         const deviceId=await deviceFromRequest(env,req);
@@ -1553,6 +1568,25 @@ ${halaman.map(([u, p2, f]) => `  <url>
       if (p === 'pc/plans' && req.method === 'GET') {
         const { results } = await env.DB.prepare('SELECT * FROM pc_plans').all();
         return json(results.map(r=>({...r,gambar:samarkanGambar(env,r.gambar,'m')})),200,env);
+      }
+
+      // Batch J: agen live per plan — spek PC host terdeteksi otomatis oleh
+      // agen (heartbeat mengisi agen.spec) dan ditampilkan di Status Unit.
+      if (p === 'pc/unit-live' && req.method === 'GET') {
+        const { results } = await env.DB.prepare(
+          'SELECT plan_id, status, spec, versi, host, terakhir FROM agen ORDER BY terakhir DESC LIMIT 20'
+        ).all();
+        return json(
+          results.map((r) => ({
+            planId: r.plan_id || '',
+            status: r.status || 'offline',
+            versi: r.versi || '',
+            host: r.host || '',
+            terakhir: r.terakhir || '',
+            spec: (() => { try { return r.spec ? JSON.parse(r.spec) : null; } catch (_) { return null; } })(),
+          })),
+          200, env
+        );
       }
 
       if (p === 'banners' && req.method === 'GET') {

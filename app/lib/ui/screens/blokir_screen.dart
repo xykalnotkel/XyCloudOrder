@@ -92,6 +92,9 @@ class _BlokirScreenState extends State<BlokirScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
           children: [
+            // Batch J: ilustrasi hero generate AI (sebelumnya hanya ikon).
+            Center(child: XyIlustrasi('blokir', tinggi: 170)),
+            const SizedBox(height: 12),
             // ---------------- kepala: jenis pembekuan ----------------
             Row(
               children: [

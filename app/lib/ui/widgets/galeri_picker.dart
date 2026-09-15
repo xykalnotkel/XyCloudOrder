@@ -19,6 +19,9 @@ import 'common.dart';
 ///
 ///  Izin ditangani sendiri; bila ditolak permanen, pengguna tetap
 ///  bisa jatuh ke picker sistem lewat tombol di layar izin.
+/// Jenis saringan galeri (Batch J).
+enum _FilterGaleri { foto, video, semua }
+
 class GaleriPicker {
   GaleriPicker._();
 
@@ -98,8 +101,73 @@ class _GaleriScreenState extends State<_GaleriScreen> {
     super.dispose();
   }
 
-  RequestType get _tipe =>
-      widget.bolehVideo ? RequestType.common : RequestType.image;
+  // Batch J: saringan Foto / Video / Semua sesuai permintaan pemilik.
+  _FilterGaleri _filter = _FilterGaleri.foto;
+
+  RequestType get _tipe => switch (_filter) {
+        _FilterGaleri.foto => RequestType.image,
+        _FilterGaleri.video => RequestType.video,
+        _FilterGaleri.semua => RequestType.common,
+      };
+
+  Future<void> _gantiFilter(_FilterGaleri f) async {
+    if (f == _filter) return;
+    setState(() {
+      _filter = f;
+      _memuat = true;
+    });
+    final album = await PhotoManager.getAssetPathList(
+      type: _tipe,
+      hasAll: true,
+      onlyAll: false,
+    );
+    if (!mounted) return;
+    setState(() {
+      _album = album;
+      _aktif = album.isNotEmpty ? album.first : null;
+    });
+    await _muatLagi(reset: true);
+  }
+
+  Widget _barFilter(XyPalette t) => Padding(
+        padding: const EdgeInsets.fromLTRB(9, 8, 9, 4),
+        child: Row(children: [
+          for (final f in const [
+            (_FilterGaleri.foto, 'Foto', Icons.image_rounded),
+            (_FilterGaleri.video, 'Video', Icons.videocam_rounded),
+            (_FilterGaleri.semua, 'Semua', Icons.layers_rounded),
+          ])
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _gantiFilter(f.$1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: _filter == f.$1 ? XyTheme.violet : t.lineSoft,
+                    borderRadius: BorderRadius.circular(XyRadius.pill),
+                    border: Border.all(
+                        color: _filter == f.$1 ? XyTheme.violet : t.line),
+                  ),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(f.$3,
+                            size: 14,
+                            color: _filter == f.$1 ? Colors.white : t.muted),
+                        const SizedBox(width: 5),
+                        Text(f.$2,
+                            style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: _filter == f.$1 ? Colors.white : t.muted)),
+                      ]),
+                ),
+              ),
+            ),
+        ]),
+      );
 
   Future<void> _siapkan() async {
     final izin = await PhotoManager.requestPermissionExtend();
@@ -157,6 +225,13 @@ class _GaleriScreenState extends State<_GaleriScreen> {
 
   Future<void> _pilih(AssetEntity e) async {
     if (_mengambil) return;
+    // Menu khusus foto tetap menolak video (video hanya untuk banner Pro/VIP).
+    if (e.type == AssetType.video && !widget.bolehVideo) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+              'Menu ini khusus foto. Video/GIF bisa dipakai untuk banner profil (Pro/VIP).')));
+      return;
+    }
     setState(() => _mengambil = true);
     HapticFeedback.selectionClick();
     try {
@@ -245,7 +320,9 @@ class _GaleriScreenState extends State<_GaleriScreen> {
           const SizedBox(width: 6),
         ],
       ),
-      body: Stack(children: [
+      body: Column(children: [
+        _barFilter(XyTheme.of(context)),
+        Expanded(child: Stack(children: [
         if (_izinDitolak)
           Kosong(
             icon: Icons.no_photography_outlined,
@@ -326,7 +403,8 @@ class _GaleriScreenState extends State<_GaleriScreen> {
               ),
             ),
           ),
-      ]),
+      ])),
+        ]),
     );
   }
 }

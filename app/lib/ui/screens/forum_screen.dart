@@ -41,6 +41,8 @@ class _ForumScreenState extends State<ForumScreen> {
   String pilih = 'Semua';
   String cari = '';
   bool hanyaSimpan = false;
+  // Batch J: urutan diskusi (terbaru / terpopuler / teramai).
+  String urut = 'Terbaru';
   final _cari = TextEditingController();
 
   @override
@@ -71,6 +73,19 @@ class _ForumScreenState extends State<ForumScreen> {
       return cocokKategori && cocokCari && cocokSimpan;
     }).toList();
 
+    // Diskusi tersemat selalu di atas; sisanya mengikuti pilihan urutan.
+    daftar.sort((x, y) {
+      if (x.disematkan != y.disematkan) return x.disematkan ? -1 : 1;
+      switch (urut) {
+        case 'Terpopuler':
+          return y.suka.compareTo(x.suka);
+        case 'Teramai':
+          return y.balasan.compareTo(x.balasan);
+        default:
+          return y.dibuat.compareTo(x.dibuat);
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Komunitas'),
@@ -83,6 +98,17 @@ class _ForumScreenState extends State<ForumScreen> {
                     ? Icons.bookmark_rounded
                     : Icons.bookmark_border_rounded,
                 color: hanyaSimpan ? XyTheme.primary : null),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Urutkan diskusi',
+            icon: const Icon(Icons.swap_vert_rounded),
+            initialValue: urut,
+            onSelected: (v) => setState(() => urut = v),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'Terbaru', child: Text('Terbaru')),
+              PopupMenuItem(value: 'Terpopuler', child: Text('Terpopuler (suka)')),
+              PopupMenuItem(value: 'Teramai', child: Text('Teramai (balasan)')),
+            ],
           ),
           IconButton(
             tooltip: 'Muat ulang',
