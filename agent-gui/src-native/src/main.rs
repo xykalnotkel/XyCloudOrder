@@ -753,6 +753,42 @@ fn dialog_error(pesan: &str) {
 }
 
 /// Laporkan kegagalan fatal startup: log + dialog + exit code 1.
+/// Penerus crate `log` (wgpu/eframe/egui-wgpu) ke gui.log — tanpanya,
+/// warn!/error! diagnostik dari wgpu tidak terlihat di CI maupun pengguna.
+struct LoggerGui;
+
+impl log::Log for LoggerGui {
+    fn enabled(&self, _: &log::Metadata) -> bool {
+        true
+    }
+    fn log(&self, r: &log::Record) {
+        if r.level() <= log::Level::Warn {
+            log_gui(&format!("{} [{}] {}", r.level(), r.target(), r.args()));
+        }
+    }
+    fn flush(&self) {}
+}
+
+/// Dump semua adapter wgpu yang terlihat ke gui.log (diagnostik stage 3).
+fn dump_adapter() {
+    let inst = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        ..Default::default()
+    });
+    let daftar = inst.enumerate_adapters(wgpu::Backends::all());
+    log_gui(&format!(
+        "diagnostik: {} adapter wgpu terlihat di proses ini",
+        daftar.len()
+    ));
+    for a in &daftar {
+        let i = a.get_info();
+        log_gui(&format!(
+            "  - {:?} | {} | vendor=0x{:04x} device=0x{:04x} | {:?}",
+            i.backend, i.name, i.vendor, i.device, i.device_type
+        ));
+    }
+}
+
 fn gagal_mulai(tahap: &str, err: &dyn std::fmt::Display) -> ! {
     let pesan = format!(
         "Agen gagal memulai ({tahap}).\n\n{err}\n\n         Log lengkap: %APPDATA%\\XyCloudStore\\Agent\\gui.log\n         Coba jalankan dari PowerShell: .\\XyCloudStore-Agent.exe --gui-tes"
@@ -780,6 +816,10 @@ fn opsi_native() -> eframe::NativeOptions {
 }
 
 fn main() {
+    // Teruskan log wgpu/eframe ke gui.log (diagnostik renderer terlihat).
+    let _ = log::set_boxed_logger(Box::new(LoggerGui));
+    log::set_max_level(log::LevelFilter::Info);
+
     // Hook panic: crash tidak lagi diam — selalu tercatat di log + dialog.
     std::panic::set_hook(Box::new(|info| {
         log_gui(&format!("PANIC: {info}"));
@@ -858,6 +898,7 @@ fn main() {
     if paksa_wgpu && !paksa_warp {
         jalankan_ulang(&["--warp"], &format!("wgpu: {e1}"));
     }
+    dump_adapter();
     gagal_mulai("glow, wgpu, dan WARP (software) semuanya gagal", &e1);
 }
 
