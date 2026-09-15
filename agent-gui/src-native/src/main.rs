@@ -29,6 +29,7 @@ enum Sibuk {
     Tidak,
     Uji,
     Setup,
+    CekPort,
     Loop,
 }
 
@@ -94,10 +95,13 @@ struct Aplikasi {
     tampil_sandi: bool,
     autostart: bool,
     status_simpan: Option<(bool, String)>,
+    // Mode --gui-tes: tutup otomatis setelah beberapa frame (smoke-test CI).
+    tes_gui: bool,
+    frame: u32,
 }
 
 impl Aplikasi {
-    fn baru(cc: &eframe::CreationContext<'_>, st: Arc<Keadaan>) -> Self {
+    fn baru(cc: &eframe::CreationContext<'_>, st: Arc<Keadaan>, tes_gui: bool) -> Self {
         terapkan_tema(&cc.egui_ctx);
         let cfg = st.cfg();
         let autostart = agent::autostart_aktif();
@@ -111,6 +115,8 @@ impl Aplikasi {
             tampil_sandi: false,
             autostart,
             status_simpan: None,
+            tes_gui,
+            frame: 0,
         }
     }
 
@@ -223,6 +229,81 @@ impl Aplikasi {
         self.ctx.request_repaint();
     }
 
+    /// Port streaming dicek DARI SERVER (bukan dari PC ini) — meniru tombol
+    /// "Cek port dari internet" di UI Tauri lama (POST /api/agen/cek-port).
+    fn cek_port(&self) {
+        let cfg = self.st.cfg();
+        if cfg.kode.is_empty() {
+            self.st
+                .log_push("Isi & simpan kode unit dulu sebelum cek port.", &self.ctx);
+            return;
+        }
+        {
+            let mut s = self.st.sibuk.lock().unwrap();
+            if *s != Sibuk::Tidak {
+                return;
+            }
+            *s = Sibuk::CekPort;
+        }
+        let st = self.st.clone();
+        let ctx = self.ctx.clone();
+        std::thread::spawn(move || {
+            st.log_push("Meminta server memeriksa port streaming dari internet…", &ctx);
+            let server = cfg.server.trim_end_matches('/');
+            let url = format!("{server}/api/agen/cek-port");
+            let klien = reqwest::blocking::Client::builder()
+                .danger_accept_invalid_certs(true)
+                .timeout(std::time::Duration::from_secs(90))
+                .build();
+            let hasil = klien
+                .and_then(|k| k.post(&url).header("x-agen-kode", &cfg.kode).send());
+            match hasil {
+                Ok(r) if r.status().is_success() => match r.json::<serde_json::Value>() {
+                    Ok(j) => {
+                        let host = j.get("host").and_then(|x| x.as_str()).unwrap_or("?");
+                        let mut tutup = 0u32;
+                        let mut total = 0u32;
+                        if let Some(arr) = j.get("hasil").and_then(|x| x.as_array()) {
+                            for h in arr {
+                                total += 1;
+                                let port = h.get("port").and_then(|x| x.as_i64()).unwrap_or(0);
+                                let terbuka =
+                                    h.get("terbuka").and_then(|x| x.as_bool()).unwrap_or(false);
+                                if !terbuka {
+                                    tutup += 1;
+                                }
+                                st.log_push(
+                                    &format!(
+                                        "Port {port}/TCP → {host}: {}",
+                                        if terbuka { "TERBUKA" } else { "TERTUTUP" }
+                                    ),
+                                    &ctx,
+                                );
+                            }
+                        }
+                        if tutup > 0 {
+                            st.log_push(
+                                "Ada port tertutup → HP penyewa tidak bisa menyambung dari internet. Buka/forward port 47984–47990 TCP+UDP & 48010 (router: UPnP/port-forward; VM cloud: inbound rule NSG/Security Group; Windows Firewall: izinkan Sunshine).",
+                                &ctx,
+                            );
+                        } else if total > 0 {
+                            st.log_push(
+                                "Semua port penting terbuka — streaming dari HP bisa menyambung dari mana pun.",
+                                &ctx,
+                            );
+                        }
+                    }
+                    Err(e) => st.log_push(&format!("Gagal baca hasil cek port: {e}"), &ctx),
+                },
+                Ok(r) => st.log_push(&format!("Gagal cek port: HTTP {}", r.status()), &ctx),
+                Err(e) => st.log_push(&format!("Gagal cek port: {e}"), &ctx),
+            }
+            st.set_sibuk(Sibuk::Tidak);
+            ctx.request_repaint();
+        });
+        self.ctx.request_repaint();
+    }
+
     fn mulai_loop(&self) {
         // Ambil konfig terbaru (memori → disk), sama seperti build Tauri.
         let cfg = {
@@ -284,6 +365,16 @@ impl Aplikasi {
 
 impl eframe::App for Aplikasi {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Smoke-test CI: jendela terbukti hidup beberapa frame → tutup sendiri.
+        if self.tes_gui {
+            self.frame += 1;
+            log_gui(&format!("gui-tes frame {}", self.frame));
+            if self.frame >= 5 {
+                log_gui("gui-tes OK — jendela dibuat & dirender, menutup");
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                return;
+            }
+        }
         if self
             .st
             .sinkron_draft
@@ -447,6 +538,12 @@ impl eframe::App for Aplikasi {
                     {
                         self.setup_engine();
                     }
+                    if ui
+                        .add(egui::Button::new("🌐  Cek Port").min_size(egui::vec2(105.0, 34.0)))
+                        .clicked()
+                    {
+                        self.cek_port();
+                    }
                 });
                 if berjalan {
                     if ui
@@ -491,6 +588,7 @@ impl eframe::App for Aplikasi {
                         egui::RichText::new(match sibuk {
                             Sibuk::Uji => "Menguji koneksi ke Sunshine…",
                             Sibuk::Setup => "Setup otomatis berjalan (unduh/pasang Sunshine bisa beberapa menit)…",
+                            Sibuk::CekPort => "Server sedang memeriksa port streaming dari internet…",
                             Sibuk::Loop => "Agen berjalan…",
                             Sibuk::Tidak => "",
                         })
@@ -608,7 +706,84 @@ fn ikon_aplikasi() -> Option<egui::IconData> {
     })
 }
 
-fn main() -> eframe::Result<()> {
+/// Log startup/galat ke %APPDATA%\XyCloudStore\Agent\gui.log — supaya
+/// kegagalan tetap terlacak walau jendela tak muncul (exe tanpa konsol).
+fn log_gui(teks: &str) {
+    use std::io::Write;
+    let dir = std::env::var("APPDATA")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::env::temp_dir())
+        .join("XyCloudStore")
+        .join("Agent");
+    let _ = std::fs::create_dir_all(&dir);
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(dir.join("gui.log"))
+    {
+        let _ = writeln!(f, "[{}] v{VERSI} {teks}", jam_wib());
+    }
+}
+
+/// Dialog error native Windows — jalur terakhir supaya app tidak "mati diam".
+#[cfg(windows)]
+fn dialog_error(pesan: &str) {
+    #[link(name = "user32")]
+    extern "system" {
+        fn MessageBoxW(
+            hwnd: *mut core::ffi::c_void,
+            text: *const u16,
+            caption: *const u16,
+            utype: u32,
+        ) -> i32;
+    }
+    let judul: Vec<u16> = "XyCloudStore Agent"
+        .encode_utf16()
+        .chain(std::iter::once(0))
+        .collect();
+    let isi: Vec<u16> = pesan.encode_utf16().chain(std::iter::once(0)).collect();
+    unsafe {
+        MessageBoxW(std::ptr::null_mut(), isi.as_ptr(), judul.as_ptr(), 0x10);
+    }
+}
+
+#[cfg(not(windows))]
+fn dialog_error(pesan: &str) {
+    eprintln!("{pesan}");
+}
+
+/// Laporkan kegagalan fatal startup: log + dialog + exit code 1.
+fn gagal_mulai(tahap: &str, err: &dyn std::fmt::Display) -> ! {
+    let pesan = format!(
+        "Agen gagal memulai ({tahap}).\n\n{err}\n\n         Log lengkap: %APPDATA%\\XyCloudStore\\Agent\\gui.log\n         Coba jalankan dari PowerShell: .\\XyCloudStore-Agent.exe --gui-tes"
+    );
+    log_gui(&format!("GAGAL {tahap}: {err}"));
+    dialog_error(&pesan);
+    std::process::exit(1);
+}
+
+fn opsi_native() -> eframe::NativeOptions {
+    let mut viewport = egui::ViewportBuilder::default()
+        .with_inner_size([460.0, 680.0])
+        .with_min_inner_size([400.0, 520.0]);
+    if let Some(ikon) = ikon_aplikasi() {
+        viewport = viewport.with_icon(ikon);
+    }
+    eframe::NativeOptions {
+        viewport,
+        ..Default::default()
+    }
+}
+
+fn main() {
+    // Hook panic: crash tidak lagi diam — selalu tercatat di log + dialog.
+    std::panic::set_hook(Box::new(|info| {
+        log_gui(&format!("PANIC: {info}"));
+        dialog_error(&format!(
+            "Agen crash.\n\n{info}\n\nLog: %APPDATA%\\XyCloudStore\\Agent\\gui.log"
+        ));
+    }));
+
     // Smoke-test versi (CI & pengguna) — tanpa membuka jendela.
     if std::env::args().any(|a| a == "--veri" || a == "-V") {
         println!("XyCloudStore-Agent {VERSI}");
@@ -625,24 +800,67 @@ fn main() -> eframe::Result<()> {
         let stop = Arc::new(AtomicBool::new(false));
         let log: Logger = Arc::new(|t| println!("[XYAGENT] {t}"));
         agent::jalankan_loop(cfg, log, stop);
-        return Ok(());
+        return;
     }
 
+    let tes_gui = std::env::args().any(|a| a == "--gui-tes");
+    let paksa_wgpu = std::env::args().any(|a| a == "--wgpu");
+    log_gui(&format!(
+        "mulai (gui-tes={tes_gui} wgpu={paksa_wgpu}) os={}",
+        std::env::consts::OS
+    ));
+
     let st = Keadaan::baru(agent::muat_konfig());
-    let mut viewport = egui::ViewportBuilder::default()
-        .with_inner_size([460.0, 680.0])
-        .with_min_inner_size([400.0, 520.0]);
-    if let Some(ikon) = ikon_aplikasi() {
-        viewport = viewport.with_icon(ikon);
-    }
-    let opsi = eframe::NativeOptions {
-        viewport,
-        ..Default::default()
+
+    // Renderer: glow (OpenGL, ringan) dulu; --wgpu = hasil re-exec fallback.
+    // Catatan: winit tidak mengizinkan dua EventLoop dalam satu proses, jadi
+    // fallback wgpu dilakukan dengan menjalankan ulang exe sebagai proses baru.
+    let mut opsi = opsi_native();
+    opsi.renderer = if paksa_wgpu {
+        eframe::Renderer::Wgpu
+    } else {
+        eframe::Renderer::Glow
     };
-    let st2 = st.clone();
-    eframe::run_native(
+    log_gui(&format!(
+        "konfig dimuat, membuka jendela (renderer {})…",
+        if paksa_wgpu { "wgpu" } else { "glow" }
+    ));
+    let st1 = st.clone();
+    let hasil = eframe::run_native(
         "XyCloudStore Agent",
         opsi,
-        Box::new(move |cc| Ok(Box::new(Aplikasi::baru(cc, st2.clone())))),
-    )
+        Box::new(move |cc| Ok(Box::new(Aplikasi::baru(cc, st1.clone(), tes_gui)))),
+    );
+    if hasil.is_ok() {
+        log_gui("jendela ditutup normal");
+        return;
+    }
+    let e1 = hasil.unwrap_err();
+    if paksa_wgpu {
+        gagal_mulai("renderer wgpu gagal", &e1);
+    }
+    log_gui(&format!(
+        "glow gagal: {e1} — re-exec dengan wgpu (DirectX/Vulkan/software WARP)…"
+    ));
+
+    // Proses baru dengan renderer wgpu — di Windows jatuh ke WARP (software)
+    // bila GPU/driver bermasalah; penyebab paling umum jendela tak muncul.
+    // Exit code anak diteruskan supaya --gui-tes di CI tetap teruji.
+    let exe = match std::env::current_exe() {
+        Ok(e) => e,
+        Err(e) => gagal_mulai("tidak tahu lokasi exe sendiri", &e),
+    };
+    let mut cmd = std::process::Command::new(exe);
+    cmd.args(std::env::args_os().skip(1)).arg("--wgpu");
+    match cmd.status() {
+        Ok(status) if status.success() => log_gui("proses wgpu selesai normal"),
+        Ok(status) => gagal_mulai(
+            "glow gagal & proses wgpu ikut gagal",
+            &format!("glow: {e1} · wgpu exit: {status}"),
+        ),
+        Err(e) => gagal_mulai(
+            "glow gagal & wgpu tidak bisa dijalankan ulang",
+            &format!("glow: {e1} · spawn: {e}"),
+        ),
+    }
 }

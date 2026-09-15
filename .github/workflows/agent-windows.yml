@@ -64,6 +64,22 @@ jobs:
             -DestinationPath ../XyCloudStore-Agent-Windows.zip -Force
           Get-Item ../XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
 
+      - name: Smoke-test GUI (jendela dibuat & dirender, lalu tutup sendiri)
+        shell: pwsh
+        working-directory: agent-gui
+        run: |
+          # Menguji jalur yang sebelumnya tak teruji: pembuatan jendela +
+          # renderer (glow → fallback wgpu/WARP). Di runner tanpa GPU, glow
+          # gagal dan wgpu software yang mengambil alih — persis skenario PC
+          # dengan driver GPU tua/RDP.
+          $log = "$env:APPDATA\XyCloudStore\Agent\gui.log"
+          if (Test-Path $log) { Remove-Item $log -Force }
+          $p = Start-Process -FilePath .\dist\XyCloudStore-Agent.exe -ArgumentList '--gui-tes' -PassThru -NoNewWindow
+          Wait-Process -Id $p.Id -Timeout 180 -ErrorAction SilentlyContinue
+          if (Test-Path $log) { Write-Host '--- gui.log ---'; Get-Content $log -Tail 15 }
+          if (-not $p.HasExited) { $p.Kill(); throw 'GUI hang >180 dtk (jendela tidak menutup)' }
+          if ($p.ExitCode -ne 0) { throw "Smoke-test GUI gagal (exit $($p.ExitCode)) — lihat gui.log di atas" }
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
