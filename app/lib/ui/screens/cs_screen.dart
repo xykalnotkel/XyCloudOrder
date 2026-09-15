@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
+import '../widgets/galeri_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
@@ -120,12 +120,11 @@ class _CsScreenState extends State<CsScreen> {
   /// Ambil gambar dari galeri lalu kirim sebagai lampiran chat (tanpa kotak).
   Future<void> _kirimGambar() async {
     if (_rekam) return;
-    final f = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
+    final f = await GaleriPicker.pilihGambar(context);
     if (f == null) return;
     final bytes = await f.readAsBytes();
     // Kompres ke WebP dulu biar unggahan ringan dan cepat.
-    final dataUri = await Kompres.dataUri(bytes, f.name);
+    final dataUri = await Kompres.dataUri(bytes, f.path.split('/').last);
     if (!mounted) return;
     await context.read<AppState>().kirimChat(
           '',

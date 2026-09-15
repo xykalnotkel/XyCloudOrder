@@ -13,10 +13,12 @@ import 'data/push_service.dart';
 import 'data/device_identity.dart';
 import 'providers/app_state.dart';
 import 'ui/screens/flow_gate.dart';
+import 'ui/screens/kunci_biometrik_screen.dart';
 import 'ui/screens/lengkapi_profil_screen.dart';
 import 'ui/screens/splash_screen.dart';
 import 'ui/screens/shell.dart';
 import 'ui/screens/blokir_screen.dart';
+import 'ui/widgets/latar_aurora.dart';
 import 'ui/widgets/perawatan_screen.dart';
 
 Future<void> main() async {
@@ -62,7 +64,10 @@ class XyCloudStoreApp extends StatelessWidget {
               systemNavigationBarColor: XyTheme.of(context).surface,
               systemNavigationBarIconBrightness: gelap ? Brightness.light : Brightness.dark,
             ),
-            child: MediaQuery(data:MediaQuery.of(context).copyWith(textScaler:TextScaler.linear((MediaQuery.textScalerOf(context).scale(1)*PengaturanLokal.skala).clamp(.85,1.6))),child:child!),
+            // Batch I: latar aurora global — semua scaffold transparan di atasnya.
+            child: XyLatar(
+              child: MediaQuery(data:MediaQuery.of(context).copyWith(textScaler:TextScaler.linear((MediaQuery.textScalerOf(context).scale(1)*PengaturanLokal.skala).clamp(.85,1.6))),child:child!),
+            ),
           );
         },
         home: const _Root(),
@@ -109,11 +114,15 @@ class _Root extends StatelessWidget {
       ),
       child: !masuk
           ? const FlowGate(key: ValueKey('flow'))
-          : (s.user?.diblokir == true
-              ? const BlokirScreen(key: ValueKey('blokir'))
-              : (s.perluLengkapiProfil
-                  ? const LengkapiProfilScreen(key: ValueKey('lengkapi'))
-                  : const XyShell(key: ValueKey('shell')))),
+          // Batch I: kunci passkey/sidik jari — sesi tersimpan tetap ada,
+          // tapi pintu masuk aplikasi dijaga biometrik sampai dibuka.
+          : (s.perluKunciBiometrik
+              ? const KunciBiometrikScreen(key: ValueKey('kunci'))
+              : (s.user?.diblokir == true
+                  ? const BlokirScreen(key: ValueKey('blokir'))
+                  : (s.perluLengkapiProfil
+                      ? const LengkapiProfilScreen(key: ValueKey('lengkapi'))
+                      : const XyShell(key: ValueKey('shell'))))),
     );
   }
 }

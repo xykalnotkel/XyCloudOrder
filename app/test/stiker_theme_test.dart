@@ -74,9 +74,16 @@ void main() {
                         style: TextStyle(color: XyTheme.of(context).ink)))))));
     final containers =
         tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
+    // Batch I: kartu mode gelap memakai gradasi midnight (XyTheme.gradDarkCard)
+    // alih-alih warna datar; keduanya sama-sama "permukaan gelap".
     expect(
-        containers.any((x) =>
-            (x.decoration as BoxDecoration?)?.color == XyTheme.surfaceGelap),
+        containers.any((x) {
+          final d = x.decoration as BoxDecoration?;
+          if (d?.color == XyTheme.surfaceGelap) return true;
+          final g = d?.gradient;
+          return g is LinearGradient &&
+              g.colors.first == XyTheme.gradDarkCard.colors.first;
+        }),
         true);
     expect(tester.widget<Text>(find.text('Terbaca')).style!.color,
         XyTheme.inkGelap);

@@ -5,9 +5,8 @@ import 'dart:async';
 import '../../models/stiker.dart';
 import '../../core/komentar_thread.dart';
 import '../widgets/stiker_picker.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import '../widgets/galeri_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../core/kompres.dart';
@@ -1139,11 +1138,10 @@ class _FormTulisState extends State<_FormTulis> {
   }
 
   Future<void> _pilihGambar() async {
-    final f = await ImagePicker().pickImage(
-        source: ImageSource.gallery, maxWidth: 1400, imageQuality: 78);
+    final f = await GaleriPicker.pilihGambar(context);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final uri = await Kompres.dataUri(bytes, f.name);
+    final uri = await Kompres.dataUri(bytes, f.path.split('/').last);
     if (!mounted) return;
     setState(() => gambar = uri);
   }

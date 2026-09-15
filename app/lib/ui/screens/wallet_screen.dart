@@ -5,6 +5,7 @@ import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
 import '../widgets/topup_sheet.dart';
+import '../widgets/transfer_sheet.dart';
 
 class WalletScreen extends StatelessWidget {
   const WalletScreen({super.key});
@@ -115,18 +116,36 @@ class WalletScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          GradientButton(
-            label: 'Isi Saldo',
-            icon: Icons.add_rounded,
-            onPressed: () => bukaTopup(context),
-          ),
+          Row(children: [
+            Expanded(
+              child: GradientButton(
+                label: 'Isi Saldo',
+                icon: Icons.add_rounded,
+                onPressed: () => bukaTopup(context),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GradientButton(
+                label: 'Kirim Saldo',
+                icon: Icons.swap_horiz_rounded,
+                glowColor: XyTheme.plum,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFC084FC), Color(0xFF9333EA)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                onPressed: () => bukaTransfer(context),
+              ),
+            ),
+          ]),
           const SizedBox(height: 10),
           Row(children: [
              Icon(Icons.verified_user_rounded, size: 15, color: XyTheme.of(context).muted),
             const SizedBox(width: 7),
             Expanded(
               child: Text(
-                'Transfer bank atau QRIS, saldo masuk setelah admin memverifikasi bukti.',
+                'Isi saldo lewat bank/QRIS. Kirim saldo ke sesama pengguna XyCloud — instan, pakai PIN transfer.',
                 style:  TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.45),
               ),
             ),
@@ -146,7 +165,14 @@ class WalletScreen extends StatelessWidget {
                 'topup' => Icons.add_circle_rounded,
                 'sewa' => Icons.desktop_windows_rounded,
                 'akun' => Icons.vpn_key_rounded,
+                'transfer_keluar' => Icons.arrow_upward_rounded,
+                'transfer_masuk' => Icons.arrow_downward_rounded,
                 _ => Icons.replay_rounded,
+              };
+              final warnaTrans = switch (t.tipe) {
+                'transfer_keluar' => XyTheme.plum,
+                'transfer_masuk' => XyTheme.success,
+                _ => masuk ? XyTheme.success : XyTheme.primary,
               };
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -157,10 +183,10 @@ class WalletScreen extends StatelessWidget {
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: (masuk ? XyTheme.success : XyTheme.primary).withOpacity(.10),
+                        color: warnaTrans.withOpacity(.10),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(ikon, size: 20, color: masuk ? XyTheme.success : XyTheme.primary),
+                      child: Icon(ikon, size: 20, color: warnaTrans),
                     ),
                     const SizedBox(width: 12),
                     Expanded(

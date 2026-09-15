@@ -76,11 +76,31 @@ abstract class XyRepository {
   Future<Map<String, dynamic>> cekTopupPenyedia(String idTopup);
 
   // ---------- profil ----------
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username});
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai});
   Future<Map<String, dynamic>> cekNama({String? nama, String? username});
   Future<Map<String, dynamic>> laporPengguna(String id, String alasan);
   Future<List<BisukanItem>> bisukanDaftar();
   Future<void> gantiPassword(String lama, String baru);
+
+  // ---------- profil lengkap & dompet sosial (Batch I) ----------
+  /// Unggah GIF/MP4 sebagai banner profil (server otomatis jadikan GIF).
+  Future<Map<String, dynamic>> unggahBannerMedia(String dataUri);
+  Future<void> hapusBannerMedia();
+
+  /// Leaderboard nyata: periode 'bulan' (belanja bulan ini) / 'total'.
+  Future<DataLeaderboard> leaderboard({String periode = 'bulan'});
+
+  /// Cari penerima transfer lewat @username / email persis.
+  Future<Map<String, dynamic>> cariTransfer(String q);
+
+  /// Kirim saldo (butuh PIN transfer 6 digit).
+  Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan});
+
+  /// Minta kode email untuk memasang PIN (akun sosial tanpa password).
+  Future<String> mintaKodePinTransfer();
+
+  /// Pasang/ganti PIN transfer; konfirmasi = password atau kode email.
+  Future<void> setPinTransfer(String pin, String konfirmasi);
 
   // ---------- sosial (Batch D) ----------
   Future<ProfilPublik> profilPublik(String id);
@@ -329,7 +349,7 @@ class RemoteRepository implements XyRepository {
           await api.post('/wallet/topup/$idTopup/bukti', {'file': dataUri})));
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) async =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) async =>
       UserProfile.fromJson(Map<String, dynamic>.from(await api.patch('/me', {
         if (nama != null) 'nama': nama,
         if (phone != null) 'phone': phone,
@@ -339,6 +359,7 @@ class RemoteRepository implements XyRepository {
         if (bio != null) 'bio': bio,
         if (banner != null) 'banner': banner,
         if (username != null) 'username': username,
+        if (bingkai != null) 'bingkai': bingkai,
       })));
 
   @override
@@ -347,6 +368,40 @@ class RemoteRepository implements XyRepository {
         if (nama != null) 'nama': nama,
         if (username != null) 'username': username,
       }));
+
+  // ---------- Batch I ----------
+  @override
+  Future<Map<String, dynamic>> unggahBannerMedia(String dataUri) async =>
+      Map<String, dynamic>.from(await api.post('/me/banner-media', {'berkas': dataUri}));
+
+  @override
+  Future<void> hapusBannerMedia() async => api.delete('/me/banner-media');
+
+  @override
+  Future<DataLeaderboard> leaderboard({String periode = 'bulan'}) async =>
+      DataLeaderboard.fromJson(
+          Map<String, dynamic>.from(await api.get('/leaderboard', {'periode': periode})));
+
+  @override
+  Future<Map<String, dynamic>> cariTransfer(String q) async =>
+      Map<String, dynamic>.from(await api.get('/me/transfer/cari', {'q': q}));
+
+  @override
+  Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan}) async =>
+      Map<String, dynamic>.from(await api.post('/me/transfer', {
+        'ke': ke,
+        'nominal': nominal,
+        'pin': pin,
+        if (catatan != null && catatan.isNotEmpty) 'catatan': catatan,
+      }));
+
+  @override
+  Future<String> mintaKodePinTransfer() async =>
+      '${(await api.post('/me/pin-transfer/kode'))['pesan'] ?? 'Kode dikirim ke email kamu.'}';
+
+  @override
+  Future<void> setPinTransfer(String pin, String konfirmasi) async =>
+      api.post('/me/pin-transfer', {'pin': pin, 'konfirmasi': konfirmasi});
 
   @override
   Future<Map<String, dynamic>> laporPengguna(String id, String alasan) async =>
@@ -720,7 +775,7 @@ class MockRepository implements XyRepository {
       _delay(<String, dynamic>{'status': 'disetujui', 'saldo': 150000}, 300);
 
   @override
-  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) =>
+  Future<UserProfile> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) =>
       _delay(MockData.user, 400);
 
   @override
@@ -728,6 +783,42 @@ class MockRepository implements XyRepository {
     if (nama != null) 'nama': {'bersih': true},
     if (username != null) 'username': {'tersedia': true},
   }, 300);
+
+  // ---------- Batch I ----------
+  @override
+  Future<Map<String, dynamic>> unggahBannerMedia(String dataUri) =>
+      _delay({'ok': true, 'banner_media': null}, 600);
+
+  @override
+  Future<void> hapusBannerMedia() => _delay(null, 250);
+
+  @override
+  Future<DataLeaderboard> leaderboard({String periode = 'bulan'}) => _delay(
+      DataLeaderboard(
+        periode: periode,
+        peringkatSaya: 4,
+        poinSaya: 120000,
+        papan: const [
+          PapanPeringkat(peringkat: 1, id: 'u1', nama: 'Rizky Pro', username: 'rizky', tier: 'vip', poin: 1250000),
+          PapanPeringkat(peringkat: 2, id: 'u2', nama: 'Ayu Gamer', username: 'ayu.gg', tier: 'pro', poin: 980000),
+          PapanPeringkat(peringkat: 3, id: 'u3', nama: 'Budi', username: 'budi', poin: 720000),
+        ],
+      ),
+      400);
+
+  @override
+  Future<Map<String, dynamic>> cariTransfer(String q) => _delay(
+      {'id': 'u2', 'nama': 'Ayu Gamer', 'username': 'ayu.gg', 'tier': 'pro'}, 350);
+
+  @override
+  Future<Map<String, dynamic>> kirimTransfer({required String ke, required int nominal, required String pin, String? catatan}) =>
+      _delay({'ok': true, 'id': 'tf_demo', 'saldo': 100000}, 600);
+
+  @override
+  Future<String> mintaKodePinTransfer() => _delay('Kode demo dikirim.', 400);
+
+  @override
+  Future<void> setPinTransfer(String pin, String konfirmasi) => _delay(null, 400);
 
   @override
   Future<Map<String, dynamic>> laporPengguna(String id, String alasan) async =>

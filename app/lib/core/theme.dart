@@ -161,14 +161,24 @@ class XyTheme {
             offset: const Offset(0, 18)),
       ];
 
-  // ---------- palet gelap — INDIGO TUA dari referensi ----------
-  static const Color bgGelap = Color(0xFF100030); // #100030 persis referensi popup
-  static const Color bgGelap2 = Color(0xFF200050); // indigo tengah (hero/grad)
-  static const Color surfaceGelap = Color(0xFF1A0B2E); // #200050-ish
-  static const Color surfaceGelap2 = Color(0xFF25183E);
-  static const Color lineGelap = Color(0xFF2E1A4E);
-  static const Color inkGelap = Color(0xFFF0EBFF);
-  static const Color mutedGelap = Color(0xFFB3A6CA);
+  // ---------- palet gelap — MIDNIGHT AURORA (Batch I) ----------
+  // Direvisi agar mode gelap tidak "pasaran": indigo sangat dalam berlapis
+  // aurora violet (lihat widgets/latar_aurora.dart), permukaan kaca, dan
+  // garis tepi yang sedikit lebih terang supaya kartu terasa bercahaya.
+  static const Color bgGelap = Color(0xFF0D0224); // indigo nyaris hitam
+  static const Color bgGelap2 = Color(0xFF1B0745); // indigo tengah (hero/grad)
+  static const Color surfaceGelap = Color(0xFF170A33); // permukaan kartu
+  static const Color surfaceGelap2 = Color(0xFF211148); // permukaan terangkat
+  static const Color lineGelap = Color(0xFF332059); // tepi kaca (lebih terang)
+  static const Color inkGelap = Color(0xFFF2EDFF);
+  static const Color mutedGelap = Color(0xFFA99CC8);
+
+  /// Gradasi kartu mode gelap: ungu sangat halus atas → bawah.
+  static const LinearGradient gradDarkCard = LinearGradient(
+    colors: [Color(0xFF1C0F3D), Color(0xFF150830)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   // ---------- tema ----------
   static ThemeData light() {
@@ -181,7 +191,9 @@ class XyTheme {
         surface: surface,
         brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: bg,
+      // Latar aurora global digambar di MaterialApp.builder (Batch I);
+      // scaffold transparan supaya gradasi & blob terlihat di semua layar.
+      scaffoldBackgroundColor: Colors.transparent,
       splashFactory: InkSparkle.splashFactory,
     );
 
@@ -204,10 +216,11 @@ class XyTheme {
         labelLarge: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: bg,
+        backgroundColor: Colors.transparent,
         foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: ink,
@@ -324,7 +337,7 @@ class XyTheme {
         surface: surfaceGelap,
         brightness: Brightness.dark,
       ),
-      scaffoldBackgroundColor: bgGelap,
+      scaffoldBackgroundColor: Colors.transparent,
       splashFactory: InkSparkle.splashFactory,
     );
 
@@ -343,10 +356,11 @@ class XyTheme {
         bodyMedium: text.bodyMedium?.copyWith(height: 1.55),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: bgGelap,
+        backgroundColor: Colors.transparent,
         foregroundColor: inkGelap,
         elevation: 0,
         scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: inkGelap,
@@ -427,7 +441,7 @@ class XyTheme {
         surfaceTintColor: Colors.transparent,
       ),
       dialogTheme: DialogTheme(
-        backgroundColor: surfaceGelap,
+        backgroundColor: surfaceGelap2,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(XyRadius.xl)),
@@ -447,16 +461,22 @@ class XyPalette {
   final bool dark;
   Color get bg => dark ? XyTheme.bgGelap : XyTheme.bg;
   Color get surface => dark ? XyTheme.surfaceGelap : XyTheme.surface;
+
+  /// Permukaan terangkat (sheet/dialog/nav) — sedikit lebih terang di gelap.
+  Color get surfaceHigh => dark ? XyTheme.surfaceGelap2 : XyTheme.surface;
   Color get ink => dark ? XyTheme.inkGelap : XyTheme.ink;
-  Color get inkSoft => dark ? const Color(0xFFC4B8D8) : XyTheme.inkSoft;
-  Color get muted => dark ? const Color(0xFFB3A6CA) : XyTheme.muted;
+  Color get inkSoft => dark ? const Color(0xFFC9BDE0) : XyTheme.inkSoft;
+  Color get muted => dark ? const Color(0xFFA99CC8) : XyTheme.muted;
   Color get line => dark ? XyTheme.lineGelap : XyTheme.line;
-  Color get lineSoft => dark ? const Color(0xFF25183E) : XyTheme.lineSoft;
-  Color get primarySoft => dark ? const Color(0xFF25183E) : XyTheme.primarySoft;
+  Color get lineSoft => dark ? const Color(0xFF241447) : XyTheme.lineSoft;
+  Color get primarySoft => dark ? const Color(0xFF241447) : XyTheme.primarySoft;
   Color get accent => dark ? XyTheme.lavender : XyTheme.primary;
   LinearGradient get gradSoft => dark
-      ? const LinearGradient(colors: [Color(0xFF25183E), Color(0xFF1A0B2E)])
+      ? const LinearGradient(colors: [Color(0xFF241447), Color(0xFF170A33)])
       : XyTheme.gradSoft;
+
+  /// Gradasi kartu mode gelap (midnight aurora). Null di mode terang.
+  LinearGradient? get gradCard => dark ? XyTheme.gradDarkCard : null;
 }
 
 

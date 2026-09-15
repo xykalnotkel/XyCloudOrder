@@ -5,6 +5,39 @@ import 'dart:convert';
 // XyCloudOrder — Model data (mirror dari tabel D1 Cloudflare)
 // ============================================================
 
+/// Media banner profil kustom (Batch I): GIF langsung, atau MP4 yang
+/// disajikan Cloudinary sebagai GIF animasi (transformasi f_gif).
+class BannerMedia {
+  final String tipe; // 'gif' | 'video'
+  final String url; // berkas asli (gif/mp4)
+  final String gif; // URL sajian GIF animasi (untuk video = f_gif)
+
+  const BannerMedia({required this.tipe, required this.url, required this.gif});
+
+  /// Server menyimpan kolom `banner_media` sebagai TEKS JSON; kadang sudah
+  /// terurai jadi Map oleh klien JSON — terima keduanya.
+  static BannerMedia? parse(dynamic v) {
+    if (v == null) return null;
+    try {
+      Map<String, dynamic>? m;
+      if (v is String) {
+        if (v.trim().isEmpty) return null;
+        m = Map<String, dynamic>.from(jsonDecode(v) as Map);
+      } else if (v is Map) {
+        m = Map<String, dynamic>.from(v);
+      }
+      if (m == null || (m['url'] ?? '').toString().isEmpty) return null;
+      return BannerMedia(
+        tipe: (m['tipe'] ?? 'gif').toString(),
+        url: m['url'].toString(),
+        gif: (m['gif'] ?? m['url']).toString(),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
 class UserProfile {
   final String id;
   final String nama;
@@ -21,8 +54,24 @@ class UserProfile {
   final String? bio;
   final String? banner;
 
+  /// Banner media kustom GIF/MP4→GIF (Batch I, khusus langganan).
+  final BannerMedia? bannerMedia;
+
+  /// Bingkai avatar profil (Batch I): polos/ungu/emas/neon/aurora/permata.
+  final String? bingkai;
+
   /// Username publik unik (Batch E): @nama_pengguna.
   final String? username;
+
+  /// Cap waktu pendinginan (Batch I): nama 7 hari, username 30 hari.
+  final String? namaDiubahPada;
+  final String? usernameDiubahPada;
+
+  /// Total belanja lunas — dasar progres tier & leaderboard (Batch I).
+  final int totalBelanja;
+
+  /// PIN transfer 6 digit sudah dipasang (hash tidak pernah dikirim).
+  final bool pinTransferAktif;
 
   /// Terima pemberitahuan kegiatan forum komunitas.
   final bool notifForum;
@@ -49,7 +98,13 @@ class UserProfile {
     this.foto,
     this.bio,
     this.banner,
+    this.bannerMedia,
+    this.bingkai,
     this.username,
+    this.namaDiubahPada,
+    this.usernameDiubahPada,
+    this.totalBelanja = 0,
+    this.pinTransferAktif = false,
     this.notifForum = true,
     this.notifDm = true,
     this.badge,
@@ -71,7 +126,13 @@ class UserProfile {
         foto: (j['foto'] as String?)?.isNotEmpty == true ? j['foto'] : null,
         bio: (j['bio'] as String?)?.isNotEmpty == true ? j['bio'] : null,
         banner: (j['banner'] as String?)?.isNotEmpty == true ? j['banner'] : null,
+        bannerMedia: BannerMedia.parse(j['banner_media']),
+        bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
         username: (j['username'] as String?)?.isNotEmpty == true ? j['username'] : null,
+        namaDiubahPada: j['nama_diubah_pada'] as String?,
+        usernameDiubahPada: j['username_diubah_pada'] as String?,
+        totalBelanja: (j['total_belanja'] ?? 0) as int,
+        pinTransferAktif: (j['pin_transfer_aktif'] ?? 0) == 1,
         notifForum: (j['notif_forum'] ?? 1) == 1,
         notifDm: (j['notif_dm'] ?? 1) == 1,
         badge: (j['badge'] as String?)?.isNotEmpty == true ? j['badge'] : null,
@@ -93,13 +154,25 @@ class UserProfile {
         'foto': foto,
         'bio': bio,
         'banner': banner,
+        'banner_media': bannerMedia == null
+            ? null
+            : {
+                'tipe': bannerMedia!.tipe,
+                'url': bannerMedia!.url,
+                'gif': bannerMedia!.gif,
+              },
+        'bingkai': bingkai,
         'username': username,
+        'nama_diubah_pada': namaDiubahPada,
+        'username_diubah_pada': usernameDiubahPada,
+        'total_belanja': totalBelanja,
+        'pin_transfer_aktif': pinTransferAktif ? 1 : 0,
         'notif_forum': notifForum ? 1 : 0,
         'notif_dm': notifDm ? 1 : 0,
         'badge': badge,
       };
 
-  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, String? username, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
+  UserProfile copyWith({int? saldo, String? nama, String? phone, String? foto, String? bio, String? banner, String? username, String? bingkai, BannerMedia? bannerMedia, bool hapusBannerMedia = false, int? totalBelanja, bool? pinTransferAktif, bool? diblokir, String? alasanBlokir, int? peringatan}) => UserProfile(
         id: id,
         nama: nama ?? this.nama,
         email: email,
@@ -110,7 +183,14 @@ class UserProfile {
         avatar: avatar,
         bio: bio ?? this.bio,
         banner: banner ?? this.banner,
+        bannerMedia:
+            hapusBannerMedia ? null : (bannerMedia ?? this.bannerMedia),
+        bingkai: bingkai ?? this.bingkai,
         username: username ?? this.username,
+        namaDiubahPada: namaDiubahPada,
+        usernameDiubahPada: usernameDiubahPada,
+        totalBelanja: totalBelanja ?? this.totalBelanja,
+        pinTransferAktif: pinTransferAktif ?? this.pinTransferAktif,
         notifForum: notifForum,
         notifDm: notifDm,
         badge: badge,
@@ -974,8 +1054,11 @@ class ProfilPublik {
   final String? foto;
   final String? bio;
   final String? banner;
+  final BannerMedia? bannerMedia;
+  final String? bingkai;
   final String? tier;
   final String? badge;
+  final String? createdAt;
   final int pengikut;
   final int mengikuti;
   final int posting;
@@ -984,7 +1067,8 @@ class ProfilPublik {
 
   const ProfilPublik({
     required this.id, required this.nama, this.username, this.foto, this.bio, this.banner,
-    this.tier, this.badge, this.pengikut = 0, this.mengikuti = 0,
+    this.bannerMedia, this.bingkai, this.tier, this.badge, this.createdAt,
+    this.pengikut = 0, this.mengikuti = 0,
     this.posting = 0, this.sayaIkuti = false, this.saya = false,
   });
 
@@ -995,14 +1079,84 @@ class ProfilPublik {
     foto: j['foto'] as String?,
     bio: j['bio'] as String?,
     banner: j['banner'] as String?,
+    bannerMedia: BannerMedia.parse(j['banner_media']),
+    bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
     tier: j['tier'] as String?,
     badge: j['badge'] as String?,
+    createdAt: j['created_at'] as String?,
     pengikut: (j['pengikut'] as num?)?.toInt() ?? 0,
     mengikuti: (j['mengikuti'] as num?)?.toInt() ?? 0,
     posting: (j['posting'] as num?)?.toInt() ?? 0,
-    sayaIkuti: j['saya_ikuti'] == 1 || j['saya_ikuti'] == true,
+    // Server membalas kunci camelCase; terima juga varian snake_case.
+    sayaIkuti: j['sayaIkuti'] == true || j['saya_ikuti'] == 1 || j['saya_ikuti'] == true,
     saya: j['saya'] == 1 || j['saya'] == true,
   );
+
+  ProfilPublik copyWith({bool? sayaIkuti, int? pengikut}) => ProfilPublik(
+        id: id, nama: nama, username: username, foto: foto, bio: bio,
+        banner: banner, bannerMedia: bannerMedia, bingkai: bingkai,
+        tier: tier, badge: badge, createdAt: createdAt,
+        pengikut: pengikut ?? this.pengikut, mengikuti: mengikuti,
+        posting: posting, sayaIkuti: sayaIkuti ?? this.sayaIkuti, saya: saya,
+      );
+}
+
+/// Baris leaderboard nyata (Batch I) — poin = belanja bulan ini / total.
+class PapanPeringkat {
+  final int peringkat;
+  final String id;
+  final String nama;
+  final String? username;
+  final String? foto;
+  final String? tier;
+  final String? badge;
+  final String? bingkai;
+  final int poin;
+  final bool saya;
+
+  const PapanPeringkat({
+    required this.peringkat, required this.id, required this.nama,
+    this.username, this.foto, this.tier, this.badge, this.bingkai,
+    this.poin = 0, this.saya = false,
+  });
+
+  factory PapanPeringkat.fromJson(Map<String, dynamic> j) => PapanPeringkat(
+        peringkat: (j['peringkat'] as num?)?.toInt() ?? 0,
+        id: '${j['id']}',
+        nama: j['nama'] as String? ?? '',
+        username: (j['username'] as String?)?.isNotEmpty == true ? j['username'] : null,
+        foto: j['foto'] as String?,
+        tier: j['tier'] as String?,
+        badge: j['badge'] as String?,
+        bingkai: (j['bingkai'] as String?)?.isNotEmpty == true ? j['bingkai'] : null,
+        poin: (j['poin'] as num?)?.toInt() ?? 0,
+        saya: j['saya'] == true || j['saya'] == 1,
+      );
+}
+
+class DataLeaderboard {
+  final String periode; // 'bulan' | 'total'
+  final int? peringkatSaya;
+  final int poinSaya;
+  final List<PapanPeringkat> papan;
+
+  const DataLeaderboard({
+    required this.periode, this.peringkatSaya, this.poinSaya = 0,
+    this.papan = const [],
+  });
+
+  factory DataLeaderboard.fromJson(Map<String, dynamic> j) {
+    final saya = Map<String, dynamic>.from(j['saya'] as Map? ?? {});
+    final papan = (j['papan'] as List? ?? [])
+        .map((e) => PapanPeringkat.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+    return DataLeaderboard(
+      periode: j['periode'] as String? ?? 'bulan',
+      peringkatSaya: (saya['peringkat'] as num?)?.toInt(),
+      poinSaya: (saya['poin'] as num?)?.toInt() ?? 0,
+      papan: papan,
+    );
+  }
 }
 
 class BisukanItem {

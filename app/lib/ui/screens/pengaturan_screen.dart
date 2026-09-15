@@ -5,19 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart';
+import '../../core/biometrik.dart';
 import '../../core/cache.dart';
 import '../../core/keamanan.dart';
+import '../../core/kompres.dart';
 import '../../core/prefs.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
+import '../widgets/bingkai_profil.dart';
 import '../widgets/common.dart';
+import '../widgets/galeri_picker.dart';
 import '../widgets/lembar.dart';
+import '../widgets/transfer_sheet.dart';
 import 'bantuan_screen.dart';
 import 'legal_screen.dart';
 import 'pembaruan_screen.dart';
 import 'tentang_screen.dart';
+import 'tier_screen.dart';
 import 'opsi_screen.dart';
 import 'hapus_akun_screen.dart';
 import 'stiker_library_screen.dart';
@@ -162,12 +168,18 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   late final _phone = TextEditingController(text: context.read<AppState>().user?.phone ?? '');
   late final _bio = TextEditingController(text: context.read<AppState>().user?.bio ?? '');
   late String _banner = context.read<AppState>().user?.banner ?? 'ungu';
+  late String? _bingkai = context.read<AppState>().user?.bingkai ?? 'polos';
   late final _username = TextEditingController(text: context.read<AppState>().user?.username ?? '');
   Timer? _cekTimer;
   String? _cekStatus; // null | 'cek' | 'ok' | 'galat'
   String _cekPesan = '';
   bool proses = false;
   String? pesan;
+  bool _sibukBanner = false;
+
+  /// Salinan aturan validasi username dari server (Batch I) supaya umpan
+  /// balik instan tanpa menunggu jaringan; keputusan akhir tetap di server.
+  static final RegExp _formatUsername = RegExp(r'^[a-z0-9_.]{3,20}$');
 
   @override
   void dispose() {
@@ -179,8 +191,45 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
     super.dispose();
   }
 
+  // ---------------- pendinginan (Batch I) ----------------
+  DateTime? _parseIso(String? iso) {
+    if (iso == null || iso.isEmpty) return null;
+    return DateTime.tryParse(iso.contains('T') ? iso : '${iso.replaceFirst(' ', 'T')}Z');
+  }
+
+  /// Sisa hari pendinginan; null bila sudah boleh ganti lagi / belum pernah.
+  int? _sisaHari(String? iso, int hari) {
+    final d = _parseIso(iso);
+    if (d == null) return null;
+    final lewat = DateTime.now().difference(d.toLocal());
+    final batas = Duration(days: hari);
+    if (lewat >= batas) return null;
+    return (batas - lewat).inDays + 1;
+  }
+
+  String _tanggalBoleh(String? iso, int hari) {
+    final d = _parseIso(iso);
+    if (d == null) return '';
+    final boleh = d.toLocal().add(Duration(days: hari));
+    const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+        'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return '${boleh.day} ${bulan[boleh.month - 1]} ${boleh.year}';
+  }
+
+  // ---------------- username ----------------
+  String? _alasanUsernameLokal(String un) {
+    if (!_formatUsername.hasMatch(un)) {
+      return 'Format: 3–20 karakter, huruf kecil a–z, angka, strip bawah, atau titik.';
+    }
+    if (!RegExp(r'^[a-z0-9]').hasMatch(un)) return 'Harus diawali huruf atau angka.';
+    if (RegExp(r'[._]$').hasMatch(un)) return 'Tidak boleh diakhiri titik atau strip bawah.';
+    if (un.contains('..')) return 'Titik berurutan tidak diperbolehkan.';
+    return null;
+  }
+
   /// Cek ketersediaan username ke server (debounce 650 ms) sekaligus
   /// menyaring kata kasar/SARA/pornografi lewat endpoint /cek-nama.
+  /// Aturan format diperiksa lokal lebih dulu agar umpan baliknya instan.
   void _jadwalCekUsername() {
     _cekTimer?.cancel();
     final un = _username.text.trim().toLowerCase();
@@ -188,6 +237,14 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
       setState(() {
         _cekStatus = null;
         _cekPesan = '';
+      });
+      return;
+    }
+    final lokal = _alasanUsernameLokal(un);
+    if (lokal != null) {
+      setState(() {
+        _cekStatus = 'galat';
+        _cekPesan = lokal;
       });
       return;
     }
@@ -217,6 +274,99 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
     });
   }
 
+  // ---------------- foto profil ----------------
+  Future<void> _gantiFoto() async {
+    final f = await GaleriPicker.pilihGambar(context, judul: 'Pilih Foto Profil');
+    if (f == null || !mounted) return;
+    setState(() => proses = true);
+    try {
+      final bytes = await f.readAsBytes();
+      final namaBerkas = f.uri.pathSegments.isNotEmpty ? f.uri.pathSegments.last : 'foto.jpg';
+      final fotoUri = await Kompres.dataUri(bytes, namaBerkas, maxSisi: 700, kualitas: 78);
+      if (!mounted) return;
+      final galat = await context.read<AppState>().perbaruiProfil(foto: fotoUri);
+      if (!mounted) return;
+      setState(() => pesan = galat);
+      if (galat == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Foto profil diperbarui.')));
+      }
+    } finally {
+      if (mounted) setState(() => proses = false);
+    }
+  }
+
+  // ---------------- banner media (Batch I) ----------------
+  Future<void> _unggahBanner({required bool video}) async {
+    final u = context.read<AppState>().user;
+    if (u == null) return;
+    if (u.tier == 'basic' && video) {
+      setState(() => pesan = 'Banner video khusus langganan Pro & VIP.');
+      return;
+    }
+    final f = await GaleriPicker.pilihGambar(
+      context,
+      bolehVideo: video,
+      judul: video ? 'Pilih Video / GIF' : 'Pilih GIF',
+    );
+    if (f == null || !mounted) return;
+
+    final nama = f.uri.pathSegments.isNotEmpty
+        ? f.uri.pathSegments.last.toLowerCase()
+        : '';
+    final bytes = await f.readAsBytes();
+    final mb = bytes.length / (1024 * 1024);
+
+    String mime;
+    if (video) {
+      final okVideo = nama.endsWith('.mp4') || nama.endsWith('.mov') || nama.endsWith('.webm');
+      final okGif = nama.endsWith('.gif');
+      if (!okVideo && !okGif) {
+        setState(() => pesan = 'Pilih berkas MP4 atau GIF untuk banner bergerak.');
+        return;
+      }
+      if (mb > 15) {
+        setState(() => pesan = 'Video maksimal 15MB (terpilih ${mb.toStringAsFixed(1)}MB).');
+        return;
+      }
+      mime = okGif ? 'image/gif' : 'video/mp4';
+    } else {
+      if (!nama.endsWith('.gif')) {
+        setState(() => pesan = 'Pilih berkas GIF (animasi). Foto biasa pakai tema warna saja.');
+        return;
+      }
+      if (mb > 8) {
+        setState(() => pesan = 'GIF maksimal 8MB (terpilih ${mb.toStringAsFixed(1)}MB).');
+        return;
+      }
+      mime = 'image/gif';
+    }
+
+    setState(() {
+      _sibukBanner = true;
+      pesan = null;
+    });
+    final dataUri = 'data:$mime;base64,${base64Encode(bytes)}';
+    final galat = await context.read<AppState>().unggahBannerMedia(dataUri);
+    if (!mounted) return;
+    setState(() {
+      _sibukBanner = false;
+      pesan = galat;
+    });
+    if (galat == null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(video && mime == 'video/mp4'
+              ? 'Banner terpasang! Video otomatis diconvert ke GIF.'
+              : 'Banner GIF terpasang!')));
+    }
+  }
+
+  Future<void> _hapusBannerMedia() async {
+    final galat = await context.read<AppState>().hapusBannerMedia();
+    if (!mounted) return;
+    setState(() => pesan = galat);
+  }
+
   Future<void> _simpan() async {
     if (_nama.text.trim().length < 3) {
       setState(() => pesan = 'Nama minimal 3 karakter');
@@ -232,6 +382,7 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
           bio: _bio.text.trim(),
           banner: _banner,
           username: _username.text.trim().toLowerCase(),
+          bingkai: _bingkai ?? 'polos',
         );
     if (!mounted) return;
     setState(() {
@@ -249,20 +400,95 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
   @override
   Widget build(BuildContext context) {
     final u = context.watch<AppState>().user;
+    final t = XyTheme.of(context);
+    final sisaNama = _sisaHari(u?.namaDiubahPada, 7);
+    final namaTerkunci = sisaNama != null &&
+        _nama.text.trim().toLowerCase() != (u?.nama ?? '').trim().toLowerCase();
+    final pernahUsername = (u?.username ?? '').isNotEmpty;
+    final sisaUsername = _sisaHari(u?.usernameDiubahPada, 30);
+    final usernameTerkunci = pernahUsername && sisaUsername != null;
+    final langganan = u != null && u.tier != 'basic';
+
     return Scaffold(
       appBar: AppBar(title: const Text('Ubah Profil')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
         children: [
-          Center(child: XyIlustrasi('profil', tinggi: 150)),
+          // ---------- avatar + bingkai ----------
+          Center(
+            child: Stack(children: [
+              AvatarBingkai(
+                bingkai: _bingkai,
+                size: 104,
+                child: Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: t.primarySoft,
+                    image: (u?.foto ?? '').isNotEmpty
+                        ? DecorationImage(image: NetworkImage(u!.foto!), fit: BoxFit.cover)
+                        : null,
+                  ),
+                  child: (u?.foto ?? '').isEmpty
+                      ? Icon(Icons.person_rounded, size: 44, color: t.muted)
+                      : null,
+                ),
+              ),
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: Pressable(
+                  onTap: proses ? null : _gantiFoto,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: t.line),
+                      boxShadow: XyTheme.shadowSm,
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded,
+                        size: 16, color: XyTheme.primary),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          const XyLabel('Bingkai Profil'),
+          PilihBingkai(
+            nilai: _bingkai,
+            foto: u?.foto,
+            tier: u?.tier ?? 'basic',
+            onPilih: (v) => setState(() => _bingkai = v ?? 'polos'),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Bingkai Aurora & Permata khusus pelanggan Pro/VIP — langsung terlihat oleh semua orang di profil, leaderboard, dan komunitas.',
+            style: TextStyle(color: t.muted, fontSize: 11.5, height: 1.5),
+          ),
           const SizedBox(height: 18),
-          const XyLabel('Nama Lengkap'),
+
+          // ---------- nama ----------
+          XyLabel(namaTerkunci
+              ? 'Nama Tampilan (bisa diganti lagi ${_tanggalBoleh(u?.namaDiubahPada, 7)})'
+              : 'Nama Tampilan'),
           TextField(
             controller: _nama,
+            readOnly: namaTerkunci,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Nama yang tampil di komunitas',
-              prefixIcon: Icon(Icons.person_outline_rounded),
+              prefixIcon: const Icon(Icons.person_outline_rounded),
+              suffixIcon: namaTerkunci
+                  ? Icon(Icons.lock_rounded, size: 18, color: t.muted)
+                  : null,
+              helperText: namaTerkunci
+                  ? 'Nama tampilan hanya bisa diganti 7 hari sekali (sisa $sisaNama hari).'
+                  : 'Maksimal diganti 7 hari sekali setelah disimpan.',
+              helperMaxLines: 2,
             ),
           ),
           const SizedBox(height: 18),
@@ -276,36 +502,45 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          const XyLabel('Username'),
+
+          // ---------- username ----------
+          XyLabel(usernameTerkunci
+              ? 'Username (bisa diganti lagi ${_tanggalBoleh(u?.usernameDiubahPada, 30)})'
+              : 'Username'),
           TextField(
             controller: _username,
             onChanged: (_) => _jadwalCekUsername(),
+            readOnly: usernameTerkunci,
             autocorrect: false,
             keyboardType: TextInputType.url,
             decoration: InputDecoration(
               hintText: 'pilih_username',
               prefixIcon: const Icon(Icons.alternate_email_rounded),
-              helperText: '3–20 karakter: huruf kecil, angka, strip bawah, titik.',
+              suffixIcon: usernameTerkunci
+                  ? Icon(Icons.lock_rounded, size: 18, color: t.muted)
+                  : _cekStatus == 'cek'
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: XyTheme.primary)),
+                        )
+                      : _cekStatus == 'ok'
+                          ? const Icon(Icons.check_circle_rounded,
+                              color: Color(0xFF2D7357))
+                          : _cekStatus == 'galat'
+                              ? const Icon(Icons.cancel_rounded,
+                                  color: Color(0xFFB54450))
+                              : null,
+              helperText: usernameTerkunci
+                  ? 'Username hanya bisa diganti 30 hari sekali (sisa $sisaUsername hari).'
+                  : '3–20 karakter: huruf kecil, angka, strip bawah, titik. Tidak boleh diawali/diakhiri titik.',
               helperMaxLines: 2,
-              suffixIcon: _cekStatus == 'cek'
-                  ? const Padding(
-                      padding: EdgeInsets.all(12),
-                      child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: XyTheme.primary)),
-                    )
-                  : _cekStatus == 'ok'
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF2D7357))
-                      : _cekStatus == 'galat'
-                          ? const Icon(Icons.cancel_rounded,
-                              color: Color(0xFFB54450))
-                          : null,
             ),
           ),
-          if (_cekPesan.isNotEmpty)
+          if (_cekPesan.isNotEmpty && !usernameTerkunci)
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),
               child: Text(_cekPesan,
@@ -332,8 +567,64 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          const XyLabel('Tema Banner Profil'),
-          const SizedBox(height: 8),
+
+          // ---------- banner ----------
+          const XyLabel('Banner Profil'),
+          if (u?.bannerMedia != null) ...[
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(XyRadius.md),
+              child: Stack(children: [
+                SizedBox(
+                  height: 96,
+                  width: double.infinity,
+                  child: Image.network(u!.bannerMedia!.gif,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                            color: t.primarySoft,
+                            alignment: Alignment.center,
+                            child: Text('Banner gagal dimuat',
+                                style: TextStyle(color: t.muted, fontSize: 12)),
+                          )),
+                ),
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Row(children: [
+                    _PillBanner(
+                      ikon: u.bannerMedia!.tipe == 'video'
+                          ? Icons.movie_filter_rounded
+                          : Icons.gif_box_rounded,
+                      label: u.bannerMedia!.tipe == 'video' ? 'VIDEO→GIF' : 'GIF',
+                    ),
+                    const SizedBox(width: 6),
+                    Pressable(
+                      onTap: _sibukBanner ? null : _hapusBannerMedia,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(.55),
+                          borderRadius: BorderRadius.circular(XyRadius.pill),
+                        ),
+                        child: const Row(children: [
+                          Icon(Icons.delete_outline_rounded,
+                              size: 13, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text('Hapus',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700)),
+                        ]),
+                      ),
+                    ),
+                  ]),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 10),
+          ],
           SizedBox(
             height: 58,
             child: ListView.separated(
@@ -387,28 +678,122 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
               },
             ),
           ),
+          const SizedBox(height: 12),
+          // Banner bergerak: GIF / MP4→GIF (khusus langganan).
+          XyCard(
+            padding: const EdgeInsets.all(15),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: XyTheme.plum.withOpacity(.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.auto_awesome_motion_rounded,
+                      size: 19, color: XyTheme.plum),
+                ),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Text('Banner Bergerak',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 13.5)),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            gradient: XyTheme.gradGold,
+                            borderRadius:
+                                BorderRadius.circular(XyRadius.pill),
+                          ),
+                          child: const Text('PRO/VIP',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: .8)),
+                        ),
+                      ]),
+                      const SizedBox(height: 2),
+                      Text(
+                          'Pakai GIF, atau MP4 yang otomatis diconvert jadi GIF.',
+                          style: TextStyle(
+                              color: t.muted, fontSize: 11.3, height: 1.4)),
+                    ],
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              if (!langganan)
+                Row(children: [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: t.muted),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Khusus pelanggan Pro & VIP. Belanja Rp300.000 untuk naik ke Pro.',
+                      style: TextStyle(color: t.muted, fontSize: 11),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                        context, xyRoute(const TierScreen())),
+                    child: const Text('Lihat Tier',
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
+                ])
+              else
+                Row(children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _sibukBanner ? null : () => _unggahBanner(video: false),
+                      icon: const Icon(Icons.gif_box_rounded, size: 17),
+                      label: const Text('Dari GIF',
+                          style: TextStyle(
+                              fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GradientButton(
+                      label: 'Dari Video',
+                      icon: Icons.movie_rounded,
+                      height: 46,
+                      loading: _sibukBanner,
+                      onPressed: _sibukBanner ? null : () => _unggahBanner(video: true),
+                    ),
+                  ),
+                ]),
+            ]),
+          ),
           const SizedBox(height: 10),
-           Text('Nomor ini dipakai admin untuk menghubungimu soal pesanan.',
-              style: TextStyle(color: XyTheme.of(context).muted, fontSize: 12, height: 1.5)),
+          Text('Nomor WhatsApp dipakai admin untuk menghubungimu soal pesanan.',
+              style: TextStyle(color: t.muted, fontSize: 12, height: 1.5)),
           if (u?.email != null) ...[
             const SizedBox(height: 18),
             const XyLabel('Email'),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
-                color: XyTheme.of(context).lineSoft,
+                color: t.lineSoft,
                 borderRadius: BorderRadius.circular(XyRadius.md),
               ),
               child: Row(children: [
-                 Icon(Icons.mail_outline_rounded, size: 19, color: XyTheme.of(context).muted),
+                Icon(Icons.mail_outline_rounded, size: 19, color: t.muted),
                 const SizedBox(width: 12),
                 Expanded(child: Text(u!.email, style: const TextStyle(fontWeight: FontWeight.w600))),
-                Icon(Icons.verified_rounded, size: 17, color: XyTheme.success),
+                const Icon(Icons.verified_rounded, size: 17, color: XyTheme.success),
               ]),
             ),
             const SizedBox(height: 6),
-             Text('Email tidak bisa diubah sendiri. Hubungi admin kalau perlu diganti.',
-                style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.5)),
+            Text('Email tidak bisa diubah sendiri. Hubungi admin kalau perlu diganti.',
+                style: TextStyle(color: t.muted, fontSize: 11.5)),
           ],
           if (pesan != null) ...[
             const SizedBox(height: 16),
@@ -420,6 +805,31 @@ class _UbahProfilScreenState extends State<UbahProfilScreen> {
       ),
     );
   }
+}
+
+class _PillBanner extends StatelessWidget {
+  const _PillBanner({required this.ikon, required this.label});
+  final IconData ikon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(.55),
+          borderRadius: BorderRadius.circular(XyRadius.pill),
+        ),
+        child: Row(children: [
+          Icon(ikon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: .5)),
+        ]),
+      );
 }
 
 // ============================================================
@@ -439,6 +849,8 @@ class _KeamananScreenState extends State<KeamananScreen> {
   bool lihat = false;
   bool proses = false;
   String? pesan;
+  bool _bioSibuk = false;
+  String? _bioGalat;
 
   @override
   void dispose() {
@@ -446,6 +858,44 @@ class _KeamananScreenState extends State<KeamananScreen> {
     _baru.dispose();
     _ulang.dispose();
     super.dispose();
+  }
+
+  /// Toggle "login sidik jari/wajah" (Batch I). Menyalakan selalu meminta
+  /// verifikasi biometrik lebih dulu supaya tidak diaktifkan diam-diam.
+  Future<void> _toggleBiometrik(bool v) async {
+    if (_bioSibuk) return;
+    if (v) {
+      final ada = await Biometrik.tersedia();
+      if (!ada) {
+        setState(() => _bioGalat =
+            'Perangkat ini belum punya sidik jari/wajah (atau kunci layar) yang terdaftar. Daftarkan dulu di pengaturan Android.');
+        return;
+      }
+      final ok = await Biometrik.autentikasi(
+          alasan: 'Verifikasi untuk mengaktifkan login sidik jari XyCloudStore');
+      if (!ok) {
+        setState(() => _bioGalat = 'Verifikasi gagal/dibatalkan. Coba lagi.');
+        return;
+      }
+      setState(() => _bioGalat = null);
+      await context.read<AppState>().setelKunciBiometrik(true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Passkey aktif! Mulai sekarang app dibuka dengan sidik jari/wajah.')));
+      }
+    } else {
+      final yakin = await konfirmasi(
+        context,
+        judul: 'Matikan login sidik jari?',
+        pesan: 'Aplikasi akan terbuka langsung tanpa verifikasi biometrik.',
+        tombolYa: 'Matikan',
+        ikon: Icons.fingerprint_rounded,
+      );
+      if (!yakin) return;
+      await context.read<AppState>().setelKunciBiometrik(false);
+      setState(() => _bioGalat = null);
+    }
   }
 
   Future<void> _simpan() async {
@@ -477,6 +927,7 @@ class _KeamananScreenState extends State<KeamananScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final st = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(title: const Text('Keamanan')),
       body: ListView(
@@ -497,6 +948,102 @@ class _KeamananScreenState extends State<KeamananScreen> {
                   SizedBox(height: 3),
                   Text('Password disimpan terenkripsi dan sesi otomatis kedaluwarsa 30 hari.',
                       style: TextStyle(color: XyTheme.of(context).muted, fontSize: 11.8, height: 1.45)),
+                ]),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          // ---------- passkey / sidik jari + PIN transfer (Batch I) ----------
+          XyCard(
+            padding: const EdgeInsets.all(15),
+            child: Column(children: [
+              Row(children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: XyTheme.violet.withOpacity(.12),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.fingerprint_rounded,
+                      color: XyTheme.violet, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Login Sidik Jari / Wajah',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w800, fontSize: 13.5)),
+                        const SizedBox(height: 2),
+                        Text(
+                            'Passkey perangkat ini — buka aplikasi tanpa mengetik password.',
+                            style: TextStyle(
+                                color: XyTheme.of(context).muted,
+                                fontSize: 11.3,
+                                height: 1.4)),
+                      ]),
+                ),
+                Switch(
+                  value: st.kunciBiometrikAktif,
+                  onChanged: _bioSibuk ? null : _toggleBiometrik,
+                ),
+              ]),
+              if (_bioGalat != null) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  const Icon(Icons.info_outline_rounded,
+                      size: 14, color: XyTheme.warning),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(_bioGalat!,
+                        style: const TextStyle(
+                            color: XyTheme.warning,
+                            fontSize: 11.5,
+                            height: 1.4,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+              ],
+              const SizedBox(height: 6),
+              Divider(color: XyTheme.of(context).line),
+              const SizedBox(height: 6),
+              Pressable(
+                onTap: () => bukaSetPin(context),
+                child: Row(children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: XyTheme.goldSoft.withOpacity(.14),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: const Icon(Icons.pin_rounded,
+                        color: XyTheme.goldMid, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('PIN Transfer Saldo',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5)),
+                          const SizedBox(height: 2),
+                          Text(
+                              st.user?.pinTransferAktif == true
+                                  ? 'Sudah dipasang — dipakai saat kirim saldo.'
+                                  : 'Belum dipasang. Wajib untuk kirim saldo antar teman.',
+                              style: TextStyle(
+                                  color: XyTheme.of(context).muted,
+                                  fontSize: 11.3,
+                                  height: 1.4)),
+                        ]),
+                  ),
+                  Icon(Icons.chevron_right_rounded,
+                      color: XyTheme.of(context).muted),
                 ]),
               ),
             ]),

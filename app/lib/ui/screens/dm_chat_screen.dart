@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
+import '../widgets/galeri_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
@@ -119,11 +119,10 @@ class _DmChatScreenState extends State<DmChatScreen> {
   }
 
   Future<void> _kirimGambar() async {
-    final f = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, maxWidth: 1200, imageQuality: 82);
+    final f = await GaleriPicker.pilihGambar(context);
     if (f == null) return;
     final bytes = await f.readAsBytes();
-    final gambarUri = await Kompres.dataUri(bytes, f.name);
+    final gambarUri = await Kompres.dataUri(bytes, f.path.split('/').last);
     if (!mounted) return;
     setState(() => _kirim = true);
     try {

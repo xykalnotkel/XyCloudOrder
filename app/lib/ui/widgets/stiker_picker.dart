@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'galeri_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme.dart';
@@ -164,7 +164,7 @@ class _StikerPickerState extends State<StikerPicker> {
     if (_sibuk) return;
     setState(() => _sibuk = true);
     try {
-      final x = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final x = await GaleriPicker.pilihGambar(context);
       if (x == null) return;
       if (await x.length() > 8 * 1024 * 1024)
         throw const FormatException('Gambar asal maksimal 8 MB.');

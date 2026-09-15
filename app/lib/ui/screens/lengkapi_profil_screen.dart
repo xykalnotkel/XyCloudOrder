@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../core/kompres.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
 import '../widgets/common.dart';
+import '../widgets/galeri_picker.dart';
 
 /// ============================================================
 ///  Lengkapi Profil — onboarding setelah pertama kali masuk
@@ -40,13 +41,14 @@ class _LengkapiProfilScreenState extends State<LengkapiProfilScreen> {
   }
 
   Future<void> _pilihFoto() async {
-    final f = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, maxWidth: 700, imageQuality: 80);
-    if (f == null) return;
+    // Batch I: galeri kustom + kompres WebP client-side (hemat kuota & server).
+    final f = await GaleriPicker.pilihGambar(context, judul: 'Pilih Foto Profil');
+    if (f == null || !mounted) return;
     final bytes = await f.readAsBytes();
-    final tipe = f.name.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
+    final nama = f.uri.pathSegments.isNotEmpty ? f.uri.pathSegments.last : 'foto.jpg';
+    final uri = await Kompres.dataUri(bytes, nama, maxSisi: 700, kualitas: 78);
     if (!mounted) return;
-    setState(() => _foto = 'data:image/$tipe;base64,${base64Encode(bytes)}');
+    setState(() => _foto = uri);
   }
 
   Future<void> _simpan() async {
@@ -62,6 +64,14 @@ class _LengkapiProfilScreenState extends State<LengkapiProfilScreen> {
         !RegExp(r'^[a-z0-9_.]+$').hasMatch(un)) {
       setState(() => _pesan =
           'Username 3–20 karakter: huruf kecil, angka, titik, atau underscore.');
+      return;
+    }
+    // Aturan ketat Batch I (sama dengan server): awalan/akhiran & titik ganda.
+    if (!RegExp(r'^[a-z0-9]').hasMatch(un) ||
+        RegExp(r'[._]$').hasMatch(un) ||
+        un.contains('..')) {
+      setState(() => _pesan =
+          'Username harus diawali huruf/angka, tidak berakhir titik/underscore, tanpa titik berurutan.');
       return;
     }
     setState(() {

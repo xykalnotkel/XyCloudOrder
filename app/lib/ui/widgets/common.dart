@@ -5,6 +5,7 @@ import '../../core/motion.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/theme.dart';
 import '../../data/realtime_service.dart';
+import 'latar_aurora.dart';
 
 // ============================================================
 //  Gambar jaringan dengan cache disk di perangkat
@@ -86,6 +87,11 @@ class _XyCardState extends State<XyCard> {
 
   @override
   Widget build(BuildContext context) {
+    final t = XyTheme.of(context);
+    // Mode gelap (Batch I): kartu pakai gradasi midnight halus + tepi kaca
+    // yang sedikit lebih terang supaya terlihat "glass", tidak datar.
+    final pakaiGradKartu =
+        widget.gradient == null && widget.color == null && t.gradCard != null;
     final body = AnimatedScale(
       scale: _down ? .975 : 1,
       duration: const Duration(milliseconds: 130),
@@ -94,10 +100,10 @@ class _XyCardState extends State<XyCard> {
         duration: const Duration(milliseconds: 180),
         padding: widget.padding,
         decoration: BoxDecoration(
-          color: widget.gradient == null ? (widget.color ?? XyTheme.of(context).surface) : null,
-          gradient: widget.gradient,
+          color: pakaiGradKartu ? null : (widget.color ?? t.surface),
+          gradient: widget.gradient ?? (pakaiGradKartu ? t.gradCard : null),
           borderRadius: BorderRadius.circular(widget.radius),
-          border: widget.border ? Border.all(color: XyTheme.of(context).line) : null,
+          border: widget.border ? Border.all(color: t.line) : null,
           boxShadow: widget.elevated ? (_down ? XyTheme.shadowXs : XyTheme.shadowSm) : null,
         ),
         child: RepaintBoundary(child: widget.child),
@@ -179,17 +185,22 @@ class GradientButton extends StatefulWidget {
   State<GradientButton> createState() => _GradientButtonState();
 }
 
-/// Tombol aksen “3D tapi 2D”: bidang solid + tepi bawah tegas (bayangan keras
-/// tanpa blur) + saat ditekan turun 3px. Dipakai konsisten di seluruh aplikasi.
+/// Tombol aksen (revisi Batch I atas permintaan pemilik 2026-09-15):
+/// kembali ke bentuk PIL ROUNDED seperti semula — bukan "3D" bertepi keras —
+/// tetapi punya BORDER BERKILAU: cincin gradasi kaca (terang di atas, pekat
+/// di bawah) + sorot dalam halus + glow lembut. Kesan 3D premium datang dari
+/// kilau tepi, bukan dari bayangan keras. Saat ditekan: scale halus 0.975.
 class _GradientButtonState extends State<GradientButton> {
   bool _tekan = false;
 
-  Color get _tepi => Color.lerp(widget.glowColor, Colors.black, .34)!;
-  Color get _atas => Color.lerp(widget.glowColor, Colors.white, .10)!;
+  Color get _kilauAtas => Color.lerp(widget.glowColor, Colors.white, .78)!;
+  Color get _kilauTengah => Color.lerp(widget.glowColor, Colors.white, .22)!;
+  Color get _kilauBawah => Color.lerp(widget.glowColor, Colors.black, .42)!;
 
   @override
   Widget build(BuildContext context) {
     final mati = widget.onPressed == null || widget.loading;
+    final t = XyTheme.of(context);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: mati ? null : (_) => setState(() => _tekan = true),
@@ -201,67 +212,94 @@ class _GradientButtonState extends State<GradientButton> {
               HapticFeedback.lightImpact();
               widget.onPressed!();
             },
-      child: AnimatedContainer(
+      child: AnimatedScale(
+        scale: _tekan ? .975 : 1,
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
-        height: widget.height,
-        transform: Matrix4.translationValues(0, _tekan ? 3 : 0, 0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(XyRadius.tombol),
-          gradient: mati
-              ? null
-              : LinearGradient(
-                  colors: [_atas, widget.glowColor, widget.glowColor],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  stops: const [0, .42, 1],
-                ),
-          color: mati ? XyTheme.of(context).primarySoft : null,
-          boxShadow: mati
-              ? null
-              : [
-                  // Tepi bawah “3D”: bayangan keras tanpa blur, hilang saat ditekan.
-                  BoxShadow(
-                    color: _tepi,
-                    offset: Offset(0, _tekan ? 1 : 4),
-                    blurRadius: 0,
-                    spreadRadius: 0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          height: widget.height,
+          // Border berkilau: padding = tebal cincin, gradasi cincin di luar.
+          padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(XyRadius.tombol),
+            gradient: mati
+                ? null
+                : LinearGradient(
+                    colors: [_kilauAtas, _kilauTengah, _kilauBawah],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0, .45, 1],
                   ),
-                  BoxShadow(
-                    color: Colors.transparent,
-                    offset: Offset(0, 0),
-                    blurRadius: 0,
-                  ),
-                ],
-        ),
-        child: Center(
-          child: widget.loading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2.4, color: Colors.white))
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (widget.icon != null) ...[
-                      Icon(widget.icon,
-                          size: 19,
-                          color: mati ? XyTheme.of(context).muted : Colors.white),
-                      const SizedBox(width: 9),
-                    ],
-                    Text(
-                      widget.label,
-                      style: TextStyle(
-                        color:
-                            mati ? XyTheme.of(context).muted : Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        letterSpacing: -.1,
-                      ),
+            color: mati ? t.line : null,
+            boxShadow: mati
+                ? null
+                : [
+                    // Glow ungu lembut (mengecil saat ditekan).
+                    BoxShadow(
+                      color: widget.glowColor
+                          .withOpacity(_tekan ? .16 : .30),
+                      blurRadius: _tekan ? 12 : 20,
+                      offset: Offset(0, _tekan ? 4 : 9),
+                    ),
+                    // Sedikit kedalaman tanpa tepi keras.
+                    BoxShadow(
+                      color: Colors.black.withOpacity(.12),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
                     ),
                   ],
-                ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(XyRadius.tombol),
+              gradient: mati ? null : widget.gradient,
+              color: mati ? t.primarySoft : null,
+            ),
+            // Sorot kaca di separuh atas bidang tombol.
+            foregroundDecoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(XyRadius.tombol),
+              gradient: mati
+                  ? null
+                  : LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: const Alignment(0, .55),
+                      colors: [
+                        Colors.white.withOpacity(_tekan ? .10 : .16),
+                        Colors.white.withOpacity(0),
+                      ],
+                    ),
+            ),
+            child: Center(
+              child: widget.loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.4, color: Colors.white))
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.icon != null) ...[
+                          Icon(widget.icon,
+                              size: 19,
+                              color:
+                                  mati ? t.muted : Colors.white),
+                          const SizedBox(width: 9),
+                        ],
+                        Text(
+                          widget.label,
+                          style: TextStyle(
+                            color: mati ? t.muted : Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: -.1,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
+          ),
         ),
       ),
     );
@@ -608,10 +646,11 @@ class XyIlustrasi extends StatelessWidget {
 // ============================================================
 
 /// Blob gradien lembut untuk latar layar onboarding / welcome.
+/// Batch I: bukan lagi warna datar — aurora penuh (lihat XyLatar).
 class AuroraBackground extends StatelessWidget {
   const AuroraBackground({super.key,this.child,this.dark=false});
   final Widget? child;final bool dark;
-  @override Widget build(BuildContext context)=>SizedBox.expand(child:ColoredBox(color:dark?XyTheme.ink:XyTheme.of(context).bg,child:child));
+  @override Widget build(BuildContext context)=>XyLatar(padat:true,paksaGelap:dark?true:null,child:child??const SizedBox.shrink());
 }
 class DotGrid extends StatelessWidget {
   const DotGrid({super.key,this.color=const Color(0x14FFFFFF),this.gap=22});

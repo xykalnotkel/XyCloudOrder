@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
-import 'package:image_picker/image_picker.dart';
+import 'galeri_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../core/kompres.dart';
@@ -106,16 +105,12 @@ class _SheetTopupState extends State<_SheetTopup> {
   }
 
   Future<void> _unggahBukti() async {
-    final berkas = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1400,
-      imageQuality: 78,
-    );
+    final berkas = await GaleriPicker.pilihGambar(context);
     if (berkas == null) return;
 
     setState(() => mengunggah = true);
     final bytes = await berkas.readAsBytes();
-    final dataUri = await Kompres.dataUri(bytes, berkas.name);
+    final dataUri = await Kompres.dataUri(bytes, berkas.path.split('/').last);
 
     final s = context.read<AppState>();
     final galat = await s.unggahBukti(dibuat!.id, dataUri);

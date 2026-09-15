@@ -10,16 +10,17 @@ import 'profil_publik_screen.dart';
 import 'statistik_screen.dart';
 import 'tier_screen.dart';
 import 'aktivitas_screen.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/format.dart';
 import '../../core/kompres.dart';
 import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../providers/app_state.dart';
+import '../widgets/banner_profil.dart';
+import '../widgets/bingkai_profil.dart';
 import '../widgets/common.dart';
+import '../widgets/galeri_picker.dart';
 import '../widgets/lembar.dart';
 import 'order_list_screen.dart';
 import 'pengaturan_screen.dart' as pengaturan;
@@ -39,11 +40,13 @@ class ProfilScreen extends StatefulWidget {
 
 class _ProfilScreenState extends State<ProfilScreen> {
   Future<void> _gantiFoto() async {
-    final f = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 700, imageQuality: 80);
-    if (f == null) return;
+    // Batch I: galeri kustom (photo_manager) dulu; izin ditolak → picker sistem.
+    final f = await GaleriPicker.pilihGambar(context, judul: 'Pilih Foto Profil');
+    if (f == null || !mounted) return;
     final bytes = await f.readAsBytes();
     // Foto profil cukup kecil — kompres lebih agresif.
-    final fotoUri = await Kompres.dataUri(bytes, f.name, maxSisi: 700, kualitas: 78);
+    final nama = f.uri.pathSegments.isNotEmpty ? f.uri.pathSegments.last : 'foto.jpg';
+    final fotoUri = await Kompres.dataUri(bytes, nama, maxSisi: 700, kualitas: 78);
     if (!mounted) return;
 
     final s = context.read<AppState>();
@@ -67,41 +70,40 @@ class _ProfilScreenState extends State<ProfilScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // ---------- kepala ----------
-          Container(
+          // ---------- kepala (Batch I: banner bisa GIF/video + bingkai avatar) ----------
+          BannerProfil(
+            tema: u.banner,
+            media: u.bannerMedia,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
+            child: Padding(
             padding: EdgeInsets.fromLTRB(22, MediaQuery.of(context).padding.top + 22, 22, 26),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: XyBannerTema.warna(u.banner),
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-            ),
             child: Stack(children: [
               Column(children: [
               Row(children: [
                 Stack(children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(.16),
-                      border: Border.all(color: Colors.white.withOpacity(.32), width: 2),
-                      image: (u.foto ?? '').isNotEmpty
-                          ? DecorationImage(image: NetworkImage(u.foto!), fit: BoxFit.cover)
+                  AvatarBingkai(
+                    bingkai: u.bingkai,
+                    size: 72,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(.16),
+                        image: (u.foto ?? '').isNotEmpty
+                            ? DecorationImage(image: NetworkImage(u.foto!), fit: BoxFit.cover)
+                            : null,
+                      ),
+                      child: (u.foto ?? '').isEmpty
+                          ? Center(
+                              child: Text(
+                                u.nama.isEmpty ? 'X' : u.nama[0].toUpperCase(),
+                                style: const TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.w700, fontSize: 26),
+                              ),
+                            )
                           : null,
                     ),
-                    child: (u.foto ?? '').isEmpty
-                        ? Center(
-                            child: Text(
-                              u.nama.isEmpty ? 'X' : u.nama[0].toUpperCase(),
-                              style: const TextStyle(
-                                  color: Colors.white, fontWeight: FontWeight.w700, fontSize: 26),
-                            ),
-                          )
-                        : null,
                   ),
                   Positioned(
                     right: 0,
@@ -222,6 +224,7 @@ class _ProfilScreenState extends State<ProfilScreen> {
                 ),
               ),
             ]),
+            ),
           ),
 
           Padding(

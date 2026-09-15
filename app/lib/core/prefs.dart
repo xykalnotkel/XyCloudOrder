@@ -13,6 +13,7 @@ class Prefs {
   static const _kSaringKonten = 'xy_saring_konten';
   static const _kTema = 'xy_tema';
   static const _kPrivasi = 'xy_mode_privasi';
+  static const _kKunciBiometrik = 'xy_kunci_biometrik';
 
   static const _aman = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -63,6 +64,13 @@ class Prefs {
 
   static Future<void> simpanModePrivasi(bool v) async =>
       (await SharedPreferences.getInstance()).setBool(_kPrivasi, v);
+
+  // ---------- kunci passkey / sidik jari (Batch I) ----------
+  static Future<bool> kunciBiometrik() async =>
+      (await SharedPreferences.getInstance()).getBool(_kKunciBiometrik) ?? false;
+
+  static Future<void> simpanKunciBiometrik(bool v) async =>
+      (await SharedPreferences.getInstance()).setBool(_kKunciBiometrik, v);
 
   // ---------- sesi login ----------
   static Future<String?> token() async {

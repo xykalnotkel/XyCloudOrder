@@ -63,6 +63,15 @@ def main() -> int:
         perms.append('<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>')
     if 'android.permission.RECORD_AUDIO' not in isi:
         perms.append('<uses-permission android:name="android.permission.RECORD_AUDIO"/>')
+    # Batch I: galeri kustom (photo_manager) + login sidik jari (local_auth).
+    if 'android.permission.READ_MEDIA_IMAGES' not in isi:
+        perms.append('<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>')
+    if 'android.permission.READ_MEDIA_VIDEO' not in isi:
+        perms.append('<uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>')
+    if 'android.permission.READ_EXTERNAL_STORAGE' not in isi:
+        perms.append('<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>')
+    if 'android.permission.USE_BIOMETRIC' not in isi:
+        perms.append('<uses-permission android:name="android.permission.USE_BIOMETRIC"/>')
 
     if perms:
         isi = isi.replace(
@@ -74,6 +83,10 @@ def main() -> int:
     isi = re.sub(r'android:allowBackup="[^\"]*"', '', isi)
     if 'android:allowBackup' not in isi:
         isi = isi.replace('<application', '<application android:allowBackup="false"', 1)
+
+    # Android 10 (API 29): photo_manager butuh akses penyimpanan legacy.
+    if 'android:requestLegacyExternalStorage' not in isi:
+        isi = isi.replace('<application', '<application android:requestLegacyExternalStorage="true"', 1)
 
     if 'flutter_web_auth_2.CallbackActivity' not in isi:
         isi = isi.replace('    </application>', ACTIVITY_CALLBACK, 1)
@@ -87,7 +100,7 @@ def main() -> int:
         isi = isi.replace('</manifest>',
             '    <uses-feature android:name="android.hardware.microphone" android:required="false"/>\n</manifest>', 1)
         open(berkas, 'w', encoding='utf-8').write(isi)
-    print('Permissions: INTERNET + REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS + RECORD_AUDIO + queries')
+    print('Permissions: INTERNET + REQUEST_INSTALL_PACKAGES + POST_NOTIFICATIONS + RECORD_AUDIO + READ_MEDIA_* + USE_BIOMETRIC + queries')
     return 0
 
 

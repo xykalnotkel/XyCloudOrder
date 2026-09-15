@@ -5,6 +5,8 @@ import '../../core/motion.dart';
 import '../../core/theme.dart';
 import '../../models/models.dart';
 import '../../providers/app_state.dart';
+import '../widgets/banner_profil.dart';
+import '../widgets/bingkai_profil.dart';
 import '../widgets/common.dart';
 import 'dm_chat_screen.dart';
 import 'forum_screen.dart' show LencanaTier, LencanaKhusus;
@@ -62,12 +64,9 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
     final baru = !p.sayaIkuti;
     // optimis
     setState(() {
-      _profil = ProfilPublik(
-        id: p.id, nama: p.nama, foto: p.foto, bio: p.bio, banner: p.banner,
-        tier: p.tier, badge: p.badge,
+      _profil = p.copyWith(
+        sayaIkuti: baru,
         pengikut: p.pengikut + (baru ? 1 : -1),
-        mengikuti: p.mengikuti, posting: p.posting,
-        sayaIkuti: baru, saya: p.saya,
       );
     });
     try {
@@ -186,6 +185,19 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
     return (bagian[0][0] + bagian[1][0]).toUpperCase();
   }
 
+  static const _namaBulan = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+
+  /// 'YYYY-MM-DD HH:MM:SS' (UTC dari D1) → 'September 2026'.
+  String _bulanTahun(String iso) {
+    final d = DateTime.tryParse(
+        iso.contains('T') ? iso : '${iso.replaceFirst(' ', 'T')}Z');
+    if (d == null) return '';
+    return '${_namaBulan[d.month - 1]} ${d.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = XyTheme.of(context);
@@ -205,16 +217,13 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                   children: [
                     // ---------- banner + avatar ----------
                     Stack(clipBehavior: Clip.none, children: [
-                      Container(
+                      SizedBox(
                         height: 190,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: XyBannerTema.warna(p!.banner),
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                        child: BannerProfil(
+                          tema: p!.banner,
+                          media: p.bannerMedia,
+                          child: const SizedBox.expand(),
                         ),
-                        child: const DotGrid(),
                       ),
                       Positioned(
                         top: MediaQuery.of(context).padding.top + 6,
@@ -230,12 +239,14 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                       Positioned(
                         left: 20,
                         top: 140,
-                        child: Container(
+                        child: AvatarBingkai(
+                          bingkai: p.bingkai,
+                          size: 96,
+                          child: Container(
                           width: 96,
                           height: 96,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: t.surface, width: 4),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(.18),
@@ -257,6 +268,7 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                                             color: XyTheme.primary)),
                                   ),
                           ),
+                        ),
                         ),
                       ),
                     ]),
@@ -286,6 +298,17 @@ class _ProfilPublikScreenState extends State<ProfilPublikScreen> {
                             Text(p.bio!,
                                 style: TextStyle(
                                     fontSize: 13, height: 1.45, color: t.inkSoft)),
+                          ],
+                          if ((p.createdAt ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(children: [
+                              Icon(Icons.calendar_today_rounded,
+                                  size: 12, color: t.muted),
+                              const SizedBox(width: 5),
+                              Text('Bergabung ${_bulanTahun(p.createdAt!)}',
+                                  style: TextStyle(
+                                      fontSize: 11.5, color: t.muted)),
+                            ]),
                           ],
                           const SizedBox(height: 16),
                           // ---------- statistik ----------

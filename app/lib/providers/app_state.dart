@@ -33,8 +33,38 @@ class AppState extends ChangeNotifier {
     unawaited(muatPromosi());
     unawaited(muatTema());
     unawaited(muatPengaturan());
+    unawaited(muatKunciBiometrik());
     unawaited(periksaPembaruan());
     unawaited(pulihkanSesi());
+  }
+
+  // ================= passkey / sidik jari (Batch I) =================
+  /// Pengaturan "login dengan sidik jari" aktif (tersimpan di Prefs).
+  bool kunciBiometrikAktif = false;
+  bool _biometrikDibuka = false;
+
+  /// Sesi tersimpan ada, tapi pintu biometrik belum dibuka → tampilkan
+  /// KunciBiometrikScreen di depan shell (lihat gate di main.dart).
+  bool get perluKunciBiometrik => masuk && kunciBiometrikAktif && !_biometrikDibuka;
+
+  Future<void> muatKunciBiometrik() async {
+    kunciBiometrikAktif = await Prefs.kunciBiometrik();
+    notifyListeners();
+  }
+
+  /// Dipanggil KunciBiometrikScreen setelah verifikasi berhasil.
+  void bukaKunciBiometrik() {
+    _biometrikDibuka = true;
+    notifyListeners();
+  }
+
+  /// Toggle dari layar Keamanan. Saat baru diaktifkan, langsung dianggap
+  /// terbuka (pengguna barusan lolos autentikasi untuk menyalakannya).
+  Future<void> setelKunciBiometrik(bool aktif) async {
+    await Prefs.simpanKunciBiometrik(aktif);
+    kunciBiometrikAktif = aktif;
+    if (aktif) _biometrikDibuka = true;
+    notifyListeners();
   }
 
   /// True selama server dalam mode pemeliharaan (HTTP 503) — aplikasi
@@ -725,9 +755,9 @@ class AppState extends ChangeNotifier {
   }
 
   // ================= profil =================
-  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username}) async {
+  Future<String?> perbaruiProfil({String? nama, String? phone, String? foto, bool? notifForum, bool? notifDm, String? bio, String? banner, String? username, String? bingkai}) async {
     try {
-      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner, username: username);
+      user = await _repo.perbaruiProfil(nama: nama, phone: phone, foto: foto, notifForum: notifForum, notifDm: notifDm, bio: bio, banner: banner, username: username, bingkai: bingkai);
       forumRevisi++;
       forum = forum.map((p) => p.userId == user!.id ? ForumPost.fromJson({...p.toJson(), 'nama': user!.nama, 'foto': user!.foto}) : p).toList();
       _ulasan.clear();
@@ -737,6 +767,53 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       return _pesan(e);
     }
+  }
+
+  // ================= banner media kustom (Batch I) =================
+  /// Unggah GIF/MP4 jadi banner profil. Server menolak akun basic (403).
+  Future<String?> unggahBannerMedia(String dataUri) async {
+    try {
+      await _repo.unggahBannerMedia(dataUri);
+      await muatProfilRingkas();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  Future<String?> hapusBannerMedia() async {
+    try {
+      await _repo.hapusBannerMedia();
+      await muatProfilRingkas();
+      return null;
+    } catch (e) {
+      return _pesan(e);
+    }
+  }
+
+  // ================= transfer saldo (Batch I) =================
+  Future<Map<String, dynamic>> cariPenerimaTransfer(String q) =>
+      _repo.cariTransfer(q);
+
+  /// Kirim saldo. Melempar ApiException dengan pesan server (PIN salah,
+  /// saldo kurang, batas harian, dsb.) — pemanggil yang menampilkan.
+  Future<Map<String, dynamic>> kirimTransfer({
+    required String ke,
+    required int nominal,
+    required String pin,
+    String? catatan,
+  }) async {
+    final hasil = await _repo.kirimTransfer(
+        ke: ke, nominal: nominal, pin: pin, catatan: catatan);
+    await muatProfilRingkas();
+    return hasil;
+  }
+
+  Future<String> mintaKodePinTransfer() => _repo.mintaKodePinTransfer();
+
+  Future<void> setPinTransfer(String pin, String konfirmasi) async {
+    await _repo.setPinTransfer(pin, konfirmasi);
+    await muatProfilRingkas();
   }
 
   Future<String?> kodePasswordSosial() async {try{await _api.post('/me/password/kode');return null;}catch(e){return _pesan(e);}}
@@ -1082,6 +1159,7 @@ class AppState extends ChangeNotifier {
     notifikasi = []; notifBelum = 0; notifBelumDibaca = 0;
     favorit.clear(); _ulasan.clear(); _identitasForum.clear();
     csMengetik = false; koneksi = RealtimeState.offline;
+    _biometrikDibuka = false; // sesi berikutnya harus lewat biometrik lagi
     sedangKeluar = false;
     notifyListeners();
   }
