@@ -295,7 +295,29 @@ impl Aplikasi {
                     }
                     Err(e) => st.log_push(&format!("Gagal baca hasil cek port: {e}"), &ctx),
                 },
-                Ok(r) => st.log_push(&format!("Gagal cek port: HTTP {}", r.status()), &ctx),
+                Ok(r) => {
+                    // Tampilkan pesan server (mis. "Unit belum punya host…"),
+                    // bukan cuma status HTTP polos.
+                    let status = r.status();
+                    let pesan = r
+                        .text()
+                        .ok()
+                        .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
+                        .and_then(|j| {
+                            j.get("error")
+                                .and_then(|x| x.as_str())
+                                .map(|x| x.to_string())
+                        })
+                        .unwrap_or_default();
+                    st.log_push(
+                        &if pesan.is_empty() {
+                            format!("Gagal cek port: HTTP {status}")
+                        } else {
+                            format!("Gagal cek port: HTTP {status} — {pesan}")
+                        },
+                        &ctx,
+                    );
+                }
                 Err(e) => st.log_push(&format!("Gagal cek port: {e}"), &ctx),
             }
             st.set_sibuk(Sibuk::Tidak);

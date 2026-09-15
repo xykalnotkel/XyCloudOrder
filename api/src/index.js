@@ -1117,8 +1117,10 @@ ${halaman.map(([u, p2, f]) => `  <url>
             b.status || 'online',
             b.spec ? JSON.stringify(b.spec) : null,
             b.versi || null,
-            (() => { const h = normalisasiHostStream(b.host, null); return h; })(),
-            (() => { const h = normalisasiHostStream(b.host, null); return h; })(),
+            // Hotfix cek-port: bila agen tak tahu IP publiknya (ipify diblok /
+            // COMPUTERNAME ditolak validasi), pakai IP yang terlihat Cloudflare.
+            (() => { const h = normalisasiHostStream(b.host, req.headers.get('cf-connecting-ip')); return h; })(),
+            (() => { const h = normalisasiHostStream(b.host, req.headers.get('cf-connecting-ip')); return h; })(),
             new Date().toISOString(),
             agen.id
           ).run();
@@ -1142,8 +1144,18 @@ ${halaman.map(([u, p2, f]) => `  <url>
 
         // ---- cek port streaming dari sisi internet (probe TCP via Cloudflare) ----
         if (p === 'agen/cek-port' && req.method === 'POST') {
-          const host = String(agen.host || '').split(':')[0].trim();
-          if (!host) return err('Unit belum punya host streaming. Isi host (IP publik / domain) dulu.', 422, env);
+          let hostSah = normalisasiHostStream(agen.host, null);
+          if (!hostSah) {
+            // Host belum pernah terisi — pakai IP publik koneksi ini (Cloudflare)
+            // dan simpan supaya sesi streaming penyewa juga kebagian.
+            const cf = normalisasiHostStream(req.headers.get('cf-connecting-ip'), null);
+            if (cf) {
+              hostSah = cf;
+              await env.DB.prepare("UPDATE agen SET host=? WHERE id=? AND (host IS NULL OR host='')").bind(cf, agen.id).run();
+            }
+          }
+          const host = String(hostSah || '').split(':')[0].replace(/^\[|\]$/g, '').trim();
+          if (!host) return err('Unit belum punya host streaming dan server tidak bisa mendeteksi IP publik PC ini. Isi host (IP publik / domain) lewat panel admin dulu.', 422, env);
           const hasil = [];
           for (const port of [47984, 47989, 48010]) {
             hasil.push({ port, terbuka: await probePortTcp(host, port, 6000) });
