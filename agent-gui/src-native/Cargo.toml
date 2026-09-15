@@ -23,3 +23,9 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 strip = true
 lto = true
 opt-level = "s"
+
+# Patch 1 baris egui-wgpu: WgpuConfiguration.force_fallback_adapter —
+# upstream hardcode `false` sehingga WARP (software) tak pernah dipilih.
+# Lihat vendor/README.md.
+[patch.crates-io]
+egui-wgpu = { path = "vendor/egui-wgpu" }

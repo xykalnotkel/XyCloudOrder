@@ -758,7 +758,11 @@ fn gagal_mulai(tahap: &str, err: &dyn std::fmt::Display) -> ! {
         "Agen gagal memulai ({tahap}).\n\n{err}\n\n         Log lengkap: %APPDATA%\\XyCloudStore\\Agent\\gui.log\n         Coba jalankan dari PowerShell: .\\XyCloudStore-Agent.exe --gui-tes"
     );
     log_gui(&format!("GAGAL {tahap}: {err}"));
-    dialog_error(&pesan);
+    // Mode --gui-tes (CI headless): jangan tampilkan dialog — bisa memblokir
+    // proses tanpa ada yang menekan OK. Log + exit code sudah cukup.
+    if !std::env::args().any(|a| a == "--gui-tes") {
+        dialog_error(&pesan);
+    }
     std::process::exit(1);
 }
 
@@ -779,9 +783,11 @@ fn main() {
     // Hook panic: crash tidak lagi diam — selalu tercatat di log + dialog.
     std::panic::set_hook(Box::new(|info| {
         log_gui(&format!("PANIC: {info}"));
-        dialog_error(&format!(
-            "Agen crash.\n\n{info}\n\nLog: %APPDATA%\\XyCloudStore\\Agent\\gui.log"
-        ));
+        if !std::env::args().any(|a| a == "--gui-tes") {
+            dialog_error(&format!(
+                "Agen crash.\n\n{info}\n\nLog: %APPDATA%\\XyCloudStore\\Agent\\gui.log"
+            ));
+        }
     }));
 
     // Smoke-test versi (CI & pengguna) — tanpa membuka jendela.
@@ -805,26 +811,34 @@ fn main() {
 
     let tes_gui = std::env::args().any(|a| a == "--gui-tes");
     let paksa_wgpu = std::env::args().any(|a| a == "--wgpu");
+    let paksa_warp = std::env::args().any(|a| a == "--warp");
     log_gui(&format!(
-        "mulai (gui-tes={tes_gui} wgpu={paksa_wgpu}) os={}",
+        "mulai (gui-tes={tes_gui} wgpu={paksa_wgpu} warp={paksa_warp}) os={}",
         std::env::consts::OS
     ));
 
     let st = Keadaan::baru(agent::muat_konfig());
 
-    // Renderer: glow (OpenGL, ringan) dulu; --wgpu = hasil re-exec fallback.
-    // Catatan: winit tidak mengizinkan dua EventLoop dalam satu proses, jadi
-    // fallback wgpu dilakukan dengan menjalankan ulang exe sebagai proses baru.
+    // Renderer bertingkat:
+    //   1. glow (OpenGL 2.0+) — paling ringan, jalan di hampir semua PC
+    //   2. --wgpu  (DirectX/Vulkan/GL modern)
+    //   3. --warp  (wgpu adapter software — WARP bawaan Windows, selalu ada)
+    // winit hanya mengizinkan satu EventLoop per proses → tiap tingkat naik
+    // dilakukan dengan re-exec exe ini sebagai proses baru (--wgpu/--warp).
     let mut opsi = opsi_native();
-    opsi.renderer = if paksa_wgpu {
-        eframe::Renderer::Wgpu
+    let renderer = if paksa_warp {
+        opsi.renderer = eframe::Renderer::Wgpu;
+        opsi.wgpu_options.force_fallback_adapter = true;
+        "wgpu+warp"
+    } else if paksa_wgpu {
+        opsi.renderer = eframe::Renderer::Wgpu;
+        "wgpu"
     } else {
-        eframe::Renderer::Glow
+        opsi.renderer = eframe::Renderer::Glow;
+        "glow"
     };
-    log_gui(&format!(
-        "konfig dimuat, membuka jendela (renderer {})…",
-        if paksa_wgpu { "wgpu" } else { "glow" }
-    ));
+    log_gui(&format!("konfig dimuat, membuka jendela (renderer {renderer})…"));
+
     let st1 = st.clone();
     let hasil = eframe::run_native(
         "XyCloudStore Agent",
@@ -836,31 +850,36 @@ fn main() {
         return;
     }
     let e1 = hasil.unwrap_err();
-    if paksa_wgpu {
-        gagal_mulai("renderer wgpu gagal", &e1);
-    }
-    log_gui(&format!(
-        "glow gagal: {e1} — re-exec dengan wgpu (DirectX/Vulkan/software WARP)…"
-    ));
+    log_gui(&format!("{renderer} gagal: {e1}"));
 
-    // Proses baru dengan renderer wgpu — di Windows jatuh ke WARP (software)
-    // bila GPU/driver bermasalah; penyebab paling umum jendela tak muncul.
-    // Exit code anak diteruskan supaya --gui-tes di CI tetap teruji.
+    if !paksa_wgpu && !paksa_warp {
+        jalankan_ulang(&["--wgpu"], &format!("glow: {e1}"));
+    }
+    if paksa_wgpu && !paksa_warp {
+        jalankan_ulang(&["--warp"], &format!("wgpu: {e1}"));
+    }
+    gagal_mulai("glow, wgpu, dan WARP (software) semuanya gagal", &e1);
+}
+
+/// Re-exec exe ini sebagai proses baru dengan argumen tambahan `tambah`
+/// (winit: satu EventLoop per proses). Exit code anak diteruskan.
+fn jalankan_ulang(tambah: &[&str], err_sebelum: &dyn std::fmt::Display) -> ! {
     let exe = match std::env::current_exe() {
         Ok(e) => e,
         Err(e) => gagal_mulai("tidak tahu lokasi exe sendiri", &e),
     };
     let mut cmd = std::process::Command::new(exe);
-    cmd.args(std::env::args_os().skip(1)).arg("--wgpu");
+    cmd.args(std::env::args_os().skip(1)).args(tambah);
+    log_gui(&format!("re-exec fallback {} …", tambah.join(" ")));
     match cmd.status() {
-        Ok(status) if status.success() => log_gui("proses wgpu selesai normal"),
+        Ok(status) if status.success() => {
+            log_gui("proses fallback selesai normal");
+            std::process::exit(0);
+        }
         Ok(status) => gagal_mulai(
-            "glow gagal & proses wgpu ikut gagal",
-            &format!("glow: {e1} · wgpu exit: {status}"),
+            &format!("renderer fallback {} ikut gagal (exit {status})", tambah.join(" ")),
+            err_sebelum,
         ),
-        Err(e) => gagal_mulai(
-            "glow gagal & wgpu tidak bisa dijalankan ulang",
-            &format!("glow: {e1} · spawn: {e}"),
-        ),
+        Err(e) => gagal_mulai("gagal menjalankan ulang proses fallback", &e),
     }
 }

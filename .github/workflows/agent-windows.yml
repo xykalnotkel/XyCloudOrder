@@ -75,9 +75,12 @@ jobs:
           $log = "$env:APPDATA\XyCloudStore\Agent\gui.log"
           if (Test-Path $log) { Remove-Item $log -Force }
           $p = Start-Process -FilePath .\dist\XyCloudStore-Agent.exe -ArgumentList '--gui-tes' -PassThru -NoNewWindow
-          Wait-Process -Id $p.Id -Timeout 180 -ErrorAction SilentlyContinue
-          if (Test-Path $log) { Write-Host '--- gui.log ---'; Get-Content $log -Tail 15 }
-          if (-not $p.HasExited) { $p.Kill(); throw 'GUI hang >180 dtk (jendela tidak menutup)' }
+          Wait-Process -Id $p.Id -Timeout 150 -ErrorAction SilentlyContinue
+          if (Test-Path $log) { Write-Host '--- gui.log ---'; Get-Content $log -Tail 20 }
+          if (-not $p.HasExited) {
+            taskkill /PID $p.Id /T /F | Out-Null
+            throw 'GUI hang >150 dtk (jendela tidak menutup)'
+          }
           if ($p.ExitCode -ne 0) { throw "Smoke-test GUI gagal (exit $($p.ExitCode)) — lihat gui.log di atas" }
 
       - name: Upload artifact
