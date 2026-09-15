@@ -36,7 +36,7 @@ function muatB64(b64) {
 }
 import { kirimEmail } from './mail.js';
 import { kirimPush, siarkanPush } from './push.js';
-import { unggahGambar, unggahAudio, samarkanGambar, layaniGambar } from './upload.js';
+import { unggahGambar, unggahAudio, unggahVideoBanner, samarkanGambar, layaniGambar } from './upload.js';
 import { penyediaBayar, metodeTersedia, buatTagihan, bacaPemberitahuan, cekStatusPenyedia } from './bayar.js';
 import { setelan, simpanSetelan, jalankanPemeliharaan, statistikLengkap, catatLog, pantauKesehatan } from './sistem.js';
 import { TIER, diskonTier, segarkanTier, cekVoucher, pakaiVoucher, pakaiVoucherStrict, buatCadangan } from './loyal.js';
@@ -172,6 +172,45 @@ async function tertutupPemeliharaan(env, req) {
 
 // Tema banner profil yang tersedia di aplikasi (gradasi palet ungu).
 const BANNER_PROFIL = ['ungu', 'senja', 'midnight', 'permen', 'anggrek'];
+
+// Bingkai avatar profil (Batch I). Nilai harus sama dengan daftar BINGKAI
+// di app/lib/ui/widgets/bingkai_profil.dart. 'aurora' & 'permata' khusus
+// langganan Pro/VIP.
+const BINGKAI_PROFIL = ['polos', 'ungu', 'emas', 'neon', 'aurora', 'permata'];
+const BINGKAI_LANGGANAN = ['aurora', 'permata'];
+
+// Username yang dicadangkan untuk akun resmi/sistem — tidak bisa dipakai,
+// baik persis maupun sebagai awalan merek (contoh: xycloud*, admin*).
+const USERNAME_CADANGAN = new Set([
+  'admin', 'administrator', 'root', 'system', 'sistem', 'support', 'cs',
+  'mod', 'moderator', 'owner', 'staff', 'official', 'verified', 'bantuan',
+  'info', 'me', 'saya', 'kamu', 'xycloud', 'xycloudstore', 'xydesk',
+  'operator', 'security', 'keamanan', 'server', 'bot',
+]);
+const USERNAME_AWALAN_CADANGAN = ['xycloud', 'xydesk', 'admin', 'official', 'support'];
+
+const ATURAN_USERNAME = /^[a-z0-9_.]{3,20}$/;
+
+/**
+ * Validasi username ketat (Batch I). Mengembalikan alasan (string) bila
+ * tidak valid, atau null bila boleh dipakai. Dipakai /cek-nama dan PATCH /me
+ * supaya aturannya satu pintu.
+ */
+function alasanUsernameTidakValid(un) {
+  if (!ATURAN_USERNAME.test(un)) {
+    return 'Format: 3-20 karakter, huruf kecil a-z, angka, strip bawah, atau titik.';
+  }
+  if (!/^[a-z0-9]/.test(un)) return 'Username harus diawali huruf atau angka.';
+  if (/[._]$/.test(un)) return 'Username tidak boleh diakhiri titik atau strip bawah.';
+  if (un.includes('..')) return 'Titik berurutan tidak diperbolehkan.';
+  // Bandingkan tanpa pemisah supaya 'a.d.m.i.n' tidak lolos saringan.
+  const inti = un.replace(/[._]/g, '');
+  if (USERNAME_CADANGAN.has(inti)) return 'Username ini dicadangkan untuk akun resmi.';
+  for (const awalan of USERNAME_AWALAN_CADANGAN) {
+    if (inti.startsWith(awalan)) return 'Username dengan awalan ini dicadangkan untuk akun resmi.';
+  }
+  return null;
+}
 
 // True bila pengguna membisukan thread tertentu (dm:<id>, cs, forum:<id>)
 // dan masa bisunya belum lewat. Dipakai supaya tombol aksi "Bisukan" pada
@@ -3048,10 +3087,10 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         if (b.username !== undefined) {
           const un = String(b.username || '').trim().toLowerCase();
           const k = kataTerlarangDalam(un);
-          const formatOk = /^[a-z0-9_.]{3,20}$/.test(un);
+          const alasanFormat = alasanUsernameTidakValid(un);
           let tersedia = false, alasan = null;
           if (k) alasan = `Mengandung kata terlarang (${k.jenis}).`;
-          else if (!formatOk) alasan = 'Format: 3-20 karakter, huruf kecil, angka, strip bawah, titik.';
+          else if (alasanFormat) alasan = alasanFormat;
           else {
             const dipakai = await env.DB.prepare('SELECT id FROM users WHERE username=? AND id!=?').bind(un, me.sub).first();
             tersedia = !dipakai;
@@ -3083,7 +3122,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
       if (p.startsWith('users/') && p.endsWith('/profil') && req.method === 'GET') {
         const idU = p.split('/')[1];
         const u = await env.DB.prepare(
-          'SELECT id,nama,username,foto,bio,banner,tier,badge,diblokir FROM users WHERE id=? AND deleted_at IS NULL',
+          'SELECT id,nama,username,foto,bio,banner,banner_media,bingkai,tier,badge,diblokir,created_at FROM users WHERE id=? AND deleted_at IS NULL',
         ).bind(idU).first();
         if (!u) {
           // Posting forum & DM resmi dibuat atas nama 'admin' (tanpa baris users).
@@ -3093,7 +3132,7 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
             return json({
               id: 'admin', nama: 'Admin XyCloud', username: 'admin', foto: null,
               bio: 'Akun resmi tim XyCloudStore. Membalas laporan & pertanyaan layanan.',
-              banner: null, tier: 'admin', badge: 'admin', diblokir: 0,
+              banner: null, banner_media: null, bingkai: null, tier: 'admin', badge: 'admin', diblokir: 0,
               pengikut: 0, mengikuti: 0, posting: c?.c || 0, sayaIkuti: false, saya: false,
             }, 200, env);
           }
@@ -3232,6 +3271,9 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         if (!u) return err('Akun tidak ditemukan', 404, env);
         delete u.password;
+        // Hash PIN transfer tidak pernah dikirim; app hanya butuh tahu ada/tidak.
+        u.pin_transfer_aktif = u.pin_transfer ? 1 : 0;
+        delete u.pin_transfer;
         return json(u, 200, env);
       }
 
@@ -3583,19 +3625,63 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
           if (k) return err(`Nama mengandung kata terlarang (${k.jenis}). Ganti dengan nama lain.`, 422, env);
         }
 
-        // Username publik unik (Batch E): 3-20 karakter [a-z0-9_.], tanpa kata terlarang.
+        // Data lama untuk pendinginan (cooldown) & gate langganan.
+        const uLama = await env.DB.prepare(
+          'SELECT nama, username, tier, nama_diubah_pada, username_diubah_pada FROM users WHERE id=?',
+        ).bind(me.sub).first();
+        if (!uLama) return err('Akun tidak ditemukan', 404, env);
+        const HARI = 86400000;
+        const umurMs = (iso) => (iso ? Date.now() - Date.parse(String(iso).includes('T') ? iso : iso.replace(' ', 'T') + 'Z') : Infinity);
+
+        // Nama tampilan hanya boleh diganti 7 hari sekali (Batch I).
+        const namaBerubah = Boolean(nama) && nama.toLowerCase() !== String(uLama.nama || '').toLowerCase();
+        if (namaBerubah) {
+          const umur = umurMs(uLama.nama_diubah_pada);
+          if (umur < 7 * HARI) {
+            const sisa = Math.ceil((7 * HARI - umur) / HARI);
+            return err(`Nama tampilan hanya bisa diganti 7 hari sekali. Coba lagi ${sisa} hari lagi.`, 429, env);
+          }
+        }
+
+        // Username publik unik (Batch E, diperketat Batch I): aturan format
+        // ketat + kata terlarang + dicadangkan + pendinginan 30 hari.
         let usernameBaru;
+        let usernameBerubah = false;
         if (b.username !== undefined) {
           const un = String(b.username || '').trim().toLowerCase();
           if (un === '') {
             usernameBaru = '';
           } else {
-            if (!/^[a-z0-9_.]{3,20}$/.test(un)) return err('Username 3-20 karakter: huruf kecil a-z, angka, strip bawah, atau titik.', 422, env);
+            const alasanFormat = alasanUsernameTidakValid(un);
+            if (alasanFormat) return err(alasanFormat, 422, env);
             const k = kataTerlarangDalam(un);
             if (k) return err(`Username mengandung kata terlarang (${k.jenis}).`, 422, env);
             const dipakai = await env.DB.prepare('SELECT id FROM users WHERE username=? AND id!=?').bind(un, me.sub).first();
             if (dipakai) return err('Username sudah dipakai orang lain.', 409, env);
             usernameBaru = un;
+            usernameBerubah = un !== String(uLama.username || '');
+            // Penggantian (bukan pemasangan pertama) dibatasi 30 hari sekali.
+            if (usernameBerubah && uLama.username) {
+              const umur = umurMs(uLama.username_diubah_pada);
+              if (umur < 30 * HARI) {
+                const sisa = Math.ceil((30 * HARI - umur) / HARI);
+                return err(`Username hanya bisa diganti 30 hari sekali. Coba lagi ${sisa} hari lagi.`, 429, env);
+              }
+            }
+          }
+        }
+
+        // Bingkai avatar (Batch I): whitelist + gate langganan untuk frame premium.
+        let bingkai = '~'; // '~' = tidak diubah (pola COALESCE/NULLIF di bawah)
+        if (b.bingkai !== undefined) {
+          const idB = String(b.bingkai || '').trim();
+          if (idB === '' || idB === 'none') bingkai = '';
+          else if (!BINGKAI_PROFIL.includes(idB)) return err('Bingkai tidak dikenal.', 422, env);
+          else {
+            if (BINGKAI_LANGGANAN.includes(idB) && String(uLama.tier || 'basic') === 'basic') {
+              return err('Bingkai ini khusus langganan Pro & VIP. Naikkan tier dulu di menu Tier & Benefit.', 403, env);
+            }
+            bingkai = idB;
           }
         }
 
@@ -3630,19 +3716,268 @@ if (a.startsWith('peran/') && req.method === 'DELETE') {
                             notif_forum = COALESCE(?, notif_forum),
                             notif_dm = COALESCE(?, notif_dm),
                             bio = COALESCE(?, bio),
-                            banner = COALESCE(NULLIF(?,'~'), banner)
+                            banner = COALESCE(NULLIF(?,'~'), banner),
+                            bingkai = COALESCE(NULLIF(?,'~'), bingkai)
            WHERE id = ?`
-        ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), me.sub).run();
+        ).bind(nama, phone, foto, notifForum, notifDm, bio, banner === null ? '~' : (banner || ''), bingkai, me.sub).run();
 
         if (usernameBaru !== undefined) {
           await env.DB.prepare('UPDATE users SET username=? WHERE id=?')
             .bind(usernameBaru === '' ? null : usernameBaru, me.sub).run();
         }
 
+        // Cap waktu pendinginan hanya saat nilai benar-benar berubah.
+        const kiniIso = new Date().toISOString();
+        if (namaBerubah) {
+          await env.DB.prepare('UPDATE users SET nama_diubah_pada=? WHERE id=?').bind(kiniIso, me.sub).run();
+        }
+        if (usernameBerubah) {
+          await env.DB.prepare('UPDATE users SET username_diubah_pada=? WHERE id=?').bind(kiniIso, me.sub).run();
+        }
+
         const u = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(me.sub).first();
         delete u.password;
+        u.pin_transfer_aktif = u.pin_transfer ? 1 : 0;
+        delete u.pin_transfer;
         ctx.waitUntil(push(env, 'forum', 'forum.profil', { user_id: u.id, nama: u.nama, foto: samarkanGambar(env, u.foto, 's') }));
         return json(u, 200, env);
+      }
+
+      // ---- banner profil media kustom (Batch I): GIF / MP4 → GIF otomatis ----
+      // Khusus langganan Pro/VIP. MP4 diunggah ke Cloudinary (resource video)
+      // lalu disajikan sebagai GIF animasi lewat transformasi f_gif.
+      if (p === 'me/banner-media' && req.method === 'POST') {
+        const uT = await env.DB.prepare('SELECT tier FROM users WHERE id=?').bind(me.sub).first();
+        if (String(uT?.tier || 'basic') === 'basic') {
+          return err('Banner bergerak (GIF/video) khusus langganan Pro & VIP.', 403, env);
+        }
+        if (!(await bolehLanjut(env, `banner-media:${me.sub}`, 8, 3600))) {
+          return err('Terlalu sering mengganti banner. Coba lagi nanti.', 429, env);
+        }
+        const b = await req.json().catch(() => ({}));
+        const dataUri = typeof b.berkas === 'string' ? b.berkas : '';
+        if (!dataUri.startsWith('data:')) return err('Berkas tidak valid.', 422, env);
+        const mime = (dataUri.match(/^data:([^;]+);/i)?.[1] || '').toLowerCase();
+        let hasil, tipe;
+        if (mime === 'image/gif') {
+          tipe = 'gif';
+          hasil = await unggahGambar(env, { dataUri, folder: 'xycloudstore/banner-profil' });
+          if (hasil.ok) hasil = { ok: true, url: hasil.url, gif: hasil.url };
+        } else if (['video/mp4', 'video/quicktime', 'video/webm'].includes(mime)) {
+          tipe = 'video';
+          hasil = await unggahVideoBanner(env, { dataUri });
+        } else {
+          return err('Hanya berkas GIF atau MP4 yang boleh jadi banner kustom.', 422, env);
+        }
+        if (!hasil.ok) return err(hasil.alasan, 502, env);
+        const media = JSON.stringify({ tipe, url: hasil.url, gif: hasil.gif || hasil.url });
+        await env.DB.prepare('UPDATE users SET banner_media=? WHERE id=?').bind(media, me.sub).run();
+        return json({ ok: true, banner_media: media }, 200, env);
+      }
+      if (p === 'me/banner-media' && req.method === 'DELETE') {
+        await env.DB.prepare('UPDATE users SET banner_media=NULL WHERE id=?').bind(me.sub).run();
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---- leaderboard nyata (Batch I): peringkat dari data transaksi ----
+      if (p === 'leaderboard' && req.method === 'GET') {
+        if (!(await bolehLanjut(env, `leaderboard:${me.sub}`, 90, 3600))) {
+          return err('Terlalu sering memuat leaderboard. Coba lagi nanti.', 429, env);
+        }
+        const periode = url.searchParams.get('periode') === 'total' ? 'total' : 'bulan';
+        const bukanTransfer = "tipe NOT IN ('transfer_keluar','transfer_masuk')";
+        let papan, saya;
+        if (periode === 'bulan') {
+          const { results } = await env.DB.prepare(
+            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai,
+                    CAST(COALESCE(SUM(ABS(t.nominal)),0) AS INTEGER) AS poin
+             FROM transaksi t JOIN users u ON u.id = t.user_id
+             WHERE t.nominal < 0 AND t.${bukanTransfer}
+               AND u.diblokir = 0 AND u.deleted_at IS NULL
+               AND strftime('%Y-%m', t.waktu) = strftime('%Y-%m','now')
+             GROUP BY u.id
+             HAVING poin > 0
+             ORDER BY poin DESC
+             LIMIT 50`
+          ).all();
+          papan = results;
+          const r = await env.DB.prepare(
+            `SELECT COUNT(*) + 1 AS peringkat FROM (
+               SELECT t.user_id, SUM(ABS(t.nominal)) AS poin
+               FROM transaksi t JOIN users u ON u.id = t.user_id
+               WHERE t.nominal < 0 AND t.${bukanTransfer}
+                 AND u.diblokir = 0 AND u.deleted_at IS NULL
+                 AND strftime('%Y-%m', t.waktu) = strftime('%Y-%m','now')
+               GROUP BY t.user_id
+             ) WHERE poin > (
+               SELECT COALESCE(SUM(ABS(nominal)),0) FROM transaksi
+               WHERE user_id = ? AND nominal < 0 AND ${bukanTransfer}
+                 AND strftime('%Y-%m', waktu) = strftime('%Y-%m','now')
+             )`
+          ).bind(me.sub).first();
+          const pSaya = await env.DB.prepare(
+            `SELECT COALESCE(SUM(ABS(nominal)),0) AS poin FROM transaksi
+             WHERE user_id = ? AND nominal < 0 AND ${bukanTransfer}
+               AND strftime('%Y-%m', waktu) = strftime('%Y-%m','now')`
+          ).bind(me.sub).first();
+          const poinSaya = pSaya?.poin || 0;
+          saya = { peringkat: poinSaya > 0 ? (r?.peringkat || null) : null, poin: poinSaya };
+        } else {
+          const { results } = await env.DB.prepare(
+            `SELECT u.id, u.nama, u.username, u.foto, u.tier, u.badge, u.bingkai,
+                    u.total_belanja AS poin
+             FROM users u
+             WHERE u.total_belanja > 0 AND u.diblokir = 0 AND u.deleted_at IS NULL
+             ORDER BY u.total_belanja DESC
+             LIMIT 50`
+          ).all();
+          papan = results;
+          const uSaya = await env.DB.prepare('SELECT total_belanja FROM users WHERE id=?').bind(me.sub).first();
+          const poinSaya = uSaya?.total_belanja || 0;
+          let peringkat = null;
+          if (poinSaya > 0) {
+            const r = await env.DB.prepare(
+              `SELECT COUNT(*) + 1 AS peringkat FROM users
+               WHERE total_belanja > ? AND total_belanja > 0 AND diblokir = 0 AND deleted_at IS NULL`
+            ).bind(poinSaya).first();
+            peringkat = r?.peringkat || null;
+          }
+          saya = { peringkat, poin: poinSaya };
+        }
+        const idxSaya = papan.findIndex((x) => x.id === me.sub);
+        return json({
+          periode,
+          saya,
+          papan: papan.map((x, i) => ({ ...x, peringkat: i + 1, saya: x.id === me.sub })),
+          papan_saya: idxSaya >= 0 ? papan[idxSaya] : null,
+        }, 200, env);
+      }
+
+      // ---- PIN transfer saldo (Batch I) ----
+      // Akun sosial (tanpa password) meminta kode email dulu sebagai konfirmasi.
+      if (p === 'me/pin-transfer/kode' && req.method === 'POST') {
+        const u = await env.DB.prepare('SELECT email,nama,password FROM users WHERE id=?').bind(me.sub).first();
+        if (!String(u?.password || '').startsWith('sosial:')) {
+          return err('Akun ini memakai password untuk konfirmasi PIN.', 400, env);
+        }
+        const sent = await kirimOtp(env, { email: u.email, nama: u.nama, tipe: 'pin_transfer' });
+        return sent.ok ? json({ ok: true }, 200, env) : err(sent.alasan, sent.rateLimited ? 429 : 502, env);
+      }
+      if (p === 'me/pin-transfer' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const pin = String(b.pin || '');
+        if (!/^[0-9]{6}$/.test(pin)) return err('PIN transfer harus 6 digit angka.', 422, env);
+        if (!(await bolehLanjut(env, `pin-ubah:${me.sub}`, 5, 86400))) {
+          return err('Terlalu banyak percobaan ganti PIN hari ini.', 429, env);
+        }
+        const u = await env.DB.prepare('SELECT email,password FROM users WHERE id=?').bind(me.sub).first();
+        const konfirmasi = String(b.konfirmasi || '');
+        if (String(u.password || '').startsWith('sosial:')) {
+          const cek = await cekOtp(env, { email: u.email, kode: konfirmasi, tipe: 'pin_transfer' });
+          if (!cek.ok) return err('Kode email salah atau kedaluwarsa.', 401, env);
+        } else if (!(await cocokPw(konfirmasi, u.password))) {
+          return err('Password salah.', 401, env);
+        }
+        await env.DB.prepare('UPDATE users SET pin_transfer=? WHERE id=?').bind(await buatPw(pin), me.sub).run();
+        return json({ ok: true }, 200, env);
+      }
+
+      // ---- cari penerima transfer (username/email persis) ----
+      if (p === 'me/transfer/cari' && req.method === 'GET') {
+        const q = String(url.searchParams.get('q') || '').trim().toLowerCase().replace(/^@/, '');
+        if (q.length < 3) return err('Kata pencarian terlalu pendek.', 422, env);
+        if (!(await bolehLanjut(env, `transfer-cari:${me.sub}`, 40, 3600))) {
+          return err('Terlalu banyak pencarian. Coba lagi nanti.', 429, env);
+        }
+        const t = await env.DB.prepare(
+          `SELECT id,nama,username,foto,tier,badge,bingkai FROM users
+           WHERE (username = ? OR lower(email) = ?) AND diblokir = 0 AND deleted_at IS NULL
+           LIMIT 1`
+        ).bind(q, q).first();
+        if (!t) return err('Akun dengan username/email itu tidak ditemukan.', 404, env);
+        if (t.id === me.sub) return err('Itu akunmu sendiri.', 422, env);
+        return json(t, 200, env);
+      }
+
+      // ---- kirim saldo antar pengguna ----
+      if (p === 'me/transfer' && req.method === 'POST') {
+        const b = await req.json().catch(() => ({}));
+        const nominal = Math.floor(Number(b.nominal || 0));
+        if (!Number.isFinite(nominal) || nominal < 10000) return err('Transfer minimal Rp10.000.', 422, env);
+        if (nominal > 5000000) return err('Transfer maksimal Rp5.000.000 per transaksi.', 422, env);
+        const ke = String(b.ke || '').trim();
+        if (!ke || ke === me.sub) return err('Penerima tidak valid.', 422, env);
+        const catatanRaw = String(b.catatan || '').trim();
+        const catatan = catatanRaw ? catatanRaw.slice(0, 120) : null;
+        if (catatan && kataTerlarangDalam(catatan)) return err('Catatan mengandung kata terlarang.', 422, env);
+
+        const target = await env.DB.prepare(
+          'SELECT id,nama,username,diblokir FROM users WHERE id=? AND deleted_at IS NULL'
+        ).bind(ke).first();
+        if (!target) return err('Penerima tidak ditemukan.', 404, env);
+        if (target.diblokir === 1) return err('Akun penerima sedang diblokir.', 422, env);
+
+        const saya = await env.DB.prepare('SELECT saldo,pin_transfer,nama,username FROM users WHERE id=?').bind(me.sub).first();
+        if (!saya?.pin_transfer) return err('Atur PIN transfer dulu di Dompet → Kirim Saldo.', 428, env);
+        if (!(await bolehLanjut(env, `transfer-pin:${me.sub}`, 6, 3600))) {
+          return err('Terlalu banyak percobaan PIN. Coba lagi 1 jam lagi.', 429, env);
+        }
+        if (!(await cocokPw(String(b.pin || ''), saya.pin_transfer))) {
+          return err('PIN transfer salah.', 401, env);
+        }
+
+        // Batas harian keluar (UTC): total Rp10.000.000.
+        const harian = await env.DB.prepare(
+          "SELECT COALESCE(SUM(nominal),0) c FROM transfer WHERE dari_id=? AND date(dibuat)=date('now')"
+        ).bind(me.sub).first();
+        if ((harian?.c || 0) + nominal > 10000000) {
+          return err('Batas transfer harian (Rp10.000.000) tercapai.', 429, env);
+        }
+        if ((saya.saldo || 0) < nominal) return err('Saldo tidak cukup.', 422, env);
+
+        // Fase 1: potong saldo pengirim dengan guard atomik (anti race).
+        const potong = await env.DB.prepare(
+          'UPDATE users SET saldo = saldo - ? WHERE id = ? AND saldo >= ?'
+        ).bind(nominal, me.sub, nominal).run();
+        if (!potong.meta?.changes) return err('Saldo tidak cukup.', 422, env);
+
+        const rp = (n) => 'Rp' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        const idT = uid('tf_');
+        const dariLabel = saya.username ? `@${saya.username}` : saya.nama;
+        const keLabel = target.username ? `@${target.username}` : target.nama;
+        try {
+          // Fase 2: kredit penerima + buku besar + riwayat kedua sisi.
+          await env.DB.batch([
+            env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, target.id),
+            env.DB.prepare('INSERT INTO transfer(id,dari_id,ke_id,nominal,catatan) VALUES(?,?,?,?,?)')
+              .bind(idT, me.sub, target.id, nominal, catatan),
+            env.DB.prepare('INSERT INTO transaksi(id,user_id,judul,tipe,nominal) VALUES(?,?,?,?,?)')
+              .bind(uid('t_'), me.sub, `Transfer saldo ke ${keLabel}`, 'transfer_keluar', -nominal),
+            env.DB.prepare('INSERT INTO transaksi(id,user_id,judul,tipe,nominal) VALUES(?,?,?,?,?)')
+              .bind(uid('t_'), target.id, `Terima saldo dari ${dariLabel}`, 'transfer_masuk', nominal),
+          ]);
+        } catch (_) {
+          // Gagal menyimpan buku besar → kembalikan potongan pengirim.
+          await env.DB.prepare('UPDATE users SET saldo = saldo + ? WHERE id = ?').bind(nominal, me.sub).run().catch(() => {});
+          return err('Transfer gagal diproses. Coba lagi.', 500, env);
+        }
+
+        const [saldoSaya, saldoDia] = await Promise.all([
+          env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(me.sub).first(),
+          env.DB.prepare('SELECT saldo FROM users WHERE id=?').bind(target.id).first(),
+        ]);
+        ctx.waitUntil(push(env, `user:${me.sub}`, 'wallet.update', { saldo: saldoSaya?.saldo ?? 0 }));
+        ctx.waitUntil(push(env, `user:${target.id}`, 'wallet.update', { saldo: saldoDia?.saldo ?? 0 }));
+        ctx.waitUntil(buatNotif(env, ctx, {
+          userId: target.id,
+          jenis: 'wallet',
+          judul: 'Kamu menerima saldo 💸',
+          pesan: `${dariLabel} mengirim ${rp(nominal)}${catatan ? ` — "${catatan}"` : ''}`,
+          aktor: dariLabel,
+          refJenis: 'transfer',
+          refId: idT,
+        }));
+        return json({ ok: true, id: idT, saldo: saldoSaya?.saldo ?? 0, ke: keLabel }, 200, env);
       }
 
       if(p==='me/password/kode'&&req.method==='POST'){

@@ -107,9 +107,10 @@ test('Sosial: profil publik, follow dua arah, DM, dan simpan posting', async () 
     assert.equal((await B('/users/a/profil')).json.data.username, 'budi.kece');
     // ditolak saat sudah dipakai orang lain
     assert.equal((await B('/me', 'PATCH', { username: 'budi.kece' })).status, 409);
-    // pemilik lama boleh mengganti
+    // Batch I: penggantian username dibatasi 30 hari sekali (pemilik lama
+    // yang baru memasang username tidak bisa langsung mengganti lagi).
     r = await A('/me', 'PATCH', { username: 'andi_ganteng' });
-    assert.equal(r.json.data.username, 'andi_ganteng');
+    assert.equal(r.status, 429);
 
     // nama & bio dengan kata kasar/SARA/porno ditolak
     assert.equal((await A('/me', 'PATCH', { nama: 'Anjing Gila' })).status, 422);

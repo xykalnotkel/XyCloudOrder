@@ -25,7 +25,7 @@ CREATE TABLE users (
   saldo     INTEGER NOT NULL DEFAULT 0,
   tier      TEXT NOT NULL DEFAULT 'basic',
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT, bio TEXT, banner TEXT, bisu_notif TEXT, notif_dm INTEGER NOT NULL DEFAULT 1, username TEXT);
+, email_verified INTEGER NOT NULL DEFAULT 0, foto TEXT, notif_forum INTEGER NOT NULL DEFAULT 1, badge TEXT, diblokir INTEGER NOT NULL DEFAULT 0, alasan_blokir TEXT, peringatan INTEGER NOT NULL DEFAULT 0, total_belanja INTEGER NOT NULL DEFAULT 0, kode_referral TEXT, diundang_oleh TEXT, bio TEXT, banner TEXT, bisu_notif TEXT, notif_dm INTEGER NOT NULL DEFAULT 1, username TEXT, bingkai TEXT, banner_media TEXT, nama_diubah_pada TEXT, username_diubah_pada TEXT, pin_transfer TEXT);
 
 -- ------------------------------------------------------------
 --  pc_plans
@@ -114,6 +114,21 @@ CREATE TABLE transaksi (
   status  TEXT NOT NULL DEFAULT 'sukses',
   waktu   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ------------------------------------------------------------
+--  transfer (Batch I: buku besar transfer saldo antar pengguna)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS transfer;
+CREATE TABLE transfer (
+  id      TEXT PRIMARY KEY,
+  dari_id TEXT NOT NULL,
+  ke_id   TEXT NOT NULL,
+  nominal INTEGER NOT NULL,
+  catatan TEXT,
+  dibuat  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_transfer_dari ON transfer(dari_id, dibuat);
+CREATE INDEX IF NOT EXISTS idx_transfer_ke   ON transfer(ke_id, dibuat);
 
 -- ------------------------------------------------------------
 --  cs_messages
