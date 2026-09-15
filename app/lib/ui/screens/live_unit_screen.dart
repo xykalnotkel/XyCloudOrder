@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,14 +22,24 @@ class LiveUnitScreen extends StatefulWidget {
 class _LiveUnitScreenState extends State<LiveUnitScreen> {
   Map<String, UnitLive> _live = {};
   bool _memuat = true;
+  // Batch K: jajak otomatis tiap 30 detik + penanda waktu pembaruan.
+  Timer? _poll;
+  DateTime? _update;
 
   @override
   void initState() {
     super.initState();
     _muat();
+    _poll = Timer.periodic(const Duration(seconds: 30), (_) => _muat(senyap: true));
   }
 
-  Future<void> _muat() async {
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _muat({bool senyap = false}) async {
     try {
       final list = await context.read<AppState>().repo.unitLive();
       final peta = <String, UnitLive>{};
@@ -40,6 +52,7 @@ class _LiveUnitScreenState extends State<LiveUnitScreen> {
       setState(() {
         _live = peta;
         _memuat = false;
+        _update = DateTime.now();
       });
     } catch (_) {
       if (mounted) setState(() => _memuat = false);
@@ -54,7 +67,7 @@ class _LiveUnitScreenState extends State<LiveUnitScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Status Unit Live')),
       body: RefreshIndicator(
-        onRefresh: _muat,
+        onRefresh: () => _muat(),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 30),
           children: [
@@ -73,6 +86,10 @@ class _LiveUnitScreenState extends State<LiveUnitScreen> {
             ),
             const SizedBox(height: 8),
             Text('$siap dari ${plans.length} paket siap dipakai', style: TextStyle(color: t.muted, fontSize: 12.5, fontWeight: FontWeight.w600)),
+            if (_update != null)
+              Text(
+                  'Spek agen diperbarui ${_update!.toLocal().hour.toString().padLeft(2, '0')}:${_update!.toLocal().minute.toString().padLeft(2, '0')}:${_update!.toLocal().second.toString().padLeft(2, '0')} • otomatis tiap 30 detik',
+                  style: TextStyle(color: t.muted.withOpacity(.75), fontSize: 11)),
             const SectionHeader('Paket PC'),
             if (plans.isEmpty)
               const Kosong(icon: Icons.desktop_windows_rounded, judul: 'Belum ada data unit', sub: 'Tarik untuk refresh.', ilustrasi: 'pc')

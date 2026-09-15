@@ -244,6 +244,19 @@ class _GaleriScreenState extends State<_GaleriScreen> {
             const SnackBar(content: Text('Berkas tidak bisa dibaca.')));
         return;
       }
+      // Batch K: pra-cek ukuran di klien — server membatasi banner 15MB,
+      // foto dibatasi 10MB agar unggahan tidak gagal di tengah jalan.
+      final ukuran = await f.length();
+      final video = e.type == AssetType.video;
+      final maks = video ? 15 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (ukuran > maks) {
+        if (!mounted) return;
+        setState(() => _mengambil = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                '${video ? 'Video' : 'Foto'} ini ${(ukuran / 1048576).toStringAsFixed(1)} MB — melebihi batas ${video ? 15 : 10} MB. ${video ? 'Potong atau kompres dulu videonya.' : 'Pilih foto yang lebih kecil.'}')));
+        return;
+      }
       Navigator.pop(context, f);
     } catch (_) {
       if (!mounted) return;

@@ -1,5 +1,6 @@
 import 'cs_screen.dart';
 import 'legal_screen.dart';
+import 'pembaruan_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -53,14 +54,14 @@ class _TentangScreenState extends State<TentangScreen> {
           ),
 
           ListTile(leading:const Icon(Icons.code_rounded),title:const Text('Source & lisensi streaming'),subtitle:const Text('XyCloudStore memakai engine Moonlight GPLv3'),onTap:()=>launchUrl(Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/tag/v2.6.0'),mode:LaunchMode.externalApplication)),
-          // Batch J: jalur pembaruan mandiri (rilis resmi GitHub).
+          // Batch K: jalur pembaruan kanonik — tabel rilis di server + unduh
+          // APK langsung dari aplikasi (menggantikan tautan GitHub Batch J).
           XyBarisMenu(
             ikon: Icons.system_update_alt_rounded,
             judul: 'Periksa pembaruan aplikasi',
-            sub: 'Unduh build terbaru langsung dari rilis resmi',
-            onTap: () => launchUrl(
-                Uri.parse('https://github.com/xykalnotkel/XyCloudOrder/releases/latest'),
-                mode: LaunchMode.externalApplication),
+            sub: 'Unduh APK terbaru langsung dari server resmi',
+            onTap: () =>
+                Navigator.push(context, xyRoute(const PembaruanScreen())),
           ),
           const SectionHeader('Legal'),
           XyBarisMenu(

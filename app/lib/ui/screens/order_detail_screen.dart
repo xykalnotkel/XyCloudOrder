@@ -186,8 +186,26 @@ class _KartuStatus extends StatelessWidget {
               label: 'Mulai Main',
               icon: Icons.sports_esports_rounded,
               height: 48,
-              onPressed: () =>
-                  Navigator.push(context, xyRoute(SesiScreen(order: order)))),
+              onPressed: () async {
+                // Batch K: pra-cek agen host — kalau offline, beri peringatan
+                // jelas dulu, bukan layar koneksi yang gagal diam-diam.
+                bool lanjut = true;
+                try {
+                  final live = await context.read<AppState>().repo.unitLive();
+                  final unit = live.where((u) => u.planId == order.planId);
+                  if (!unit.any((u) => u.online) && context.mounted) {
+                    lanjut = await konfirmasi(context,
+                        judul: 'Agen host sedang offline',
+                        pesan:
+                            'Agen di PC untuk paket ini tidak terdeteksi aktif (heartbeat terakhir tidak ada). Koneksi streaming kemungkinan gagal. Tetap coba mulai sekarang?',
+                        tombolYa: 'Tetap Coba');
+                  }
+                } catch (_) {
+                  // Pra-cek gagal (mis. mode pemeliharaan) — jangan halangi sesi.
+                }
+                if (!lanjut || !context.mounted) return;
+                Navigator.push(context, xyRoute(SesiScreen(order: order)));
+              }),
           if (order.status == OrderStatus.dibayar)
             TextButton(
                 onPressed: () async {
