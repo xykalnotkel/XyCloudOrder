@@ -3,15 +3,18 @@
 - **Permanent:** https://github.com/xykalnotkel/XyCloudOrder/releases/download/agent-windows/XyCloudStore-Agent-Windows.zip
 - Actions artifact: workflow **Build Agen Windows**
 
-> EXE lama yang error `localhost refused to connect` = build tanpa UI embed. Pakai v1.3.2+ dari link di atas.
+> EXE lama yang error `localhost refused to connect` = build Tauri tanpa UI embed.
+> Mulai **v1.5** agen dibangun **native (egui/eframe)** — masalah WebView tidak mungkin terjadi lagi.
 
-# Agen PC Host XyCloudStore (Rust + Tauri, v1.3)
+# Agen PC Host XyCloudStore (Rust + egui native, v1.5)
 
 Program kecil di setiap PC/VM sewa. Menyambungkan mesin ke server XyCloudStore supaya
 sesi **dinyalakan, dipasangkan, dan ditutup otomatis** dari aplikasi HP.
 
-**v1.3** — wizard UI + **auto kredensial Sunshine** (`sunshine --creds`).  
-Tidak perlu buka `https://127.0.0.1:47990` / login web UI manual.
+**v1.5** — GUI **native egui/eframe**: satu exe mandiri, **tanpa Tauri, tanpa WebView2,
+tanpa jendela terminal**. Logika inti (`agent.rs`) tetap sama persis dengan build lama
+(dipakai ulang lewat `#[path]`), jadi perilaku heartbeat/perintah/auto-setup tidak berubah.
+Konfigurasi juga tetap dibaca dari lokasi lama — upgrade cukup timpa exe.
 
 ```
 Aplikasi (HP)          Server Cloudflare            Agen (Rust) di PC        Sunshine
@@ -34,26 +37,26 @@ Agen hanya keluar ke server + API lokal Sunshine. Port streaming Sunshine
 
 | Path | Isi |
 |---|---|
-| `agent-gui/src-tauri/src/main.rs` | Komando Tauri (simpan/status/uji/setup/mulai/henti/autostart) |
-| `agent-gui/src-tauri/src/agent.rs` | Heartbeat, perintah, `sunshine --creds`, winget, autostart |
-| `agent-gui/ui/` | Wizard 3 langkah (Unit → Engine → Jalan) |
+| `agent-gui/src-native/src/main.rs` | **GUI native egui** (pengaturan, uji koneksi, setup engine, mulai/stop, log, autostart) |
+| `agent-gui/src-tauri/src/agent.rs` | Inti agen: heartbeat, perintah, `sunshine --creds`, winget, autostart — **dipakai ulang build native** |
+| `agent-gui/src-tauri/` + `agent-gui/ui/` | Build Tauri lama (legacy, tidak lagi dipakai CI) |
 
 ## Setup di PC (3 klik)
 
 1. **Admin** → [Unit PC](https://admin.xycloud.my.id/unit) → Daftarkan unit → **salin kode**.
-2. Unduh `XyCloudStore-Agent.exe` (artifact CI / rilis) → jalankan.
-3. Wizard:
-   - **1 · Unit** — tempel kode → Simpan & lanjut  
-   - **2 · Engine** — *Pasang & kunci otomatis* (winget + `sunshine --creds`, tanpa web UI)  
-   - **3 · Jalan** — *Jalankan Agen* (+ opsional autostart Windows)
+2. Unduh `XyCloudStore-Agent.exe` (artifact CI / rilis) → jalankan (dobel klik, tanpa terminal).
+3. Jendela agen:
+   - **1 · Unit** — tempel kode unit (+ server bila bukan default) → **Simpan**
+   - **2 · Engine** — **Setup Engine** (winget + `sunshine --creds`, tanpa web UI)
+   - **3 · Jalan** — **Mulai Agen** (+ centang autostart Windows bila mau)
 
 Opsi lanjutan (username/password Sunshine) hanya jika mau pakai akun yang sudah ada.
 
 ## CLI
 
 ```powershell
-.\XyCloudStore-Agent.exe --veri          # cek versi
-.\XyCloudStore-Agent.exe -Jalankan       # headless (autostart)
+.\XyCloudStore-Agent.exe --veri          # cek versi (smoke-test CI)
+.\XyCloudStore-Agent.exe -Jalankan       # headless loop (dipakai entri autostart registry)
 ```
 
 ## Hasil uji Engine
@@ -62,7 +65,7 @@ Opsi lanjutan (username/password Sunshine) hanya jika mau pakai akun yang sudah 
 |---|---|
 | `API_SIAP` | Kredensial OK, API 47990 merespons |
 | `API_TIDAK_SESUAI` | Sunshine hidup tapi auth ditolak — ulang auto-setup |
-| `KREDENSIAL_KOSONG` | Belum setup — klik *Pasang & kunci otomatis* |
+| `KREDENSIAL_KOSONG` | Belum setup — klik *Setup Engine* |
 | `TIDAK_TERHUBUNG` | Service/exe belum jalan |
 
 ## Keamanan
@@ -73,10 +76,18 @@ Opsi lanjutan (username/password Sunshine) hanya jika mau pakai akun yang sudah 
 
 ## Build
 
-CI: `.github/workflows/agent-windows.yml` → artifact `XyCloudStore-Agent-Windows.zip`.
+CI: `.github/workflows/agent-windows.yml` → artifact `XyCloudStore-Agent-Windows.zip`
+(runs-on `windows-latest`, cukup `cargo build --release` — tanpa tauri-cli).
+
+```powershell
+cd agent-gui/src-native
+cargo build --release --locked
+# hasil: target/release/xycloud-agent.exe  → didistribusikan sebagai XyCloudStore-Agent.exe
+```
+
+Build legacy Tauri (masih ada di repo untuk referensi):
 
 ```powershell
 cd agent-gui/src-tauri
-cargo build --release --locked
-# hasil: target/release/xycloud-agent.exe
+cargo tauri build --no-bundle --ci
 ```

@@ -1,4 +1,4 @@
-name: Build Agen Windows (Rust/Tauri)
+name: Build Agen Windows (Rust/egui native)
 
 on:
   push:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build:
-    name: Bangun agen Rust/Tauri jadi .exe (UI ter-embed)
+    name: Bangun agen Rust/egui native jadi .exe (tanpa Tauri/WebView/terminal)
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
@@ -32,42 +32,27 @@ jobs:
       - name: Cache kargo
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: agent-gui/src-tauri
+          workspaces: agent-gui/src-native
 
-      - name: Pasang Tauri CLI
+      - name: Bangun rilis native (cargo build --release)
         shell: pwsh
-        run: cargo install tauri-cli --version "^2" --locked --force
-
-      - name: Bangun rilis lewat tauri CLI (embed frontendDist, bukan localhost)
-        shell: pwsh
-        working-directory: agent-gui
+        working-directory: agent-gui/src-native
         run: |
-          # --no-bundle = exe saja (cepat); UI dari ../ui di-embed ke binary
-          cargo tauri build --no-bundle --ci
-          $exe = Get-Item "src-tauri/target/release/xycloud-agent.exe" -ErrorAction SilentlyContinue
-          if (-not $exe) {
-            $exe = Get-ChildItem -Recurse -Filter "xycloud-agent.exe" "src-tauri/target" |
-              Where-Object { $_.FullName -match "[\/]release[\/]" } |
-              Select-Object -First 1
-          }
-          if (-not $exe) { throw "xycloud-agent.exe tidak ketemu setelah tauri build" }
+          # Native egui/eframe — tidak perlu tauri-cli, WebView2, maupun dev server.
+          cargo build --release --locked
+          $exe = Get-Item "target/release/xycloud-agent.exe" -ErrorAction SilentlyContinue
+          if (-not $exe) { throw "xycloud-agent.exe tidak ketemu setelah cargo build" }
           Write-Host "EXE:" $exe.FullName $exe.Length
-          New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item $exe.FullName dist/XyCloudStore-Agent.exe -Force
-          Copy-Item README.md dist/README.md -Force
+          New-Item -ItemType Directory -Force ../dist | Out-Null
+          Copy-Item $exe.FullName ../dist/XyCloudStore-Agent.exe -Force
+          Copy-Item ../README.md ../dist/README.md -Force
 
-      - name: Smoke-test versi + pastikan bukan localhost embed
+      - name: Smoke-test versi
         shell: pwsh
         working-directory: agent-gui
         run: |
           & .\dist\XyCloudStore-Agent.exe --veri
           if ($LASTEXITCODE -ne 0) { throw "Smoke-test --veri gagal" }
-          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path .\dist\XyCloudStore-Agent.exe))
-          $text = [System.Text.Encoding]::ASCII.GetString($bytes)
-          if ($text -match "localhost:1420") {
-            throw "EXE masih mengandung localhost:1420 — UI tidak ter-embed. Gagal."
-          }
-          Write-Host "OK: tidak ada localhost:1420 di binary"
           Compress-Archive -Path dist/XyCloudStore-Agent.exe, dist/README.md `
             -DestinationPath ../XyCloudStore-Agent-Windows.zip -Force
           Get-Item ../XyCloudStore-Agent-Windows.zip | Select-Object Name, Length
@@ -87,11 +72,12 @@ jobs:
           name: XyCloudStore Agent (Windows)
           body: |
             Agen PC Host Windows — build otomatis dari `main`.
-            Wizard 3 langkah + auto Sunshine (`sunshine --creds`), UI ter-embed (bukan localhost).
+            **v1.5 native (egui/eframe):** satu exe mandiri tanpa Tauri, tanpa WebView2, tanpa terminal.
+            Auto Sunshine (`sunshine --creds`) + wizard pengaturan + autostart Windows.
 
             **Unduh:** `XyCloudStore-Agent-Windows.zip` → ekstrak → jalankan `XyCloudStore-Agent.exe`
 
-            Alur: Admin → Unit PC → salin kode → tempel di Agent → Pasang & kunci otomatis → Jalankan Agen.
+            Alur: Admin → Unit PC → salin kode → tempel di Agent → Setup Engine → Mulai Agen.
           files: XyCloudStore-Agent-Windows.zip
           fail_on_unmatched_files: true
           make_latest: false
